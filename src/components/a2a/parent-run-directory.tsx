@@ -51,7 +51,7 @@ export function ParentRunDirectory({
           total: (n: number) => `共 ${n} 条`,
           body: "每条 Parent 都是一次真实发起子 Agent 委派的运行。这里按你的运行记录自动生成，不需要再手动输入 parent_run_id。",
           loadFailed: "暂时无法加载 Parent 调用链。",
-          empty: "还没有 Parent 调用链。运行会委派任务的 Agent 后，这里会自动出现记录。",
+          empty: "还没有 Parent 调用链。运行会委派子调用的 Agent 后，这里会自动出现记录。",
           viewAgents: "查看我的 Agent",
           viewA2A: "查看 A2A 接入方式",
           parentAgent: "Parent Agent",

@@ -2,7 +2,7 @@
  * <ValueLoop /> —— 5 步价值循环横排。
  *
  * 来自 prototype 的 .value-loop / .loop-step：
- *   1 发现 → 2 试用 → 3 编排预览 → 4 A2A 预览 → 5 追踪
+ *   1 发现 → 2 接入 → 3 调用 → 4 A2A/MCP → 5 追踪
  * 每步：圆形数字 + 标题 + 一行小字。
  */
 
@@ -16,17 +16,17 @@ interface LoopStep {
 
 const STEPS: Record<Locale, LoopStep[]> = {
   zh: [
-  { num: 1, title: "发现", desc: "搜索可用 Agent" },
-  { num: 2, title: "试用", desc: "Playground 直接跑" },
-  { num: 3, title: "编排", desc: "工作流入口已承接" },
-  { num: 4, title: "A2A", desc: "多 Agent 协作预览" },
+  { num: 1, title: "发现", desc: "浏览 Registry" },
+  { num: 2, title: "接入", desc: "HTTP / MCP / Pull" },
+  { num: 3, title: "调用", desc: "Playground 直接跑" },
+  { num: 4, title: "A2A/MCP", desc: "协议入口" },
   { num: 5, title: "追踪", desc: "结果、日志和免费期" },
   ],
   en: [
-    { num: 1, title: "Discover", desc: "Search callable Agents" },
-    { num: 2, title: "Try", desc: "Run in Playground" },
-    { num: 3, title: "Compose", desc: "Reuse with workflows" },
-    { num: 4, title: "A2A", desc: "Preview multi-Agent work" },
+    { num: 1, title: "Discover", desc: "Browse Registry" },
+    { num: 2, title: "Connect", desc: "HTTP / MCP / Pull" },
+    { num: 3, title: "Run", desc: "Use Playground" },
+    { num: 4, title: "A2A/MCP", desc: "Protocol entries" },
     { num: 5, title: "Trace", desc: "Results, logs, free access" },
   ],
 };

@@ -6,9 +6,9 @@
  * 4 个 panel + 一个底部快捷入口：
  *   1. 调用结果（绿色高亮，按状态切换）
  *   2. 免费期费用状态（cost / duration / 失败时说明未产生费用）
- *   3. 下一步（指向真实 Run trace / 工作流入口）
+ *   3. 下一步（指向真实 Run trace / A2A 协作链）
  *   4. 父运行与协作链 / 开发者 API（A2A 结果显示入口，否则显示 Run ID）
- *   5. 底部入口：打开工作流 / 查看运行 Trace
+ *   5. 底部入口：查看运行 Trace
  *
  * 发布口径：只展示当前真实可用的导航入口，不保留不可点击占位按钮。
  */
@@ -27,11 +27,10 @@ interface Props {
 }
 
 interface ResultPanelProps extends Props {
-  taskId?: string;
   locale?: Locale;
 }
 
-export function ResultPanel({ status, result, taskId, locale = "zh" }: ResultPanelProps) {
+export function ResultPanel({ status, result, locale = "zh" }: ResultPanelProps) {
   const { fetch: apiFetch } = useApi();
   const [delegatedRunId, setDelegatedRunId] = useState<string | null>(null);
   const runId = result?.run_id ?? null;
@@ -63,15 +62,6 @@ export function ResultPanel({ status, result, taskId, locale = "zh" }: ResultPan
     <aside className="flex flex-col gap-3.5">
       <CallResultBox status={status} result={result} locale={locale} />
       <CostBox status={status} result={result} locale={locale} />
-      {taskId ? (
-        <TaskClosureBox
-          taskId={taskId}
-          runId={runId}
-          runFinished={runFinished}
-          success={result?.status === "success"}
-          locale={locale}
-        />
-      ) : null}
       <NextStepBox locale={locale} />
       <DeveloperApiBox
         runId={runId}
@@ -210,84 +200,19 @@ function CostBox({ status, result, locale = "zh" }: Props & { locale?: Locale })
   );
 }
 
-function TaskClosureBox({
-  taskId,
-  runId,
-  runFinished,
-  success,
-  locale = "zh",
-}: {
-  taskId: string;
-  runId: string | null;
-  runFinished: boolean;
-  success: boolean;
-  locale?: Locale;
-}) {
-  const copy =
-    locale === "zh"
-      ? {
-          title: "任务闭环",
-          body: "这次运行来自任务接入。成功后平台会把 Run ID、结果摘要和交付内容写回任务详情。",
-          taskDetail: "查看任务详情",
-          runDetail: "查看本次 Run",
-          submitted: "状态：结果已提交到任务。",
-          finished: "状态：运行结束，请在任务详情确认交付。",
-          waiting: "状态：等待运行完成后自动回填。",
-        }
-      : {
-          title: "Task Closure",
-          body: "This run came from a task. After success, OpenLinker writes the Run ID, result summary, and delivery content back to the task detail.",
-          taskDetail: "View Task",
-          runDetail: "View This Run",
-          submitted: "Status: result submitted to the task.",
-          finished: "Status: run finished. Confirm delivery in the task detail.",
-          waiting: "Status: waiting for completion before the task is updated.",
-        };
-
-  return (
-    <div className="rounded-[18px] border border-[color:var(--ol-line)] bg-white p-4">
-      <strong className="block text-[14px] font-black text-[color:var(--ol-ink)]">
-        {copy.title}
-      </strong>
-      <span className="mt-1.5 block text-[12px] leading-[1.5] text-[color:var(--ol-muted)]">
-        {copy.body}
-      </span>
-      <div className="mt-3 grid gap-2">
-        <Link
-          href={`/tasks/${encodeURIComponent(taskId)}`}
-          className="inline-flex h-9 items-center justify-center rounded-[10px] bg-[color:var(--ol-primary)] px-3 text-[12px] font-black text-white hover:bg-[color:var(--ol-primary-dark)]"
-        >
-          {copy.taskDetail}
-        </Link>
-        {runId ? (
-          <Link
-            href={`/run/${encodeURIComponent(runId)}`}
-            className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[color:var(--ol-line)] bg-white px-3 text-[12px] font-black text-[color:var(--ol-ink)] hover:bg-[color:var(--ol-soft)]"
-          >
-            {copy.runDetail}
-          </Link>
-        ) : null}
-      </div>
-      <span className="mt-3 block text-[11.5px] font-bold text-[color:var(--ol-muted)]">
-        {success ? copy.submitted : runFinished ? copy.finished : copy.waiting}
-      </span>
-    </div>
-  );
-}
-
 /* ============================================================
    3. 下一步
    ============================================================ */
- function NextStepBox({ locale = "zh" }: { locale?: Locale }) {
+function NextStepBox({ locale = "zh" }: { locale?: Locale }) {
   const copy =
     locale === "zh"
       ? {
           title: "下一步",
-          body: "运行完成后可进入 Run Trace 查看事件、消息和产物；需要多 Agent 编排时，进入工作流页面添加节点并运行。",
+          body: "运行完成后可进入 Run Trace 查看事件、消息和产物；如果发生 A2A 委派，协作链会在这里自动出现。",
         }
       : {
           title: "Next Step",
-          body: "After the run finishes, open Run Trace to inspect events, messages, and artifacts. For multi-Agent orchestration, add nodes in Workflow and run them there.",
+          body: "After the run finishes, open Run Trace to inspect events, messages, and artifacts. If A2A delegation happens, the handoff chain appears here automatically.",
         };
 
   return (
@@ -320,7 +245,7 @@ function DeveloperApiBox({
       ? {
           delegationTitle: "父运行与协作链",
           apiTitle: "开发者 API",
-          delegated: "当前 Run 是 parent，已真实委派子 Agent 完成任务。",
+          delegated: "当前 Run 是 parent，已真实委派子 Agent 完成子调用。",
           copyDoneToast: "Run ID 已复制",
           copyFailToast: "复制失败，请手动选择",
           copied: "已复制",
@@ -417,12 +342,10 @@ function BottomActions({
   const copy =
     locale === "zh"
       ? {
-          workflow: "打开工作流",
           trace: "查看运行 Trace",
           tracePending: "运行后查看 Trace",
         }
       : {
-          workflow: "Open Workflow",
           trace: "View Run Trace",
           tracePending: "Trace available after running",
         };
@@ -431,12 +354,6 @@ function BottomActions({
 
   return (
     <div className="grid gap-2.5 pt-1">
-      <Link
-        href="/workflow"
-        className={`${baseBtn} border-[color:var(--ol-blue)] bg-[color:var(--ol-blue)] text-white`}
-      >
-        {copy.workflow}
-      </Link>
       {runId ? (
         <Link
           href={`/run/${encodeURIComponent(runId)}`}

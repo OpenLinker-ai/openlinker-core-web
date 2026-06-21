@@ -1,19 +1,14 @@
 /**
  * <HeroDual /> —— 首页 hero 双卡区块。
  *
- * 来自 prototype 的 .hero-dual：左卡（task / 绿底白字）+ 右卡（market / 白底）。
- *
- * 子轮 2.4 后：左卡的 CTA 内联 <TaskPrompt variant="dark" /> 输入框，
- * 把"AI 推荐"流入口直接做在 hero 里，而不是另起一卡叠在上方。
- * 右卡仍然是"浏览市场"。
+ * Core 版首页只保留开源 registry 与 Agent 接入入口。
  */
 
 import Link from "next/link";
 
 import type { Locale } from "@/lib/i18n";
-import { TaskPrompt } from "./task-prompt";
 
-interface MarketCardProps {
+interface HomeCardProps {
   href: string;
   tag: string;
   title: string;
@@ -22,37 +17,7 @@ interface MarketCardProps {
   meta: string;
 }
 
-function TaskCard({ locale }: { locale: Locale }) {
-  const copy =
-    locale === "zh"
-      ? {
-          tag: "推荐 · AI 帮你做事",
-          title: "发布任务，让 AI 帮你做",
-          desc: "一句话描述你要做的事，优先推荐可运行 Agent；无匹配时给出下一步。",
-        }
-      : {
-          tag: "Match · Agent-assisted work",
-          title: "Describe a task, get matched",
-          desc: "Tell OpenLinker what you need. It prioritizes callable Agents and gives a next step when there is no match.",
-        };
-
-  return (
-    <div className="group relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#0f9187] to-[#08746d] px-6 py-5 text-white shadow-[0_18px_40px_-18px_rgba(15,145,135,0.55)]">
-      <span className="inline-block rounded-md bg-white/22 px-2 py-[3px] text-[10.5px] font-black uppercase tracking-[0.04em] text-white">
-        {copy.tag}
-      </span>
-      <h3 className="mt-2 text-[22px] font-black leading-tight">
-        {copy.title}
-      </h3>
-      <p className="mt-1.5 text-[13px] leading-relaxed text-white/[0.88]">
-        {copy.desc}
-      </p>
-      <TaskPrompt variant="dark" locale={locale} />
-    </div>
-  );
-}
-
-function MarketCard({ href, tag, title, desc, cta, meta }: MarketCardProps) {
+function HomeCard({ href, tag, title, desc, cta, meta }: HomeCardProps) {
   return (
     <Link
       href={href}
@@ -78,33 +43,56 @@ function MarketCard({ href, tag, title, desc, cta, meta }: MarketCardProps) {
 }
 
 export function HeroDual({ locale = "zh" }: { locale?: Locale }) {
-  const market =
+  const primary =
     locale === "zh"
       ? {
-          tag: "开发者首选",
-          title: "浏览 Agent 市场",
-          desc: "按场景筛选可调用 Agent，有运行证据时再进入 Playground 试用。",
-          cta: "→ 浏览市场",
-          meta: "财务审计 · 代码审查 · 客服编排 · 数据分析 · 内容生成",
+          tag: "Core Registry",
+          title: "浏览 Agent Registry",
+          desc: "查看开源 core 维护的 Agent 列表、健康状态、Skill 声明和运行证据。",
+          cta: "→ 打开 Registry",
+          meta: "Agent · Skill · Benchmark · Run evidence",
         }
       : {
-          tag: "Developer-friendly",
-          title: "Browse the Agent market",
-          desc: "Filter callable Agents by scenario, then try them in Playground once there is runtime evidence.",
-          cta: "→ Browse market",
-          meta: "Finance review · Code review · Support ops · Data analysis · Content",
+          tag: "Core Registry",
+          title: "Browse the Agent Registry",
+          desc: "Review Agents, health, Skill claims, and runtime evidence maintained by open core.",
+          cta: "→ Open Registry",
+          meta: "Agent · Skill · Benchmark · Run evidence",
+        };
+  const secondary =
+    locale === "zh"
+      ? {
+          tag: "Agent 接入",
+          title: "接入你的 Agent",
+          desc: "支持 HTTPS Endpoint、MCP Server 和 Runtime Pull，适合本地或私有网络 Agent。",
+          cta: "→ 查看接入文档",
+          meta: "HTTP · MCP · runtime_pull · webhook",
+        }
+      : {
+          tag: "Agent Onboarding",
+          title: "Connect your Agent",
+          desc: "Use HTTPS endpoints, MCP servers, or Runtime Pull for local and private-network Agents.",
+          cta: "→ View connect docs",
+          meta: "HTTP · MCP · runtime_pull · webhook",
         };
 
   return (
     <div className="mt-8 grid gap-4 lg:grid-cols-2 lg:items-stretch">
-      <TaskCard locale={locale} />
-      <MarketCard
-        href="/market"
-        tag={market.tag}
-        title={market.title}
-        desc={market.desc}
-        cta={market.cta}
-        meta={market.meta}
+      <HomeCard
+        href="/registry"
+        tag={primary.tag}
+        title={primary.title}
+        desc={primary.desc}
+        cta={primary.cta}
+        meta={primary.meta}
+      />
+      <HomeCard
+        href="/connect"
+        tag={secondary.tag}
+        title={secondary.title}
+        desc={secondary.desc}
+        cta={secondary.cta}
+        meta={secondary.meta}
       />
     </div>
   );

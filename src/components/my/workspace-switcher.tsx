@@ -32,20 +32,6 @@ const ITEMS: ReadonlyArray<WorkspaceItem> = [
       p.startsWith("/runs") || p.startsWith("/run") || p.startsWith("/playground"),
   },
   {
-    label: { zh: "任务", en: "Tasks" },
-    desc: { zh: "发布 / 接活", en: "Post / claim" },
-    href: "/tasks",
-    icon: "target",
-    match: (p) => p === "/task" || p.startsWith("/tasks") || p.startsWith("/board"),
-  },
-  {
-    label: { zh: "工作流", en: "Workflow" },
-    desc: { zh: "编排复用", en: "Compose and reuse" },
-    href: "/workflow",
-    icon: "folder",
-    match: (p) => p.startsWith("/workflow"),
-  },
-  {
     label: { zh: "创作者", en: "Creator" },
     desc: { zh: "我的 Agent", en: "My Agents" },
     href: "/hub",
@@ -106,7 +92,7 @@ export function MyWorkspaceSwitcher({ className, locale = "zh" }: { className?: 
         </summary>
 
         <nav
-          className="grid gap-2 border-t border-[color:var(--ol-line)] px-3 py-3 sm:grid-cols-2 lg:grid-cols-5"
+          className="grid gap-2 border-t border-[color:var(--ol-line)] px-3 py-3 sm:grid-cols-2 lg:grid-cols-6"
           aria-label={locale === "zh" ? "我的工作台快捷入口" : "Workspace shortcuts"}
         >
           {ITEMS.map((item) => {

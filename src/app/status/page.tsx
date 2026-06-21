@@ -17,13 +17,13 @@ export default async function StatusPage() {
           home: "首页",
           current: "平台状态",
           heading: "服务状态、事件记录和接入侧影响",
-          lead: "把 API、市场、运行链路和 Webhook 投递放在同一个视图里，方便定位调用失败或投递延迟。",
+          lead: "把 API、Registry、运行链路和 Webhook 投递放在同一个视图里，方便定位调用失败或投递延迟。",
         }
       : {
           home: "Home",
           current: "Platform Status",
           heading: "Service status, incidents, and integration impact",
-          lead: "API, market, run chains, and webhook delivery are shown together so run failures or delivery delays are easier to diagnose.",
+          lead: "API, Registry, run chains, and webhook delivery are shown together so run failures or delivery delays are easier to diagnose.",
         };
 
   return (

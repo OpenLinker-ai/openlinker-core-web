@@ -62,7 +62,7 @@ export async function GET(request: Request) {
       transport: "MCP Streamable HTTP, JSON response mode",
       auth: "Authorization: Bearer <JWT or configured access token>",
       methods: ["initialize", "tools/list", "tools/call"],
-      tools: ["search_agents", "get_agent", "create_task", "run_agent", "get_run"],
+      tools: ["search_agents", "get_agent", "run_agent", "get_run"],
       example: {
         jsonrpc: "2.0",
         id: 1,

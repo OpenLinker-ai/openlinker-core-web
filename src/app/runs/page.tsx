@@ -23,10 +23,6 @@ interface RunListResp {
   size: number;
 }
 
-interface WorkflowListResp {
-  total: number;
-}
-
 const EMPTY_DASHBOARD: DashboardData = {
   usage: {
     this_month_calls: 0,
@@ -58,20 +54,17 @@ export default async function RunsPage({
           my: "我的",
           current: "运行记录",
           kicker: "core runs",
-          heading: "运行记录 · 调用、事件与工作流",
+          heading: "运行记录 · 调用与事件",
           lead: "这里展示 core 自己维护的运行历史。钱包、充值、计费和 cloud API key 不属于 core-web。",
           callsMonth: "本月调用",
           callsTotal: "累计调用",
-          savedWorkflows: "工作流",
+          agents: "Registry",
           mode: "前端模式",
           coreOnly: "Core only",
           unavailable: "运行概览暂时不可用，列表仍会尽量加载。",
           runTitle: "最近运行",
           emptyText: "还没有运行记录。",
-          emptyAction: "浏览市场 ->",
-          workflow: "工作流编排",
-          workflowBody: "已保存工作流仍由 core 的 workflow API 维护。",
-          createWorkflow: "进入工作流",
+          emptyAction: "打开 Registry ->",
           connect: "接入 Agent",
           connectBody: "如果你是创作者，可以接入 HTTP、MCP 或 runtime_pull Agent。",
           connectAction: "接入新 Agent",
@@ -80,32 +73,26 @@ export default async function RunsPage({
           my: "My",
           current: "Runs",
           kicker: "core runs",
-          heading: "Runs · Calls, events, and workflows",
+          heading: "Runs · Calls and events",
           lead: "This page shows run history maintained by core. Wallets, charges, billing, and cloud API keys are not part of core-web.",
           callsMonth: "Calls this month",
           callsTotal: "Total calls",
-          savedWorkflows: "Workflows",
+          agents: "Registry",
           mode: "Frontend mode",
           coreOnly: "Core only",
           unavailable: "Run overview is temporarily unavailable; the list will still try to load.",
           runTitle: "Recent Runs",
           emptyText: "No run records yet.",
-          emptyAction: "Browse market ->",
-          workflow: "Workflow orchestration",
-          workflowBody: "Saved workflows are still maintained by core's workflow API.",
-          createWorkflow: "Open workflow",
+          emptyAction: "Open Registry ->",
           connect: "Connect Agent",
           connectBody: "Creators can connect HTTP, MCP, or runtime_pull Agents.",
           connectAction: "Connect new Agent",
         };
 
-  const [dashboard, runs, workflows] = await Promise.all([
+  const [dashboard, runs] = await Promise.all([
     apiFetchAuthed<DashboardData>("/api/v1/dashboard").catch(() => null),
     apiFetchAuthed<RunListResp>(`/api/v1/runs?page=${page}&size=${size}`).catch(
       () => ({ items: [], total: 0, page, size }) satisfies RunListResp,
-    ),
-    apiFetchAuthed<WorkflowListResp>("/api/v1/workflows").catch(
-      () => ({ total: 0 }) satisfies WorkflowListResp,
     ),
   ]);
 
@@ -137,10 +124,9 @@ export default async function RunsPage({
           </div>
         ) : null}
 
-        <section className="mt-6 grid gap-4 md:grid-cols-4">
+        <section className="mt-6 grid gap-4 md:grid-cols-3">
           <Metric label={copy.callsMonth} value={String(stats.usage.this_month_calls)} />
           <Metric label={copy.callsTotal} value={String(stats.usage.total_calls)} />
-          <Metric label={copy.savedWorkflows} value={String(workflows.total ?? 0)} />
           <Metric label={copy.mode} value={copy.coreOnly} />
         </section>
 
@@ -159,12 +145,6 @@ export default async function RunsPage({
           </section>
 
           <aside className="space-y-4">
-            <InfoCard
-              title={copy.workflow}
-              body={copy.workflowBody}
-              href="/workflow"
-              action={copy.createWorkflow}
-            />
             <InfoCard
               title={copy.connect}
               body={copy.connectBody}

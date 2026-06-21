@@ -46,26 +46,18 @@ interface AgentInfo {
 
 interface Props {
   agent: AgentInfo;
-  /** 任务驱动跳转携带的预填文本（包成 {"text":"..."} 作为初始输入）。 */
+  /** 外部入口携带的预填文本（包成 {"text":"..."} 作为初始输入）。 */
   prefill?: string;
   /** Agent 详情页 example 跳转携带的完整 JSON input。 */
   initialInput?: Record<string, unknown>;
-  /** 从任务广场接单进入时，自动启动一次运行。 */
+  /** 外部入口需要自动启动一次运行时使用。 */
   autorun?: boolean;
-  /** 任务发布/接单流携带的任务 ID；运行成功后会回填任务结果。 */
-  taskId?: string;
   locale?: Locale;
 }
 
-const DEFAULT_INPUT = '{\n  "text": "这里写你的任务描述"\n}';
-const DEFAULT_INPUT_EN = '{\n  "text": "Write your task description here"\n}';
+const DEFAULT_INPUT = '{\n  "text": "这里写你的运行输入"\n}';
+const DEFAULT_INPUT_EN = '{\n  "text": "Write your run input here"\n}';
 const pollDelayMs = 900;
-
-interface TaskRunResult {
-  task_id: string;
-  status: string;
-  run: RunResult;
-}
 
 function buildInitialInput(prefill: string | undefined, initialInput: Record<string, unknown> | undefined, locale: Locale): string {
   if (initialInput) return JSON.stringify(initialInput, null, 2);
@@ -73,28 +65,11 @@ function buildInitialInput(prefill: string | undefined, initialInput: Record<str
   return JSON.stringify({ text: prefill }, null, 2);
 }
 
-function summarizeRunOutput(result: RunResult, locale: Locale): string {
-  const output = result.output ?? {};
-  const preferred =
-    typeof output.summary === "string"
-      ? output.summary
-      : typeof output.answer === "string"
-        ? output.answer
-        : typeof output.text === "string"
-          ? output.text
-          : "";
-  const raw = preferred || JSON.stringify(output);
-  const trimmed = raw.trim();
-  if (!trimmed) return locale === "zh" ? "Agent 已成功完成任务。" : "Agent completed the task successfully.";
-  return trimmed.length > 2000 ? trimmed.slice(0, 1997) + "..." : trimmed;
-}
-
 export function PlaygroundRunner({
   agent,
   prefill,
   initialInput,
   autorun = false,
-  taskId,
   locale = "zh",
 }: Props) {
   const copy = useMemo(
@@ -110,11 +85,9 @@ export function PlaygroundRunner({
             failed: "调用失败",
             unknown: "未知错误",
             retry: "调用失败，请稍后再试",
-            taskSaved: "任务结果已写回任务详情",
-            taskSaveFailed: "任务结果写回失败",
-            inputTitle: "任务输入",
-            composeTitle: "在工作流里编排多个 Agent",
-            compose: "编排",
+            inputTitle: "运行输入",
+            composeTitle: "浏览 Registry 选择其它 Agent",
+            compose: "Registry",
             price: (price: string) => `未来展示价 $${price}`,
             free: "当前免费",
             placeholder: '输入合法 JSON，例如 {"text": "..."}',
@@ -132,11 +105,9 @@ export function PlaygroundRunner({
             failed: "Run failed",
             unknown: "Unknown error",
             retry: "Run failed. Try again later.",
-            taskSaved: "Task result written back to task detail",
-            taskSaveFailed: "Failed to write task result back",
-            inputTitle: "Task input",
-            composeTitle: "Compose multiple Agents in Workflow",
-            compose: "Compose",
+            inputTitle: "Run input",
+            composeTitle: "Browse Registry to choose another Agent",
+            compose: "Registry",
             price: (price: string) => `Future display price $${price}`,
             free: "Free now",
             placeholder: 'Enter valid JSON, for example {"text": "..."}',
@@ -157,7 +128,6 @@ export function PlaygroundRunner({
   const [result, setResult] = useState<RunResult | null>(null);
   const [status, setStatus] = useState<RunStatus>("idle");
   const autoRunStarted = useRef(false);
-  const completionReported = useRef(false);
 
   const running = status === "running";
   const priceUSD = (agent.price_per_call_cents / 100).toFixed(3);
@@ -184,20 +154,14 @@ export function PlaygroundRunner({
     setResult(null);
 
     try {
-      const runPath = taskId
-        ? `/api/v1/tasks/${encodeURIComponent(taskId)}/run`
-        : "/api/v1/runs";
-      const data = await apiFetch<RunResult | TaskRunResult>(runPath, {
+      const runData = await apiFetch<RunResult>("/api/v1/runs", {
         method: "POST",
-        body: taskId
-          ? { agent_id: agent.id, input: parsedInput }
-          : {
-              agent_id: agent.id,
-              input: parsedInput,
-              metadata: { source: "playground" },
-            },
+        body: {
+          agent_id: agent.id,
+          input: parsedInput,
+          metadata: { source: "playground" },
+        },
       });
-      const runData = "run" in data ? data.run : data;
       setResult(runData);
       if (runData.status === "running") {
         toast.success(copy.runStarted);
@@ -219,7 +183,7 @@ export function PlaygroundRunner({
         toast.error(copy.retry);
       }
     }
-  }, [agent.id, apiFetch, authLoading, copy, input, isAuthenticated, taskId]);
+  }, [agent.id, apiFetch, authLoading, copy, input, isAuthenticated]);
 
   useEffect(() => {
     if (status !== "running" || !result?.run_id) return;
@@ -279,33 +243,6 @@ export function PlaygroundRunner({
     void handleRun();
   }, [authLoading, autorun, handleRun, isAuthenticated, status]);
 
-  useEffect(() => {
-    if (!taskId || status !== "success" || !result?.run_id || completionReported.current) {
-      return;
-    }
-    completionReported.current = true;
-    void apiFetch(`/api/v1/tasks/${encodeURIComponent(taskId)}/complete`, {
-      method: "POST",
-      body: {
-        agent_id: agent.id,
-        run_id: result.run_id,
-        result_summary: summarizeRunOutput(result, locale),
-        result_artifact: result.output ?? {},
-        delivery_visibility: "private",
-      },
-    })
-      .then(() => {
-        toast.success(copy.taskSaved);
-      })
-      .catch((err) => {
-        if (err instanceof ApiError) {
-          toast.error(err.message || copy.taskSaveFailed);
-        } else {
-          toast.error(copy.taskSaveFailed);
-        }
-      });
-  }, [agent.id, apiFetch, copy, locale, result, status, taskId]);
-
   return (
     <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)_320px]">
       {/* ==================== 左：prompt-box ==================== */}
@@ -327,7 +264,7 @@ export function PlaygroundRunner({
               {agent.name}
             </span>
             <Link
-              href="/workflow"
+              href="/registry"
               title={copy.composeTitle}
               className="inline-flex h-[30px] items-center justify-center rounded-full border border-[color:var(--ol-line)] bg-white px-2.5 text-[12px] font-extrabold leading-none text-[color:var(--ol-muted)] transition hover:border-[color:var(--ol-primary)]/40 hover:text-[color:var(--ol-primary-dark)]"
             >
@@ -396,7 +333,7 @@ export function PlaygroundRunner({
       )}
 
       {/* ==================== 右：结果面板 ==================== */}
-      <ResultPanel status={status} result={result} taskId={taskId} locale={locale} />
+      <ResultPanel status={status} result={result} locale={locale} />
     </div>
   );
 }

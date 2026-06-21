@@ -603,7 +603,7 @@ function A2AFlowCard({ locale }: { locale: Locale }) {
             },
             {
               title: "Skill / MCP 关联",
-              desc: "Skill 描述 Agent 能力并参与任务推荐；MCP 是外部客户端入口，调用会记录为 source=mcp。",
+              desc: "Skill 描述 Agent 能力并参与 Registry 搜索；MCP 是外部客户端入口，调用会记录为 source=mcp。",
             },
             {
               title: "A2A 调用",

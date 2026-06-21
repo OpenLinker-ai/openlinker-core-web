@@ -1,5 +1,5 @@
 /**
- * OpenLinker 首页 `/`。
+ * OpenLinker Core 首页 `/`。
  *
  * 视觉来自 prototype/openlinker-flow-01-home.png（#flow-home）：
  *   1. <Topbar />（左 Brand + 中 NavTabs + 右登录态 CTA）
@@ -12,8 +12,7 @@
  * Server Component：通过 `auth()` 直接读 session，
  * 已登录时 GET /api/v1/dashboard 拿 core 概览数据；后端未就绪时 catch 兜底为 null。
  *
- * Phase 1 简化：原型左卡"发布任务"功能未上线，
- * 改为"成为创作者 → /publish"，避免误导用户。
+ * Core 版不展示 cloud 的商业撮合入口。
  */
 
 import { apiFetchAuthed } from "@/lib/api";
@@ -47,27 +46,27 @@ export default async function Home() {
   const copy =
     locale === "zh"
       ? {
-          kicker: "两种使用方式",
+          kicker: "OpenLinker Core",
           title: (
             <>
-              描述任务，或浏览市场，
+              开源 Agent Registry，
               <br className="hidden sm:inline" />
-              让 AI Agent 为你做事
+              连接、验证和调用 Agent
             </>
           ),
-          lead: "不知道用哪个 Agent？直接发布任务由平台匹配。已有目标？浏览市场自由组合。",
+          lead: "Core 前端只保留 Agent Registry、接入、运行记录、A2A/MCP 和状态面。商业撮合、交易、钱包和商业化能力属于 cloud。",
         }
       : {
-          kicker: "Two ways to start",
+          kicker: "OpenLinker Core",
           title: (
             <>
-              Describe a task, or browse the market,
+              Open-source Agent Registry
               <br className="hidden sm:inline" />
               {" "}
-              and let AI Agents do the work
+              for connecting, verifying, and invoking Agents
             </>
           ),
-          lead: "Not sure which Agent to use? Describe the task and get matched. Already know what you need? Browse callable Agents directly.",
+          lead: "The core frontend only keeps Agent Registry, onboarding, run history, A2A/MCP, and status. Commercial matching, payments, wallets, and monetization surfaces belong to cloud.",
         };
 
   let dashboard: DashboardData | null = null;

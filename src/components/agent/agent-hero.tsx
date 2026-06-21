@@ -2,7 +2,7 @@
  * Agent 详情页左侧 hero 卡。
  *
  * 视觉对照原型 .hero-agent：
- *   - 大尺寸 app-icon（首字母 + 配色），由 slug 派生（与市场页可共用，
+ *   - 大尺寸 app-icon（首字母 + 配色），由 slug 派生（与 Registry 页可共用，
  *     Phase 1 暂用本地 helper，避免新建 lib 文件）
  *   - 名称 / 创作者行 / 简介
  *   - 3 列 score：真实 total_calls / 暂无评分 / 真实可用性标签

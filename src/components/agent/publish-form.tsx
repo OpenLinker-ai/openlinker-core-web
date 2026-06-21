@@ -595,8 +595,8 @@ function EndpointSection({
           runtimeBody: (
             <>
               保存后在创作者中心生成绑定该 Agent 的访问令牌。你的本地 Agent 不需要公网入站地址，只要定时请求{" "}
-              <code>/api/v1/agent-runtime/heartbeat</code> 读取是否有待领取任务，并用{" "}
-              <code>/api/v1/agent-runtime/runs/claim?wait=25</code> 长轮询领取任务，再 POST{" "}
+              <code>/api/v1/agent-runtime/heartbeat</code> 读取是否有待领取运行请求，并用{" "}
+              <code>/api/v1/agent-runtime/runs/claim?wait=25</code> 长轮询领取运行请求，再 POST{" "}
               <code>/api/v1/agent-runtime/runs/&lt;id&gt;/result</code> 回传结果。
             </>
           ),
@@ -617,8 +617,8 @@ function EndpointSection({
           runtimeBody: (
             <>
               After saving, Creator Hub generates a token bound to this Agent. Your local Agent does not need a public inbound URL. It periodically calls{" "}
-              <code>/api/v1/agent-runtime/heartbeat</code> to check for pending tasks, long-polls{" "}
-              <code>/api/v1/agent-runtime/runs/claim?wait=25</code> to claim work, then POSTs the result to{" "}
+              <code>/api/v1/agent-runtime/heartbeat</code> to check for pending run requests, long-polls{" "}
+              <code>/api/v1/agent-runtime/runs/claim?wait=25</code> to claim a run, then POSTs the result to{" "}
               <code>/api/v1/agent-runtime/runs/&lt;id&gt;/result</code>.
             </>
           ),
@@ -726,11 +726,11 @@ function PricingSection({
     locale === "zh"
       ? {
           label: "后续单次调用展示价格（USD，可选）",
-          hint: "当前阶段运行免费，此价格仅用于市场展示和后续计划参考。",
+          hint: "当前阶段运行免费，此价格仅用于 Registry 展示和后续计划参考。",
         }
       : {
           label: "Later display price per call (USD, optional)",
-          hint: "Runs are free in the current phase. This price is only market-display and planning metadata.",
+          hint: "Runs are free in the current phase. This price is only Registry display and planning metadata.",
         };
   return (
     <Field
@@ -763,13 +763,13 @@ function VisibilitySection({
     locale === "zh"
       ? {
           label: "可见性",
-          public: "公开 - 立即出现在市场",
+          public: "公开 - 立即出现在 Registry",
           unlisted: "非公开列表 - 仅凭链接访问",
           private: "私有 - 仅创作者可见",
         }
       : {
           label: "Visibility",
-          public: "Public - listed in the market immediately",
+          public: "Public - listed in Registry immediately",
           unlisted: "Unlisted - accessible only by link",
           private: "Private - creator only",
         };

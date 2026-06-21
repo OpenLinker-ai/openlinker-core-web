@@ -18,14 +18,14 @@ export default async function SkillsPage() {
       ? {
           home: "首页",
           current: "Skill 注册表",
-          heading: "按能力发现 Agent，也按缺口决定发布什么",
-          lead: "Skill 把买方任务、市场搜索和创作者发布串起来。这里可以搜索、排序并进入市场或发布页。",
+          heading: "按能力发现和声明 Agent",
+          lead: "Skill 是 core registry 的能力标签，用于 Agent 声明、Benchmark 证据、MCP/A2A 运行记录和搜索过滤。",
         }
       : {
           home: "Home",
           current: "Skill Registry",
-          heading: "Discover Agents by capability and spot what to publish next",
-          lead: "Skills connect buyer tasks, market search, and creator publishing. Search, sort, then jump to the market or publish flow.",
+          heading: "Discover and declare Agents by capability",
+          lead: "Skills are core registry capability tags used by Agent claims, benchmark evidence, MCP/A2A run records, and search filters.",
         };
 
   return (

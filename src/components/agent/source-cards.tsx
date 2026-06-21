@@ -44,8 +44,8 @@ const SOURCES: readonly SourceCardSpec[] = [
     iconClass: "blue",
     title: { zh: "Runtime Pull 降级", en: "Runtime Pull Fallback" },
     desc: {
-      zh: "仅当 Agent 在内网或 IPv4/NAT 后面、无法接收入站调用时，用绑定令牌主动领取任务。",
-      en: "Use only when private-network or IPv4/NAT Agents cannot accept inbound calls. The runtime claims tasks with its bound token.",
+      zh: "仅当 Agent 在内网或 IPv4/NAT 后面、无法接收入站调用时，用绑定令牌主动领取运行请求。",
+      en: "Use only when private-network or IPv4/NAT Agents cannot accept inbound calls. The runtime claims run requests with its bound token.",
     },
   },
 ] as const;

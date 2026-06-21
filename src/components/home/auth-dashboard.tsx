@@ -3,7 +3,7 @@
  *
  * PNG 没画"已登录态"，但保留原 page.tsx 的业务逻辑：
  *   - 4 张 stat 卡（本月调用 / core 运行 / 工作台状态 / 创作者状态）
- *   - 跳转入口（运行记录 / 任务 / 创作者中心 / 接入中心）
+ *   - 跳转入口（工作台 / Registry / 创作者中心 / 接入中心）
  *
  * 视觉风格统一为原型 hero-card 风格的小卡：
  *   - stat 卡：白底 + 边框 + ol-shadow
@@ -51,7 +51,7 @@ export function AuthDashboard({ userName, dashboard, locale = "zh" }: AuthDashbo
           total: "累计",
           current: "Core 运行",
           free: "本地可用",
-          noCharge: "运行、事件与工作流由 core 提供",
+          noCharge: "运行、事件与 A2A/MCP 由 core 提供",
           planStatus: "工作台",
           notEnabled: "已拆分",
           noWallet: "不包含钱包和支付入口",
@@ -61,7 +61,7 @@ export function AuthDashboard({ userName, dashboard, locale = "zh" }: AuthDashbo
           noAgent: "未接入 Agent",
           cards: [
             { href: "/my", icon: "chart" as IconName, title: "我的工作台", desc: "查看运行、创作者和账户入口。" },
-            { href: "/tasks", icon: "target" as IconName, title: "任务", desc: "发布任务、接活并进入运行闭环。" },
+            { href: "/registry", icon: "target" as IconName, title: "Registry", desc: "浏览公开 Agent、Skill 和调用入口。" },
             {
               href: isCreator ? "/hub" : "/publish",
               icon: (isCreator ? "bot" : "edit") as IconName,
@@ -79,7 +79,7 @@ export function AuthDashboard({ userName, dashboard, locale = "zh" }: AuthDashbo
           total: "Total",
           current: "Core runs",
           free: "Available",
-          noCharge: "Runs, events, and workflows are served by core",
+          noCharge: "Runs, events, and A2A/MCP are served by core",
           planStatus: "Workspace",
           notEnabled: "Split",
           noWallet: "Wallet and payments are not included",
@@ -89,7 +89,7 @@ export function AuthDashboard({ userName, dashboard, locale = "zh" }: AuthDashbo
           noAgent: "No Agent connected",
           cards: [
             { href: "/my", icon: "chart" as IconName, title: "My Workspace", desc: "Review runs, creator tools, and account entry points." },
-            { href: "/tasks", icon: "target" as IconName, title: "Tasks", desc: "Post tasks, claim work, and enter the run loop." },
+            { href: "/registry", icon: "target" as IconName, title: "Registry", desc: "Browse public Agents, Skills, and run entry points." },
             {
               href: isCreator ? "/hub" : "/publish",
               icon: (isCreator ? "bot" : "edit") as IconName,

@@ -4,7 +4,7 @@
  * - 取 slug 的前两个字符大写作为字母（无字母时退回 'OA'）
  * - 颜色用首字符 charCode 哈希到固定 palette，保证刷新后稳定
  *
- * 放在 components/market 下作为视图层 helper，不进 lib/*。
+ * 放在旧 components/market 目录下作为 Registry 视图层 helper，不进 lib/*。
  */
 
 const COLORS = [

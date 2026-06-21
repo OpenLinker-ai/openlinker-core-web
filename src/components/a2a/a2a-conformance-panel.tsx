@@ -69,7 +69,7 @@ export function A2AConformancePanel({
             light: "标准自检",
             stream: "流式实测",
             long: "长在线验证",
-            login: "需要登录后读取扩展卡与任务列表。",
+            login: "需要登录后读取扩展卡与 A2A Task 列表。",
             pass: "通过",
             fail: "失败",
             idle: "待测",

@@ -10,7 +10,7 @@
  *
  * 视觉：参考 prototype/openlinker-flow-10-playground.png
  *   - 顶部 Topbar
- *   - 面包屑：首页 / 市场 / [Agent 名] / Playground
+ *   - 面包屑：首页 / Registry / [Agent 名] / Playground
  *   - page-head：kicker + h1 + 副标题
  *   - <PlaygroundRunner /> 渲染 3 列主区
  */
@@ -50,11 +50,10 @@ export default async function PlaygroundPage({
     prefill?: string;
     example?: string;
     autorun?: string;
-    task_id?: string;
   }>;
 }) {
   const { slug } = await params;
-  const { prefill, example, autorun, task_id: taskID } = await searchParams;
+  const { prefill, example, autorun } = await searchParams;
 
   const session = await auth();
   if (!session) {
@@ -65,22 +64,22 @@ export default async function PlaygroundPage({
     locale === "zh"
       ? {
           home: "首页",
-          market: "市场",
+          market: "Registry",
           myAgent: "我的 Agent",
           heading: "Playground 让调用过程透明",
-          lead: "输入任务，实时查看 Agent 调用了哪些工具、耗时多久、最终结果是什么；当前运行免费。",
+          lead: "输入运行参数，实时查看 Agent 调用了哪些工具、耗时多久、最终结果是什么；当前运行免费。",
         }
       : {
           home: "Home",
-          market: "Market",
+          market: "Registry",
           myAgent: "My Agent",
           heading: "Playground makes each run transparent",
-          lead: "Enter a task, watch what the Agent does, see timing, and inspect the final result. Runs are free in the current phase.",
+          lead: "Enter run input, watch what the Agent does, see timing, and inspect the final result. Runs are free in the current phase.",
         };
 
   const agent = await fetchPlaygroundAgent(slug, session.jwt);
   const isPrivateOwnerAgent = agent.visibility === "private";
-  const collectionHref = isPrivateOwnerAgent ? "/hub?tab=agents" : "/market";
+  const collectionHref = isPrivateOwnerAgent ? "/hub?tab=agents" : "/registry";
   const collectionLabel = isPrivateOwnerAgent ? copy.myAgent : copy.market;
 
   const selectedExample = example
@@ -136,7 +135,6 @@ export default async function PlaygroundPage({
             prefill={prefill}
             initialInput={selectedExample?.input_json}
             autorun={autorun === "1"}
-            taskId={taskID}
             locale={locale}
           />
         </div>

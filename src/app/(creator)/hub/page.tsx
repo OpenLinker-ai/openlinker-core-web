@@ -93,7 +93,7 @@ const HUB_TABS: ReadonlyArray<{
   {
     id: "skills",
     label: { zh: "Skill 声明", en: "Skill Claims" },
-    desc: { zh: "能力标签、市场匹配", en: "Capabilities, matching" },
+    desc: { zh: "能力标签、Registry 搜索", en: "Capabilities, Registry search" },
     href: "/hub?tab=skills",
   },
 ];
@@ -303,7 +303,7 @@ function CoreHubAside({
             agents: "先确认 Agent 生命周期、可见性和认证状态，再查看每个 Agent 的运行历史。",
             access: "自注册邀请只用于 Agent 接入，不等同于 cloud API key。",
             registry: "Registry 用于跨节点同步公开 Agent，与支付或订阅无关。",
-            skills: "Skill 声明会影响市场搜索、任务推荐和 benchmark 证据。",
+            skills: "Skill 声明会影响 Registry 搜索和 benchmark 证据。",
           },
         }
       : {
@@ -320,7 +320,7 @@ function CoreHubAside({
             agents: "Check lifecycle, visibility, and verification before reviewing per-Agent run history.",
             access: "Self-registration invites are only for Agent onboarding, not cloud API keys.",
             registry: "Registry syncs public Agents across nodes and is unrelated to payments or subscriptions.",
-            skills: "Skill claims influence market search, task matching, and benchmark evidence.",
+            skills: "Skill claims influence Registry search and benchmark evidence.",
           },
         };
 

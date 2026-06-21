@@ -38,9 +38,8 @@ export function SkillsRegistry({ locale, skills }: { locale: Locale; skills: Ski
           category: "分类",
           usedFor: "用于",
           entry: "入口",
-          usage: "任务推荐、Agent 声明、Benchmark 和 MCP 运行证据",
+          usage: "Agent 声明、Benchmark、MCP/A2A 和运行证据",
           findAgents: "查 Agent",
-          postTask: "发任务",
           unavailable: "Skill 目录暂时不可用，请稍后重试。",
           noMatch: "没有匹配的 Skill。",
           currentDirectory: "当前目录",
@@ -48,8 +47,7 @@ export function SkillsRegistry({ locale, skills }: { locale: Locale; skills: Ski
           noData: "当前没有拿到后端 Skill 目录，页面不会展示静态假数据。",
           pathTitle: "使用路径",
           paths: [
-            ["描述任务匹配", "/task"],
-            ["市场按 Skill 搜索", "/market"],
+            ["Registry 按 Skill 搜索", "/registry"],
             ["接入 Agent 声明 Skill", "/publish"],
             ["MCP/API 接入说明", "/connect"],
           ],
@@ -69,9 +67,8 @@ export function SkillsRegistry({ locale, skills }: { locale: Locale; skills: Ski
           category: "Category",
           usedFor: "Used for",
           entry: "Entry",
-          usage: "Task matching, Agent claims, benchmarks, and MCP run evidence",
+          usage: "Agent claims, benchmarks, MCP/A2A, and run evidence",
           findAgents: "Find Agents",
-          postTask: "Post task",
           unavailable: "Skill directory is temporarily unavailable. Try again later.",
           noMatch: "No matching Skills.",
           currentDirectory: "Current directory",
@@ -79,8 +76,7 @@ export function SkillsRegistry({ locale, skills }: { locale: Locale; skills: Ski
           noData: "No Skill directory data was returned, so the page is not showing static placeholder data.",
           pathTitle: "Usage path",
           paths: [
-            ["Describe a task", "/task"],
-            ["Search market by Skill", "/market"],
+            ["Search Registry by Skill", "/registry"],
             ["Declare Skills for an Agent", "/publish"],
             ["MCP/API integration guide", "/connect"],
           ],
@@ -217,16 +213,10 @@ export function SkillsRegistry({ locale, skills }: { locale: Locale; skills: Ski
                   <td className="px-4 py-4">
                     <div className="flex flex-wrap gap-2">
                       <Link
-                        href={`/market?q=${encodeURIComponent(skill.id)}`}
+                        href={`/registry?q=${encodeURIComponent(skill.id)}`}
                         className="inline-flex h-8 items-center rounded-[11px] border border-[color:var(--ol-line)] bg-white px-3 text-[12px] font-black text-[color:var(--ol-ink)] hover:border-[color:var(--ol-primary)]/40"
                       >
                         {copy.findAgents}
-                      </Link>
-                      <Link
-                        href="/task"
-                        className="inline-flex h-8 items-center rounded-[11px] bg-[color:var(--ol-mint)] px-3 text-[12px] font-black text-[color:var(--ol-primary-dark)] hover:bg-[color:var(--ol-primary)] hover:text-white"
-                      >
-                        {copy.postTask}
                       </Link>
                     </div>
                   </td>

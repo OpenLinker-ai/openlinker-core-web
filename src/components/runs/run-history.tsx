@@ -109,8 +109,8 @@ export function RunHistory({
   size,
   title = "最近运行",
   emptyText = "还没有调用记录。",
-  emptyHref = "/market",
-  emptyActionLabel = "浏览市场 →",
+  emptyHref = "/registry",
+  emptyActionLabel = "打开 Registry →",
   locale = "zh",
 }: Props) {
   const totalPages = Math.max(1, Math.ceil(total / size));
@@ -128,7 +128,7 @@ export function RunHistory({
       : {
           title: title === "最近运行" ? "Recent Runs" : title,
           emptyText: emptyText === "还没有调用记录。" ? "No run records yet." : emptyText,
-          emptyActionLabel: emptyActionLabel === "浏览市场 →" ? "Browse market ->" : emptyActionLabel,
+          emptyActionLabel: emptyActionLabel === "打开 Registry →" ? "Open Registry ->" : emptyActionLabel,
           total: `${total} total`,
           prev: "← Previous",
           next: "Next →",

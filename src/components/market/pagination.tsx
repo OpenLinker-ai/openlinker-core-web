@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * 市场列表分页器。
+ * Registry 列表分页器。
  *
  * - 单页时不渲染（totalPages <= 1）
  * - 上/下一页用 next/link，保留 tags / q 查询参数

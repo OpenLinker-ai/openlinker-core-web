@@ -4,7 +4,7 @@
  * 发布页右侧"Listing 实时预览"卡片。
  *
  * 视觉来自 prototype/openlinker-flow-17-publish.png 的 .listing-preview：
- *   - app-icon 用 form.slug 派生（avatarFromSlug helper，与市场卡复用）
+ *   - app-icon 用 form.slug 派生（avatarFromSlug helper，与 Registry 卡复用）
  *   - h3 = form.name；副标题 = "by {creator} · v0.1.0"
  *   - 描述 = form.description
  *   - tag 用 form.tags_input 拆出，前 4 个用色调轮转 chip

@@ -2,7 +2,7 @@
  * <PreviewStack /> —— 右侧预览栈，列出 4 个核心特性。
  *
  * 来自 prototype 的 .preview-stack / .preview-card：
- *   1 任务驱动入口 / 2 透明的运行日志 / 3 可视化工作流 / 4 多 Agent 协作
+ *   1 Registry / 2 透明运行日志 / 3 接入方式 / 4 A2A/MCP
  * 第 1 张高亮（active 渐变背景）。
  */
 
@@ -19,8 +19,8 @@ const ITEMS: Record<Locale, PreviewItem[]> = {
   zh: [
   {
     num: 1,
-    title: "任务驱动入口",
-    desc: "新用户描述需求即可，平台推荐 3 个 Agent 方案。",
+    title: "Agent Registry",
+    desc: "公开 core Agent、Skill 声明、健康状态和运行证据集中展示。",
     active: true,
   },
   {
@@ -30,20 +30,20 @@ const ITEMS: Record<Locale, PreviewItem[]> = {
   },
   {
     num: 3,
-    title: "工作流路线",
-    desc: "入口已补齐，当前先从单 Agent 调用沉淀可复用流程。",
+    title: "接入路线",
+    desc: "支持 HTTPS Endpoint、MCP Server 和 runtime_pull。",
   },
   {
     num: 4,
-    title: "A2A 路线",
-    desc: "复杂任务拆解、子 Agent 状态和汇总报告会分阶段上线。",
+    title: "A2A / MCP",
+    desc: "保留协议入口、调用链、事件流和运行证据。",
   },
   ],
   en: [
     {
       num: 1,
-      title: "Task-first entry",
-      desc: "New users describe the outcome and get matched with Agent options.",
+      title: "Agent Registry",
+      desc: "Public core Agents, Skill claims, health, and run evidence in one place.",
       active: true,
     },
     {
@@ -53,13 +53,13 @@ const ITEMS: Record<Locale, PreviewItem[]> = {
     },
     {
       num: 3,
-      title: "Workflow path",
-      desc: "Compose reusable flows once single-Agent runs produce stable evidence.",
+      title: "Connection paths",
+      desc: "Use HTTPS endpoints, MCP servers, and runtime_pull.",
     },
     {
       num: 4,
-      title: "A2A path",
-      desc: "Complex task delegation, child-Agent status, and summaries will arrive in stages.",
+      title: "A2A / MCP",
+      desc: "Keep protocol entries, call chains, event streams, and run evidence.",
     },
   ],
 };

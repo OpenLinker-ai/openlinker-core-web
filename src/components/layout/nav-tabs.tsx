@@ -2,9 +2,7 @@
  * <NavTabs /> —— 顶部胶囊式导航条。
  *
  * 来自 prototype 的 .flow-tabs。
- *   首页 / 任务 / 市场 / 工作流 / A2A / 我的
- *
- * 工作流 / A2A 当前有明确承接页，避免用户点到断口。
+ *   首页 / Registry / 接入 / A2A / 运行 / 状态
  */
 
 "use client";
@@ -23,20 +21,18 @@ interface NavItem {
 const ITEMS: NavItem[] = [
   { label: { zh: "首页", en: "Home" }, href: "/", match: (p) => p === "/" },
   {
-    label: { zh: "任务", en: "Tasks" },
-    href: "/tasks",
+    label: { zh: "Registry", en: "Registry" },
+    href: "/registry",
+    match: (p) => p.startsWith("/registry") || p.startsWith("/agents"),
+  },
+  {
+    label: { zh: "接入", en: "Connect" },
+    href: "/connect",
     match: (p) =>
-      p === "/task" || p.startsWith("/tasks") || p.startsWith("/board"),
-  },
-  {
-    label: { zh: "市场", en: "Market" },
-    href: "/market",
-    match: (p) => p.startsWith("/market") || p.startsWith("/agents"),
-  },
-  {
-    label: { zh: "工作流", en: "Workflow" },
-    href: "/workflow",
-    match: (p) => p.startsWith("/workflow"),
+      p.startsWith("/connect") ||
+      p.startsWith("/hub") ||
+      p.startsWith("/publish") ||
+      p.startsWith("/skills"),
   },
   {
     label: { zh: "A2A", en: "A2A" },
@@ -44,17 +40,17 @@ const ITEMS: NavItem[] = [
     match: (p) => p.startsWith("/a2a"),
   },
   {
-    label: { zh: "我的", en: "My" },
-    href: "/my",
+    label: { zh: "运行", en: "Runs" },
+    href: "/runs",
     match: (p) =>
-      p.startsWith("/my") ||
       p.startsWith("/runs") ||
-      p.startsWith("/hub") ||
-      p.startsWith("/publish") ||
-      p.startsWith("/settings") ||
       p.startsWith("/playground") ||
-      p.startsWith("/inbox") ||
       p.startsWith("/run"),
+  },
+  {
+    label: { zh: "状态", en: "Status" },
+    href: "/status",
+    match: (p) => p.startsWith("/status"),
   },
 ];
 

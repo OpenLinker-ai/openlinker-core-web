@@ -163,10 +163,9 @@ export function RunDetail({
           loadFailed: "无法加载此运行详情，请返回运行历史后重试。",
           copied: "已复制",
           copyId: "复制 ID",
-          rerun: "再跑一次",
+          rerun: "打开 Registry",
           back: "返回历史",
           chain: "查看协作链",
-          workflow: "工作流实验画布",
           cost: "费用状态",
           freeDelegation: "免费委派",
           duration: "耗时",
@@ -205,10 +204,9 @@ export function RunDetail({
           loadFailed: "Unable to load this run detail. Return to run history and try again.",
           copied: "Copied",
           copyId: "Copy ID",
-          rerun: "Run again",
+          rerun: "Open Registry",
           back: "Back to history",
           chain: "View chain",
-          workflow: "Workflow canvas",
           cost: "Cost status",
           freeDelegation: "Free delegation",
           duration: "Duration",
@@ -293,7 +291,7 @@ export function RunDetail({
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
-              href="/market"
+              href="/registry"
               className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12.5px] font-[900] text-[color:var(--ol-ink)] hover:border-[color:var(--ol-primary)]/40"
             >
               {copy.rerun}
@@ -309,12 +307,6 @@ export function RunDetail({
               className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12.5px] font-[900] text-[color:var(--ol-ink)] hover:border-[color:var(--ol-primary)]/40"
             >
               {copy.chain}
-            </Link>
-            <Link
-              href="/workflow"
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12.5px] font-[900] text-[color:var(--ol-ink)] hover:border-[color:var(--ol-primary)]/40"
-            >
-              {copy.workflow}
             </Link>
           </div>
         </div>
@@ -519,8 +511,8 @@ function RequirementEvidencePanel({ locale, evidence }: { locale: Locale; eviden
   const copy =
     locale === "zh"
       ? {
-          title: "任务要求证据",
-          empty: "这次运行没有绑定任务 ID。通过任务详情或 MCP `metadata.task_id` 启动时，会在这里展示 Skill/MCP 覆盖证据。",
+          title: "运行要求证据",
+          empty: "这次运行没有附带要求证据。通过 MCP metadata 或 Agent 调用上下文启动时，可在这里展示 Skill/MCP 覆盖证据。",
           requiredSkill: "要求 Skill",
           noDeclared: "未声明",
           matchedSkill: "命中 Skill",
@@ -530,11 +522,10 @@ function RequirementEvidencePanel({ locale, evidence }: { locale: Locale; eviden
           requiredMCP: "要求 MCP",
           usedMCP: "本次使用 MCP",
           noMCPRun: "未通过 MCP 工具运行",
-          viewTask: "查看关联任务",
         }
       : {
           title: "Requirement evidence",
-          empty: "This run is not linked to a task ID. Runs started from task detail or with MCP `metadata.task_id` show Skill/MCP coverage evidence here.",
+          empty: "This run does not include requirement evidence. Runs started with MCP metadata or Agent call context can show Skill/MCP coverage here.",
           requiredSkill: "Required Skills",
           noDeclared: "None declared",
           matchedSkill: "Matched Skills",
@@ -544,7 +535,6 @@ function RequirementEvidencePanel({ locale, evidence }: { locale: Locale; eviden
           requiredMCP: "Required MCP",
           usedMCP: "MCP used in this run",
           noMCPRun: "Not run through MCP tools",
-          viewTask: "View linked task",
         };
   if (!evidence) {
     return (
@@ -571,12 +561,6 @@ function RequirementEvidencePanel({ locale, evidence }: { locale: Locale; eviden
         <EvidenceGroup title={copy.missingSkill} items={evidence.missing_skill_ids} empty={copy.noMissing} tone="amber" />
         <EvidenceGroup title={copy.requiredMCP} items={evidence.required_mcp_tools} empty={copy.noDeclared} />
         <EvidenceGroup title={copy.usedMCP} items={evidence.used_mcp_tools} empty={copy.noMCPRun} tone="blue" />
-        <Link
-          href={`/tasks/${encodeURIComponent(evidence.task_id)}`}
-          className="text-[12px] font-black text-[color:var(--ol-primary-dark)] hover:underline"
-        >
-          {copy.viewTask}
-        </Link>
       </div>
     </div>
   );
@@ -775,7 +759,7 @@ function NextActionPanel({ locale, action }: { locale: Locale; action?: RunNextA
     locale === "zh"
       ? {
           fallbackLabel: "查看结果并决定下一步",
-          fallbackHint: "运行详情会根据状态、Agent 输出和投递设置给出下一步动作。当前可先查看输出或返回任务闭环。",
+          fallbackHint: "运行详情会根据状态、Agent 输出和投递设置给出下一步动作。当前可先查看输出或返回 Registry。",
           title: "下一步建议",
           agent: "Agent 建议",
           platform: "平台建议",
@@ -783,7 +767,7 @@ function NextActionPanel({ locale, action }: { locale: Locale; action?: RunNextA
         }
       : {
           fallbackLabel: "Review the result and choose the next step",
-          fallbackHint: "Run detail suggests a next step based on status, Agent output, and delivery settings. You can review output or return to the task loop first.",
+          fallbackHint: "Run detail suggests a next step based on status, Agent output, and delivery settings. You can review output or return to the Registry first.",
           title: "Suggested next step",
           agent: "Agent suggestion",
           platform: "Platform suggestion",

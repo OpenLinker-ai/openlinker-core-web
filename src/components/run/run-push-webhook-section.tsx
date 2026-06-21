@@ -31,7 +31,7 @@ const EVENT_OPTIONS = [
   { value: "run.completed", label: { zh: "完成", en: "Completed" }, hint: { zh: "Run 成功完成后推送", en: "Push after the run completes successfully" } },
   { value: "run.failed", label: { zh: "失败", en: "Failed" }, hint: { zh: "失败、超时或异常时推送", en: "Push on failure, timeout, or exception" } },
   { value: "run.canceled", label: { zh: "取消", en: "Canceled" }, hint: { zh: "用户或协议客户端取消时推送", en: "Push when a user or protocol client cancels" } },
-  { value: "run.requirements.snapshotted", label: { zh: "任务要求", en: "Requirements" }, hint: { zh: "Skill/MCP 证据快照", en: "Skill/MCP evidence snapshot" } },
+  { value: "run.requirements.snapshotted", label: { zh: "运行要求", en: "Requirements" }, hint: { zh: "Skill/MCP 证据快照", en: "Skill/MCP evidence snapshot" } },
   { value: "run.message.delta", label: { zh: "消息流", en: "Message stream" }, hint: { zh: "Agent 中间消息", en: "Agent intermediate messages" } },
   { value: "run.artifact.delta", label: { zh: "产物流", en: "Artifact stream" }, hint: { zh: "流式 artifact chunk", en: "Streaming artifact chunks" } },
   { value: "run.child.created", label: { zh: "子调用创建", en: "Child created" }, hint: { zh: "A2A child run 创建", en: "A2A child run created" } },

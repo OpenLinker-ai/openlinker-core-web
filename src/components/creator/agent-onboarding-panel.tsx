@@ -152,7 +152,7 @@ interface Props {
 const DEFAULT_INPUT_SCHEMA = {
   type: "object",
   properties: {
-    query: { type: "string", description: "用户任务描述" },
+    query: { type: "string", description: "用户运行输入" },
   },
   required: ["query"],
 };
@@ -211,7 +211,7 @@ function connectionModeLabel(agent: OnboardingAgent, locale: Locale): string {
     return `MCP · ${agent.mcp_tool_name || (locale === "zh" ? "未配置工具" : "tool not configured")}`;
   }
   if (agent.connection_mode === "runtime_pull") {
-    return locale === "zh" ? "Runtime Pull · Agent 主动领取任务" : "Runtime Pull · Agent claims tasks";
+    return locale === "zh" ? "Runtime Pull · Agent 主动领取运行请求" : "Runtime Pull · Agent claims run requests";
   }
   return `HTTP · ${endpointHost(agent.endpoint_url)}`;
 }
@@ -302,11 +302,11 @@ export function AgentOnboardingPanel({
           exampleTitlePlaceholder: "示例标题",
           adding: "添加中...",
           addExample: "添加示例",
-          tokenPolling: "用绑定当前 Agent 的访问令牌轮询领取任务，不需要平台访问你的 IPv4 地址。",
-          visibility: "市场可见性",
+          tokenPolling: "用绑定当前 Agent 的访问令牌轮询领取运行请求，不需要平台访问你的 IPv4 地址。",
+          visibility: "Registry 可见性",
           visibilityOptions: {
-            public: "公开 - 出现在市场",
-            unlisted: "链接可见 - 不列入市场",
+            public: "公开 - 出现在 Registry",
+            unlisted: "链接可见 - 不列入 Registry",
             private: "私有 - 仅创作者管理",
           },
           certification: "认证状态",
@@ -360,10 +360,10 @@ export function AgentOnboardingPanel({
           exampleTitlePlaceholder: "Example title",
           adding: "Adding...",
           addExample: "Add example",
-          tokenPolling: "Use an access token bound to this Agent to poll and claim tasks. The platform does not need to reach your IPv4 address.",
-          visibility: "Market visibility",
+          tokenPolling: "Use an access token bound to this Agent to poll and claim run requests. The platform does not need to reach your IPv4 address.",
+          visibility: "Registry visibility",
           visibilityOptions: {
-            public: "Public - listed in market",
+            public: "Public - listed in Registry",
             unlisted: "Unlisted - link visible",
             private: "Private - creator only",
           },

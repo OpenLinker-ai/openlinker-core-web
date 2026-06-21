@@ -258,7 +258,7 @@ function A2APublicIntro({ callbackUrl, locale }: { callbackUrl: string; locale: 
               <div className="mt-4 grid gap-2">
                 <GuideLink href="/connect" title={copy.guideConnect[0]} desc={copy.guideConnect[1]} />
                 <GuideLink href="/skill/consume-agent" title={copy.guideSkill[0]} desc={copy.guideSkill[1]} />
-                <GuideLink href="/market" title={copy.guideMarket[0]} desc={copy.guideMarket[1]} />
+                <GuideLink href="/registry" title={copy.guideMarket[0]} desc={copy.guideMarket[1]} />
               </div>
             </div>
             <div className="ol-panel ol-panel-pad">

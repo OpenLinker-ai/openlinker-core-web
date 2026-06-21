@@ -3,18 +3,18 @@
  *
  * 视觉对照原型 prototype/openlinker-flow-08-agent-detail.png：
  *   - Topbar
- *   - 面包屑：首页 / 市场 / [Agent 名]
+ *   - 面包屑：首页 / Registry / [Agent 名]
  *   - 3 列 detail-layout：hero(330) / 主区(自适应) / action(320)
  *
  * 数据：GET /api/v1/agents/:slug（公开接口，不需 auth）
  *   - 404 → notFound()
  *   - 其他错误 → 抛出给 error.tsx 兜底
  *
- * Phase 1 简化（详见 task spec）：
+ * Phase 1 简化：
  *   - 评价系统未上线；可用性来自真实运行记录
  *   - Skill 清单可由后端返回，无则降级为「功能介绍 + tag list」
  *   - 用户评价用空状态
- *   - 工作流入口跳到已上线编排页；部署租用属于后续计划能力
+ *   - Cloud 的商业撮合、编排和部署租用不在 core-web 展示
  *
  * Next 16 约定：params 是 Promise，必须 await。
  */
@@ -125,7 +125,7 @@ export default async function AgentDetailPage({
     locale === "zh"
       ? {
           home: "首页",
-          market: "市场",
+          market: "Registry",
           currentFree: "当前免费调用",
           price: (price: string) => `$${price} / 次（展示价格预留，当前免费）`,
           unknownLabel: "未验证",
@@ -148,7 +148,7 @@ export default async function AgentDetailPage({
         }
       : {
           home: "Home",
-          market: "Market",
+          market: "Registry",
           currentFree: "Free access now",
           price: (price: string) => `$${price} / run (display price reserved; current runs are free)`,
           unknownLabel: "Unverified",
@@ -218,7 +218,7 @@ export default async function AgentDetailPage({
             {copy.home}
           </Link>
           <span className="text-[color:var(--ol-subtle)]">/</span>
-          <Link href="/market" className="hover:text-[color:var(--ol-ink)]">
+          <Link href="/registry" className="hover:text-[color:var(--ol-ink)]">
             {copy.market}
           </Link>
           <span className="text-[color:var(--ol-subtle)]">/</span>

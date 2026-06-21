@@ -1,13 +1,13 @@
 "use client";
 
 /**
- * 市场页 page-head：左 kicker + h1 + 副标题；右 搜索框。
+ * Registry page-head：左 kicker + h1 + 副标题；右 搜索框。
  *
  * 仅负责把搜索关键词回写到 URL；tag 筛选已下沉到 SidebarFilters。
  *
  * - 输入受控：避免每次按键都触发导航（按下回车或失焦再 push）
  * - 提交时 currentTags 透传，搜索词换页要回到第 1 页（不带 page 参数）
- * - kicker / h1 / 副标题按 prototype/openlinker-flow-07-market.png 视觉
+ * - kicker / h1 / 副标题沿用 Registry 原型视觉
  */
 
 import { useRouter, usePathname } from "next/navigation";
@@ -28,14 +28,14 @@ export function MarketHeader({ currentTags, currentQ, locale = "zh" }: Props) {
   const copy =
     locale === "zh"
       ? {
-          heading: "优先发现可调用的 Agent",
-          lead: "按关键词和场景筛选；只有具备可调用证据的 Agent 才提供 Playground 试用入口。",
-          placeholder: "搜索财务、客服、代码审查",
+          heading: "Agent Registry",
+          lead: "按关键词、标签和 Skill 发现 core 中已登记的 Agent；可调用证据来自运行记录和健康检查。",
+          placeholder: "搜索 Skill、Agent 或标签",
         }
       : {
-          heading: "Find callable Agents first",
-          lead: "Filter by keyword and scenario. Playground trials are shown only for Agents with callable evidence.",
-          placeholder: "Search finance, support, code review",
+          heading: "Agent Registry",
+          lead: "Discover registered Agents by keyword, tag, and Skill. Callable evidence comes from run history and health checks.",
+          placeholder: "Search Skills, Agents, or tags",
         };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -51,7 +51,7 @@ export function MarketHeader({ currentTags, currentQ, locale = "zh" }: Props) {
   return (
     <div className="ol-page-head">
       <div className="ol-page-title">
-        <div className="ol-kicker">step 1 / discover</div>
+        <div className="ol-kicker">core registry</div>
         <h1>{copy.heading}</h1>
         <p>{copy.lead}</p>
       </div>

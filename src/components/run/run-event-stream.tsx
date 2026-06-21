@@ -337,7 +337,7 @@ function eventMeta(event: RunEvent, locale: Locale): {
       };
     case "run.requirements.snapshotted":
       return {
-        title: isZh ? "任务要求快照" : "Requirement snapshot",
+        title: isZh ? "运行要求快照" : "Requirement snapshot",
         detail: isZh
           ? `Skill/MCP 覆盖状态：${String(event.payload.coverage_status ?? "unknown")}`
           : `Skill/MCP coverage: ${String(event.payload.coverage_status ?? "unknown")}`,

@@ -4,7 +4,6 @@ import { ConnectConsole } from "@/components/connect/connect-console";
 import { ProtocolDiagram } from "@/components/connect/protocol-diagram";
 import { DeliveryTargetsPanel } from "@/components/delivery/delivery-targets-panel";
 import type { DeliveryTarget } from "@/components/delivery/types";
-import { ProductFlowMap } from "@/components/flow/product-flow-map";
 import { PageTabs } from "@/components/layout/page-tabs";
 import { Topbar } from "@/components/layout/topbar";
 import { apiFetch } from "@/lib/api";
@@ -28,13 +27,13 @@ const CONNECT_TABS: ReadonlyArray<{
   {
     id: "overview",
     label: { zh: "接入总览", en: "Overview" },
-    desc: { zh: "任务、Agent、MCP、A2A 关系", en: "Task, Agent, MCP, and A2A roles" },
+    desc: { zh: "Agent、MCP、A2A 关系", en: "Agent, MCP, and A2A roles" },
     href: "/connect?tab=overview",
   },
   {
     id: "mcp",
     label: { zh: "MCP / API 调用", en: "MCP / API Calls" },
-    desc: { zh: "令牌、run_agent、create_task", en: "Tokens, run_agent, create_task" },
+    desc: { zh: "令牌、run_agent、get_run", en: "Tokens, run_agent, get_run" },
     href: "/connect?tab=mcp",
   },
   {
@@ -72,16 +71,16 @@ export default async function ConnectPage({
       ? {
           home: "首页",
           current: "接入文档",
-          heading: "从 Agent 接入、MCP 到任务派发的完整链路",
-          lead: "公开 HTTPS 可直连；MCP Server 可作为 Agent 发布；IPv4 / 内网 Agent 用 Runtime Pull 主动领取任务。",
+          heading: "从 Agent 接入、MCP 到 A2A 调用的 core 链路",
+          lead: "公开 HTTPS 可直连；MCP Server 可作为 Agent 发布；IPv4 / 内网 Agent 用 Runtime Pull 主动领取运行请求。",
           loginTitle: "登录后配置投递目标",
           loginDesc: "Webhook 和 Slack 投递目标属于账号配置。你可以先阅读接入方式，登录后再添加、删除或设为默认目标。",
         }
       : {
           home: "Home",
           current: "Connect Docs",
-          heading: "The full path from Agent connection and MCP to task dispatch",
-          lead: "Use a public HTTPS endpoint directly, publish a remote MCP Server as an Agent, or let IPv4/private-network Agents claim tasks through Runtime Pull.",
+          heading: "The core path from Agent connection and MCP to A2A calls",
+          lead: "Use a public HTTPS endpoint directly, publish a remote MCP Server as an Agent, or let IPv4/private-network Agents claim run requests through Runtime Pull.",
           loginTitle: "Sign in to configure delivery targets",
           loginDesc: "Webhook and Slack delivery targets are account settings. You can read the docs first, then sign in to add, delete, or set a default target.",
         };
@@ -133,7 +132,6 @@ export default async function ConnectPage({
         <div className="mt-8 space-y-6">
           {activeTab === "overview" ? (
             <>
-              <ProductFlowMap activeStep="mcp" compact locale={locale} />
               <ProtocolDiagram locale={locale} />
             </>
           ) : null}
@@ -164,13 +162,13 @@ function ConnectResources({ signedIn, locale }: { signedIn: boolean; locale: Loc
     locale === "zh"
       ? [
           { href: signedIn ? "/hub?tab=access" : "/login?callbackUrl=/hub%3Ftab%3Daccess", title: "Agent 自注册邀请", desc: "登录后为 unattended Agent 生成一次性注册邀请。" },
-          { href: "/skills", title: "Skill 注册表", desc: "查看任务推荐、Agent 声明和 Benchmark 共用的能力标签。" },
-          { href: "/status", title: "平台状态", desc: "检查 API、市场、Webhook 投递和运行链路的状态说明。" },
+          { href: "/skills", title: "Skill 注册表", desc: "查看 Agent 声明、Benchmark 和运行证据共用的能力标签。" },
+          { href: "/status", title: "平台状态", desc: "检查 API、Registry、Webhook 投递和运行链路的状态说明。" },
         ]
       : [
           { href: signedIn ? "/hub?tab=access" : "/login?callbackUrl=/hub%3Ftab%3Daccess", title: "Agent registration invites", desc: "Create one-time registration invites for unattended Agents after signing in." },
-          { href: "/skills", title: "Skill registry", desc: "Review capability tags shared by task recommendations, Agent declarations, and Benchmarks." },
-          { href: "/status", title: "Platform status", desc: "Check API, market, webhook delivery, and run path status." },
+          { href: "/skills", title: "Skill registry", desc: "Review capability tags shared by Agent declarations, Benchmarks, and run evidence." },
+          { href: "/status", title: "Platform status", desc: "Check API, Registry, webhook delivery, and run path status." },
         ];
 
   return (

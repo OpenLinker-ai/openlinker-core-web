@@ -3,7 +3,7 @@
  *
  * 来自 prototype/openlinker-flow-prototypes.html 的 .brand + .brand-mark。
  *   - 默认渲染为可点击的回首页链接
- *   - BrandFull 含副标题"Agent 调用与编排市场"
+ *   - BrandFull 含 core 版副标题
  */
 
 import Link from "next/link";
@@ -29,7 +29,7 @@ export function Brand({ asLink = true, withSubtitle = true, locale = "zh", class
         </span>
         {withSubtitle && (
           <span className="mt-0.5 hidden text-[12px] text-[color:var(--ol-muted)] sm:block">
-            {locale === "zh" ? "Agent 调用与编排市场" : "Agent invocation marketplace"}
+            {locale === "zh" ? "Open Agent Registry" : "Open Agent Registry"}
           </span>
         )}
       </span>

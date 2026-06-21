@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { ProductFlowMap } from "@/components/flow/product-flow-map";
 import { Topbar } from "@/components/layout/topbar";
 import { MyWorkspaceSwitcher } from "@/components/my/workspace-switcher";
 import { apiFetchAuthed } from "@/lib/api";
@@ -58,9 +57,8 @@ export default async function MyPage() {
           home: "首页",
           current: "我的",
           title: "我的工作台",
-          desc: `${displayName}，这里是 core 前端的个人入口总览。你可以在运行记录、任务、工作流、创作者和账户设置之间切换。`,
+          desc: `${displayName}，这里是 core 前端的个人入口总览。你可以在运行记录、Agent 接入、创作者和账户设置之间切换。`,
           hub: "创作者中心",
-          task: "发布任务",
           publish: "接入 Agent",
           creatorTitle: "创作者中心 / 我的 Agent",
           creatorDesc: "查看自注册 Agent、接入指引、Skill 声明、调用记录和 Webhook。这里是管理“我提供的 Agent”的主入口。",
@@ -80,9 +78,8 @@ export default async function MyPage() {
           home: "Home",
           current: "My",
           title: "My Workspace",
-          desc: `Hi ${displayName}, this is your core frontend overview. Switch between runs, tasks, workflows, creator tools, and account settings.`,
+          desc: `Hi ${displayName}, this is your core frontend overview. Switch between runs, Agent onboarding, creator tools, and account settings.`,
           hub: "Creator Hub",
-          task: "Post task",
           publish: "Connect Agent",
           creatorTitle: "Creator Hub / My Agents",
           creatorDesc: "Review self-registered Agents, onboarding guides, Skill declarations, run history, and webhooks. This is the home for Agents you provide.",
@@ -121,12 +118,6 @@ export default async function MyPage() {
               className="inline-flex h-11 items-center rounded-[14px] bg-[color:var(--ol-primary)] px-4 text-[13.5px] font-black text-white shadow-sm hover:bg-[color:var(--ol-primary-dark)]"
             >
               {copy.hub}
-            </Link>
-            <Link
-              href="/task"
-              className="inline-flex h-11 items-center rounded-[14px] border border-[color:var(--ol-line)] bg-white px-4 text-[13.5px] font-black text-[color:var(--ol-ink)] hover:border-[color:var(--ol-primary)]/40"
-            >
-              {copy.task}
             </Link>
             <Link
               href="/publish"
@@ -199,8 +190,6 @@ export default async function MyPage() {
           <Metric label={copy.myAgents} value={String(agentCount)} />
           <Metric label={copy.coreMode} value={copy.freeAccess} />
         </section>
-
-        <ProductFlowMap locale={locale} className="mt-8" />
       </main>
     </>
   );

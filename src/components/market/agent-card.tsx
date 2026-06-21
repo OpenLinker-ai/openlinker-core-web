@@ -1,5 +1,5 @@
 /**
- * 市场列表项（横排卡片）。
+ * Registry 列表项（横排卡片）。
  *
  * 视觉来自 prototype/openlinker-flow-07-market.png 的 .agent-card：
  *   - 3 列布局：app-icon (48px) / agent-copy / meta (170px)

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     default: "OpenLinker",
     template: "%s · OpenLinker",
   },
-  description: "AI Agent invocation and orchestration marketplace",
+  description: "Open Agent Registry, invocation, and runtime traces",
 };
 
 export default async function RootLayout({

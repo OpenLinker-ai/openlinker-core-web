@@ -4,8 +4,6 @@
  * 视觉对照原型 .action-card：
  *   - 头部 "开始使用" + 4 按钮
  *   - 「在线试用」只在 readiness.callable=true 时展示，走 TryButton（Client，处理登录态跳转）
- *   - 「打开工作流」跳到已上线的工作流编排页
- *   - 「部署/租用」属于后续计划能力，保持不可用
  *   - 「获取 API」滚动到下方 API 示例锚点（用 anchor 简单实现）
  *   - 下方 API 示例区，复用 ApiSnippet（保留 3 tab）
  *   - 未来价格参考：黄色 info-card，根据 price_per_call_cents × 1000 估算，不代表当前扣费
@@ -47,9 +45,7 @@ export function ActionPanel({
           unavailableTitle: availabilityHint || "该 Agent 当前缺少可调用证据。",
           unavailable: "暂不可试用",
           unavailableBody: availabilityHint || "需要最近一次健康检查或成功运行记录后才开放直接试用。",
-          workflow: "打开工作流",
           api: "获取 API",
-          task: "发布任务匹配 Agent",
           apiExample: "API 示例",
           related: "关联入口",
           futurePrice: "展示价格参考",
@@ -60,9 +56,7 @@ export function ActionPanel({
           unavailableTitle: availabilityHint || "This Agent does not have callable evidence yet.",
           unavailable: "Not callable yet",
           unavailableBody: availabilityHint || "Direct trial opens after a recent health check or successful run record.",
-          workflow: "Open workflow",
           api: "Get API",
-          task: "Post task to match Agent",
           apiExample: "API Example",
           related: "Related Entry Points",
           futurePrice: "Display price reference",
@@ -95,23 +89,11 @@ export function ActionPanel({
             </p>
           ) : null}
           <a
-            href="/workflow"
-            className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-[color:var(--ol-blue-soft)] px-4 text-[13px] font-bold text-[color:var(--ol-blue)] hover:bg-[color:var(--ol-blue-soft)]/80"
-          >
-            {copy.workflow}
-          </a>
-          <a
             href="#api-snippet"
             className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-[color:var(--ol-line)] bg-white px-4 text-[13px] font-bold text-[color:var(--ol-ink)] hover:bg-[color:var(--ol-soft)]"
           >
             {copy.api}
           </a>
-          <Link
-            href="/task"
-            className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-[color:var(--ol-line)] bg-white px-4 text-[13px] font-bold text-[color:var(--ol-ink)] hover:bg-[color:var(--ol-soft)]"
-          >
-            {copy.task}
-          </Link>
         </div>
       </div>
 

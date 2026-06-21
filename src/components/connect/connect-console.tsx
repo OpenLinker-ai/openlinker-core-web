@@ -43,7 +43,7 @@ const MODES: Record<Mode, ModeSpec> = {
   },
   runtime_pull: {
     label: "Runtime Pull",
-    title: "内网 / IPv4 Agent 主动领取任务",
+    title: "内网 / IPv4 Agent 主动领取运行请求",
     blurb: "Agent 注册后不暴露入站端口，用绑定自身的访问令牌低频心跳、长轮询领取 pending runs 并回传结果。",
     bestFor: "本地 Agent · 企业内网",
     icon: "bot",
@@ -59,8 +59,8 @@ const MODES: Record<Mode, ModeSpec> = {
       "curl -X POST $OPENLINKER_API/api/v1/agent-runtime/heartbeat \\",
       "  -H \"Authorization: Bearer $OPENLINKER_AGENT_TOKEN\"",
       "",
-      "# 3. 有任务时领取，或用 wait 长轮询等待任务",
-      "#    使用注册返回的 runtime token；无任务返回 204 时按 Retry-After 退避，不要退出进程。",
+      "# 3. 有运行请求时领取，或用 wait 长轮询等待",
+      "#    使用注册返回的 runtime token；无运行请求返回 204 时按 Retry-After 退避，不要退出进程。",
       "curl \"$OPENLINKER_API/api/v1/agent-runtime/runs/claim?wait=25\" \\",
       "  -H \"Authorization: Bearer $OPENLINKER_AGENT_TOKEN\"",
       "",
@@ -150,7 +150,7 @@ const MODES: Record<Mode, ModeSpec> = {
     bullets: [
       "主站 /mcp 就是 MCP 服务端入口；API 等价入口为 /api/v1/mcp",
       "接受 JWT；宿主注入 verifier 时也可接受访问令牌",
-      "工具：search_agents / get_agent / create_task / run_agent / get_run",
+      "工具：search_agents / get_agent / run_agent / get_run",
       "调用写入 runs.source='mcp'",
     ],
   },
@@ -196,7 +196,7 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "label" | "title" | 
     },
     runtime_pull: {
       label: "Runtime Pull",
-      title: "内网 / IPv4 Agent 主动领取任务",
+      title: "内网 / IPv4 Agent 主动领取运行请求",
       blurb: "Agent 注册后不暴露入站端口，用绑定自身的访问令牌低频心跳、长轮询领取 pending runs 并回传结果。",
       bestFor: "本地 Agent · 企业内网",
       bullets: ["平台不访问你的私网 IPv4", "访问令牌只绑定当前 Agent", "结果仍写入 runs / run_events"],
@@ -216,7 +216,7 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "label" | "title" | 
       bullets: [
         "主站 /mcp 就是 MCP 服务端入口；API 等价入口为 /api/v1/mcp",
         "接受 JWT；宿主注入 verifier 时也可接受访问令牌",
-        "工具：search_agents / get_agent / create_task / run_agent / get_run",
+        "工具：search_agents / get_agent / run_agent / get_run",
         "调用写入 runs.source='mcp'",
       ],
     },
@@ -238,7 +238,7 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "label" | "title" | 
     },
     runtime_pull: {
       label: "Runtime Pull",
-      title: "Private-network Agents claim tasks",
+      title: "Private-network Agents claim run requests",
       blurb: "After registration, the Agent keeps inbound ports closed and uses its bound token for heartbeat and long-poll claiming.",
       bestFor: "Local Agents · private networks",
       bullets: ["OpenLinker does not reach into your private IPv4 network", "The access token is bound to this Agent", "Results still write to runs and run_events"],
@@ -258,7 +258,7 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "label" | "title" | 
       bullets: [
         "The main /mcp route is the MCP server entry; /api/v1/mcp is equivalent",
         "JWT is accepted; configured deployments may also accept access tokens",
-        "Tools: search_agents / get_agent / create_task / run_agent / get_run",
+        "Tools: search_agents / get_agent / run_agent / get_run",
         "Calls write runs.source='mcp'",
       ],
     },
@@ -298,8 +298,8 @@ function codeForLocale(mode: Mode, code: string, locale: Locale) {
     return code
       .replace("# 1. Agent 自注册时选择 connection_mode=runtime_pull", "# 1. Choose connection_mode=runtime_pull during Agent registration")
       .replace("# 2. Agent 进程先心跳读取 pending/claim hint", "# 2. The Agent process heartbeats for pending/claim hints")
-      .replace("# 3. 有任务时领取，或用 wait 长轮询等待任务", "# 3. Claim when work exists, or long-poll with wait")
-      .replace("#    使用注册返回的 runtime token；无任务返回 204 时按 Retry-After 退避，不要退出进程。", "#    Use the runtime token returned at registration; on 204, back off with Retry-After and keep the process alive.")
+      .replace("# 3. 有运行请求时领取，或用 wait 长轮询等待", "# 3. Claim when work exists, or long-poll with wait")
+      .replace("#    使用注册返回的 runtime token；无运行请求返回 204 时按 Retry-After 退避，不要退出进程。", "#    Use the runtime token returned at registration; on 204 with no run request, back off with Retry-After and keep the process alive.")
       .replace("# 4. 执行本地逻辑后回传终态", "# 4. Run local logic and report the final state")
       .replace("#    未领取或未回传的 run 会被平台自动置为 timeout。", "#    Runs that are not claimed or not reported are timed out by the platform.");
   }

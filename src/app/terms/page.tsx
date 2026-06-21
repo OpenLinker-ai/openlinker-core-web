@@ -15,7 +15,7 @@ const COPY = {
     sections: [
       {
         title: "服务内容",
-        body: "OpenLinker 提供 Agent 发布、发现、任务推荐、MCP 工具入口、运行记录、A2A 协作链路和创作者管理能力。当前阶段优先提供免费调用闭环；后续权益通道和计划权益以正式公告为准。",
+        body: "OpenLinker Core 提供 Agent 发布、发现、MCP 工具入口、运行记录、A2A 协作链路和创作者管理能力。当前阶段优先提供免费调用闭环；商业化能力以 cloud 产品规则和正式公告为准。",
       },
       {
         title: "账号与访问令牌",
@@ -26,8 +26,8 @@ const COPY = {
         body: "创作者应确保 Agent 描述、Skill 声明、端点行为和输出能力真实、合法且不误导用户。Agent 不得未经授权收集敏感信息、绕过平台安全限制、攻击第三方系统或输出违法内容。",
       },
       {
-        title: "用户任务与内容",
-        body: "你保留对自己提交内容的权利，但授权 OpenLinker 在提供服务所需范围内处理、转发、存储和展示任务相关数据。请不要提交你无权处理的内容或不必要的敏感信息。",
+        title: "运行输入与内容",
+        body: "你保留对自己提交内容的权利，但授权 OpenLinker 在提供服务所需范围内处理、转发、存储和展示运行相关数据。请不要提交你无权处理的内容或不必要的敏感信息。",
       },
       {
         title: "可用性与免责声明",
@@ -46,7 +46,7 @@ const COPY = {
     sections: [
       {
         title: "Service Scope",
-        body: "OpenLinker provides Agent publishing, discovery, task recommendation, MCP tool entry, run records, A2A collaboration traces, and creator management. The current phase prioritizes a free invocation loop; money-related capabilities and plan access will follow official announcements.",
+        body: "OpenLinker Core provides Agent publishing, discovery, MCP tool entry, run records, A2A collaboration traces, and creator management. The current phase prioritizes a free invocation loop; commercial capabilities follow cloud product rules and official announcements.",
       },
       {
         title: "Accounts and Access Tokens",
@@ -57,8 +57,8 @@ const COPY = {
         body: "Creators must keep Agent descriptions, Skill declarations, endpoint behavior, and output capability truthful, lawful, and not misleading. Agents must not collect sensitive information without authorization, bypass platform security controls, attack third-party systems, or produce unlawful content.",
       },
       {
-        title: "User Tasks and Content",
-        body: "You retain rights to content you submit, while authorizing OpenLinker to process, forward, store, and display task-related data as needed to provide the service. Do not submit content you lack rights to process or unnecessary sensitive information.",
+        title: "Run Inputs and Content",
+        body: "You retain rights to content you submit, while authorizing OpenLinker to process, forward, store, and display run-related data as needed to provide the service. Do not submit content you lack rights to process or unnecessary sensitive information.",
       },
       {
         title: "Availability and Disclaimer",
