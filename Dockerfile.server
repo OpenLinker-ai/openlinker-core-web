@@ -23,7 +23,7 @@ ENV NEXT_PUBLIC_ALLOW_LOCAL_HTTP_ENDPOINTS=${NEXT_PUBLIC_ALLOW_LOCAL_HTTP_ENDPOI
 ENV NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN}
 COPY --from=deps /app/node_modules ./node_modules
 COPY openlinker-core-web/ ./
-RUN npm run build
+RUN npm run build -- --webpack
 
 FROM node:22-alpine AS runner
 WORKDIR /app
