@@ -15,7 +15,7 @@ const COPY = {
     sections: [
       {
         title: "服务内容",
-        body: "OpenLinker Core 提供 Agent 发布、发现、MCP 工具入口、运行记录、A2A 协作链路和创作者管理能力。当前阶段优先提供免费调用闭环；商业化能力以 cloud 产品规则和正式公告为准。",
+        body: "OpenLinker Core 提供 Agent 发布、发现、MCP 工具入口、运行记录、A2A 协作链路和创作者管理能力。当前阶段优先提供免费调用闭环；商业化能力以商业产品规则和正式公告为准。",
       },
       {
         title: "账号与访问令牌",
@@ -46,7 +46,7 @@ const COPY = {
     sections: [
       {
         title: "Service Scope",
-        body: "OpenLinker Core provides Agent publishing, discovery, MCP tool entry, run records, A2A collaboration traces, and creator management. The current phase prioritizes a free invocation loop; commercial capabilities follow cloud product rules and official announcements.",
+        body: "OpenLinker Core provides Agent publishing, discovery, MCP tool entry, run records, A2A collaboration traces, and creator management. The current phase prioritizes a free invocation loop; commercial capabilities follow commercial product rules and official announcements.",
       },
       {
         title: "Accounts and Access Tokens",

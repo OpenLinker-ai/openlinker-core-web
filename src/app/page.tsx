@@ -12,7 +12,7 @@
  * Server Component：通过 `auth()` 直接读 session，
  * 已登录时 GET /api/v1/dashboard 拿 core 概览数据；后端未就绪时 catch 兜底为 null。
  *
- * Core 版不展示 cloud 的商业撮合入口。
+ * Core 版不展示商业产品侧的撮合入口。
  */
 
 import { apiFetchAuthed } from "@/lib/api";
@@ -54,7 +54,7 @@ export default async function Home() {
               连接、验证和调用 Agent
             </>
           ),
-          lead: "Core 前端只保留 Agent Registry、接入、运行记录、A2A/MCP 和状态面。商业撮合、交易、钱包和商业化能力属于 cloud。",
+          lead: "Core 前端只保留 Agent Registry、接入、运行记录、A2A/MCP 和状态面。商业撮合、交易、钱包和商业化能力属于商业产品侧。",
         }
       : {
           kicker: "OpenLinker Core",
@@ -66,7 +66,7 @@ export default async function Home() {
               for connecting, verifying, and invoking Agents
             </>
           ),
-          lead: "The core frontend only keeps Agent Registry, onboarding, run history, A2A/MCP, and status. Commercial matching, payments, wallets, and monetization surfaces belong to cloud.",
+          lead: "The core frontend only keeps Agent Registry, onboarding, run history, A2A/MCP, and status. Commercial matching, payments, wallets, and monetization surfaces belong to the commercial product.",
         };
 
   let dashboard: DashboardData | null = null;

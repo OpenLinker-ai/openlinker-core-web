@@ -19,7 +19,7 @@ export function SidePromo({ locale = "zh" }: { locale?: Locale }) {
           categoryBody: "Skill 声明、健康状态、Benchmark 证据、A2A 能力和 MCP 接入方式。",
           skills: "查看 Skill 注册表",
           workflow: "A2A / MCP",
-          workflowBody: "Core 保留协议、调用链和运行证据；商业撮合与交易由 cloud 承接。",
+          workflowBody: "Core 保留协议、调用链和运行证据；商业撮合与交易由商业产品侧承接。",
           emptyTitle: "没有结果？",
           emptyBody: "换个关键词，或在创作者中心接入一个 runtime_pull Agent。",
         }
@@ -31,7 +31,7 @@ export function SidePromo({ locale = "zh" }: { locale?: Locale }) {
           categoryBody: "Skill claims, health, benchmark evidence, A2A capabilities, and MCP connection modes.",
           skills: "View Skill registry",
           workflow: "A2A / MCP",
-          workflowBody: "Core keeps protocols, call chains, and run evidence. Commercial matching and transactions belong to cloud.",
+          workflowBody: "Core keeps protocols, call chains, and run evidence. Commercial matching and transactions belong to the commercial product.",
           emptyTitle: "No results?",
           emptyBody: "Try another keyword, or connect a runtime_pull Agent in Creator Hub.",
         };

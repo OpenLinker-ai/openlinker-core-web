@@ -51,7 +51,6 @@ interface RegistryNode {
 interface RegistryListing {
   id: string;
   registry_listing_id?: string;
-  cloud_listing_id: string;
   registry_node_id: string;
   node_name: string;
   agent_id: string;
@@ -301,7 +300,7 @@ function CoreHubAside({
           ],
           guide: {
             agents: "先确认 Agent 生命周期、可见性和认证状态，再查看每个 Agent 的运行历史。",
-            access: "自注册邀请只用于 Agent 接入，不等同于 cloud API key。",
+            access: "自注册邀请只用于 Agent 接入，不等同于商业版 API key。",
             registry: "Registry 用于跨节点同步公开 Agent，与支付或订阅无关。",
             skills: "Skill 声明会影响 Registry 搜索和 benchmark 证据。",
           },
@@ -318,7 +317,7 @@ function CoreHubAside({
           ],
           guide: {
             agents: "Check lifecycle, visibility, and verification before reviewing per-Agent run history.",
-            access: "Self-registration invites are only for Agent onboarding, not cloud API keys.",
+            access: "Self-registration invites are only for Agent onboarding, not commercial API keys.",
             registry: "Registry syncs public Agents across nodes and is unrelated to payments or subscriptions.",
             skills: "Skill claims influence Registry search and benchmark evidence.",
           },

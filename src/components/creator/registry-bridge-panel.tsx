@@ -23,7 +23,6 @@ type RegistryNode = {
 type RegistryListing = {
   id: string;
   registry_listing_id?: string;
-  cloud_listing_id: string;
   registry_node_id: string;
   node_name: string;
   agent_id: string;
@@ -34,6 +33,11 @@ type RegistryListing = {
   sync_status: string;
   last_sync_at: string;
 };
+
+function registryListingID(listing: RegistryListing): string {
+  const legacy = (listing as Record<string, unknown>)["cloud_listing_id"];
+  return listing.registry_listing_id ?? (typeof legacy === "string" ? legacy : listing.id);
+}
 
 export function RegistryBridgePanel({
   agents,
@@ -211,7 +215,7 @@ export function RegistryBridgePanel({
                   <div className="mt-2 grid gap-1 text-[12px] font-semibold text-[color:var(--ol-muted)]">
                     <span>Node: {listing.node_name}</span>
                     <span className="font-mono">
-                      listing_id: {listing.registry_listing_id ?? listing.cloud_listing_id}
+                      listing_id: {registryListingID(listing)}
                     </span>
                   </div>
                 </article>

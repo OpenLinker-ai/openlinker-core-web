@@ -16,10 +16,10 @@ Included:
 Excluded:
 
 - Wallet, charges, Stripe, withdrawals, commercial plans
-- Cloud API key management and cloud-only dashboards
+- Commercial API key management and product dashboards
 - Admin finance workflows
 
-`openlinker-web` remains the cloud/product frontend. This package is the core
+`openlinker-web` remains the commercial product frontend. This package is the core
 frontend boundary.
 
 ## Stack
@@ -95,11 +95,11 @@ openlinker-core-web/
 │   ├── settings/
 │   ├── (creator)/hub/
 │   ├── (creator)/publish/
-│   ├── (public)/market/
+│   ├── registry/
 │   └── api/v1/[...path]/route.ts
 ├── src/components/
 └── src/lib/api-root.ts
 ```
 
-Do not add cloud-only commercial flows to this package. Add those to
+Do not add commercial product flows to this package. Add those to
 `openlinker-web`.
