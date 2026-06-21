@@ -1,0 +1,84 @@
+import { getApiBaseUrlForRequest } from "@/lib/api-root";
+
+export const dynamic = "force-dynamic";
+
+const FORWARDED_HEADERS = [
+  "accept",
+  "authorization",
+  "content-type",
+  "mcp-protocol-version",
+  "mcp-session-id",
+];
+
+function upstreamHeaders(request: Request) {
+  const headers = new Headers();
+  for (const name of FORWARDED_HEADERS) {
+    const value = request.headers.get(name);
+    if (value) headers.set(name, value);
+  }
+  return headers;
+}
+
+function responseHeaders(upstream: Response) {
+  const headers = new Headers();
+  for (const name of [
+    "cache-control",
+    "content-type",
+    "mcp-session-id",
+    "mcp-protocol-version",
+  ]) {
+    const value = upstream.headers.get(name);
+    if (value) headers.set(name, value);
+  }
+  if (!headers.has("cache-control")) headers.set("cache-control", "no-store");
+  return headers;
+}
+
+export async function POST(request: Request) {
+  const apiURL = getApiBaseUrlForRequest(request);
+  const upstream = await fetch(`${apiURL}/api/v1/mcp`, {
+    method: "POST",
+    headers: upstreamHeaders(request),
+    body: await request.text(),
+    cache: "no-store",
+  });
+
+  return new Response(await upstream.arrayBuffer(), {
+    status: upstream.status,
+    headers: responseHeaders(upstream),
+  });
+}
+
+export async function GET(request: Request) {
+  if (request.headers.get("accept")?.includes("text/event-stream")) {
+    return new Response(null, { status: 405 });
+  }
+
+  return Response.json(
+    {
+      name: "openlinker-mcp",
+      endpoint: "/mcp",
+      api_endpoint: "/api/v1/mcp",
+      transport: "MCP Streamable HTTP, JSON response mode",
+      auth: "Authorization: Bearer <JWT or configured access token>",
+      methods: ["initialize", "tools/list", "tools/call"],
+      tools: ["search_agents", "get_agent", "create_task", "run_agent", "get_run"],
+      example: {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/list",
+      },
+    },
+    { headers: { "cache-control": "no-store" } },
+  );
+}
+
+export async function HEAD(request: Request) {
+  if (request.headers.get("accept")?.includes("text/event-stream")) {
+    return new Response(null, { status: 405 });
+  }
+  return new Response(null, {
+    status: 200,
+    headers: { "cache-control": "no-store" },
+  });
+}
