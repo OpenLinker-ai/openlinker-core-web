@@ -59,8 +59,7 @@ export function OAuthCallbackHandler() {
     const fail = (msg: string) => {
       toast.error(msg);
       setStatus("error");
-      // 给用户看一眼提示再跳转
-      setTimeout(() => router.replace("/login"), 1200);
+      router.replace("/login");
     };
 
     if (error) {
