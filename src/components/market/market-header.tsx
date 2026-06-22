@@ -11,7 +11,7 @@
  */
 
 import { useRouter, usePathname } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import type { Locale } from "@/lib/i18n";
 
@@ -25,27 +25,34 @@ export function MarketHeader({ currentTags, currentQ, locale = "zh" }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [q, setQ] = useState(currentQ);
+  const inputRef = useRef<HTMLInputElement>(null);
   const copy =
     locale === "zh"
       ? {
           heading: "Agent Registry",
           lead: "按关键词、标签和 Skill 发现 core 中已登记的 Agent；可调用证据来自运行记录和健康检查。",
           placeholder: "搜索 Skill、Agent 或标签",
+          search: "搜索 Agent",
         }
       : {
           heading: "Agent Registry",
           lead: "Discover registered Agents by keyword, tag, and Skill. Callable evidence comes from run history and health checks.",
           placeholder: "Search Skills, Agents, or tags",
+          search: "Search Agents",
         };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitSearch = () => {
     const sp = new URLSearchParams();
     if (currentTags.length) sp.set("tags", currentTags.join(","));
-    const trimmed = q.trim();
+    const submittedQ = inputRef.current?.value ?? q;
+    const trimmed = submittedQ.trim();
     if (trimmed) sp.set("q", trimmed);
     const qs = sp.toString();
     router.push(qs ? `${pathname}?${qs}` : pathname);
+  };
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitSearch();
   };
 
   return (
@@ -57,24 +64,42 @@ export function MarketHeader({ currentTags, currentQ, locale = "zh" }: Props) {
       </div>
 
       <form onSubmit={handleSubmit} className="ol-search">
-        <svg
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-          width="17"
-          height="17"
-          fill="none"
-          stroke="currentColor"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2.2"
+        <button
+          type="submit"
+          aria-label={copy.search}
+          title={copy.search}
+          onClick={(e) => {
+            e.preventDefault();
+            submitSearch();
+          }}
         >
-          <circle cx="11" cy="11" r="7" />
-          <path d="m16.5 16.5 4 4" />
-        </svg>
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            width="17"
+            height="17"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2.2"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m16.5 16.5 4 4" />
+          </svg>
+        </button>
         <input
+          name="q"
+          ref={inputRef}
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              submitSearch();
+            }
+          }}
           placeholder={copy.placeholder}
         />
       </form>

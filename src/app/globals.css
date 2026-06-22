@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+html {
+  overflow-y: scroll;
+  scroll-padding-top: 96px;
+}
+
+body > main {
+  flex: 1 0 auto;
+  min-width: 0;
+  width: 100%;
+}
+
 /* ============================================================
    OpenLinker 设计 Token（来自 prototype/openlinker-flow-prototypes.html）
    原型变量保留 --ol- 前缀，避免与 shadcn 冲突。
@@ -183,6 +194,43 @@
     color: var(--ol-primary-dark);
   }
 
+  .ol-topbar {
+    min-height: 75px;
+  }
+
+  .ol-topbar-inner {
+    min-height: 74px;
+  }
+
+  .ol-topbar-brand-slot,
+  .ol-topbar-actions {
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .ol-topbar-brand-slot {
+    justify-content: flex-start;
+  }
+
+  .ol-topbar-nav-slot {
+    flex: 0 0 auto;
+  }
+
+  .ol-topbar-actions {
+    justify-content: flex-end;
+  }
+
+  main.mx-auto {
+    width: 100% !important;
+    max-width: 80rem !important;
+    padding: 32px 1.5rem 64px !important;
+  }
+
+  main.mx-auto > :first-child {
+    margin-top: 0;
+  }
+
   @media (max-width: 767px) {
     .ol-flow-tabs > a,
     .ol-flow-tabs > span {
@@ -296,7 +344,7 @@
     justify-content: space-between;
     gap: 18px 22px;
     flex-wrap: wrap;
-    margin-top: 40px;
+    margin-top: 24px;
   }
 
   .ol-page-title {
@@ -373,6 +421,25 @@
   .ol-search input::placeholder {
     color: var(--ol-subtle);
     font-weight: 800;
+  }
+
+  .ol-search button {
+    display: inline-grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 auto;
+    margin-left: -6px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .ol-search button:hover {
+    background: var(--ol-soft);
+    color: var(--ol-primary-dark);
   }
 
   /* 3 列布局 */
@@ -1129,7 +1196,8 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-top: 14px;
+    margin-top: 0;
+    min-height: 20px;
     color: var(--ol-muted);
     font-size: 13px;
     font-weight: 800;

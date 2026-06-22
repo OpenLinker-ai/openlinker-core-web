@@ -79,22 +79,26 @@ export default async function TermsPage() {
     <>
       <Topbar />
       <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
-        <div className="ol-kicker">{copy.kicker}</div>
-        <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-[color:var(--ol-ink)]">
-          {copy.heading}
-        </h1>
-        <p className="mt-4 text-sm leading-7 text-[color:var(--ol-muted)]">
-          {copy.lead}
-        </p>
+        <article className="max-w-4xl">
+          <div className="ol-kicker">{copy.kicker}</div>
+          <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-[color:var(--ol-ink)]">
+            {copy.heading}
+          </h1>
+          <p className="mt-4 text-sm leading-7 text-[color:var(--ol-muted)]">
+            {copy.lead}
+          </p>
 
-        <section className="mt-8 space-y-6 rounded-3xl border border-slate-200 bg-white p-6 text-sm leading-7 text-slate-700 shadow-sm">
-          {copy.sections.map((section) => (
-            <div key={section.title}>
-              <h2 className="text-lg font-bold text-slate-950">{section.title}</h2>
-              <p className="mt-2">{section.body}</p>
-            </div>
-          ))}
-        </section>
+          <section className="mt-8 space-y-6 rounded-3xl border border-slate-200 bg-white p-6 text-sm leading-7 text-slate-700 shadow-sm">
+            {copy.sections.map((section) => (
+              <div key={section.title}>
+                <h2 className="text-lg font-bold text-slate-950">
+                  {section.title}
+                </h2>
+                <p className="mt-2">{section.body}</p>
+              </div>
+            ))}
+          </section>
+        </article>
       </main>
     </>
   );

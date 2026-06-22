@@ -45,6 +45,7 @@ export async function Topbar({ rightSlot, contained = true, className }: TopbarP
   return (
     <header
       className={cn(
+        "ol-topbar",
         "sticky top-0 z-30 backdrop-blur",
         "border-b border-[color:var(--ol-line)]/60",
         "bg-white/72",
@@ -53,15 +54,18 @@ export async function Topbar({ rightSlot, contained = true, className }: TopbarP
     >
       <div
         className={cn(
-          "flex items-center justify-between gap-3 py-3 sm:gap-6",
+          "ol-topbar-inner",
+          "flex items-center gap-3 py-3 sm:gap-6",
           contained ? "mx-auto max-w-7xl px-4 sm:px-6" : "px-4 sm:px-6",
         )}
       >
-        <Brand locale={locale} />
-        <div className="hidden min-w-0 md:block">
+        <div className="ol-topbar-brand-slot">
+          <Brand locale={locale} />
+        </div>
+        <div className="ol-topbar-nav-slot hidden min-w-0 md:block">
           <NavTabs locale={locale} />
         </div>
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <div className="ol-topbar-actions flex shrink-0 items-center gap-2 sm:gap-3">
           <LanguageToggle locale={locale} />
           {right}
         </div>
