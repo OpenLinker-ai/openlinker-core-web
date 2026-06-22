@@ -195,11 +195,11 @@ body > main {
   }
 
   .ol-topbar {
-    min-height: 75px;
+    min-height: 84px;
   }
 
   .ol-topbar-inner {
-    min-height: 74px;
+    min-height: 83px;
   }
 
   .ol-topbar-brand-slot,
@@ -1646,6 +1646,8 @@ body > main {
   .ol-auth-side {
     position: relative;
     overflow: hidden;
+    min-width: 0;
+    max-width: 100%;
     padding: 40px 36px;
     border-radius: 22px;
     color: #ffffff;
@@ -1683,6 +1685,7 @@ body > main {
     font-weight: 900;
     color: #ffffff;
     white-space: pre-line;
+    overflow-wrap: anywhere;
   }
 
   .ol-auth-side p {
@@ -1691,6 +1694,7 @@ body > main {
     color: rgba(255, 255, 255, 0.82);
     font-size: 13.5px;
     line-height: 1.6;
+    overflow-wrap: anywhere;
   }
 
   .ol-auth-features {
@@ -1702,11 +1706,13 @@ body > main {
 
   .ol-auth-feat {
     display: inline-flex;
-    align-items: center;
+    align-items: flex-start;
+    min-width: 0;
     gap: 10px;
     color: rgba(255, 255, 255, 0.92);
     font-size: 13px;
     font-weight: 700;
+    overflow-wrap: anywhere;
   }
 
   .ol-auth-feat-check {
@@ -1733,6 +1739,7 @@ body > main {
   /* 底部 4 数据 grid（auth-stats） */
   .ol-auth-stats {
     position: relative;
+    min-width: 0;
     margin-top: auto;
     padding-top: 28px;
     display: grid;
@@ -1741,6 +1748,7 @@ body > main {
   }
 
   .ol-auth-stat {
+    min-width: 0;
     padding: 14px 16px;
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.12);
@@ -1755,6 +1763,7 @@ body > main {
     font-size: 22px;
     font-weight: 950;
     line-height: 1.1;
+    overflow-wrap: anywhere;
   }
 
   .ol-auth-stat span {
@@ -1763,5 +1772,6 @@ body > main {
     color: rgba(255, 255, 255, 0.78);
     font-size: 11.5px;
     font-weight: 700;
+    overflow-wrap: anywhere;
   }
 }

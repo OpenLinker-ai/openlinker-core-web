@@ -109,28 +109,28 @@ function DefaultRightSlot({
     <>
       <Link
         href="/hub"
-        className="hidden h-9 items-center gap-1.5 rounded-xl bg-[color:var(--ol-mint)] px-3 text-[13px] font-black text-[color:var(--ol-primary-dark)] hover:bg-[color:var(--ol-primary)] hover:text-white md:inline-flex"
+        className="hidden h-9 items-center gap-1.5 whitespace-nowrap rounded-xl bg-[color:var(--ol-mint)] px-3 text-[13px] font-black text-[color:var(--ol-primary-dark)] hover:bg-[color:var(--ol-primary)] hover:text-white lg:inline-flex"
       >
         <Icon name="bot" size="sm" />
         {locale === "zh" ? "创作者中心" : "Creator Hub"}
       </Link>
       <Link
         href="/settings"
-        className="hidden text-[13px] font-bold text-[color:var(--ol-muted)] hover:text-[color:var(--ol-ink)] md:inline-flex md:items-center md:gap-1.5"
+        className="hidden whitespace-nowrap text-[13px] font-bold text-[color:var(--ol-muted)] hover:text-[color:var(--ol-ink)] min-[1500px]:inline-flex min-[1500px]:items-center min-[1500px]:gap-1.5"
       >
         <Icon name="gear" size="sm" />
         {locale === "zh" ? "设置" : "Settings"}
       </Link>
       <Link
         href="/inbox"
-        className="hidden text-[13px] font-bold text-[color:var(--ol-muted)] hover:text-[color:var(--ol-ink)] md:inline-flex md:items-center md:gap-1.5"
+        className="hidden whitespace-nowrap text-[13px] font-bold text-[color:var(--ol-muted)] hover:text-[color:var(--ol-ink)] min-[1500px]:inline-flex min-[1500px]:items-center min-[1500px]:gap-1.5"
       >
         <Icon name="bell" size="sm" />
         {locale === "zh" ? "通知" : "Inbox"}
       </Link>
       <Link
         href="/my"
-        className="hidden text-[13px] font-bold text-[color:var(--ol-ink)] hover:text-[color:var(--ol-primary-dark)] md:inline"
+        className="hidden whitespace-nowrap text-[13px] font-bold text-[color:var(--ol-ink)] hover:text-[color:var(--ol-primary-dark)] min-[1500px]:inline"
       >
         {userName ?? (locale === "zh" ? "已登录" : "Signed in")}
       </Link>
@@ -142,7 +142,7 @@ function DefaultRightSlot({
       >
         <button
           type="submit"
-          className="inline-flex h-9 items-center rounded-xl border border-[color:var(--ol-line)] bg-white px-3 text-[13px] font-bold text-[color:var(--ol-muted)] hover:bg-[color:var(--ol-soft)]"
+          className="inline-flex h-9 items-center whitespace-nowrap rounded-xl border border-[color:var(--ol-line)] bg-white px-3 text-[13px] font-bold text-[color:var(--ol-muted)] hover:bg-[color:var(--ol-soft)]"
         >
           {locale === "zh" ? "退出" : "Sign out"}
         </button>

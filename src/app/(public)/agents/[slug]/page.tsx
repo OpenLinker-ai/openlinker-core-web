@@ -145,6 +145,12 @@ export default async function AgentDetailPage({
           tryExample: "用此示例试用",
           viewOnlyTitle: "该 Agent 当前不可调用，示例仅供查看。",
           viewOnly: "示例仅供查看",
+          unavailableKicker: "agent detail unavailable",
+          unavailableTitle: "Agent 详情暂时不可用",
+          unavailableLead:
+            "当前数据源暂时无法访问。页面外壳和导航保持可用，你可以稍后重试或回到 Registry 继续浏览。",
+          retryHint: "不可用的 Agent 标识",
+          backToRegistry: "回到 Registry",
         }
       : {
           home: "Home",
@@ -168,6 +174,12 @@ export default async function AgentDetailPage({
           tryExample: "Try this example",
           viewOnlyTitle: "This Agent is not callable right now. The example is view-only.",
           viewOnly: "View-only example",
+          unavailableKicker: "agent detail unavailable",
+          unavailableTitle: "Agent detail is temporarily unavailable",
+          unavailableLead:
+            "The data source is not reachable right now. The page shell and navigation remain available; try again later or return to Registry.",
+          retryHint: "Unavailable Agent slug",
+          backToRegistry: "Back to Registry",
         };
 
   let agent: AgentDetail;
@@ -175,7 +187,42 @@ export default async function AgentDetailPage({
     agent = await fetchAgent(slug);
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) notFound();
-    throw e;
+    return (
+      <>
+        <Topbar />
+        <main className="mx-auto w-full max-w-7xl px-6 py-6">
+          <nav className="flex items-center gap-2 text-[12.5px] font-bold text-[color:var(--ol-muted)]">
+            <Link href="/" className="hover:text-[color:var(--ol-ink)]">
+              {copy.home}
+            </Link>
+            <span className="text-[color:var(--ol-subtle)]">/</span>
+            <Link href="/registry" className="hover:text-[color:var(--ol-ink)]">
+              {copy.market}
+            </Link>
+            <span className="text-[color:var(--ol-subtle)]">/</span>
+            <span className="text-[color:var(--ol-ink)]">{slug}</span>
+          </nav>
+
+          <div className="ol-page-head mt-6">
+            <div className="ol-page-title">
+              <div className="ol-kicker">{copy.unavailableKicker}</div>
+              <h1>{copy.unavailableTitle}</h1>
+              <p>{copy.unavailableLead}</p>
+            </div>
+          </div>
+
+          <section className="ol-panel ol-panel-pad mt-6">
+            <div className="ol-kicker">{copy.retryHint}</div>
+            <p className="mt-2 break-all text-[14px] font-bold text-[color:var(--ol-ink)]">
+              {slug}
+            </p>
+            <Link href="/registry" className="ol-mini-btn ol-mini-btn-primary mt-5">
+              {copy.backToRegistry}
+            </Link>
+          </section>
+        </main>
+      </>
+    );
   }
 
   const scores = await fetchSkillScores(slug);

@@ -105,10 +105,10 @@ export default async function SettingsPage({
         <MyWorkspaceSwitcher className="mt-6" locale={locale} />
 
         {/* settings-layout 2 列 */}
-        <div className="mt-6 grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+        <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
           <SettingsSidebarNav active={activeTab} locale={locale} />
 
-          <div>
+          <div className="min-w-0">
             {activeTab === "account" ? (
               <AccountSection email={email} displayName={displayName} locale={locale} />
             ) : null}
