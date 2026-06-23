@@ -32,8 +32,10 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <IconSprite />
-        <Providers>{children}</Providers>
-        <footer className="border-t border-slate-200/70 bg-white/80 px-6 py-5 text-center text-xs text-slate-500">
+        <div className="flex min-h-0 flex-1 flex-col">
+          <Providers>{children}</Providers>
+        </div>
+        <footer className="shrink-0 border-t border-slate-200/70 bg-white/80 px-6 py-5 text-center text-xs text-slate-500">
           <span>OpenLinker</span>
           <span className="mx-2 text-slate-300">/</span>
           <a className="inline-flex min-h-8 items-center hover:text-slate-900" href="/terms">
