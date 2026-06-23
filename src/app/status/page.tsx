@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { Topbar } from "@/components/layout/topbar";
 import { StatusDashboard } from "@/components/status/status-dashboard";
 import { getLocale } from "@/lib/i18n-server";
@@ -30,12 +28,6 @@ export default async function StatusPage() {
     <>
       <Topbar />
       <main className="mx-auto max-w-7xl px-6 pb-16">
-        <div className="ol-breadcrumb">
-          <Link href="/">{copy.home}</Link>
-          <span className="sep">/</span>
-          <span className="current">{copy.current}</span>
-        </div>
-
         <div className="ol-page-head">
           <div className="ol-page-title">
             <div className="ol-kicker">status</div>

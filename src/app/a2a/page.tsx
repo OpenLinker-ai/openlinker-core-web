@@ -83,12 +83,6 @@ export default async function A2APage({
     <>
       <Topbar />
       <main className="mx-auto max-w-7xl px-6 pb-16">
-        <div className="ol-breadcrumb">
-          <Link href="/">{copy.home}</Link>
-          <span className="sep">/</span>
-          <span className="current">{copy.current}</span>
-        </div>
-
         <div className="ol-page-head">
           <div className="ol-page-title">
             <div className="ol-kicker">agent to agent</div>
@@ -211,12 +205,6 @@ function A2APublicIntro({ callbackUrl, locale }: { callbackUrl: string; locale: 
     <>
       <Topbar />
       <main className="mx-auto max-w-7xl px-6 pb-16">
-        <div className="ol-breadcrumb">
-          <Link href="/">{copy.home}</Link>
-          <span className="sep">/</span>
-          <span className="current">{copy.current}</span>
-        </div>
-
         <div className="ol-page-head">
           <div className="ol-page-title">
             <div className="ol-kicker">agent to agent</div>

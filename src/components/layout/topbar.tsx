@@ -13,7 +13,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { auth, signOut } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { Brand } from "./brand";
 import { LanguageToggle } from "./language-toggle";
 import { NavTabs } from "./nav-tabs";
@@ -134,19 +134,6 @@ function DefaultRightSlot({
       >
         {userName ?? (locale === "zh" ? "已登录" : "Signed in")}
       </Link>
-      <form
-        action={async () => {
-          "use server";
-          await signOut({ redirectTo: "/" });
-        }}
-      >
-        <button
-          type="submit"
-          className="inline-flex h-9 items-center whitespace-nowrap rounded-xl border border-[color:var(--ol-line)] bg-white px-3 text-[13px] font-bold text-[color:var(--ol-muted)] hover:bg-[color:var(--ol-soft)]"
-        >
-          {locale === "zh" ? "退出" : "Sign out"}
-        </button>
-      </form>
     </>
   );
 }
