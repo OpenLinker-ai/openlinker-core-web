@@ -4,11 +4,19 @@ function stripTrailingSlash(value: string): string {
   return value.replace(/\/+$/, "");
 }
 
+function isLoopbackHostname(hostname: string): boolean {
+  const normalized = hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  return normalized === "localhost" || normalized === "::1" || normalized === "127.0.0.1" || normalized.startsWith("127.");
+}
+
 export function inferApiBaseFromWebOrigin(origin: string): string {
   try {
     const url = new URL(origin);
     if (url.hostname === "openlinker.ai" || url.hostname.endsWith(".openlinker.ai")) {
       return "https://api.openlinker.ai";
+    }
+    if (!isLoopbackHostname(url.hostname)) {
+      return stripTrailingSlash(url.origin);
     }
     return `${url.protocol}//${url.hostname}:${DEFAULT_CORE_API_PORT}`;
   } catch {
