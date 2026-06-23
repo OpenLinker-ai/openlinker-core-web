@@ -3,9 +3,8 @@
  *
  * 视觉来自 prototype/openlinker-flow-23-settings.png + #flow-settings：
  *   1. <Topbar />
- *   2. ol-breadcrumb 我的 / 设置
- *   3. ol-page-head：kicker + h1 + 副标题
- *   4. settings-layout 2 列：
+ *   2. ol-page-head：kicker + h1 + 副标题 + 退出登录
+ *   3. settings-layout 2 列：
  *      - 左 240px <SettingsSidebarNav />
  *      - 右自适应：<AccountSection /> + <SecuritySection /> + <NotificationsSection />
  *
@@ -19,11 +18,11 @@
 import { redirect } from "next/navigation";
 
 import { Topbar } from "@/components/layout/topbar";
-import { MyWorkspaceSwitcher } from "@/components/my/workspace-switcher";
 import { AccountSection } from "@/components/settings/account-section";
 import { NotificationsSection } from "@/components/settings/notifications-section";
 import { SecuritySection } from "@/components/settings/security-section";
 import { SettingsSidebarNav } from "@/components/settings/sidebar-nav";
+import { SettingsSignOutButton } from "@/components/settings/sign-out-button";
 import { apiFetchAuthed } from "@/lib/api";
 import { auth } from "@/lib/auth";
 import { getLocale } from "@/lib/i18n-server";
@@ -57,16 +56,12 @@ export default async function SettingsPage({
   const copy =
     locale === "zh"
       ? {
-          my: "我的",
-          settings: "设置",
-          kicker: "我的 / 设置",
+          kicker: "settings",
           heading: "账户、安全与通知",
           lead: "管理登录资料、密码、站内告警和 Run Webhook 入口。Agent 自注册邀请在创作者中心的接入页维护。",
         }
       : {
-          my: "My",
-          settings: "Settings",
-          kicker: "My / Settings",
+          kicker: "settings",
           heading: "Account, Security, and Notifications",
           lead: "Manage profile details, password, in-app alerts, and Run Webhook entry points. Agent self-registration invites live in Creator Hub access.",
         };
@@ -86,23 +81,15 @@ export default async function SettingsPage({
     <>
       <Topbar />
       <main className="mx-auto max-w-7xl px-6 pb-16">
-        {/* breadcrumb */}
-        <div className="ol-breadcrumb">
-          <span>{copy.my}</span>
-          <span className="sep">/</span>
-          <span className="current">{copy.settings}</span>
-        </div>
-
         {/* page-head */}
-        <div className="ol-page-head">
+        <div className="ol-page-head ol-settings-head">
           <div className="ol-page-title">
             <div className="ol-kicker">{copy.kicker}</div>
             <h1>{copy.heading}</h1>
             <p>{copy.lead}</p>
           </div>
+          <SettingsSignOutButton locale={locale} />
         </div>
-
-        <MyWorkspaceSwitcher className="mt-6" locale={locale} />
 
         {/* settings-layout 2 列 */}
         <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">

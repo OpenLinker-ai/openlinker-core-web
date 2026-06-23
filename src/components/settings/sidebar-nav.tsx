@@ -15,7 +15,6 @@
 import Link from "next/link";
 
 import { Icon, type IconName } from "@/components/ui/icon";
-import { signOut } from "@/lib/auth";
 import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -43,7 +42,6 @@ export function SettingsSidebarNav({ active = "account", locale = "zh" }: Props)
     locale === "zh"
       ? { title: "需要帮助？", body: "查看文档 · 联系客服 · 提交反馈" }
       : { title: "Need help?", body: "Read docs · Contact support · Send feedback" };
-  const signOutLabel = locale === "zh" ? "退出登录" : "Sign out";
 
   return (
     <aside className="ol-panel p-4 self-start">
@@ -83,24 +81,6 @@ export function SettingsSidebarNav({ active = "account", locale = "zh" }: Props)
           );
         })}
       </nav>
-
-      <form
-        className="mt-3 border-t border-[color:var(--ol-line)] pt-3"
-        action={async () => {
-          "use server";
-          await signOut({ redirectTo: "/" });
-        }}
-      >
-        <button
-          type="submit"
-          className="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-[13px] font-bold text-[color:var(--ol-muted)] transition-colors hover:bg-[color:var(--ol-soft)] hover:text-[color:var(--ol-ink)]"
-        >
-          <span className="grid h-5 w-5 place-items-center rounded-md bg-[color:var(--ol-soft)] text-[10px] font-black text-[color:var(--ol-muted)]">
-            <Icon name="x" size="sm" />
-          </span>
-          {signOutLabel}
-        </button>
-      </form>
 
       <div className="mt-4 rounded-xl border border-dashed border-[color:var(--ol-line)] p-3 text-[12px] leading-[1.55] text-[color:var(--ol-muted)]">
         <b className="mb-1 block text-[color:var(--ol-ink)]">{help.title}</b>

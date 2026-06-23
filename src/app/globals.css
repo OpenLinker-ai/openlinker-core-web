@@ -375,6 +375,10 @@ body > main {
     flex: 0 0 auto;
   }
 
+  .ol-settings-head .ol-page-title {
+    flex-basis: auto;
+  }
+
   @media (max-width: 820px) {
     .ol-page-head {
       align-items: stretch;
