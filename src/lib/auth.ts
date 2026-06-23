@@ -3,8 +3,7 @@
  *
  * 设计要点：
  *   - Credentials provider：调后端 POST /api/v1/auth/login
- *   - token-credentials provider：用于 Google OAuth 回调（后端 /auth/google 走完后
- *     redirect 到前端 /auth/callback?token=xxx，前端再用 signIn("token-credentials") 接管）
+ *   - token-credentials provider：用于 OAuth code exchange 后接管后端 JWT
  *   - jwt / session callbacks 把后端 JWT 透传给客户端，方便 useSession 读取
  *   - session strategy: jwt（NextAuth 自身签名 cookie，存后端 JWT 字符串）
  *
@@ -56,8 +55,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
     Credentials({
-      // Google OAuth 回调时使用：前端拿到后端签发的 token 后，
-      // 调用 signIn("token-credentials", { token }) 把会话交给 NextAuth 接管。
+      // OAuth code exchange 后使用：把后端 JWT 会话交给 NextAuth 接管。
       id: "token-credentials",
       name: "Token",
       credentials: {

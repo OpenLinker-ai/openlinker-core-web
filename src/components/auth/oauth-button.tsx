@@ -4,7 +4,7 @@
  * Google OAuth 按钮。
  *
  * 点击后直接 full-page redirect 到后端 /api/v1/auth/google，由后端发起
- * OAuth 流程；后端处理完成后 redirect 回前端 /auth/callback?token=xxx。
+ * OAuth 流程；后端处理完成后 redirect 回前端 /auth/callback?code=xxx。
  */
 
 import { Button } from "@/components/ui/button";
