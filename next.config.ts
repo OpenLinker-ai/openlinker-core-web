@@ -1,6 +1,13 @@
 import path from "node:path";
 import type { NextConfig } from "next";
 
+const scriptSrc = [
+  "script-src 'self' 'unsafe-inline'",
+  process.env.NODE_ENV !== "production" ? "'unsafe-eval'" : "",
+]
+  .filter(Boolean)
+  .join(" ");
+
 const securityHeaders = [
   {
     key: "Content-Security-Policy",
@@ -11,7 +18,7 @@ const securityHeaders = [
       "form-action 'self'",
       "img-src 'self' data: https:",
       "style-src 'self' 'unsafe-inline'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      scriptSrc,
       "connect-src 'self' http: https: ws: wss:",
       "font-src 'self' data:",
       "object-src 'none'",
