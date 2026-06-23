@@ -12,6 +12,9 @@ export const metadata: Metadata = {
     template: "%s · OpenLinker",
   },
   description: "Open Agent Registry, invocation, and runtime traces",
+  icons: {
+    icon: "/openlinker-logo.svg",
+  },
 };
 
 export default async function RootLayout({

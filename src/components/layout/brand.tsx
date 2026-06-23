@@ -1,11 +1,12 @@
 /**
  * <Brand /> + <BrandFull /> —— OpenLinker 品牌标识。
  *
- * 来自 prototype/openlinker-flow-prototypes.html 的 .brand + .brand-mark。
+ * 使用 public/openlinker-logo.svg 品牌资产。
  *   - 默认渲染为可点击的回首页链接
  *   - BrandFull 含 core 版副标题
  */
 
+import Image from "next/image";
 import Link from "next/link";
 import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -22,7 +23,15 @@ interface BrandProps {
 export function Brand({ asLink = true, withSubtitle = true, locale = "zh", className }: BrandProps) {
   const inner = (
     <span className={cn("inline-flex items-center gap-3", className)}>
-      <span className="ol-brand-mark" aria-hidden />
+      <Image
+        src="/openlinker-logo.svg"
+        alt=""
+        width={40}
+        height={40}
+        className="ol-brand-logo"
+        aria-hidden="true"
+        priority
+      />
       <span className="leading-tight">
         <span className="block text-[19px] font-extrabold tracking-tight text-[color:var(--ol-ink)]">
           OpenLinker
