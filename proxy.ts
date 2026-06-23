@@ -2,7 +2,7 @@
  * Next.js 16 proxy（原 middleware）。
  *
  * 鉴权拦截：
- *   - 未登录访问 protected 路由组（/my /runs /publish /hub /settings /playground /inbox /run）
+ *   - 未登录访问 protected 路由组（/my /runs /publish /hub /settings /playground /inbox /run /admin）
  *     → 跳 /login?callbackUrl=<原 path>，登录成功后由登录页 router.push(callbackUrl || "/")
  *   - 已登录访问 /login /register → 跳首页
  *
@@ -23,6 +23,7 @@ const PROTECTED_PREFIXES = [
   "/playground",
   "/inbox",
   "/run",
+  "/admin",
 ];
 
 // 已登录用户不应该再看到的页面

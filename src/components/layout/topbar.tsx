@@ -14,6 +14,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { auth } from "@/lib/auth";
+import { apiFetch } from "@/lib/api";
 import { Brand } from "./brand";
 import { LanguageToggle } from "./language-toggle";
 import { NavTabs } from "./nav-tabs";
@@ -30,14 +31,28 @@ interface TopbarProps {
   className?: string;
 }
 
+interface MeResponse {
+  is_admin?: boolean;
+}
+
 export async function Topbar({ rightSlot, contained = true, className }: TopbarProps) {
   const session = await auth();
   const locale = await getLocale();
+  let isAdmin = false;
+  if (session?.jwt) {
+    try {
+      const me = await apiFetch<MeResponse>("/api/v1/me", { token: session.jwt });
+      isAdmin = Boolean(me.is_admin);
+    } catch {
+      isAdmin = false;
+    }
+  }
 
   const right = rightSlot ?? (
     <DefaultRightSlot
       signedIn={Boolean(session)}
       userName={session?.user?.name ?? null}
+      isAdmin={isAdmin}
       locale={locale}
     />
   );
@@ -80,10 +95,12 @@ export async function Topbar({ rightSlot, contained = true, className }: TopbarP
 function DefaultRightSlot({
   signedIn,
   userName,
+  isAdmin,
   locale,
 }: {
   signedIn: boolean;
   userName: string | null;
+  isAdmin: boolean;
   locale: Locale;
 }) {
   if (!signedIn) {
@@ -107,9 +124,20 @@ function DefaultRightSlot({
 
   return (
     <>
+      {isAdmin ? (
+        <Link
+          href="/admin"
+          aria-label={locale === "zh" ? "管理台" : "Admin"}
+          title={locale === "zh" ? "管理台" : "Admin"}
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[color:var(--ol-line)] bg-white text-[13px] font-bold text-[color:var(--ol-ink)] hover:bg-[color:var(--ol-soft)] min-[1180px]:w-auto min-[1180px]:gap-1.5 min-[1180px]:px-3"
+        >
+          <Icon name="shield" size="sm" />
+          <span className="hidden min-[1180px]:inline">{locale === "zh" ? "管理台" : "Admin"}</span>
+        </Link>
+      ) : null}
       <Link
         href="/hub"
-        className="hidden h-9 items-center gap-1.5 whitespace-nowrap rounded-xl bg-[color:var(--ol-mint)] px-3 text-[13px] font-black text-[color:var(--ol-primary-dark)] hover:bg-[color:var(--ol-primary)] hover:text-white lg:inline-flex"
+        className="hidden h-9 items-center gap-1.5 whitespace-nowrap rounded-xl bg-[color:var(--ol-mint)] px-3 text-[13px] font-black text-[color:var(--ol-primary-dark)] hover:bg-[color:var(--ol-primary)] hover:text-white xl:inline-flex"
       >
         <Icon name="bot" size="sm" />
         {locale === "zh" ? "创作者中心" : "Creator Hub"}
