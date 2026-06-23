@@ -200,6 +200,8 @@ body > main {
 
   .ol-topbar-inner {
     min-height: 83px;
+    width: 100%;
+    max-width: 88rem !important;
   }
 
   .ol-topbar-brand-slot,
@@ -223,7 +225,7 @@ body > main {
 
   main.mx-auto {
     width: 100% !important;
-    max-width: 80rem !important;
+    max-width: 88rem !important;
     padding: 32px 1.5rem 64px !important;
   }
 
