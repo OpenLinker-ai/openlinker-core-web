@@ -968,6 +968,15 @@ function RuntimeWorkbenchPanel({
       </div>
     );
   }
+  const workbenchAgent = workbench.agent ?? {
+    connection_mode: "direct_http",
+    readiness_callable: false,
+  };
+  const runtime = workbench.runtime ?? {};
+  const diagnostics = Array.isArray(workbench.diagnostics) ? workbench.diagnostics : [];
+  const recentRuns = Array.isArray(workbench.recent_runs) ? workbench.recent_runs : [];
+  const connectionMode = workbenchAgent.connection_mode ?? "direct_http";
+  const callable = Boolean(workbenchAgent.readiness_callable);
 
   return (
     <div className="ol-panel ol-panel-pad space-y-3">
@@ -975,23 +984,23 @@ function RuntimeWorkbenchPanel({
         <div>
           <div className="ol-kicker">{title}</div>
           <strong className="mt-1 block text-[15px] font-black text-[color:var(--ol-ink)]">
-            {workbench.agent.connection_mode === "runtime_pull" ? "runtime_pull" : workbench.agent.connection_mode}
+            {connectionMode === "runtime_pull" ? "runtime_pull" : connectionMode}
           </strong>
         </div>
-        <span className={`ol-chip ${workbench.agent.readiness_callable ? "ol-chip-green" : "ol-chip-amber"}`}>
-          {workbench.agent.readiness_callable ? copy.callable : copy.notCallable}
+        <span className={`ol-chip ${callable ? "ol-chip-green" : "ol-chip-amber"}`}>
+          {callable ? copy.callable : copy.notCallable}
         </span>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <WorkbenchMetric label={copy.activeTokens} value={String(workbench.runtime.active_token_count)} />
-        <WorkbenchMetric label={copy.pendingRuns} value={String(workbench.runtime.pending_run_count)} />
-        <WorkbenchMetric label={copy.lastActivity} value={formatDate(workbench.runtime.last_runtime_activity_at, locale)} />
-        <WorkbenchMetric label={copy.lastClaim} value={formatDate(workbench.runtime.last_claimed_at, locale)} />
-        <WorkbenchMetric label={copy.lastResult} value={formatDate(workbench.runtime.last_result_at, locale)} />
+        <WorkbenchMetric label={copy.activeTokens} value={String(runtime.active_token_count ?? 0)} />
+        <WorkbenchMetric label={copy.pendingRuns} value={String(runtime.pending_run_count ?? 0)} />
+        <WorkbenchMetric label={copy.lastActivity} value={formatDate(runtime.last_runtime_activity_at, locale)} />
+        <WorkbenchMetric label={copy.lastClaim} value={formatDate(runtime.last_claimed_at, locale)} />
+        <WorkbenchMetric label={copy.lastResult} value={formatDate(runtime.last_result_at, locale)} />
         <WorkbenchMetric
           label={copy.heartbeat}
-          value={`${workbench.runtime.recommended_heartbeat_after_seconds}s / ${copy.claimWait} ${workbench.runtime.max_claim_wait_seconds}s`}
+          value={`${runtime.recommended_heartbeat_after_seconds ?? 0}s / ${copy.claimWait} ${runtime.max_claim_wait_seconds ?? 0}s`}
         />
       </div>
 
@@ -1000,7 +1009,7 @@ function RuntimeWorkbenchPanel({
           {copy.diagnostics}
         </strong>
         <div className="mt-2 grid gap-1.5">
-          {workbench.diagnostics.map((item) => (
+          {diagnostics.map((item) => (
             <div key={`${item.code}:${item.next_action}`} className="flex items-start gap-2 text-[12px] font-semibold leading-5 text-[color:var(--ol-muted)]">
               <span className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${diagnosticDot(item.severity)}`} />
               <span>{item.message}</span>
@@ -1013,9 +1022,9 @@ function RuntimeWorkbenchPanel({
         <strong className="text-[12px] font-black text-[color:var(--ol-ink)]">
           {copy.recentRuns}
         </strong>
-        {workbench.recent_runs.length > 0 ? (
+        {recentRuns.length > 0 ? (
           <div className="mt-2 grid gap-2">
-            {workbench.recent_runs.slice(0, 4).map((run) => (
+            {recentRuns.slice(0, 4).map((run) => (
               <div key={run.run_id} className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <span className={`ol-chip ${run.status === "success" ? "ol-chip-green" : run.status === "running" ? "ol-chip-mint" : "ol-chip-amber"}`}>
@@ -1025,7 +1034,7 @@ function RuntimeWorkbenchPanel({
                     {run.run_id.slice(0, 8)}
                   </code>
                 </div>
-                <Link href={run.detail_url} className="text-[12px] font-black text-[color:var(--ol-primary-dark)] hover:underline">
+                <Link href={run.detail_url || `/run/${run.run_id}`} className="text-[12px] font-black text-[color:var(--ol-primary-dark)] hover:underline">
                   {copy.openRun}
                 </Link>
               </div>

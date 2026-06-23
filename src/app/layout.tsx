@@ -32,7 +32,7 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <IconSprite />
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-screen flex-1 flex-col">
           <Providers>{children}</Providers>
         </div>
         <footer className="shrink-0 border-t border-slate-200/70 bg-white/80 px-6 py-5 text-center text-xs text-slate-500">

@@ -149,7 +149,7 @@ export function AgentHero({
     : { label: copy.notVerified, className: "ol-chip-mint" };
 
   return (
-    <aside className="ol-panel ol-panel-pad flex h-full flex-col">
+    <aside className="ol-panel ol-panel-pad flex h-full min-w-0 flex-col overflow-hidden">
       <div
         className="flex h-14 w-14 items-center justify-center rounded-2xl text-base font-black text-white shadow-sm"
         style={{ background: color }}
@@ -158,11 +158,11 @@ export function AgentHero({
         {initials(name)}
       </div>
 
-      <h1 className="mt-4 text-2xl font-black leading-tight text-[color:var(--ol-ink)]">
+      <h1 className="mt-4 min-w-0 break-words text-2xl font-black leading-tight text-[color:var(--ol-ink)]">
         {name}
       </h1>
 
-      <p className="mt-2 text-[13px] font-extrabold text-[color:var(--ol-primary-dark)]">
+      <p className="mt-2 min-w-0 break-words text-[13px] font-extrabold text-[color:var(--ol-primary-dark)]">
         by {creator.display_name}
         {certified ? (
           <>
@@ -172,18 +172,18 @@ export function AgentHero({
         ) : null}
       </p>
 
-      <p className="mt-3 line-clamp-5 text-[13px] leading-relaxed text-[color:var(--ol-muted)]">
+      <p className="mt-3 min-w-0 break-words line-clamp-5 text-[13px] leading-relaxed text-[color:var(--ol-muted)]">
         {description}
       </p>
 
       {skillList.length > 0 ? (
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        <div className="mt-3 flex min-w-0 flex-wrap gap-1.5">
           {skillList.map((s) => {
             const badge = s.status ? SKILL_BADGE_BY_STATUS[s.status] : SKILL_BADGE_BY_STATUS.not_run;
             return (
               <span
                 key={s.id}
-                className={`ol-chip ${badge.chipClass} h-6 px-2 text-[11.5px]`}
+                className={`ol-chip ${badge.chipClass} h-6 min-w-0 max-w-full px-2 text-[11.5px]`}
                 title={badge.label[locale] || undefined}
               >
                 {s.name}
@@ -194,17 +194,17 @@ export function AgentHero({
         </div>
       ) : null}
 
-      <div className="mt-4 grid grid-cols-3 gap-3">
+      <div className="mt-4 grid min-w-0 grid-cols-3 gap-3">
         <ScoreCell value={formatCalls(totalCalls)} label={copy.calls} />
         <ScoreCell value={copy.noRating} label={copy.rating} />
         <ScoreCell value={availabilityLabel} label={copy.availability} />
       </div>
 
-      <p className="mt-3 text-[12px] text-[color:var(--ol-muted)]">
+      <p className="mt-3 break-words text-[12px] text-[color:var(--ol-muted)]">
         {copy.published} {formatRelative(createdAt, locale)}
       </p>
 
-      <div className="mt-auto flex flex-wrap gap-2 pt-5">
+      <div className="mt-auto flex min-w-0 flex-wrap gap-2 pt-5">
         <span className={`ol-chip ${visibilityChip.className} h-[30px] px-3 text-[13px]`}>
           {visibilityChip.label}
         </span>
@@ -220,7 +220,7 @@ export function AgentHero({
           </span>
         ) : null}
         {tagCount > 0 ? (
-          <span className="ol-chip h-[30px] px-3 text-[13px]">
+          <span className="ol-chip h-[30px] min-w-0 max-w-full px-3 text-[13px]">
             {copy.tags(tagCount)}
           </span>
         ) : null}
@@ -231,8 +231,8 @@ export function AgentHero({
 
 function ScoreCell({ value, label }: { value: string; label: string }) {
   return (
-    <div className="flex flex-col items-start">
-      <strong className="text-xl font-black text-[color:var(--ol-ink)] leading-none">
+    <div className="flex min-w-0 flex-col items-start">
+      <strong className="max-w-full break-words text-xl font-black leading-none text-[color:var(--ol-ink)]">
         {value}
       </strong>
       <span className="mt-1 text-[11px] font-bold uppercase tracking-wider text-[color:var(--ol-muted)]">

@@ -43,7 +43,11 @@ export function ParentRunDirectory({
   activeRunId?: string;
   failed?: boolean;
 }) {
-  const totalPages = Math.max(1, Math.ceil(data.total / data.size));
+  const items = Array.isArray(data.items) ? data.items : [];
+  const total = Number.isFinite(data.total) ? data.total : items.length;
+  const page = Number.isFinite(data.page) && data.page > 0 ? data.page : 1;
+  const size = Number.isFinite(data.size) && data.size > 0 ? data.size : 10;
+  const totalPages = Math.max(1, Math.ceil(total / size));
   const copy =
     locale === "zh"
       ? {
@@ -88,7 +92,7 @@ export function ParentRunDirectory({
       <div className="ol-panel-head">
         <strong>{copy.title}</strong>
         <span className="text-[12.5px] font-black text-[color:var(--ol-primary-dark)]">
-          {copy.total(data.total)}
+          {copy.total(total)}
         </span>
       </div>
       <p className="border-b border-[color:var(--ol-line)] px-5 py-4 text-[13px] leading-6 text-[color:var(--ol-muted)]">
@@ -99,7 +103,7 @@ export function ParentRunDirectory({
         <p className="m-5 rounded-[8px] border border-[#e9c5c5] bg-[#fff5f5] p-4 text-[13px] font-semibold text-[#8f3030]">
           {copy.loadFailed}
         </p>
-      ) : data.items.length === 0 ? (
+      ) : items.length === 0 ? (
         <div className="m-5 rounded-[12px] border border-dashed border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] p-8 text-center">
           <p className="text-[13px] font-bold text-[color:var(--ol-muted)]">
             {copy.empty}
@@ -115,13 +119,13 @@ export function ParentRunDirectory({
         </div>
       ) : (
         <div className="grid gap-3 p-5 md:grid-cols-2">
-          {data.items.map((item) => {
+          {items.map((item) => {
             const selected = item.parent_run_id === activeRunId;
             const chip = statusChip(item.status, locale);
             return (
               <Link
                 key={item.parent_run_id}
-                href={`/a2a?run_id=${encodeURIComponent(item.parent_run_id)}&parent_page=${data.page}`}
+                href={`/a2a?run_id=${encodeURIComponent(item.parent_run_id)}&parent_page=${page}`}
                 className={`rounded-[12px] border p-4 transition ${
                   selected
                     ? "border-[color:var(--ol-primary)] bg-[color:var(--ol-mint)]"
@@ -178,16 +182,16 @@ export function ParentRunDirectory({
 
       {!failed && totalPages > 1 ? (
         <nav className="flex items-center justify-center gap-2 border-t border-[color:var(--ol-line)] p-4 text-[12.5px]">
-          {data.page > 1 ? (
-            <Link href={`/a2a?parent_page=${data.page - 1}`} className="ol-mini-btn">
+          {page > 1 ? (
+            <Link href={`/a2a?parent_page=${page - 1}`} className="ol-mini-btn">
               {copy.prev}
             </Link>
           ) : null}
           <span className="font-bold text-[color:var(--ol-muted)]">
-            {copy.page(data.page, totalPages)}
+            {copy.page(page, totalPages)}
           </span>
-          {data.page < totalPages ? (
-            <Link href={`/a2a?parent_page=${data.page + 1}`} className="ol-mini-btn">
+          {page < totalPages ? (
+            <Link href={`/a2a?parent_page=${page + 1}`} className="ol-mini-btn">
               {copy.next}
             </Link>
           ) : null}

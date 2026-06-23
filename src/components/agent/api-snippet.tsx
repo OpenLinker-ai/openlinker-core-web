@@ -28,11 +28,13 @@ const TABS: { id: Tab; label: string }[] = [
 export function ApiSnippet({
   agentID,
   sampleInput,
+  apiBaseUrl,
   locale = "zh",
 }: {
   agentID: string;
   slug: string;
   sampleInput?: Record<string, unknown>;
+  apiBaseUrl?: string;
   locale?: Locale;
 }) {
   const [tab, setTab] = useState<Tab>("curl");
@@ -73,7 +75,7 @@ export function ApiSnippet({
           ),
         };
 
-  const apiURL = getApiBaseUrl();
+  const apiURL = apiBaseUrl ?? getApiBaseUrl();
   const requestBody = {
     agent_id: agentID,
     input: sampleInput ?? { your_field: "your_value" },

@@ -49,7 +49,10 @@ export default async function A2APage({
   const parentResult = await apiFetchAuthed<ParentRunListPayload>(
     `/api/v1/a2a/parents?page=${parentPage}&size=${parentPageSize}`,
   )
-    .then((data) => ({ data, failed: false }))
+    .then((data) => ({
+      data: normalizeParentRunList(data, parentPage, parentPageSize),
+      failed: false,
+    }))
     .catch(() => ({
       data: {
         items: [],
@@ -71,8 +74,9 @@ export default async function A2APage({
       initialError = copy.readError;
     }
   }
+  const parentItems = Array.isArray(parentResult.data.items) ? parentResult.data.items : [];
   const activeParent = runId
-    ? parentResult.data.items.find((item) => item.parent_run_id === runId)
+    ? parentItems.find((item) => item.parent_run_id === runId)
     : undefined;
 
   return (
@@ -126,6 +130,18 @@ function a2aCallbackUrl(runId?: string, parentPage?: string): string {
   if (parentPage) params.set("parent_page", parentPage);
   const query = params.toString();
   return query ? `/a2a?${query}` : "/a2a";
+}
+
+function normalizeParentRunList(
+  data: ParentRunListPayload,
+  fallbackPage: number,
+  fallbackSize: number,
+): ParentRunListPayload {
+  const items = Array.isArray(data.items) ? data.items : [];
+  const total = Number.isFinite(data.total) ? data.total : items.length;
+  const page = Number.isFinite(data.page) && data.page > 0 ? data.page : fallbackPage;
+  const size = Number.isFinite(data.size) && data.size > 0 ? data.size : fallbackSize;
+  return { items, total, page, size };
 }
 
 function A2APublicIntro({ callbackUrl, locale }: { callbackUrl: string; locale: "zh" | "en" }) {

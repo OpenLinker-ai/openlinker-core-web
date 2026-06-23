@@ -258,9 +258,9 @@ export default async function AgentDetailPage({
     <>
       <Topbar />
 
-      <main className="mx-auto w-full max-w-7xl px-6 py-6">
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-6 py-6">
         {/* 面包屑 */}
-        <nav className="flex items-center gap-2 text-[12.5px] font-bold text-[color:var(--ol-muted)]">
+        <nav className="flex min-w-0 flex-wrap items-center gap-2 text-[12.5px] font-bold text-[color:var(--ol-muted)]">
           <Link href="/" className="hover:text-[color:var(--ol-ink)]">
             {copy.home}
           </Link>
@@ -269,11 +269,11 @@ export default async function AgentDetailPage({
             {copy.market}
           </Link>
           <span className="text-[color:var(--ol-subtle)]">/</span>
-          <span className="text-[color:var(--ol-ink)]">{agent.name}</span>
+          <span className="min-w-0 break-words text-[color:var(--ol-ink)]">{agent.name}</span>
         </nav>
 
         {/* 3 列 detail-layout */}
-        <div className="mt-4 grid gap-4 xl:grid-cols-[330px_1fr_320px]">
+        <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[minmax(0,330px)_minmax(0,1fr)_minmax(0,320px)]">
           {/* 左：hero */}
           <AgentHero
             slug={agent.slug}
@@ -291,18 +291,18 @@ export default async function AgentDetailPage({
           />
 
           {/* 中部主区 */}
-          <section className="flex flex-col gap-4">
+          <section className="flex min-w-0 flex-col gap-4">
             {/* 功能介绍 */}
-            <div className="ol-panel ol-panel-pad">
-              <div className="flex items-center justify-between">
+            <div className="ol-panel ol-panel-pad min-w-0 overflow-hidden">
+              <div className="flex min-w-0 items-center justify-between gap-3">
                 <strong className="text-[15px] font-black text-[color:var(--ol-ink)]">
                   {copy.intro}
                 </strong>
-                <span className="text-[12px] text-[color:var(--ol-muted)]">
+                <span className="shrink-0 text-[12px] text-[color:var(--ol-muted)]">
                   {copy.tagCount(agent.tags.length)}
                 </span>
               </div>
-              <p className="mt-3 whitespace-pre-line text-[13.5px] leading-relaxed text-[color:var(--ol-ink)]">
+              <p className="mt-3 whitespace-pre-line break-words text-[13.5px] leading-relaxed text-[color:var(--ol-ink)]">
                 {agent.description}
               </p>
               {agent.tags.length > 0 ? (
@@ -320,8 +320,8 @@ export default async function AgentDetailPage({
             </div>
 
             {/* 价格与计费（4 卡） */}
-            <div className="ol-panel px-4 py-4">
-              <div className="grid grid-cols-2 gap-3 text-[12px] text-[color:var(--ol-muted)] sm:grid-cols-4">
+            <div className="ol-panel min-w-0 overflow-hidden px-4 py-4">
+              <div className="grid min-w-0 grid-cols-1 gap-3 text-[12px] text-[color:var(--ol-muted)] sm:grid-cols-2 lg:grid-cols-4">
                 <MetaCell label={copy.scope} value={copy.scopeValue} />
                 <MetaCell label={copy.pricing} value={billingDescription} />
                 <MetaCell label={copy.availability} value={`${availabilityLabel} · ${availabilityStatusCopy(availability.status, locale)}`} />
@@ -330,7 +330,7 @@ export default async function AgentDetailPage({
             </div>
 
             {availability.status !== "healthy" ? (
-              <div className="ol-panel ol-panel-pad">
+              <div className="ol-panel ol-panel-pad min-w-0 overflow-hidden">
                 <div className="flex flex-wrap items-center gap-2">
                   <strong className="text-[15px] font-black text-[color:var(--ol-ink)]">
                     {copy.availabilityHint}
@@ -414,11 +414,11 @@ function availabilityChipClass(status: NonNullable<AgentDetail["availability"]>[
 
 function MetaCell({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    <div className="min-w-0">
       <b className="block text-[13px] font-black text-[color:var(--ol-ink)]">
         {label}
       </b>
-      <span className="mt-1 block text-[12px] text-[color:var(--ol-muted)]">
+      <span className="mt-1 block break-words text-[12px] text-[color:var(--ol-muted)]">
         {value}
       </span>
     </div>
@@ -435,21 +435,21 @@ function CapabilityPanel({
   const title = locale === "zh" ? "能力声明" : "Capability Declaration";
 
   return (
-    <div className="ol-panel ol-panel-pad">
-      <div className="flex items-center justify-between">
+    <div className="ol-panel ol-panel-pad min-w-0 overflow-hidden">
+      <div className="flex min-w-0 items-center justify-between gap-3">
         <strong className="text-[15px] font-black text-[color:var(--ol-ink)]">
           {title}
         </strong>
-        <span className="text-[12px] text-[color:var(--ol-muted)]">
+        <span className="shrink-0 text-[12px] text-[color:var(--ol-muted)]">
           v{capability.version} · JSON Schema
         </span>
       </div>
       {capability.summary ? (
-        <p className="mt-3 whitespace-pre-line text-[13.5px] leading-relaxed text-[color:var(--ol-ink)]">
+        <p className="mt-3 whitespace-pre-line break-words text-[13.5px] leading-relaxed text-[color:var(--ol-ink)]">
           {capability.summary}
         </p>
       ) : null}
-      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+      <div className="mt-4 grid min-w-0 gap-3 lg:grid-cols-2">
         <SchemaBlock title="Input" schema={capability.input_schema} />
         <SchemaBlock title="Output" schema={capability.output_schema} />
       </div>
@@ -465,7 +465,7 @@ function SchemaBlock({
   schema: Record<string, unknown>;
 }) {
   return (
-    <div className="rounded-xl border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] p-3">
+    <div className="min-w-0 overflow-hidden rounded-xl border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] p-3">
       <b className="block text-[12.5px] font-black text-[color:var(--ol-ink)]">
         {title}
       </b>
@@ -505,12 +505,12 @@ function ExamplesPanel({
         };
 
   return (
-    <div className="ol-panel ol-panel-pad">
-      <div className="flex items-center justify-between">
+    <div className="ol-panel ol-panel-pad min-w-0 overflow-hidden">
+      <div className="flex min-w-0 items-center justify-between gap-3">
         <strong className="text-[15px] font-black text-[color:var(--ol-ink)]">
           {copy.title}
         </strong>
-        <span className="text-[12px] text-[color:var(--ol-muted)]">
+        <span className="shrink-0 text-[12px] text-[color:var(--ol-muted)]">
           {copy.count(examples.length)}
         </span>
       </div>
@@ -518,9 +518,9 @@ function ExamplesPanel({
         {examples.map((example) => (
           <div
             key={example.id}
-            className="rounded-xl border border-[color:var(--ol-line)] p-3"
+            className="min-w-0 overflow-hidden rounded-xl border border-[color:var(--ol-line)] p-3"
           >
-            <b className="block text-[13px] font-black text-[color:var(--ol-ink)]">
+            <b className="block break-words text-[13px] font-black text-[color:var(--ol-ink)]">
               {example.title}
             </b>
             {callable ? (
@@ -538,7 +538,7 @@ function ExamplesPanel({
                 {copy.viewOnly}
               </span>
             )}
-            <div className="mt-2 grid gap-2 lg:grid-cols-2">
+            <div className="mt-2 grid min-w-0 gap-2 lg:grid-cols-2">
               <SchemaBlock title="Input" schema={example.input_json} />
               {example.expected_output_json ? (
                 <SchemaBlock

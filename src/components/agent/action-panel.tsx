@@ -16,6 +16,7 @@ import Link from "next/link";
 import { ApiSnippet } from "./api-snippet";
 import { TryButton } from "./try-button";
 import type { Locale } from "@/lib/i18n";
+import { getApiBaseUrl } from "@/lib/api-root";
 
 interface ActionPanelProps {
   agentID: string;
@@ -38,6 +39,7 @@ export function ActionPanel({
 }: ActionPanelProps) {
   // 1,000 次/月未来价格参考（cents → USD）
   const monthlyEstimate = ((pricePerCallCents * 1000) / 100).toFixed(2);
+  const apiBaseUrl = getApiBaseUrl();
   const copy =
     locale === "zh"
       ? {
@@ -64,9 +66,9 @@ export function ActionPanel({
         };
 
   return (
-    <aside className="flex flex-col gap-3">
+    <aside className="flex min-w-0 flex-col gap-3 overflow-hidden">
       {/* 开始使用 */}
-      <div className="ol-panel ol-panel-pad">
+      <div className="ol-panel ol-panel-pad min-w-0 overflow-hidden">
         <h3 className="text-[15px] font-black text-[color:var(--ol-ink)]">
           {copy.start}
         </h3>
@@ -84,7 +86,7 @@ export function ActionPanel({
             </button>
           )}
           {!callable ? (
-            <p className="rounded-xl bg-[color:var(--ol-soft)] px-3 py-2 text-[12px] font-semibold leading-5 text-[color:var(--ol-muted)]">
+            <p className="break-words rounded-xl bg-[color:var(--ol-soft)] px-3 py-2 text-[12px] font-semibold leading-5 text-[color:var(--ol-muted)]">
               {copy.unavailableBody}
             </p>
           ) : null}
@@ -98,16 +100,22 @@ export function ActionPanel({
       </div>
 
       {/* API 示例 */}
-      <div id="api-snippet" className="ol-panel ol-panel-pad">
+      <div id="api-snippet" className="ol-panel ol-panel-pad min-w-0 overflow-hidden">
         <h3 className="text-[15px] font-black text-[color:var(--ol-ink)]">
           {copy.apiExample}
         </h3>
-        <div className="mt-3">
-          <ApiSnippet agentID={agentID} slug={slug} sampleInput={sampleInput} locale={locale} />
+        <div className="mt-3 min-w-0">
+          <ApiSnippet
+            agentID={agentID}
+            slug={slug}
+            sampleInput={sampleInput}
+            apiBaseUrl={apiBaseUrl}
+            locale={locale}
+          />
         </div>
       </div>
 
-      <div className="ol-panel ol-panel-pad">
+      <div className="ol-panel ol-panel-pad min-w-0 overflow-hidden">
         <h3 className="text-[15px] font-black text-[color:var(--ol-ink)]">
           {copy.related}
         </h3>
@@ -123,7 +131,7 @@ export function ActionPanel({
 
         {/* 未来价格参考（黄色 info-card） */}
       <div
-        className="rounded-2xl border px-4 py-3"
+        className="min-w-0 overflow-hidden rounded-2xl border px-4 py-3"
         style={{
           background: "var(--ol-amber-soft)",
           borderColor: "rgba(200, 131, 13, 0.18)",
@@ -132,7 +140,7 @@ export function ActionPanel({
           <strong className="block text-[13px] font-black text-[color:var(--ol-amber)]">
             {copy.futurePrice}
           </strong>
-          <span className="mt-1 block text-[12.5px] font-semibold text-[color:var(--ol-ink)]">
+          <span className="mt-1 block break-words text-[12.5px] font-semibold text-[color:var(--ol-ink)]">
             {copy.priceBody}
           </span>
       </div>
