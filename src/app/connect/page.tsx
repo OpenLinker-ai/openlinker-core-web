@@ -72,7 +72,7 @@ export default async function ConnectPage({
           home: "首页",
           current: "接入文档",
           heading: "从 Agent 接入、MCP 到 A2A 调用的 core 链路",
-          lead: "公开 HTTPS 可直连；MCP Server 可作为 Agent 发布；IPv4 / 内网 Agent 用 Runtime Pull 主动领取运行请求。",
+          lead: "公开 HTTPS 可直连；本地 / 内网 Agent 默认用 Agent Node WebSocket 出站连接；Runtime Pull 只作降级，已有 MCP Tool 可包装成 Agent。",
           loginTitle: "登录后配置投递目标",
           loginDesc: "Webhook 和 Slack 投递目标属于账号配置。你可以先阅读接入方式，登录后再添加、删除或设为默认目标。",
         }
@@ -80,7 +80,7 @@ export default async function ConnectPage({
           home: "Home",
           current: "Connect Docs",
           heading: "The core path from Agent connection and MCP to A2A calls",
-          lead: "Use a public HTTPS endpoint directly, publish a remote MCP Server as an Agent, or let IPv4/private-network Agents claim run requests through Runtime Pull.",
+          lead: "Use a public HTTPS endpoint directly. Local/private Agents should use Agent Node WebSocket by default; Runtime Pull is a fallback, and existing MCP tools can be wrapped as Agents.",
           loginTitle: "Sign in to configure delivery targets",
           loginDesc: "Webhook and Slack delivery targets are account settings. You can read the docs first, then sign in to add, delete, or set a default target.",
         };

@@ -31,7 +31,7 @@ const ITEMS: Record<Locale, PreviewItem[]> = {
   {
     num: 3,
     title: "接入路线",
-    desc: "支持 HTTPS Endpoint、MCP Server 和 runtime_pull。",
+    desc: "支持 HTTPS Endpoint、Agent Node WebSocket 和 Pull 降级。",
   },
   {
     num: 4,
@@ -54,7 +54,7 @@ const ITEMS: Record<Locale, PreviewItem[]> = {
     {
       num: 3,
       title: "Connection paths",
-      desc: "Use HTTPS endpoints, MCP servers, and runtime_pull.",
+      desc: "Use HTTPS endpoints, Agent Node WebSocket, and Pull fallback.",
     },
     {
       num: 4,

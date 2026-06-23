@@ -13,7 +13,7 @@
  *      is_creator=false → <BecomeCreatorPrompt /> 引导一键开通
  *   4. 后端不可用 → 显示降级提示，不抛错让 RSC tree 崩溃
  *
- * Agent 支持 HTTP Endpoint、MCP Server、Runtime Pull 三种接入；能力声明 / dry-run / 认证状态作为后续步骤展示。
+ * Agent 支持 HTTP Endpoint、Agent Node WebSocket、Runtime Pull fallback，以及已有 MCP Tool 包装；能力声明 / dry-run / 认证状态作为后续步骤展示。
  */
 
 import { redirect } from "next/navigation";
@@ -93,7 +93,7 @@ function PublishHead({ activePill, locale }: { activePill: string | null; locale
       ? {
           kicker: "我的 / 接入 Agent",
           heading: "选择接入方式并发布你的 Agent",
-          lead: "优先使用可达 Endpoint URL；不可用时使用 HTTP JSON-RPC / MCP Server；IPv4 / 内网 Agent 最后用 Runtime Pull 兜底。",
+          lead: "公网 HTTPS 可直连；本地 / 内网 / NAT Agent 默认用 Agent Node WebSocket；Runtime Pull 只作降级。已有 MCP tool 可作为高级包装，不是 MCP Server 上架入口。",
           later: "后续步骤",
           pills: [
             { id: "basic", label: "基础信息" },
@@ -105,7 +105,7 @@ function PublishHead({ activePill, locale }: { activePill: string | null; locale
       : {
           kicker: "My / Connect Agent",
           heading: "Choose a connection mode and publish your Agent",
-          lead: "Prefer a reachable endpoint URL. If that is not available, use an HTTP JSON-RPC / MCP Server. Use Runtime Pull last for IPv4/private-network Agents.",
+          lead: "Use a public HTTPS endpoint when reachable. For local, private-network, or NAT Agents, use Agent Node WebSocket by default; Runtime Pull is only the fallback. Existing MCP tools can be wrapped as an advanced Agent source, not listed as MCP Servers here.",
           later: "Later step",
           pills: [
             { id: "basic", label: "Basics" },

@@ -22,7 +22,7 @@ export interface OnboardingAgent {
   visibility: "public" | "unlisted" | "private";
   certification_status: "unreviewed" | "pending" | "certified" | "rejected";
   endpoint_url: string;
-  connection_mode: "direct_http" | "mcp_server" | "runtime_pull";
+  connection_mode: "direct_http" | "mcp_server" | "runtime_ws" | "runtime_pull";
   mcp_tool_name?: string;
 }
 
@@ -90,7 +90,7 @@ type RuntimeWorkbench = {
     id: string;
     slug: string;
     name: string;
-    connection_mode: "direct_http" | "mcp_server" | "runtime_pull" | string;
+    connection_mode: "direct_http" | "mcp_server" | "runtime_ws" | "runtime_pull" | string;
     lifecycle_status: string;
     visibility: string;
     certification_status: string;
@@ -208,10 +208,13 @@ function endpointHost(endpointURL: string): string {
 
 function connectionModeLabel(agent: OnboardingAgent, locale: Locale): string {
   if (agent.connection_mode === "mcp_server") {
-    return `MCP · ${agent.mcp_tool_name || (locale === "zh" ? "未配置工具" : "tool not configured")}`;
+    return `${locale === "zh" ? "已有 MCP Tool" : "Existing MCP tool"} · ${agent.mcp_tool_name || (locale === "zh" ? "未配置工具" : "tool not configured")}`;
+  }
+  if (agent.connection_mode === "runtime_ws") {
+    return locale === "zh" ? "Agent Node / WebSocket · 出站长连接" : "Agent Node / WebSocket · outbound socket";
   }
   if (agent.connection_mode === "runtime_pull") {
-    return locale === "zh" ? "Runtime Pull · Agent 主动领取运行请求" : "Runtime Pull · Agent claims run requests";
+    return locale === "zh" ? "Runtime Pull · WebSocket 降级领取" : "Runtime Pull · fallback claim loop";
   }
   return `HTTP · ${endpointHost(agent.endpoint_url)}`;
 }
@@ -302,7 +305,7 @@ export function AgentOnboardingPanel({
           exampleTitlePlaceholder: "示例标题",
           adding: "添加中...",
           addExample: "添加示例",
-          tokenPolling: "用绑定当前 Agent 的访问令牌轮询领取运行请求，不需要平台访问你的 IPv4 地址。",
+          tokenPolling: "用绑定当前 Agent 的访问令牌建立 WebSocket；必要时可降级为轮询领取运行请求，不需要平台访问你的 IPv4 地址。",
           visibility: "Registry 可见性",
           visibilityOptions: {
             public: "公开 - 出现在 Registry",
@@ -325,7 +328,7 @@ export function AgentOnboardingPanel({
           checking: "检查中...",
           runHealth: "执行健康检查",
           repair: "修复建议",
-          workbenchTitle: "Runtime Pull Workbench",
+          workbenchTitle: "Runtime Workbench",
         }
       : {
           defaultExampleTitle: "Basic call example",
@@ -360,7 +363,7 @@ export function AgentOnboardingPanel({
           exampleTitlePlaceholder: "Example title",
           adding: "Adding...",
           addExample: "Add example",
-          tokenPolling: "Use an access token bound to this Agent to poll and claim run requests. The platform does not need to reach your IPv4 address.",
+          tokenPolling: "Use an access token bound to this Agent to open WebSocket; fall back to polling claims only when needed. The platform does not need to reach your IPv4 address.",
           visibility: "Registry visibility",
           visibilityOptions: {
             public: "Public - listed in Registry",
@@ -383,7 +386,7 @@ export function AgentOnboardingPanel({
           checking: "Checking...",
           runHealth: "Run health check",
           repair: "Repair hints",
-          workbenchTitle: "Runtime Pull Workbench",
+          workbenchTitle: "Runtime Workbench",
         };
   const { fetch: apiFetch } = useApi();
   const [agentState, setAgentState] = useState(agent);
@@ -741,7 +744,7 @@ export function AgentOnboardingPanel({
           <div className="ol-info-card">
             <strong>{copy.endpoint}</strong>
             <span>{connectionModeLabel(agentState, locale)}</span>
-            {agentState.connection_mode !== "runtime_pull" ? (
+            {agentState.connection_mode !== "runtime_ws" && agentState.connection_mode !== "runtime_pull" ? (
               <code className="mt-1 block break-all text-[11.5px] text-[color:var(--ol-muted)]">
                 {agentState.endpoint_url}
               </code>
@@ -984,7 +987,7 @@ function RuntimeWorkbenchPanel({
         <div>
           <div className="ol-kicker">{title}</div>
           <strong className="mt-1 block text-[15px] font-black text-[color:var(--ol-ink)]">
-            {connectionMode === "runtime_pull" ? "runtime_pull" : connectionMode}
+            {connectionMode}
           </strong>
         </div>
         <span className={`ol-chip ${callable ? "ol-chip-green" : "ol-chip-amber"}`}>

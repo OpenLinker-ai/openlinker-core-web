@@ -64,16 +64,16 @@ export function HeroDual({ locale = "zh" }: { locale?: Locale }) {
       ? {
           tag: "Agent 接入",
           title: "接入你的 Agent",
-          desc: "支持 HTTPS Endpoint、MCP Server 和 Runtime Pull，适合本地或私有网络 Agent。",
+          desc: "支持 HTTPS Endpoint、Agent Node WebSocket 和 Pull 降级，适合本地或私有网络 Agent。",
           cta: "→ 查看接入文档",
-          meta: "HTTP · MCP · runtime_pull · webhook",
+          meta: "HTTP · runtime_ws · runtime_pull · webhook",
         }
       : {
           tag: "Agent Onboarding",
           title: "Connect your Agent",
-          desc: "Use HTTPS endpoints, MCP servers, or Runtime Pull for local and private-network Agents.",
+          desc: "Use HTTPS endpoints, Agent Node WebSocket, or Pull fallback for local and private-network Agents.",
           cta: "→ View connect docs",
-          meta: "HTTP · MCP · runtime_pull · webhook",
+          meta: "HTTP · runtime_ws · runtime_pull · webhook",
         };
 
   return (

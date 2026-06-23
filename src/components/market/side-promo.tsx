@@ -21,7 +21,7 @@ export function SidePromo({ locale = "zh" }: { locale?: Locale }) {
           workflow: "A2A / MCP",
           workflowBody: "Core 保留协议、调用链和运行证据；商业撮合与交易由商业产品侧承接。",
           emptyTitle: "没有结果？",
-          emptyBody: "换个关键词，或在创作者中心接入一个 runtime_pull Agent。",
+          emptyBody: "换个关键词，或在创作者中心接入一个 Agent Node / WebSocket Agent。",
         }
       : {
           tag: "Core Registry",
@@ -33,7 +33,7 @@ export function SidePromo({ locale = "zh" }: { locale?: Locale }) {
           workflow: "A2A / MCP",
           workflowBody: "Core keeps protocols, call chains, and run evidence. Commercial matching and transactions belong to the commercial product.",
           emptyTitle: "No results?",
-          emptyBody: "Try another keyword, or connect a runtime_pull Agent in Creator Hub.",
+          emptyBody: "Try another keyword, or connect an Agent Node / WebSocket Agent in Creator Hub.",
         };
 
   return (

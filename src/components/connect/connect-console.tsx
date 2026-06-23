@@ -6,7 +6,7 @@ import { useMemo, useRef, useState } from "react";
 import { Icon, type IconName } from "@/components/ui/icon";
 import type { Locale } from "@/lib/i18n";
 
-type Mode = "endpoint" | "runtime_pull" | "sdk" | "webhook" | "mcp";
+type Mode = "endpoint" | "runtime_ws" | "sdk" | "webhook" | "mcp";
 
 interface ModeSpec {
   label: string;
@@ -41,37 +41,32 @@ const MODES: Record<Mode, ModeSpec> = {
     ].join("\n"),
     bullets: ["返回 output JSON 即终态", "失败调用只记录状态", "可配置预共享 Header 鉴权"],
   },
-  runtime_pull: {
-    label: "Runtime Pull",
-    title: "内网 / IPv4 Agent 主动领取运行请求",
-    blurb: "Agent 注册后不暴露入站端口，用绑定自身的访问令牌低频心跳、长轮询领取 pending runs 并回传结果。",
+  runtime_ws: {
+    label: "Agent Node",
+    title: "内网 / NAT Agent 长连接接入",
+    blurb: "Agent 注册后不暴露入站端口，由 OpenLinker Agent Node 主动建立 runtime_ws 长连接并回传结果。",
     bestFor: "本地 Agent · 企业内网",
     icon: "bot",
     accent: "var(--ol-blue)",
     code: [
-      "# 1. Agent 自注册时选择 connection_mode=runtime_pull",
+      "# 1. Agent 自注册时选择 connection_mode=runtime_ws",
       "curl -X POST $OPENLINKER_API/api/v1/agent-registration/agents \\",
       "  -H \"Authorization: Bearer $OPENLINKER_REGISTRATION_TOKEN\" \\",
       "  -H \"Content-Type: application/json\" \\",
-      "  -d '{\"name\":\"Local Analyst\",\"connection_mode\":\"runtime_pull\",\"tags\":[\"data\"]}'",
+      "  -d '{\"name\":\"Local Analyst\",\"connection_mode\":\"runtime_ws\",\"tags\":[\"data\"]}'",
       "",
-      "# 2. Agent 进程先心跳读取 pending/claim hint",
-      "curl -X POST $OPENLINKER_API/api/v1/agent-runtime/heartbeat \\",
-      "  -H \"Authorization: Bearer $OPENLINKER_AGENT_TOKEN\"",
+      "# 2. 启动 OpenLinker Agent Node，协议由 node 负责",
+      "cd openlinker-agent-node",
+      "OPENLINKER_API_BASE=$OPENLINKER_API \\",
+      "OPENLINKER_RUNTIME_TOKEN=$OPENLINKER_AGENT_TOKEN \\",
+      "OPENLINKER_AGENT_NODE_ADAPTER=openclaw \\",
+      "OPENLINKER_AGENT_NODE_HTTP_URL=http://127.0.0.1:18080/run \\",
+      "go run ./cmd/openlinker-agent-node",
       "",
-      "# 3. 有运行请求时领取，或用 wait 长轮询等待",
-      "#    使用注册返回的 runtime token；无运行请求返回 204 时按 Retry-After 退避，不要退出进程。",
-      "curl \"$OPENLINKER_API/api/v1/agent-runtime/runs/claim?wait=25\" \\",
-      "  -H \"Authorization: Bearer $OPENLINKER_AGENT_TOKEN\"",
-      "",
-      "# 4. 执行本地逻辑后回传终态",
-      "#    未领取或未回传的 run 会被平台自动置为 timeout。",
-      "curl -X POST $OPENLINKER_API/api/v1/agent-runtime/runs/$RUN_ID/result \\",
-      "  -H \"Authorization: Bearer $OPENLINKER_AGENT_TOKEN\" \\",
-      "  -H \"Content-Type: application/json\" \\",
-      "  -d '{\"status\":\"success\",\"output\":{\"summary\":\"done\"}}'",
+      "# 3. 后端只实现业务接口；node 负责 run.assigned、run.event、run.result 和 localhost helper A2A。",
+      "#    WebSocket 无法维持时，再降级到 runtime_pull heartbeat + claim。",
     ].join("\n"),
-    bullets: ["平台不访问你的私网 IPv4", "访问令牌只绑定当前 Agent", "结果仍写入 runs / run_events"],
+    bullets: ["平台不访问你的私网 IPv4", "runtime_ws 可实时派发任务", "Agent Node 提供 localhost helper"],
   },
   sdk: {
     label: "SDK",
@@ -194,12 +189,12 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "label" | "title" | 
       bestFor: "创作者接入 · 最简方案",
       bullets: ["返回 output JSON 即终态", "失败调用保持免费期口径", "可配置预共享 Header 鉴权"],
     },
-    runtime_pull: {
-      label: "Runtime Pull",
-      title: "内网 / IPv4 Agent 主动领取运行请求",
-      blurb: "Agent 注册后不暴露入站端口，用绑定自身的访问令牌低频心跳、长轮询领取 pending runs 并回传结果。",
+    runtime_ws: {
+      label: "Agent Node",
+      title: "内网 / NAT Agent 长连接接入",
+      blurb: "Agent 注册后不暴露入站端口，由 OpenLinker Agent Node 主动建立 runtime_ws 长连接并回传结果。",
       bestFor: "本地 Agent · 企业内网",
-      bullets: ["平台不访问你的私网 IPv4", "访问令牌只绑定当前 Agent", "结果仍写入 runs / run_events"],
+      bullets: ["平台不访问你的私网 IPv4", "runtime_ws 可实时派发任务", "Agent Node 提供 localhost helper"],
     },
     sdk: {
       label: "SDK",
@@ -236,12 +231,12 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "label" | "title" | 
       bestFor: "Creator setup · simplest path",
       bullets: ["Return output JSON as the final state", "Failed runs stay in the free-phase path", "Optional pre-shared header auth"],
     },
-    runtime_pull: {
-      label: "Runtime Pull",
-      title: "Private-network Agents claim run requests",
-      blurb: "After registration, the Agent keeps inbound ports closed and uses its bound token for heartbeat and long-poll claiming.",
+    runtime_ws: {
+      label: "Agent Node",
+      title: "Private-network Agents stay connected",
+      blurb: "After registration, OpenLinker Agent Node keeps inbound ports closed and opens an outbound runtime_ws connection.",
       bestFor: "Local Agents · private networks",
-      bullets: ["OpenLinker does not reach into your private IPv4 network", "The access token is bound to this Agent", "Results still write to runs and run_events"],
+      bullets: ["OpenLinker does not reach into your private IPv4 network", "runtime_ws assigns work in real time", "Agent Node exposes a localhost helper"],
     },
     sdk: {
       label: "SDK",
@@ -294,14 +289,12 @@ function codeForLocale(mode: Mode, code: string, locale: Locale) {
       .replace("# 3. MCP tools/call：搜索并调用 Agent", "# 3. MCP tools/call: search and run Agents")
       .replace("\"query\":\"翻译\"", "\"query\":\"translate\"");
   }
-  if (mode === "runtime_pull") {
+  if (mode === "runtime_ws") {
     return code
-      .replace("# 1. Agent 自注册时选择 connection_mode=runtime_pull", "# 1. Choose connection_mode=runtime_pull during Agent registration")
-      .replace("# 2. Agent 进程先心跳读取 pending/claim hint", "# 2. The Agent process heartbeats for pending/claim hints")
-      .replace("# 3. 有运行请求时领取，或用 wait 长轮询等待", "# 3. Claim when work exists, or long-poll with wait")
-      .replace("#    使用注册返回的 runtime token；无运行请求返回 204 时按 Retry-After 退避，不要退出进程。", "#    Use the runtime token returned at registration; on 204 with no run request, back off with Retry-After and keep the process alive.")
-      .replace("# 4. 执行本地逻辑后回传终态", "# 4. Run local logic and report the final state")
-      .replace("#    未领取或未回传的 run 会被平台自动置为 timeout。", "#    Runs that are not claimed or not reported are timed out by the platform.");
+      .replace("# 1. Agent 自注册时选择 connection_mode=runtime_ws", "# 1. Choose connection_mode=runtime_ws during Agent registration")
+      .replace("# 2. 启动 OpenLinker Agent Node，协议由 node 负责", "# 2. Start OpenLinker Agent Node; the node owns the protocol")
+      .replace("# 3. 后端只实现业务接口；node 负责 run.assigned、run.event、run.result 和 localhost helper A2A。", "# 3. The backend only implements business logic; the node owns run.assigned, run.event, run.result, and localhost helper A2A.")
+      .replace("#    WebSocket 无法维持时，再降级到 runtime_pull heartbeat + claim。", "#    Fall back to runtime_pull heartbeat + claim only when WebSocket cannot stay connected.");
   }
   return code;
 }

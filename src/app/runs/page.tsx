@@ -66,7 +66,7 @@ export default async function RunsPage({
           emptyText: "还没有运行记录。",
           emptyAction: "打开 Registry ->",
           connect: "接入 Agent",
-          connectBody: "如果你是创作者，可以接入 HTTP、MCP 或 runtime_pull Agent。",
+          connectBody: "如果你是创作者，可以接入 HTTP Endpoint、Agent Node WebSocket 或 Pull 降级 Agent。",
           connectAction: "接入新 Agent",
         }
       : {
@@ -85,7 +85,7 @@ export default async function RunsPage({
           emptyText: "No run records yet.",
           emptyAction: "Open Registry ->",
           connect: "Connect Agent",
-          connectBody: "Creators can connect HTTP, MCP, or runtime_pull Agents.",
+          connectBody: "Creators can connect HTTP Endpoint, Agent Node WebSocket, or Pull fallback Agents.",
           connectAction: "Connect new Agent",
         };
 

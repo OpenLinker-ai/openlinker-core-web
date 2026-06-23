@@ -75,9 +75,14 @@ function isAllowedEndpointURL(value: string): boolean {
 }
 
 function connectionModeLabel(mode: AgentConnectionMode, locale: Locale): string {
-  if (mode === "mcp_server") return "MCP Server";
-  if (mode === "runtime_pull") return locale === "zh" ? "内网主动拉取" : "Private runtime pull";
+  if (mode === "runtime_ws") return "Agent Node / WebSocket";
+  if (mode === "runtime_pull") return locale === "zh" ? "Runtime Pull 降级" : "Runtime Pull fallback";
+  if (mode === "mcp_server") return locale === "zh" ? "已有 MCP Tool" : "Existing MCP tool";
   return "HTTP Endpoint";
+}
+
+function isRuntimeConnectionMode(mode: AgentConnectionMode): boolean {
+  return mode === "runtime_ws" || mode === "runtime_pull";
 }
 
 const VALIDATION_COPY = {
@@ -121,7 +126,7 @@ function createSchema(locale: Locale) {
   const copy = VALIDATION_COPY[locale];
   return z
     .object({
-      connection_mode: z.enum(["direct_http", "runtime_pull", "mcp_server"]),
+      connection_mode: z.enum(["direct_http", "runtime_ws", "runtime_pull", "mcp_server"]),
       slug: z
         .string()
         .min(3, copy.min3)
@@ -157,7 +162,7 @@ function createSchema(locale: Locale) {
         ),
     })
     .superRefine((values, ctx) => {
-    if (values.connection_mode === "runtime_pull") return;
+    if (isRuntimeConnectionMode(values.connection_mode)) return;
     if (!values.endpoint_url) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -220,7 +225,7 @@ export function PublishForm({ creatorName, skills, locale = "zh" }: PublishFormP
           skillBindWarningPrefix: "Agent 已提交，但技能绑定失败：",
           skillBindWarning: "Agent 已提交，但技能绑定失败，请到创作者中心重试。",
           saved: "基础信息已保存，继续补充能力声明",
-          chooseSource: "选择来源",
+          chooseSource: "选择接入方式",
           basicInfo: "基础信息",
           skillLabel: `技能（最多 ${MAX_SKILLS_PER_AGENT} 个，可选）`,
           skillHint: "声明 Agent 具备的能力，便于买方按 Skill 检索；公开后可在创作者中心调整。",
@@ -238,7 +243,7 @@ export function PublishForm({ creatorName, skills, locale = "zh" }: PublishFormP
           skillBindWarningPrefix: "Agent submitted, but Skill binding failed: ",
           skillBindWarning: "Agent submitted, but Skill binding failed. Retry from Creator Hub.",
           saved: "Basics saved. Continue with capability claims.",
-          chooseSource: "Choose source",
+          chooseSource: "Choose connection mode",
           basicInfo: "Basics",
           skillLabel: `Skills (up to ${MAX_SKILLS_PER_AGENT}, optional)`,
           skillHint: "Declare what the Agent can do so buyers can find it by Skill. You can adjust this later in Creator Hub.",
@@ -380,7 +385,7 @@ export function PublishForm({ creatorName, skills, locale = "zh" }: PublishFormP
             locale={locale}
             onChange={(value) => {
               form.setValue("connection_mode", value, { shouldValidate: true });
-              if (value === "runtime_pull") {
+              if (isRuntimeConnectionMode(value)) {
                 form.clearErrors(["endpoint_url", "mcp_tool_name"]);
               }
             }}
@@ -591,7 +596,14 @@ function EndpointSection({
   const copy =
     locale === "zh"
       ? {
-          runtimeTitle: "Runtime Pull：适合 IPv4 / 内网 / NAT 后面的 Agent",
+          runtimeWSTitle: "Agent Node / WebSocket：内网 Agent 默认选择",
+          runtimeWSBody: (
+            <>
+              保存后在创作者中心生成绑定该 Agent 的访问令牌。你的 Agent Node 不需要公网入站地址，只要用该令牌建立{" "}
+              <code>/api/v1/agent-runtime/ws</code> 出站长连接，就能实时接收运行请求、回传事件和最终结果；WebSocket 无法保活时可用 Runtime Pull 降级。
+            </>
+          ),
+          runtimePullTitle: "Runtime Pull：仅作为 WebSocket 降级",
           runtimeBody: (
             <>
               保存后在创作者中心生成绑定该 Agent 的访问令牌。你的本地 Agent 不需要公网入站地址，只要定时请求{" "}
@@ -603,17 +615,25 @@ function EndpointSection({
           httpsOrLoopback: "Endpoint URL（HTTPS 或本地 loopback HTTP）",
           httpsOnly: "Endpoint URL（必须 HTTPS）",
           localHint: "本地调试模式已开启；生产发布请改为 HTTPS endpoint。",
-          mcpTool: "HTTP JSON-RPC / MCP Tool 名称",
+          mcpEndpoint: "远程 HTTP JSON-RPC / MCP Endpoint URL",
+          mcpTool: "远程 MCP Tool 名称",
           mcpHint: (
             <>
-              平台会对该 HTTP JSON-RPC / MCP endpoint 发送 <code>tools/call</code>，把用户 input 作为 arguments。
+              这里只是把已有远程 HTTP JSON-RPC / MCP tool 包装成 Agent；真正的 MCP Server 上架入口应在 MCP 中心。平台会发送 <code>tools/call</code>，把用户 input 作为 arguments。
             </>
           ),
-          mcpAuth: "MCP 鉴权（可选）",
+          mcpAuth: "MCP Tool 鉴权（可选）",
           endpointAuth: "鉴权 Header（可选，平台调用 endpoint 时携带）",
         }
       : {
-          runtimeTitle: "Runtime Pull: for Agents behind IPv4, private networks, or NAT",
+          runtimeWSTitle: "Agent Node / WebSocket: default for private Agents",
+          runtimeWSBody: (
+            <>
+              After saving, Creator Hub generates a token bound to this Agent. Agent Node does not need a public inbound URL. It opens an outbound{" "}
+              <code>/api/v1/agent-runtime/ws</code> connection with that token to receive run requests in real time, stream events, and send final results. Use Runtime Pull only when WebSocket cannot stay connected.
+            </>
+          ),
+          runtimePullTitle: "Runtime Pull: WebSocket fallback only",
           runtimeBody: (
             <>
               After saving, Creator Hub generates a token bound to this Agent. Your local Agent does not need a public inbound URL. It periodically calls{" "}
@@ -625,24 +645,26 @@ function EndpointSection({
           httpsOrLoopback: "Endpoint URL (HTTPS or local loopback HTTP)",
           httpsOnly: "Endpoint URL (HTTPS required)",
           localHint: "Local debugging mode is enabled. Use an HTTPS endpoint for production listing.",
-          mcpTool: "HTTP JSON-RPC / MCP tool name",
+          mcpEndpoint: "Remote HTTP JSON-RPC / MCP endpoint URL",
+          mcpTool: "Remote MCP tool name",
           mcpHint: (
             <>
-              OpenLinker sends <code>tools/call</code> to this HTTP JSON-RPC / MCP endpoint and passes user input as arguments.
+              This wraps an existing remote HTTP JSON-RPC / MCP tool as an Agent; MCP Server listing belongs in the MCP center. OpenLinker sends <code>tools/call</code> and passes user input as arguments.
             </>
           ),
-          mcpAuth: "MCP auth (optional)",
+          mcpAuth: "MCP tool auth (optional)",
           endpointAuth: "Auth header (optional, sent when OpenLinker calls the endpoint)",
         };
 
-  if (connectionMode === "runtime_pull") {
+  if (connectionMode === "runtime_ws" || connectionMode === "runtime_pull") {
+    const isWS = connectionMode === "runtime_ws";
     return (
       <div className="rounded-2xl border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] p-4">
         <div className="text-[13px] font-[900] text-[color:var(--ol-ink)]">
-          {copy.runtimeTitle}
+          {isWS ? copy.runtimeWSTitle : copy.runtimePullTitle}
         </div>
         <p className="mt-2 text-[12.5px] leading-relaxed text-[color:var(--ol-muted)]">
-          {copy.runtimeBody}
+          {isWS ? copy.runtimeWSBody : copy.runtimeBody}
         </p>
       </div>
     );
@@ -655,7 +677,7 @@ function EndpointSection({
       <Field
         label={
           isMCP
-            ? "HTTP JSON-RPC / MCP Endpoint URL"
+            ? copy.mcpEndpoint
             : ALLOW_LOCAL_HTTP_ENDPOINTS
               ? copy.httpsOrLoopback
               : copy.httpsOnly

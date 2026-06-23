@@ -810,10 +810,10 @@ body > main {
     }
   }
 
-  /* Agent 来源选择 3 卡（HTTP / Runtime Pull / MCP） */
+  /* Agent 接入方式卡片 */
   .ol-source-tabs {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 10px;
   }
 

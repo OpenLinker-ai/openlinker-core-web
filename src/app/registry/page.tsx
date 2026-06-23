@@ -94,14 +94,14 @@ export default async function MarketPage({
           count: "个",
           callableOnly: "仅展示可调用 · 健康状态优先",
           failed: "暂时无法连接 Registry 数据，请检查后端服务或稍后刷新。",
-          empty: "当前没有匹配的可调用 Agent。可以换一个关键词，或去创作者中心接入一个 runtime_pull Agent。",
+          empty: "当前没有匹配的可调用 Agent。可以换一个关键词，或去创作者中心接入一个 Agent Node / WebSocket Agent。",
         }
       : {
           result: "Results",
           count: "Agents",
           callableOnly: "Callable only · healthy status first",
           failed: "Registry data is unavailable. Check the backend service or refresh later.",
-          empty: "No matching callable Agents yet. Try another keyword or connect a runtime_pull Agent in Creator Hub.",
+          empty: "No matching callable Agents yet. Try another keyword or connect an Agent Node / WebSocket Agent in Creator Hub.",
         };
 
   return (
