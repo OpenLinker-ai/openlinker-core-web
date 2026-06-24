@@ -32,11 +32,14 @@ export function AgentDeliveryCenter({
   runStatus,
 }: Props) {
   const [webhookOpen, setWebhookOpen] = useState(false);
+  const historyHref = runId
+    ? `/hub/agents/${encodeURIComponent(agent.slug)}/delivery/history?run_id=${encodeURIComponent(runId)}`
+    : `/hub/agents/${encodeURIComponent(agent.slug)}/delivery/history`;
   const copy =
     locale === "zh"
       ? {
           title: "投递设置",
-          subtitle: "把默认投递目标、Agent 回调、A2A Push 订阅和历史收敛到这里；使用记录页只保留摘要和入口。",
+          subtitle: "把默认投递目标、Agent 回调和 A2A Push 订阅收敛到这里；外部投递历史单独查看。",
           back: "返回 Agent",
           runDetail: "返回 Run",
           channels: "通道",
@@ -62,10 +65,13 @@ export function AgentDeliveryCenter({
           noRunTitle: "当前未绑定 Run",
           noRunDesc: "从使用记录的投递设置入口进入，会带上 run_id；届时可在这里进行单个 Run 的投递、重试和 A2A Push 事件订阅。",
           targetsTitle: "账号投递目标",
+          externalHistory: "外部投递历史",
+          externalHistoryDesc: "Webhook、Slack 和后续 Email 等投递目标的历史记录单独查看，避免配置页堆叠过长。",
+          viewExternalHistory: "查看外部投递历史",
         }
       : {
           title: "Delivery settings",
-          subtitle: "Default targets, Agent callback, A2A Push subscriptions, and history live here. Run detail only keeps a summary and entry point.",
+          subtitle: "Default targets, Agent callback, and A2A Push subscriptions live here. External delivery history has its own page.",
           back: "Back to Agent",
           runDetail: "Back to Run",
           channels: "Channels",
@@ -91,6 +97,9 @@ export function AgentDeliveryCenter({
           noRunTitle: "No Run selected",
           noRunDesc: "Open delivery settings from a run detail page to include run_id. Then this page can manage delivery, retry, and A2A Push subscriptions for that Run.",
           targetsTitle: "Account delivery targets",
+          externalHistory: "External delivery history",
+          externalHistoryDesc: "Webhook, Slack, and future Email delivery records are reviewed separately so settings stay focused.",
+          viewExternalHistory: "View external delivery history",
         };
 
   return (
@@ -153,6 +162,26 @@ export function AgentDeliveryCenter({
         <DeliveryTargetsPanel locale={locale} initialItems={targets} />
       </section>
 
+      <section className="ol-panel ol-panel-pad">
+        <div className="grid items-center gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+          <div>
+            <div className="ol-kicker">history</div>
+            <h2 className="mt-1 text-[18px] font-black text-[color:var(--ol-ink)]">
+              {copy.externalHistory}
+            </h2>
+            <p className="mt-2 text-[13px] leading-relaxed text-[color:var(--ol-muted)]">
+              {copy.externalHistoryDesc}
+            </p>
+          </div>
+          <Link
+            href={historyHref}
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-[color:var(--ol-primary)] px-4 text-[13px] font-[900] text-white shadow-sm hover:bg-[color:var(--ol-primary-dark)]"
+          >
+            {copy.viewExternalHistory}
+          </Link>
+        </div>
+      </section>
+
       <section className="ol-panel overflow-hidden">
         <div className="ol-panel-head">
           <div>
@@ -210,7 +239,13 @@ export function AgentDeliveryCenter({
         </div>
         {runId ? (
           <>
-            <RunDeliverySection locale={locale} runId={runId} runStatus={runStatus ?? "running"} />
+            <RunDeliverySection
+              locale={locale}
+              runId={runId}
+              runStatus={runStatus ?? "running"}
+              historyHref={historyHref}
+              historyMode="link"
+            />
             <RunPushWebhookSection locale={locale} runId={runId} enabled />
           </>
         ) : (

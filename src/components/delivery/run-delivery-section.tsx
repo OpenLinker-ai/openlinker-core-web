@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { DeliveryHistoryList } from "@/components/delivery/delivery-history-list";
 import { Icon } from "@/components/ui/icon";
 import { useApi } from "@/hooks/use-api";
 import { ApiError } from "@/lib/api";
@@ -15,11 +17,19 @@ interface Props {
   locale?: Locale;
   runId: string;
   runStatus: string;
+  historyHref?: string;
+  historyMode?: "inline" | "link";
 }
 
 const TERMINAL_STATES = new Set(["success", "failed", "timeout"]);
 
-export function RunDeliverySection({ locale = "zh", runId, runStatus }: Props) {
+export function RunDeliverySection({
+  locale = "zh",
+  runId,
+  runStatus,
+  historyHref,
+  historyMode = "inline",
+}: Props) {
   const copy =
     locale === "zh"
       ? {
@@ -42,6 +52,11 @@ export function RunDeliverySection({ locale = "zh", runId, runStatus }: Props) {
           delivering: "投递中…",
           deliverNow: "立即投递",
           waitRun: "等待 Run 完成",
+          historySummary: "投递历史",
+          viewHistory: "查看投递历史",
+          success: "成功",
+          failed: "失败",
+          pending: "待处理",
         }
       : {
           targetLoadFailed: "Failed to load delivery targets",
@@ -63,6 +78,11 @@ export function RunDeliverySection({ locale = "zh", runId, runStatus }: Props) {
           delivering: "Delivering…",
           deliverNow: "Deliver now",
           waitRun: "Waiting for Run",
+          historySummary: "Delivery history",
+          viewHistory: "View delivery history",
+          success: "Success",
+          failed: "Failed",
+          pending: "Pending",
         };
   const { fetch: apiFetch, isAuthenticated } = useApi();
   const [targets, setTargets] = useState<DeliveryTarget[]>([]);
@@ -241,116 +261,63 @@ export function RunDeliverySection({ locale = "zh", runId, runStatus }: Props) {
           </div>
         )}
 
-        <DeliveryHistory
-          locale={locale}
-          items={deliveries}
-          onRetry={handleRetry}
-          retryingId={retryingId}
-        />
+        {historyMode === "link" ? (
+          <HistorySummary
+            copy={copy}
+            items={deliveries}
+            href={historyHref}
+          />
+        ) : (
+          <DeliveryHistoryList
+            locale={locale}
+            items={deliveries}
+            onRetry={handleRetry}
+            retryingId={retryingId}
+          />
+        )}
       </div>
     </section>
   );
 }
 
-function DeliveryHistory({
-  locale,
+function HistorySummary({
+  copy,
   items,
-  onRetry,
-  retryingId,
+  href,
 }: {
-  locale: Locale;
+  copy: {
+    historySummary: string;
+    viewHistory: string;
+    success: string;
+    failed: string;
+    pending: string;
+  };
   items: DeliveryItem[];
-  onRetry: (d: DeliveryItem) => void;
-  retryingId: string | null;
+  href?: string;
 }) {
-  const copy =
-    locale === "zh"
-      ? {
-          empty: "尚无投递历史",
-          attempt: (n: number) => `第 ${n} 次`,
-          retrying: "重试中…",
-          retry: "重试",
-          nextRetry: "下次重试",
-        }
-      : {
-          empty: "No delivery history yet",
-          attempt: (n: number) => `Attempt ${n}`,
-          retrying: "Retrying…",
-          retry: "Retry",
-          nextRetry: "Next retry",
-        };
-  if (items.length === 0) {
-    return (
-      <div className="rounded-2xl border border-dashed border-[color:var(--ol-line)] bg-white px-4 py-6 text-center text-[12.5px] text-[color:var(--ol-muted)]">
-        {copy.empty}
-      </div>
-    );
-  }
+  const successCount = items.filter((item) => item.status === "success").length;
+  const failedCount = items.filter((item) => item.status === "failed").length;
+  const pendingCount = items.filter((item) => item.status === "pending").length;
   return (
-    <ul className="grid gap-2">
-      {items.map((d) => (
-        <li
-          key={d.id}
-          className="rounded-2xl border border-[color:var(--ol-line)] bg-white p-3"
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[color:var(--ol-line)] bg-white p-4">
+      <div>
+        <div className="text-[13px] font-black text-[color:var(--ol-ink)]">
+          {copy.historySummary}
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <span className="ol-chip ol-chip-green">{copy.success} {successCount}</span>
+          <span className="ol-chip ol-chip-amber">{copy.failed} {failedCount}</span>
+          <span className="ol-chip ol-chip-mint">{copy.pending} {pendingCount}</span>
+        </div>
+      </div>
+      {href ? (
+        <Link
+          href={href}
+          className="ol-mini-btn bg-[color:var(--ol-soft)] text-[color:var(--ol-ink)] hover:bg-[color:var(--ol-line)]"
         >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className={cn("ol-chip", chipForStatus(d.status))}>
-                {d.status}
-              </span>
-              <span className="ol-chip ol-chip-mint">{d.target_type}</span>
-              <span className="text-[11px] font-bold text-[color:var(--ol-muted)]">
-                {copy.attempt(d.attempt_count)}
-              </span>
-              {d.response_status ? (
-                <span className="text-[11px] font-bold text-[color:var(--ol-muted)]">
-                  HTTP {d.response_status}
-                </span>
-              ) : null}
-            </div>
-            {d.status === "failed" ? (
-              <button
-                type="button"
-                onClick={() => onRetry(d)}
-                disabled={retryingId === d.id}
-                className="ol-mini-btn bg-[color:var(--ol-soft)] text-[color:var(--ol-ink)] hover:bg-[color:var(--ol-line)]"
-              >
-                {retryingId === d.id ? copy.retrying : copy.retry}
-              </button>
-            ) : null}
-          </div>
-          <div className="mt-1.5 truncate text-[11.5px] text-[color:var(--ol-muted)]">
-            {d.target_url}
-          </div>
-          {d.error_message ? (
-            <div className="mt-1.5 rounded-md bg-[#fde7e7] px-2 py-1 text-[11.5px] text-[#7a1f1f]">
-              {d.error_message}
-            </div>
-          ) : null}
-          <div className="mt-1.5 text-[11px] text-[color:var(--ol-subtle)]">
-            {formatTime(d.created_at, locale)}
-            {d.next_retry_at ? (
-              <span> · {copy.nextRetry} {formatTime(d.next_retry_at, locale)}</span>
-            ) : null}
-          </div>
-        </li>
-      ))}
-    </ul>
+          {copy.viewHistory}
+        </Link>
+      ) : null}
+    </div>
   );
-}
-
-function chipForStatus(status: string): string {
-  if (status === "success") return "ol-chip-green";
-  if (status === "failed") return "ol-chip-amber";
-  return "ol-chip-mint";
-}
-
-function formatTime(iso: string, locale: Locale): string {
-  try {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleString(locale === "zh" ? "zh-CN" : "en-US");
-  } catch {
-    return iso;
-  }
 }
