@@ -76,10 +76,8 @@ export function AgentsList({ locale, stats, agents }: Props) {
   // 用 stats 为主，按 id 拼上 agents 里的 status
   // dashboard.agents 没传 status 时（旧版字段为 string），fallback 到 agents 表
   const agentById = new Map<string, AgentResponse>();
-  const webhookById = new Map<string, string | null>();
   for (const a of agents) {
     agentById.set(a.id, a);
-    webhookById.set(a.id, a.webhook_url ?? null);
   }
 
   // 没有本月数据时，全部从 agents 构造（每行无本月数字，只显示 "—"）
@@ -92,10 +90,9 @@ export function AgentsList({ locale, stats, agents }: Props) {
         name: s.name,
         lifecycleStatus: agent?.lifecycle_status ?? "active",
         visibility: agent?.visibility ?? "public",
-        certificationStatus: agent?.certification_status ?? "unreviewed",
+          certificationStatus: agent?.certification_status ?? "unreviewed",
           lifetimeCalls: s.lifetime_calls,
           callsThisMonth: s.calls_this_month,
-          webhookUrl: webhookById.get(s.id) ?? null,
       });
       })
     : agents.map((a) => ({
@@ -107,7 +104,6 @@ export function AgentsList({ locale, stats, agents }: Props) {
           certificationStatus: a.certification_status,
           lifetimeCalls: a.total_calls,
           callsThisMonth: 0,
-          webhookUrl: a.webhook_url ?? null,
       }));
 
   const listed = rows.filter((r) => r.lifecycleStatus === "active" && r.visibility === "public").length;
@@ -166,14 +162,12 @@ function AgentItemRow({
       certificationStatus: AgentResponse["certification_status"];
       lifetimeCalls: number;
       callsThisMonth: number;
-      webhookUrl: string | null;
   };
 }) {
   const copy =
     locale === "zh"
       ? {
           totalCalls: "累计调用",
-          configuredWebhook: "兼容任务回调已配置",
           disabled: "已下架",
           calls: "调用",
           month: "本月",
@@ -186,14 +180,13 @@ function AgentItemRow({
           runHistory: "调用记录",
           runHistoryTitle: "查看这个 Agent 被用户、访问令牌或 MCP 触发的调用记录",
           benchmarkTitle: "对已声明 Skill 跑测评，verified 后详情页加徽章",
-          deliveryTitle: "管理通知投递目标、兼容任务回调与通知投递历史",
+          deliveryTitle: "管理通知投递目标与通知投递历史",
           delivery: "投递",
           progress: "查看进度",
           progressLabel: (name: string) => `查看 ${name} 进度`,
         }
       : {
           totalCalls: "total calls",
-          configuredWebhook: "compatible task callback configured",
           disabled: "Unlisted",
           calls: "calls",
           month: "this month",
@@ -206,7 +199,7 @@ function AgentItemRow({
           runHistory: "Run history",
           runHistoryTitle: "View calls triggered by users, access tokens, or MCP",
           benchmarkTitle: "Run benchmarks for declared Skills; verified Agents show a badge",
-          deliveryTitle: "Manage notification delivery targets, compatible task callback, and delivery history",
+          deliveryTitle: "Manage notification delivery targets and delivery history",
           delivery: "Delivery",
           progress: "View progress",
           progressLabel: (name: string) => `View ${name} progress`,
@@ -243,7 +236,6 @@ function AgentItemRow({
           {isActive ? (
             <>
               {VISIBILITY_LABEL[row.visibility][locale]} · {CERTIFICATION_LABEL[row.certificationStatus][locale]} · {formatCalls(row.lifetimeCalls)} {copy.totalCalls}
-              {row.webhookUrl ? ` · ${copy.configuredWebhook}` : ""}
             </>
           ) : isPending ? (
             <>{CERTIFICATION_LABEL[row.certificationStatus][locale]} · {VISIBILITY_LABEL[row.visibility][locale]}</>
@@ -303,7 +295,7 @@ function AgentItemRow({
               className="ol-mini-btn"
               title={copy.deliveryTitle}
             >
-              {copy.delivery}{row.webhookUrl ? " ✓" : ""}
+              {copy.delivery}
             </Link>
           </div>
         </div>

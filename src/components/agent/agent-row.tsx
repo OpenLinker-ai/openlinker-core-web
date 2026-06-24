@@ -44,8 +44,6 @@ export interface AgentResponse {
   total_revenue_cents: number;
   created_at: string;
   approved_at?: string | null;
-  /** webhook 配置：仅创作者中心 / agent owner 视图返回。null/undefined 表示未配置 */
-  webhook_url?: string | null;
 }
 
 export function AgentRow({

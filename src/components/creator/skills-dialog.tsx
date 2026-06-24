@@ -7,7 +7,7 @@
  *   GET /api/v1/agents/:slug                          → 含 skills?: Skill[]（公开详情）
  *   PATCH /api/v1/creator/agents/:agentId/skills      body { skill_ids: string[] } → 204；最多 5
  *
- * 与 webhook-dialog.tsx 的交互模式保持一致：
+ * 与其它受控 dialog 的交互模式保持一致：
  *   - open / onClose 受控
  *   - 打开瞬间并行拉 [skills 目录, agent 详情]，loading 期间显示骨架文案
  *   - 保存成功 toast + onClose + router.refresh() 让 hub 重新拉数据

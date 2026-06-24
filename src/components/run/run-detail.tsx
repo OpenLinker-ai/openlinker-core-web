@@ -12,7 +12,6 @@ export type RunDetailData = {
   agent_id?: string;
   agent_slug?: string;
   agent_name?: string;
-  agent_webhook_set?: boolean;
   agent_connection_mode?: string;
   status: string;
   input?: Record<string, unknown>;
@@ -101,7 +100,6 @@ type ViewRun = {
   agentId?: string;
   agentSlug?: string;
   agentName?: string;
-  agentWebhookSet?: boolean;
   agentConnectionMode?: string;
   status: string;
   input: Record<string, unknown>;
@@ -123,7 +121,6 @@ function normalizeRun(run: RunDetailData): ViewRun {
     agentId: run.agent_id,
     agentSlug: run.agent_slug,
     agentName: run.agent_name,
-    agentWebhookSet: run.agent_webhook_set,
     agentConnectionMode: run.agent_connection_mode,
     status: run.status,
     input: run.input ?? {},
@@ -203,14 +200,13 @@ export function RunDetail({
           queued: "已入队",
           externalDelivery: "通知投递设置",
           deliveryNoSeparate: "随父运行",
-          deliveryCallbackSet: "已配置兼容任务回调",
           deliveryReview: "查看设置",
-          deliverySettings: "通知投递与任务回调",
+          deliverySettings: "通知投递与调用方任务回调",
           noDelivery: "不投递",
           costRecord: "费用记录",
           delegatedRun: "委派运行",
           recorded: "已记录",
-          manageDelivery: "打开通知投递与任务回调",
+          manageDelivery: "打开通知投递与调用方任务回调",
           evidence: "证据摘要",
           coverage: "覆盖状态",
           matchedSkills: "命中 Skill",
@@ -249,14 +245,13 @@ export function RunDetail({
           queued: "Queued",
           externalDelivery: "Notification delivery settings",
           deliveryNoSeparate: "With parent run",
-          deliveryCallbackSet: "Compatible task callback configured",
           deliveryReview: "Review settings",
-          deliverySettings: "Notification delivery and task callback",
+          deliverySettings: "Notification delivery and caller task callback",
           noDelivery: "Not delivered",
           costRecord: "Cost record",
           delegatedRun: "Delegated run",
           recorded: "Recorded",
-          manageDelivery: "Open notification delivery and task callback",
+          manageDelivery: "Open notification delivery and caller task callback",
           evidence: "Evidence summary",
           coverage: "Coverage",
           matchedSkills: "Matched Skills",
@@ -285,14 +280,10 @@ export function RunDetail({
       : `/connect?tab=delivery&run_id=${encodeURIComponent(view.id)}`;
   const externalDeliveryStatus = delegated
     ? copy.deliveryNoSeparate
-    : view.agentWebhookSet
-      ? copy.deliveryCallbackSet
-      : copy.deliveryReview;
+    : copy.deliveryReview;
   const externalDeliveryTone = delegated
     ? "mint"
-    : view.agentWebhookSet
-      ? "mint"
-      : "amber";
+    : "amber";
 
   const copyId = async () => {
     try {

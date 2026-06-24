@@ -1,7 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
 import type { AgentResponse } from "@/components/agent/my-agents-card";
-import type { WebhookDelivery } from "@/components/creator/webhook-delivery-types";
 import { AgentDeliveryCenter } from "@/components/delivery/agent-delivery-center";
 import type { DeliveryTarget } from "@/components/delivery/types";
 import { Topbar } from "@/components/layout/topbar";
@@ -10,10 +9,6 @@ import { auth } from "@/lib/auth";
 import { getLocale } from "@/lib/i18n-server";
 
 type AgentsPayload = AgentResponse[] | { items?: AgentResponse[] };
-
-type DeliveryListResponse = {
-  items: WebhookDelivery[];
-};
 
 type TargetListResponse = {
   items: DeliveryTarget[];
@@ -56,15 +51,10 @@ export default async function AgentDeliveryPage({
     notFound();
   }
 
-  const [targets, deliveries, runStatus] = await Promise.all([
+  const [targets, runStatus] = await Promise.all([
     apiFetchAuthed<TargetListResponse>("/api/v1/delivery-targets")
       .then((data) => data.items ?? [])
       .catch(() => [] as DeliveryTarget[]),
-    apiFetchAuthed<DeliveryListResponse>(
-      `/api/v1/creator/agents/${agent.id}/webhook/deliveries?limit=50`,
-    )
-      .then((data) => data.items ?? [])
-      .catch(() => [] as WebhookDelivery[]),
     runId
       ? apiFetchAuthed<RunStatusResponse>(`/api/v1/runs/${encodeURIComponent(runId)}`)
         .then((data) => data.status)
@@ -80,7 +70,6 @@ export default async function AgentDeliveryPage({
           locale={locale}
           agent={agent}
           targets={targets}
-          webhookDeliveries={deliveries}
           runId={runId}
           runStatus={runStatus}
         />
