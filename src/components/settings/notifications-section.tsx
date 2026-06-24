@@ -20,7 +20,7 @@ const COPY: Record<Locale, {
 }> = {
   zh: {
     title: "通知能力",
-    body: "当前可用渠道是站内告警、签名投递 Webhook 和 A2A Push 事件订阅；邮件与移动推送后续开放。",
+    body: "完成、失败、取消、投递失败等事件统一进入通知投递配置；调用方不持续监听时的任务回调在发起任务或运行详情中单独配置。",
     available: "可用",
     unavailable: "后续开放",
     open: "打开",
@@ -33,8 +33,8 @@ const COPY: Record<Locale, {
         action: "查看通知",
       },
       {
-        label: "运行事件推送",
-        available: ["签名投递 Webhook", "A2A Push 订阅"],
+        label: "运行事件通知",
+        available: ["Webhook 投递", "Slack 投递"],
         unavailable: ["邮件摘要"],
         href: "/run",
         action: "查看运行",
@@ -48,7 +48,7 @@ const COPY: Record<Locale, {
   },
   en: {
     title: "Notification Capabilities",
-    body: "In-app alerts, signed delivery Webhooks, and A2A Push event subscriptions are available now. Email and mobile push are planned for a later phase.",
+    body: "Completion, failure, cancellation, and delivery-failure events are handled through notification delivery settings. Optional task callbacks for callers that are not continuously listening are configured when starting a task or from run detail.",
     available: "available",
     unavailable: "planned",
     open: "Open",
@@ -61,8 +61,8 @@ const COPY: Record<Locale, {
         action: "View inbox",
       },
       {
-        label: "Run event delivery",
-        available: ["Signed delivery Webhook", "A2A Push subscription"],
+        label: "Run event notifications",
+        available: ["Webhook delivery", "Slack delivery"],
         unavailable: ["Email digest"],
         href: "/run",
         action: "View runs",

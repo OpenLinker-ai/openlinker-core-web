@@ -9,7 +9,7 @@ import { ApiError } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-type RunWebhookSubscription = {
+type TaskCallbackSubscription = {
   id: string;
   run_id: string;
   target_url: string;
@@ -28,9 +28,9 @@ type Props = {
 };
 
 const EVENT_OPTIONS = [
-  { value: "run.completed", label: { zh: "完成", en: "Completed" }, hint: { zh: "运行成功完成后推送", en: "Push after the run completes successfully" } },
-  { value: "run.failed", label: { zh: "失败", en: "Failed" }, hint: { zh: "失败、超时或异常时推送", en: "Push on failure, timeout, or exception" } },
-  { value: "run.canceled", label: { zh: "取消", en: "Canceled" }, hint: { zh: "用户或协议客户端取消时推送", en: "Push when a user or protocol client cancels" } },
+  { value: "run.completed", label: { zh: "完成", en: "Completed" }, hint: { zh: "运行成功完成后回调", en: "Callback after the run completes successfully" } },
+  { value: "run.failed", label: { zh: "失败", en: "Failed" }, hint: { zh: "失败、超时或异常时回调", en: "Callback on failure, timeout, or exception" } },
+  { value: "run.canceled", label: { zh: "取消", en: "Canceled" }, hint: { zh: "用户或协议客户端取消时回调", en: "Callback when a user or protocol client cancels" } },
   { value: "run.requirements.snapshotted", label: { zh: "运行要求", en: "Requirements" }, hint: { zh: "Skill/MCP 证据快照", en: "Skill/MCP evidence snapshot" } },
   { value: "run.message.delta", label: { zh: "消息流", en: "Message stream" }, hint: { zh: "Agent 中间消息", en: "Agent intermediate messages" } },
   { value: "run.artifact.delta", label: { zh: "产物流", en: "Artifact stream" }, hint: { zh: "流式产物片段", en: "Streaming artifact chunks" } },
@@ -40,26 +40,26 @@ const EVENT_OPTIONS = [
 
 const DEFAULT_EVENTS = ["run.completed", "run.failed", "run.canceled"];
 
-export function RunPushWebhookSection({ locale = "zh", runId, enabled }: Props) {
+export function TaskCallbackSection({ locale = "zh", runId, enabled }: Props) {
   const copy =
     locale === "zh"
       ? {
-          fetchFailed: "拉取 A2A Push 订阅失败",
+          fetchFailed: "拉取任务回调失败",
           noneSelected: "未选择事件",
           missingUrl: "请填写接收地址",
           eventRequired: "至少选择一个事件类型",
-          created: "A2A Push 订阅已创建",
-          createFailed: "创建 A2A Push 订阅失败",
-          paused: "已暂停推送",
-          resumed: "已恢复推送",
-          updateFailed: "更新 Push 订阅失败",
-          confirmDelete: "确认删除这个 A2A Push 订阅？删除后不会继续接收事件。",
-          deleted: "A2A Push 订阅已删除",
-          deleteFailed: "删除 A2A Push 订阅失败",
+          created: "任务回调已创建",
+          createFailed: "创建任务回调失败",
+          paused: "已暂停回调",
+          resumed: "已恢复回调",
+          updateFailed: "更新任务回调失败",
+          confirmDelete: "确认删除这个任务回调？删除后不会继续接收事件。",
+          deleted: "任务回调已删除",
+          deleteFailed: "删除任务回调失败",
           copied: "已复制 secret",
           copyFailed: "复制失败，请手动选中",
-          title: "A2A Push 事件订阅",
-          body: "订阅此运行的 run_events，并按 A2A Push Notification 方式推送到指定接收地址。",
+          title: "任务回调",
+          body: "调用方不持续监听 SSE/WS 时，可选配置此回调接收该运行的完成、失败、取消和中间事件。",
           refresh: "刷新",
           secretOnce: "Secret 仅本次显示",
           secretHint: "接收方用它校验 `X-OpenLinker-Signature`。",
@@ -67,26 +67,26 @@ export function RunPushWebhookSection({ locale = "zh", runId, enabled }: Props) 
           urlHint: "生产环境要求 HTTPS；本地开发可由后端配置允许 loopback HTTP。",
           receiverUrl: "接收 URL",
           creating: "创建中…",
-          create: "创建订阅",
+          create: "创建回调",
           selected: "当前选择：",
         }
       : {
-          fetchFailed: "Failed to load A2A Push subscriptions",
+          fetchFailed: "Failed to load task callbacks",
           noneSelected: "No events selected",
           missingUrl: "Enter a receiver URL",
           eventRequired: "Select at least one event type",
-          created: "A2A Push subscription created",
-          createFailed: "Failed to create A2A Push subscription",
-          paused: "Push paused",
-          resumed: "Push resumed",
-          updateFailed: "Failed to update Push subscription",
-          confirmDelete: "Delete this A2A Push subscription? It will stop receiving events.",
-          deleted: "A2A Push subscription deleted",
-          deleteFailed: "Failed to delete A2A Push subscription",
+          created: "Task callback created",
+          createFailed: "Failed to create task callback",
+          paused: "Callback paused",
+          resumed: "Callback resumed",
+          updateFailed: "Failed to update task callback",
+          confirmDelete: "Delete this task callback? It will stop receiving events.",
+          deleted: "Task callback deleted",
+          deleteFailed: "Failed to delete task callback",
           copied: "Secret copied",
           copyFailed: "Copy failed. Select it manually.",
-          title: "A2A Push event subscription",
-          body: "Subscribe to this run's run_events and push them to a configured receiver using the A2A Push Notification pattern.",
+          title: "Task callback",
+          body: "When the caller is not continuously listening over SSE/WS, it can optionally receive completion, failure, cancellation, and intermediate events here.",
           refresh: "Refresh",
           secretOnce: "Secret shown only once",
           secretHint: "Receivers use it to verify `X-OpenLinker-Signature`.",
@@ -94,11 +94,11 @@ export function RunPushWebhookSection({ locale = "zh", runId, enabled }: Props) 
           urlHint: "Production requires HTTPS. Backend config may allow loopback HTTP for local development.",
           receiverUrl: "Receiver URL",
           creating: "Creating…",
-          create: "Create subscription",
+          create: "Create callback",
           selected: "Selected: ",
         };
   const { fetch: apiFetch, isAuthenticated } = useApi();
-  const [items, setItems] = useState<RunWebhookSubscription[]>([]);
+  const [items, setItems] = useState<TaskCallbackSubscription[]>([]);
   const [targetURL, setTargetURL] = useState("");
   const [selectedEvents, setSelectedEvents] = useState<string[]>(DEFAULT_EVENTS);
   const [loading, setLoading] = useState(false);
@@ -113,8 +113,8 @@ export function RunPushWebhookSection({ locale = "zh", runId, enabled }: Props) 
     }
     let cancelled = false;
 
-    apiFetch<{ items: RunWebhookSubscription[] }>(
-      `/api/v1/runs/${encodeURIComponent(runId)}/webhooks`,
+    apiFetch<{ items: TaskCallbackSubscription[] }>(
+      `/api/v1/runs/${encodeURIComponent(runId)}/task-callbacks`,
     )
       .then((data) => {
         if (!cancelled) setItems(data?.items ?? []);
@@ -148,7 +148,7 @@ export function RunPushWebhookSection({ locale = "zh", runId, enabled }: Props) 
 
   const reload = () => setReloadKey((key) => key + 1);
 
-  const createWebhook = async () => {
+  const createTaskCallback = async () => {
     const url = targetURL.trim();
     if (!url) {
       toast.error(copy.missingUrl);
@@ -160,8 +160,8 @@ export function RunPushWebhookSection({ locale = "zh", runId, enabled }: Props) 
     }
     setSubmitting(true);
     try {
-      const created = await apiFetch<RunWebhookSubscription>(
-        `/api/v1/runs/${encodeURIComponent(runId)}/webhooks`,
+      const created = await apiFetch<TaskCallbackSubscription>(
+        `/api/v1/runs/${encodeURIComponent(runId)}/task-callbacks`,
         {
           method: "POST",
           body: {
@@ -181,11 +181,11 @@ export function RunPushWebhookSection({ locale = "zh", runId, enabled }: Props) 
     }
   };
 
-  const setStatus = async (item: RunWebhookSubscription, action: "pause" | "resume") => {
+  const setStatus = async (item: TaskCallbackSubscription, action: "pause" | "resume") => {
     setUpdatingId(item.id);
     try {
-      const updated = await apiFetch<RunWebhookSubscription>(
-        `/api/v1/runs/${encodeURIComponent(runId)}/webhooks/${encodeURIComponent(item.id)}/${action}`,
+      const updated = await apiFetch<TaskCallbackSubscription>(
+        `/api/v1/runs/${encodeURIComponent(runId)}/task-callbacks/${encodeURIComponent(item.id)}/${action}`,
         { method: "POST" },
       );
       setItems((prev) => prev.map((row) => (row.id === item.id ? updated : row)));
@@ -197,14 +197,14 @@ export function RunPushWebhookSection({ locale = "zh", runId, enabled }: Props) 
     }
   };
 
-  const deleteWebhook = async (item: RunWebhookSubscription) => {
+  const deleteTaskCallback = async (item: TaskCallbackSubscription) => {
     if (!window.confirm(copy.confirmDelete)) {
       return;
     }
     setUpdatingId(item.id);
     try {
       await apiFetch(
-        `/api/v1/runs/${encodeURIComponent(runId)}/webhooks/${encodeURIComponent(item.id)}`,
+        `/api/v1/runs/${encodeURIComponent(runId)}/task-callbacks/${encodeURIComponent(item.id)}`,
         { method: "DELETE" },
       );
       setItems((prev) => prev.filter((row) => row.id !== item.id));
@@ -286,7 +286,7 @@ export function RunPushWebhookSection({ locale = "zh", runId, enabled }: Props) 
             </div>
             <button
               type="button"
-              onClick={createWebhook}
+              onClick={createTaskCallback}
               disabled={submitting || !enabled}
               className={cn(
                 "inline-flex h-10 items-center justify-center gap-1.5 self-end rounded-xl px-4 text-[13px] font-[900] text-white shadow-sm",
@@ -334,21 +334,21 @@ export function RunPushWebhookSection({ locale = "zh", runId, enabled }: Props) 
           </div>
         </div>
 
-        <RunWebhookList
+        <TaskCallbackList
           locale={locale}
           loading={loading}
           items={items}
           updatingId={updatingId}
           onPause={(item) => setStatus(item, "pause")}
           onResume={(item) => setStatus(item, "resume")}
-          onDelete={deleteWebhook}
+          onDelete={deleteTaskCallback}
         />
       </div>
     </section>
   );
 }
 
-function RunWebhookList({
+function TaskCallbackList({
   locale,
   loading,
   items,
@@ -359,17 +359,17 @@ function RunWebhookList({
 }: {
   locale: Locale;
   loading: boolean;
-  items: RunWebhookSubscription[];
+  items: TaskCallbackSubscription[];
   updatingId: string | null;
-  onPause: (item: RunWebhookSubscription) => void;
-  onResume: (item: RunWebhookSubscription) => void;
-  onDelete: (item: RunWebhookSubscription) => void;
+  onPause: (item: TaskCallbackSubscription) => void;
+  onResume: (item: TaskCallbackSubscription) => void;
+  onDelete: (item: TaskCallbackSubscription) => void;
 }) {
   const copy =
     locale === "zh"
       ? {
-          loading: "正在加载 A2A Push 订阅…",
-          empty: "暂无 A2A Push 订阅。创建后，平台会把匹配的 `run_events` 签名推送到你的服务。",
+          loading: "正在加载任务回调…",
+          empty: "暂无任务回调。创建后，平台会把匹配的 `run_events` 签名回调到你的服务。",
           failures: "连续失败",
           busy: "处理中…",
           pause: "暂停",
@@ -378,8 +378,8 @@ function RunWebhookList({
           updatedAt: "更新于",
         }
       : {
-          loading: "Loading A2A Push subscriptions…",
-          empty: "No A2A Push subscriptions yet. After creation, OpenLinker signs matching `run_events` and pushes them to your service.",
+          loading: "Loading task callbacks…",
+          empty: "No task callbacks yet. After creation, OpenLinker signs matching `run_events` and calls your service.",
           failures: "Consecutive failures",
           busy: "Working…",
           pause: "Pause",

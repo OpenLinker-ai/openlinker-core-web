@@ -165,7 +165,7 @@ const MODES: Record<Mode, ModeSpec> = {
       "  \"output\": { \"summary\": \"...\" }",
       "}",
     ].join("\n"),
-    bullets: ["1m / 5m / 30m 退避重试", "X-OpenLinker-Signature 校验", "外部投递历史在创作者中心可查"],
+    bullets: ["1m / 5m / 30m 退避重试", "X-OpenLinker-Signature 校验", "通知投递历史在创作者中心可查"],
   },
 };
 
@@ -220,7 +220,7 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "label" | "title" | 
       title: "接收投递事件",
       blurb: "运行到达终态后，平台向投递目标 POST 签名事件，X-OpenLinker-Signature 带 HMAC-SHA256。",
       bestFor: "创作者侧异步对账 · 自建管线",
-      bullets: ["1m / 5m / 30m 退避重试", "X-OpenLinker-Signature 校验", "外部投递历史在创作者中心可查"],
+      bullets: ["1m / 5m / 30m 退避重试", "X-OpenLinker-Signature 校验", "通知投递历史在创作者中心可查"],
     },
   },
   en: {
@@ -262,7 +262,7 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "label" | "title" | 
       title: "Receive delivery events",
       blurb: "When a run reaches a terminal state, OpenLinker POSTs an HMAC-SHA256 signed event to the delivery target.",
       bestFor: "Async creator reconciliation · custom pipeline",
-      bullets: ["1m / 5m / 30m retry backoff", "Verify X-OpenLinker-Signature", "External delivery history is visible in Creator Hub"],
+      bullets: ["1m / 5m / 30m retry backoff", "Verify X-OpenLinker-Signature", "Notification delivery history is visible in Creator Hub"],
     },
   },
 };

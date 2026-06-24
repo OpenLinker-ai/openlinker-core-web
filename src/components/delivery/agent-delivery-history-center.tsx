@@ -36,9 +36,9 @@ export function AgentDeliveryHistoryCenter({
   const copy =
     locale === "zh"
       ? {
-          title: "外部投递历史",
-          subtitle: "查看当前账号触发此 Agent 时产生的外部投递记录，包含 Webhook、Slack 和后续 Email 目标。",
-          backSettings: "返回投递设置",
+          title: "通知投递历史",
+          subtitle: "查看当前账号触发此 Agent 时产生的通知投递记录，包含 Webhook、Slack 和后续 Email 目标。",
+          backSettings: "返回通知投递设置",
           runDetail: "返回运行详情",
           retryQueued: "已加入重试队列",
           retryFailed: "重试失败",
@@ -46,13 +46,13 @@ export function AgentDeliveryHistoryCenter({
           pending: "待处理",
           success: "成功",
           failed: "失败",
-          empty: "当前筛选条件下没有外部投递历史。",
+          empty: "当前筛选条件下没有通知投递历史。",
           total: "总数",
         }
       : {
-          title: "External delivery history",
-          subtitle: "Review external delivery records created when this account invokes the Agent, including Webhook, Slack, and future Email targets.",
-          backSettings: "Back to delivery settings",
+          title: "Notification delivery history",
+          subtitle: "Review notification delivery records created when this account invokes the Agent, including Webhook, Slack, and future Email targets.",
+          backSettings: "Back to notification delivery settings",
           runDetail: "Back to run detail",
           retryQueued: "Added to retry queue",
           retryFailed: "Retry failed",
@@ -60,7 +60,7 @@ export function AgentDeliveryHistoryCenter({
           pending: "Pending",
           success: "Success",
           failed: "Failed",
-          empty: "No external delivery history matches this filter.",
+          empty: "No notification delivery history matches this filter.",
           total: "Total",
         };
 

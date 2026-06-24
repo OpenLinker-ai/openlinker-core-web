@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * 创作者中心：Webhook 配置 dialog。
+ * 创作者中心：兼容任务回调配置 dialog。
  *
  * 后端契约：
  *   POST   /api/v1/creator/agents/:id/webhook        body { webhook_url } → { webhook_url, webhook_secret }
@@ -69,55 +69,59 @@ export function WebhookDialog({
   const copy =
     locale === "zh"
       ? {
-          urlRequired: "请填写 webhook URL",
+          urlRequired: "请填写任务回调 URL",
           setFailed: "设置失败，请稍后重试",
-          rotateConfirm: "重置 secret 后，旧 secret 立即失效。已部署的 webhook 验证逻辑需要更新。确认？",
+          rotateConfirm: "重置 secret 后，旧 secret 立即失效。已部署的回调验证逻辑需要更新。确认？",
           rotateFailed: "重置失败，请稍后重试",
-          clearConfirm: "清除后 webhook 不再投递，投递历史保留。确认？",
-          cleared: "已清除 webhook",
+          clearConfirm: "清除后不再执行 Agent 记录上的兼容任务回调，通知投递历史保留。确认？",
+          cleared: "已清除任务回调",
           clearFailed: "清除失败，请稍后重试",
           copied: "已复制到剪贴板",
           copyFailed: "复制失败，请手动选中复制",
-          title: "Webhook 配置",
+          title: "兼容任务回调",
           processing: "处理中...",
-          hint: "调用完成后平台 POST 到此 URL，可用于异步通知 / 调用日志收集（HTTPS only）。",
+          hint: "用于已把任务回调挂在 Agent 配置上的集成。新的 A2A/Agent 互调用应由调用方在发起任务时传 task_callback；通知投递请使用投递目标。",
           cancel: "取消",
           submit: "提交",
-          currentUrl: "当前 Webhook URL",
+          currentUrl: "当前回调 URL",
+          callbackUrl: "回调 URL",
+          callbackSecret: "回调 Secret",
           secretOnce: "secret 仅在创建/重置时显示一次。如丢失，请使用“重置 secret”。",
-          history: "查看投递历史",
+          history: "查看通知投递设置",
           rotate: "重置 secret",
-          clear: "清除 webhook",
+          clear: "清除回调",
           saveSecret: "请立即保存 secret，仅显示一次",
           saveSecretHint: "关闭弹窗后，secret 将不可再次查看。如丢失，需重置 secret。",
           copy: "复制",
-          receiverHint: "请将此 secret 配置到你的 webhook 接收端，平台会用它对请求体进行 HMAC 签名。",
+          receiverHint: "请将此 secret 配置到你的回调接收端，平台会用它对请求体进行 HMAC 签名。",
           saved: "我已保存",
         }
       : {
-          urlRequired: "Enter a webhook URL",
+          urlRequired: "Enter a task callback URL",
           setFailed: "Setup failed. Try again later.",
-          rotateConfirm: "After resetting the secret, the old secret stops working immediately. Deployed webhook verification must be updated. Continue?",
+          rotateConfirm: "After resetting the secret, the old secret stops working immediately. Deployed callback verification must be updated. Continue?",
           rotateFailed: "Reset failed. Try again later.",
-          clearConfirm: "After clearing the webhook, delivery stops while history is kept. Continue?",
-          cleared: "Webhook cleared",
+          clearConfirm: "After clearing this setting, the compatible task callback on the Agent record stops while notification delivery history is kept. Continue?",
+          cleared: "Task callback cleared",
           clearFailed: "Clear failed. Try again later.",
           copied: "Copied to clipboard",
           copyFailed: "Copy failed. Select it manually.",
-          title: "Webhook Configuration",
+          title: "Compatible task callback",
           processing: "Processing...",
-          hint: "After invocation completes, OpenLinker POSTs to this URL for async notification or run-log collection. HTTPS only.",
+          hint: "For integrations that already placed task callbacks on the Agent record. New A2A/Agent calls should pass task_callback from the caller when starting the task. Use delivery targets for notifications.",
           cancel: "Cancel",
           submit: "Submit",
-          currentUrl: "Current Webhook URL",
+          currentUrl: "Current callback URL",
+          callbackUrl: "Callback URL",
+          callbackSecret: "Callback Secret",
           secretOnce: "The secret is shown only when created or reset. If lost, use Reset secret.",
-          history: "View delivery history",
+          history: "View notification delivery settings",
           rotate: "Reset secret",
-          clear: "Clear webhook",
+          clear: "Clear callback",
           saveSecret: "Save this secret now. It is shown only once.",
           saveSecretHint: "After closing this dialog, the secret cannot be viewed again. Reset the secret if it is lost.",
           copy: "Copy",
-          receiverHint: "Configure this secret in your webhook receiver. OpenLinker uses it to HMAC-sign request bodies.",
+          receiverHint: "Configure this secret in your callback receiver. OpenLinker uses it to HMAC-sign request bodies.",
           saved: "Saved",
         };
   const { fetch: apiFetch } = useApi();
@@ -230,7 +234,7 @@ export function WebhookDialog({
         {stage === "edit" ? (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="webhook-url">Webhook URL</Label>
+              <Label htmlFor="webhook-url">{copy.callbackUrl}</Label>
               <Input
                 id="webhook-url"
                 type="url"
@@ -295,14 +299,14 @@ export function WebhookDialog({
             </div>
             {currentUrl ? (
               <div className="space-y-1.5">
-                <Label>Webhook URL</Label>
+                <Label>{copy.callbackUrl}</Label>
                 <div className="rounded-md border bg-muted px-3 py-2 text-sm break-all">
                   {currentUrl}
                 </div>
               </div>
             ) : null}
             <div className="space-y-1.5">
-              <Label>Webhook Secret</Label>
+              <Label>{copy.callbackSecret}</Label>
               <div className="flex items-center gap-2">
                 <code className="flex-1 break-all rounded-md border bg-muted px-3 py-2 font-mono text-xs">
                   {secret}

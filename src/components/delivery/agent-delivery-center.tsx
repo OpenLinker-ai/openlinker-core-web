@@ -10,7 +10,7 @@ import { WebhookDialog } from "@/components/creator/webhook-dialog";
 import { DeliveryTargetsPanel } from "@/components/delivery/delivery-targets-panel";
 import { RunDeliverySection } from "@/components/delivery/run-delivery-section";
 import type { DeliveryTarget } from "@/components/delivery/types";
-import { RunPushWebhookSection } from "@/components/run/run-push-webhook-section";
+import { TaskCallbackSection } from "@/components/run/task-callback-section";
 import { Icon } from "@/components/ui/icon";
 import type { Locale } from "@/lib/i18n";
 
@@ -38,68 +38,68 @@ export function AgentDeliveryCenter({
   const copy =
     locale === "zh"
       ? {
-          title: "投递与回调设置",
-          subtitle: "配置通知投递目标、旧版 Agent 回调和 A2A Push 事件订阅；外部投递历史在单独页面查看。",
+          title: "通知投递设置",
+          subtitle: "配置 Webhook、Slack 等通知投递目标；调用方不持续监听时，可在发起任务或运行详情中配置可选任务回调。",
           back: "返回 Agent",
           runDetail: "返回运行详情",
           channels: "配置概览",
-          webhook: "Agent 回调",
+          webhook: "Webhook 投递",
           slack: "Slack",
           email: "Email",
           configured: "已配置",
           notConfigured: "未配置",
           enabled: "可用",
           comingSoon: "即将支持",
-          webhookDesc: "兼容旧 webhook_url；通知投递请在账号投递目标中新增 Webhook。",
+          webhookDesc: "作为通知投递目标发送运行结果、完成/失败/取消等事件。",
           slackDesc: "通过账号级投递目标发送运行输出。",
           emailDesc: "后续作为通知投递目标接入，不作为独立页面。",
-          agentCallback: "旧版 Agent 回调（Webhook）",
-          callbackDesc: "用于兼容已有 agent.webhook_url：平台在 Agent 被调用后回调此地址。通知投递请使用上方投递目标。",
-          manageCallback: "配置 Agent 回调",
-          currentCallback: "当前回调",
-          noCallback: "未配置 Agent 回调。",
-          callbackHistory: "旧版回调历史",
+          agentCallback: "兼容任务回调（agent.webhook_url）",
+          callbackDesc: "保留给已把任务回调挂在 Agent 配置上的集成。新的 A2A/Agent 互调用应由调用方在发起任务时传 task_callback；通知投递请使用上方目标。",
+          manageCallback: "配置任务回调",
+          currentCallback: "当前任务回调",
+          noCallback: "未配置任务回调。",
+          callbackHistory: "任务回调历史",
           latest: "最近 50 条",
           runDelivery: "当前运行的投递动作",
-          runDeliveryDesc: "从运行详情或使用记录进入时，当前运行的手动投递和 A2A Push 事件订阅在这里处理。",
+          runDeliveryDesc: "从运行详情或使用记录进入时，当前运行的手动通知投递和调用方可选任务回调在这里处理。",
           noRunTitle: "当前未绑定运行",
-          noRunDesc: "从运行详情或使用记录进入会带上 run_id；届时可在这里进行单次运行的投递、重试和 A2A Push 事件订阅。",
+          noRunDesc: "从运行详情或使用记录进入会带上 run_id；届时可在这里进行单次运行的通知投递、重试和任务回调配置。",
           targetsTitle: "通知投递目标",
-          externalHistory: "外部投递历史",
-          externalHistoryDesc: "Webhook、Slack 和后续 Email 等投递目标的历史记录单独查看，避免配置页堆叠过长。",
-          viewExternalHistory: "查看外部投递历史",
+          externalHistory: "通知投递历史",
+          externalHistoryDesc: "Webhook、Slack 和后续 Email 等通知投递记录单独查看，避免配置页堆叠过长。",
+          viewExternalHistory: "查看通知投递历史",
         }
       : {
-          title: "Delivery and callback settings",
-          subtitle: "Configure notification delivery targets, the legacy Agent callback, and A2A Push event subscriptions here. External delivery history has its own page.",
+          title: "Notification delivery settings",
+          subtitle: "Configure Webhook, Slack, and future notification delivery targets. Callers can optionally configure a task callback when they are not continuously listening to a task.",
           back: "Back to Agent",
           runDetail: "Back to run detail",
           channels: "Configuration overview",
-          webhook: "Agent callback",
+          webhook: "Webhook delivery",
           slack: "Slack",
           email: "Email",
           configured: "Configured",
           notConfigured: "Not configured",
           enabled: "Available",
           comingSoon: "Coming soon",
-          webhookDesc: "Legacy webhook_url compatibility. Add a Webhook delivery target for notification delivery.",
+          webhookDesc: "Send run output and completion, failure, or cancellation events as notification delivery.",
           slackDesc: "Send run output through account-level delivery targets.",
           emailDesc: "Email will be added as a notification delivery target, not a separate page.",
-          agentCallback: "Legacy Agent callback (Webhook)",
-          callbackDesc: "This keeps existing agent.webhook_url callbacks working: OpenLinker calls this URL after the Agent is invoked. Use delivery targets above for notification delivery.",
-          manageCallback: "Configure Agent callback",
-          currentCallback: "Current callback",
-          noCallback: "No Agent callback configured.",
-          callbackHistory: "Legacy callback history",
+          agentCallback: "Compatibility task callback (agent.webhook_url)",
+          callbackDesc: "Kept for integrations that already placed task callbacks on the Agent record. New A2A/Agent calls should pass task_callback from the caller when starting the task. Use targets above for notification delivery.",
+          manageCallback: "Configure task callback",
+          currentCallback: "Current task callback",
+          noCallback: "No task callback configured.",
+          callbackHistory: "Task callback history",
           latest: "Latest 50",
           runDelivery: "Delivery actions for this run",
-          runDeliveryDesc: "When opened from run detail or run history, manual delivery and A2A Push event subscriptions for that run are managed here.",
+          runDeliveryDesc: "When opened from run detail or run history, manual notification delivery and optional caller-owned task callbacks for that run are managed here.",
           noRunTitle: "No run selected",
-          noRunDesc: "Open this page from run detail or run history to include run_id. Then this page can manage delivery, retry, and A2A Push subscriptions for that run.",
+          noRunDesc: "Open this page from run detail or run history to include run_id. Then this page can manage notification delivery, retry, and task callback configuration for that run.",
           targetsTitle: "Notification delivery targets",
-          externalHistory: "External delivery history",
-          externalHistoryDesc: "Webhook, Slack, and future Email delivery records are reviewed separately so settings stay focused.",
-          viewExternalHistory: "View external delivery history",
+          externalHistory: "Notification delivery history",
+          externalHistoryDesc: "Webhook, Slack, and future Email notification delivery records are reviewed separately so settings stay focused.",
+          viewExternalHistory: "View notification delivery history",
         };
 
   return (
@@ -139,8 +139,8 @@ export function AgentDeliveryCenter({
           icon="globe"
           title={copy.webhook}
           desc={copy.webhookDesc}
-          status={agent.webhook_url ? copy.configured : copy.notConfigured}
-          tone={agent.webhook_url ? "green" : "amber"}
+          status={targets.some((target) => target.type === "webhook") ? copy.configured : copy.enabled}
+          tone={targets.some((target) => target.type === "webhook") ? "green" : "mint"}
         />
         <ChannelCard
           icon="message"
@@ -246,7 +246,7 @@ export function AgentDeliveryCenter({
               historyHref={historyHref}
               historyMode="link"
             />
-            <RunPushWebhookSection locale={locale} runId={runId} enabled />
+            <TaskCallbackSection locale={locale} runId={runId} enabled />
           </>
         ) : (
           <div className="rounded-2xl border border-dashed border-[color:var(--ol-line)] bg-white p-8 text-center">
