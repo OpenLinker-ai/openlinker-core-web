@@ -11,7 +11,13 @@ import type { Locale } from "@/lib/i18n";
 
 export type RunDetailData = {
   run_id: string;
+  agent_id?: string;
+  agent_slug?: string;
+  agent_name?: string;
+  agent_webhook_set?: boolean;
+  agent_connection_mode?: string;
   status: string;
+  input?: Record<string, unknown>;
   output?: Record<string, unknown>;
   error_code?: string;
   error_message?: string;
@@ -94,7 +100,13 @@ type RunNextAction = {
 
 type ViewRun = {
   id: string;
+  agentId?: string;
+  agentSlug?: string;
+  agentName?: string;
+  agentWebhookSet?: boolean;
+  agentConnectionMode?: string;
   status: string;
+  input: Record<string, unknown>;
   costCents: number;
   durationMs: number;
   output: Record<string, unknown>;
@@ -110,7 +122,13 @@ type ViewRun = {
 function normalizeRun(run: RunDetailData): ViewRun {
   return {
     id: run.run_id,
+    agentId: run.agent_id,
+    agentSlug: run.agent_slug,
+    agentName: run.agent_name,
+    agentWebhookSet: run.agent_webhook_set,
+    agentConnectionMode: run.agent_connection_mode,
     status: run.status,
+    input: run.input ?? {},
     costCents: run.cost_cents,
     durationMs: run.duration_ms,
     output: run.output ?? {},
@@ -185,6 +203,9 @@ export function RunDetail({
           queued: "已入队",
           webhookNoSeparate: "不单独投递",
           webhookWaiting: "等待投递",
+          webhookConfigured: "已配置",
+          webhookNotConfigured: "未配置",
+          configureWebhook: "去配置",
           noDelivery: "不投递",
           costRecord: "费用记录",
           delegatedRun: "委派运行",
@@ -226,6 +247,9 @@ export function RunDetail({
           queued: "Queued",
           webhookNoSeparate: "No separate delivery",
           webhookWaiting: "Waiting for delivery",
+          webhookConfigured: "Configured",
+          webhookNotConfigured: "Not configured",
+          configureWebhook: "Configure",
           noDelivery: "Not delivered",
           costRecord: "Cost record",
           delegatedRun: "Delegated run",
@@ -253,6 +277,20 @@ export function RunDetail({
   const success = view.status === "success";
   const delegated = view.billingMode === "free_delegation";
   const chip = statusChip(view.status, locale);
+  const webhookConfigHref =
+    view.agentSlug || view.agentId
+      ? `/hub/agents/${encodeURIComponent(view.agentSlug || view.agentId || "")}/webhook`
+      : "";
+  const webhookStatus = delegated
+    ? copy.webhookNoSeparate
+    : view.agentWebhookSet
+      ? success ? copy.webhookWaiting : copy.webhookConfigured
+      : copy.webhookNotConfigured;
+  const webhookTone = delegated
+    ? "mint"
+    : view.agentWebhookSet
+      ? "mint"
+      : "amber";
 
   const copyId = async () => {
     try {
@@ -343,12 +381,12 @@ export function RunDetail({
       ) : null}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]">
-        <section className="space-y-5">
+        <section className="min-w-0 space-y-5">
           <RunEventStream locale={locale} runId={view.id} enabled={run !== null} fallbackStatus={view.status} />
 
           <RunPushWebhookSection locale={locale} runId={view.id} enabled={run !== null} />
 
-          <RunMessagesPanel locale={locale} messages={messages} />
+          <RunMessagesPanel locale={locale} run={view} messages={messages} />
 
           <div className="ol-panel overflow-hidden">
             <div className="ol-panel-head">
@@ -375,7 +413,7 @@ export function RunDetail({
                 >
                   {success ? copy.structured : copy.errorDetail}
                 </div>
-                <pre className="mt-3 overflow-x-auto rounded-[12px] bg-[#102033] p-4 text-[12.5px] leading-relaxed text-white">
+                <pre className="mt-3 max-w-full overflow-x-auto whitespace-pre-wrap break-words rounded-[12px] bg-[#102033] p-4 text-[12.5px] leading-relaxed text-white">
                   <code>
                     {success
                       ? JSON.stringify(view.output, null, 2)
@@ -432,7 +470,7 @@ export function RunDetail({
                         ) : null}
                       </div>
                     ) : null}
-                    <pre className="mt-3 max-h-80 overflow-auto rounded-[12px] bg-[#102033] p-4 text-[12px] leading-relaxed text-white">
+                    <pre className="mt-3 max-h-80 max-w-full overflow-auto whitespace-pre-wrap break-words rounded-[12px] bg-[#102033] p-4 text-[12px] leading-relaxed text-white">
                       <code>{JSON.stringify(artifact.content, null, 2)}</code>
                     </pre>
                   </article>
@@ -450,7 +488,7 @@ export function RunDetail({
           )}
         </section>
 
-        <aside className="grid content-start gap-3.5">
+        <aside className="min-w-0 grid content-start gap-3.5">
           <div className="ol-panel ol-panel-pad">
             <strong className="text-[14px] font-[900] text-[color:var(--ol-ink)]">{copy.meta}</strong>
             <div className="mt-3 grid gap-2 text-[12.5px]">
@@ -479,10 +517,12 @@ export function RunDetail({
                 value={delegated ? copy.withParent : copy.queued}
                 tone={delegated ? "mint" : "green"}
               />
-              <DeliveryRow
+              <WebhookDeliveryRow
                 label="Webhook"
-                value={delegated ? copy.webhookNoSeparate : success ? copy.webhookWaiting : copy.noDelivery}
-                tone={delegated ? "mint" : success ? "mint" : "amber"}
+                value={webhookStatus}
+                tone={webhookTone}
+                href={!delegated && !view.agentWebhookSet ? webhookConfigHref : ""}
+                actionLabel={copy.configureWebhook}
               />
               <DeliveryRow
                 label={copy.costRecord}
@@ -618,48 +658,95 @@ function coverageLabel(status: string, locale: Locale): string {
   return locale === "zh" ? "无要求" : "No requirements";
 }
 
-function RunMessagesPanel({ locale, messages }: { locale: Locale; messages: RunMessageData[] }) {
+type ReplayMessage = {
+  id: string;
+  role: string;
+  content: string;
+  payload: Record<string, unknown>;
+  created_at?: string;
+  event_sequence?: number | null;
+  synthetic?: boolean;
+};
+
+function RunMessagesPanel({
+  locale,
+  run,
+  messages,
+}: {
+  locale: Locale;
+  run: ViewRun;
+  messages: RunMessageData[];
+}) {
   const copy =
     locale === "zh"
       ? {
           title: "消息回放",
           emptyMessage: "（空消息）",
-          empty: "暂无稳定消息记录。新的调用会把用户输入与 Agent 的 `run.message.delta` 写入这里。",
+          empty: "暂无可回放消息。",
+          inputFallback: "请求输入",
+          outputFallback: "最终输出",
+          errorFallback: "运行错误",
+          structured: "结构化内容",
+          synthetic: "详情补全",
         }
       : {
           title: "Message replay",
           emptyMessage: "(empty message)",
-          empty: "No stable message records yet. New calls write user input and Agent `run.message.delta` events here.",
+          empty: "No replayable messages yet.",
+          inputFallback: "Request input",
+          outputFallback: "Final output",
+          errorFallback: "Run error",
+          structured: "Structured content",
+          synthetic: "Detail fallback",
         };
+  const replayMessages = buildReplayMessages(run, messages, locale, {
+    input: copy.inputFallback,
+    output: copy.outputFallback,
+    error: copy.errorFallback,
+  });
   return (
     <div className="ol-panel overflow-hidden">
       <div className="ol-panel-head">
         <strong>{copy.title}</strong>
-        <span className="ol-chip ol-chip-blue">{messages.length} messages</span>
+        <span className="ol-chip ol-chip-blue">{replayMessages.length} messages</span>
       </div>
-      {messages.length > 0 ? (
+      {replayMessages.length > 0 ? (
         <div className="grid gap-3 p-5">
-          {messages.map((message) => (
-            <article
-              key={message.id}
-              className="rounded-[14px] border border-[color:var(--ol-line)] bg-white p-4"
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <span className={messageRoleChip(message.role)}>{messageRoleLabel(message.role, locale)}</span>
-                {message.event_sequence ? (
-                  <span className="font-mono text-[11.5px] font-black text-[color:var(--ol-muted)]">
-                    #{message.event_sequence}
+          {replayMessages.map((message) => {
+            const hasPayload = hasObjectContent(message.payload);
+            return (
+              <article
+                key={message.id}
+                className="rounded-[14px] border border-[color:var(--ol-line)] bg-white p-4"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={messageRoleChip(message.role)}>{messageRoleLabel(message.role, locale)}</span>
+                  {message.event_sequence ? (
+                    <span className="font-mono text-[11.5px] font-black text-[color:var(--ol-muted)]">
+                      #{message.event_sequence}
+                    </span>
+                  ) : null}
+                  <span className="text-[11.5px] font-bold text-[color:var(--ol-subtle)]">
+                    {formatMessageTime(message.created_at ?? "", locale)}
                   </span>
+                  {message.synthetic ? <span className="ol-chip">{copy.synthetic}</span> : null}
+                </div>
+                <p className="mt-3 whitespace-pre-wrap break-words text-[13px] leading-[1.65] text-[color:var(--ol-ink)]">
+                  {message.content || copy.emptyMessage}
+                </p>
+                {hasPayload ? (
+                  <details className="mt-3 rounded-[12px] border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] p-3">
+                    <summary className="cursor-pointer text-[11.5px] font-black text-[color:var(--ol-muted)]">
+                      {copy.structured}
+                    </summary>
+                    <pre className="mt-2 max-h-80 max-w-full overflow-auto whitespace-pre-wrap break-words rounded-[10px] bg-[#102033] p-3 text-[11.5px] leading-relaxed text-white">
+                      <code>{JSON.stringify(message.payload, null, 2)}</code>
+                    </pre>
+                  </details>
                 ) : null}
-                <span className="text-[11.5px] font-bold text-[color:var(--ol-subtle)]">
-                  {formatMessageTime(message.created_at, locale)}
-                </span>
-              </div>
-              <p className="mt-3 whitespace-pre-wrap break-words text-[13px] leading-[1.65] text-[color:var(--ol-ink)]">
-                {message.content || copy.emptyMessage}
-              </p>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
       ) : (
         <div className="p-5 text-[13px] font-semibold text-[color:var(--ol-muted)]">
@@ -670,11 +757,70 @@ function RunMessagesPanel({ locale, messages }: { locale: Locale; messages: RunM
   );
 }
 
+function buildReplayMessages(
+  run: ViewRun,
+  messages: RunMessageData[],
+  locale: Locale,
+  fallback: { input: string; output: string; error: string },
+): ReplayMessage[] {
+  const items: ReplayMessage[] = messages.map((message) => ({
+    ...message,
+    payload: message.payload ?? {},
+  }));
+  const hasUserMessage = items.some((message) => message.role === "user");
+  if (!hasUserMessage && hasObjectContent(run.input)) {
+    items.unshift({
+      id: `${run.id}:input`,
+      role: "user",
+      content: payloadText(run.input, fallback.input, locale),
+      payload: run.input,
+      synthetic: true,
+    });
+  }
+  if (run.status === "success" && hasObjectContent(run.output)) {
+    items.push({
+      id: `${run.id}:output`,
+      role: "result",
+      content: payloadText(run.output, fallback.output, locale),
+      payload: run.output,
+      synthetic: true,
+    });
+  }
+  if (run.status !== "success" && run.error) {
+    items.push({
+      id: `${run.id}:error`,
+      role: "error",
+      content: run.error || fallback.error,
+      payload: { error: run.error, status: run.status },
+      synthetic: true,
+    });
+  }
+  return items;
+}
+
+function hasObjectContent(value?: Record<string, unknown>): boolean {
+  return !!value && Object.keys(value).length > 0;
+}
+
+function payloadText(payload: Record<string, unknown>, fallback: string, locale: Locale): string {
+  for (const key of ["text", "content", "message", "summary", "result", "answer", "final", "response"]) {
+    const raw = payload[key];
+    if (typeof raw === "string" && raw.trim()) {
+      return raw.trim();
+    }
+  }
+  return locale === "zh"
+    ? `${fallback}已生成，展开查看完整 JSON。`
+    : `${fallback} is available. Expand to view the full JSON.`;
+}
+
 function messageRoleLabel(role: string, locale: Locale): string {
   if (role === "user") return locale === "zh" ? "用户" : "User";
   if (role === "agent") return "Agent";
   if (role === "tool") return "Tool";
   if (role === "platform") return locale === "zh" ? "平台" : "Platform";
+  if (role === "result") return locale === "zh" ? "结果" : "Result";
+  if (role === "error") return locale === "zh" ? "错误" : "Error";
   return role;
 }
 
@@ -682,6 +828,8 @@ function messageRoleChip(role: string): string {
   if (role === "agent") return "ol-chip ol-chip-green";
   if (role === "user") return "ol-chip ol-chip-mint";
   if (role === "tool") return "ol-chip ol-chip-blue";
+  if (role === "result") return "ol-chip ol-chip-green";
+  if (role === "error") return "ol-chip ol-chip-amber";
   return "ol-chip";
 }
 
@@ -750,6 +898,39 @@ function DeliveryRow({
     <div className="flex items-center justify-between gap-3 rounded-[12px] border border-[color:var(--ol-line)] bg-white px-3 py-2">
       <span className="text-[12.5px] font-bold text-[color:var(--ol-muted)]">{label}</span>
       <span className={`ol-chip ${chip}`}>{value}</span>
+    </div>
+  );
+}
+
+function WebhookDeliveryRow({
+  label,
+  value,
+  tone,
+  href,
+  actionLabel,
+}: {
+  label: string;
+  value: string;
+  tone: "green" | "amber" | "mint";
+  href: string;
+  actionLabel: string;
+}) {
+  const chip =
+    tone === "green" ? "ol-chip-green" : tone === "amber" ? "ol-chip-amber" : "ol-chip-mint";
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-[12px] border border-[color:var(--ol-line)] bg-white px-3 py-2">
+      <span className="min-w-0 text-[12.5px] font-bold text-[color:var(--ol-muted)]">{label}</span>
+      <div className="flex shrink-0 items-center gap-1.5">
+        <span className={`ol-chip ${chip}`}>{value}</span>
+        {href ? (
+          <Link
+            href={href}
+            className="inline-flex h-6 items-center justify-center rounded-lg border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] px-2 text-[11.5px] font-black text-[color:var(--ol-primary-dark)] hover:border-[color:var(--ol-primary)]/40"
+          >
+            {actionLabel}
+          </Link>
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -2,10 +2,10 @@
  * 创作者中心：Webhook 投递历史子页面（Server Component）。
  *
  * 路由：/hub/agents/[id]/webhook
- *   - [id] 实际是 agent slug（与 hub 页 AgentItemRow 链接保持一致）
+ *   - [id] 可以是 agent slug 或 UUID（run 详情页会优先传 slug，必要时退回 UUID）
  *
  * 数据流：
- *   1. 拉创作者的所有 agents（GET /api/v1/creator/agents），按 slug 找到目标
+ *   1. 拉创作者的所有 agents（GET /api/v1/creator/agents），按 slug/UUID 找到目标
  *      → 直接拿到 UUID + webhook_url + name，避免再调一次详情接口
  *   2. 拉投递历史（GET /api/v1/creator/agents/:uuid/webhook/deliveries?limit=20）
  *
@@ -73,16 +73,16 @@ export default async function WebhookHistoryPage({
           recent: "Latest 20",
         };
 
-  const { id: slugParam } = await params;
+  const { id: agentParam } = await params;
 
-  // 通过 creator agents 列表按 slug 找 UUID + 当前 webhook_url
+  // 通过 creator agents 列表按 slug/UUID 找 UUID + 当前 webhook_url
   let agent: AgentResponse | null = null;
   try {
     const payload = await apiFetchAuthed<AgentsPayload>(
       "/api/v1/creator/agents",
     );
     const agents = normalizeAgents(payload);
-    agent = agents.find((a) => a.slug === slugParam) ?? null;
+    agent = agents.find((a) => a.slug === agentParam || a.id === agentParam) ?? null;
   } catch {
     agent = null;
   }

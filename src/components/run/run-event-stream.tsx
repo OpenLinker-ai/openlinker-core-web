@@ -116,7 +116,7 @@ export function RunEventStream({
   const effectiveState: StreamState = !enabled ? "idle" : token ? state : "connecting";
 
   return (
-    <div className="ol-panel overflow-hidden">
+    <div className="ol-panel min-w-0 max-w-full overflow-hidden">
       <div className="ol-panel-head">
         <strong>{locale === "zh" ? "运行 Trace" : "Run Trace"} · {visibleEvents.length}</strong>
         <span className="text-[12.5px] font-black text-[color:var(--ol-muted)]">
@@ -241,7 +241,7 @@ function EventStep({
   const time = formatTime(event.created_at, locale);
   return (
     <div
-      className="ol-panel"
+      className="ol-panel min-w-0 max-w-full overflow-hidden"
       style={{
         boxShadow: "none",
         borderRadius: 14,
@@ -253,7 +253,7 @@ function EventStep({
       <button
         type="button"
         onClick={onToggle}
-        className="grid w-full items-center gap-3 border-0 bg-transparent px-4 py-3 text-left"
+        className="grid min-w-0 w-full items-center gap-3 border-0 bg-transparent px-4 py-3 text-left"
         style={{ gridTemplateColumns: "30px minmax(0,1fr) 84px 24px", cursor: "pointer" }}
         aria-expanded={open}
       >
@@ -268,7 +268,7 @@ function EventStep({
             <span className="rounded-full bg-[color:var(--ol-soft)] px-2 py-0.5 text-[11px] font-[900] text-[color:var(--ol-subtle)]">
               #{event.sequence}
             </span>
-            <code className="font-mono text-[11px] text-[color:var(--ol-subtle)]">
+            <code className="min-w-0 break-all font-mono text-[11px] text-[color:var(--ol-subtle)]">
               {event.event_type}
             </code>
           </div>
@@ -276,7 +276,7 @@ function EventStep({
             {meta.detail}
           </p>
         </div>
-        <span className="text-right font-mono text-[11.5px] font-[800] text-[color:var(--ol-subtle)]">
+        <span className="whitespace-nowrap text-right font-mono text-[11.5px] font-[800] text-[color:var(--ol-subtle)]">
           {time}
         </span>
         <span
@@ -287,11 +287,11 @@ function EventStep({
         </span>
       </button>
       {open && hasPayload ? (
-        <div className="px-4 pb-4">
+        <div className="min-w-0 px-4 pb-4">
           <div className="ol-kicker" style={{ color: "var(--ol-muted)", letterSpacing: 0 }}>
             payload
           </div>
-          <pre className="mt-2 overflow-x-auto rounded-[12px] bg-[#102033] p-3 text-[11.5px] leading-relaxed text-white">
+          <pre className="mt-2 max-w-full overflow-x-auto whitespace-pre-wrap break-words rounded-[12px] bg-[#102033] p-3 text-[11.5px] leading-relaxed text-white">
             <code>{JSON.stringify(event.payload, null, 2)}</code>
           </pre>
         </div>
