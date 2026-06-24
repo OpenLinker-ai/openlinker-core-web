@@ -3,7 +3,6 @@
  *
  * 设计要点：
  *   - Credentials provider：调后端 POST /api/v1/auth/login
- *   - token-credentials provider：用于 OAuth code exchange 后接管后端 JWT
  *   - jwt / session callbacks 把后端 JWT 透传给客户端，方便 useSession 读取
  *   - session strategy: jwt（NextAuth 自身签名 cookie，存后端 JWT 字符串）
  *
@@ -51,41 +50,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           email: data.email,
           name: data.display_name,
           jwt: data.jwt,
-        };
-      },
-    }),
-    Credentials({
-      // OAuth code exchange 后使用：把后端 JWT 会话交给 NextAuth 接管。
-      id: "token-credentials",
-      name: "Token",
-      credentials: {
-        token: { label: "Token", type: "text" },
-      },
-      authorize: async (credentials) => {
-        const token = credentials?.token as string | undefined;
-        if (!token) return null;
-
-        const res = await fetch(`${API_URL}/api/v1/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!res.ok) return null;
-
-        const me = (await res.json()) as {
-          user_id: string;
-          email: string;
-          display_name: string;
-          avatar_url?: string;
-          is_creator?: boolean;
-          is_admin?: boolean;
-        };
-
-        return {
-          id: me.user_id,
-          email: me.email,
-          name: me.display_name,
-          image: me.avatar_url,
-          jwt: token,
         };
       },
     }),

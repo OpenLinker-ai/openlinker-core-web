@@ -44,21 +44,22 @@ export function RunPushWebhookSection({ locale = "zh", runId, enabled }: Props) 
   const copy =
     locale === "zh"
       ? {
-          fetchFailed: "拉取 Push Webhook 失败",
+          fetchFailed: "拉取 A2A Push 订阅失败",
           noneSelected: "未选择事件",
-          missingUrl: "请填写 Webhook URL",
+          missingUrl: "请填写接收地址",
           eventRequired: "至少选择一个事件类型",
-          created: "A2A Push Webhook 已创建",
-          createFailed: "创建 Push Webhook 失败",
+          created: "A2A Push 订阅已创建",
+          createFailed: "创建 A2A Push 订阅失败",
           paused: "已暂停推送",
           resumed: "已恢复推送",
-          updateFailed: "更新 Push Webhook 失败",
-          confirmDelete: "确认删除这个 Run Push Webhook？删除后不会继续接收事件。",
-          deleted: "Push Webhook 已删除",
-          deleteFailed: "删除 Push Webhook 失败",
+          updateFailed: "更新 Push 订阅失败",
+          confirmDelete: "确认删除这个 A2A Push 订阅？删除后不会继续接收事件。",
+          deleted: "A2A Push 订阅已删除",
+          deleteFailed: "删除 A2A Push 订阅失败",
           copied: "已复制 secret",
           copyFailed: "复制失败，请手动选中",
-          body: "把此 Run 的事件按 A2A Push Notification 思路推送到你的服务。",
+          title: "A2A Push 事件订阅",
+          body: "把此 Run 的 run_events 按 A2A Push Notification 方式推送到指定接收地址。",
           refresh: "刷新",
           secretOnce: "Secret 仅本次显示",
           secretHint: "接收方用它校验 `X-OpenLinker-Signature`。",
@@ -69,21 +70,22 @@ export function RunPushWebhookSection({ locale = "zh", runId, enabled }: Props) 
           selected: "当前选择：",
         }
       : {
-          fetchFailed: "Failed to load Push Webhooks",
+          fetchFailed: "Failed to load A2A Push subscriptions",
           noneSelected: "No events selected",
-          missingUrl: "Enter a Webhook URL",
+          missingUrl: "Enter a receiver URL",
           eventRequired: "Select at least one event type",
-          created: "A2A Push Webhook created",
-          createFailed: "Failed to create Push Webhook",
+          created: "A2A Push subscription created",
+          createFailed: "Failed to create A2A Push subscription",
           paused: "Push paused",
           resumed: "Push resumed",
-          updateFailed: "Failed to update Push Webhook",
-          confirmDelete: "Delete this Run Push Webhook? It will stop receiving events.",
-          deleted: "Push Webhook deleted",
-          deleteFailed: "Failed to delete Push Webhook",
+          updateFailed: "Failed to update Push subscription",
+          confirmDelete: "Delete this A2A Push subscription? It will stop receiving events.",
+          deleted: "A2A Push subscription deleted",
+          deleteFailed: "Failed to delete A2A Push subscription",
           copied: "Secret copied",
           copyFailed: "Copy failed. Select it manually.",
-          body: "Push this Run's events to your service using the A2A Push Notification pattern.",
+          title: "A2A Push event subscription",
+          body: "Push this Run's run_events to a configured receiver using the A2A Push Notification pattern.",
           refresh: "Refresh",
           secretOnce: "Secret shown only once",
           secretHint: "Receivers use it to verify `X-OpenLinker-Signature`.",
@@ -227,7 +229,7 @@ export function RunPushWebhookSection({ locale = "zh", runId, enabled }: Props) 
     <section className="ol-panel overflow-hidden">
       <div className="ol-panel-head">
         <div>
-          <strong>A2A Push Webhook</strong>
+          <strong>{copy.title}</strong>
           <p className="mt-1 text-[12px] font-semibold text-[color:var(--ol-muted)]">
             {copy.body}
           </p>

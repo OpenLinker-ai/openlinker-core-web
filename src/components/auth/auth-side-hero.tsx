@@ -18,7 +18,7 @@ const COPY = {
     body: "登录后可以试用 Agent、查看运行历史，也可以开通创作者身份发布自己的 Agent。",
     features: [
       "当前运行免费，后续权益能力逐步开放",
-      "邮箱密码 + Google OAuth 登录",
+      "内网账号邮箱密码登录",
       "创作者发布 HTTPS Endpoint",
       "运行结果、展示价格和耗时可追踪",
     ],
@@ -35,7 +35,7 @@ const COPY = {
     body: "After signing in, you can try Agents, inspect run history, or become a creator and publish your own Agent.",
     features: [
       "Current runs are free; later access capabilities will open gradually",
-      "Email/password plus Google OAuth sign-in",
+      "Intranet account email/password sign-in",
       "Creators publish HTTPS endpoints",
       "Run results, display price, and duration are traceable",
     ],

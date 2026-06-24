@@ -267,7 +267,7 @@ export function WebhookDialog({
             <div className="flex flex-wrap justify-end gap-2">
               <Button variant="outline" asChild>
                 <Link
-                  href={`/hub/agents/${agentSlug}/webhook`}
+                  href={`/hub/agents/${agentSlug}/delivery`}
                   onClick={handleClose}
                 >
                   {copy.history}

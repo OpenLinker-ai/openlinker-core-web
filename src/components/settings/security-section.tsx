@@ -16,7 +16,7 @@ export function SecuritySection({ locale = "zh" }: { locale?: Locale }) {
     locale === "zh"
       ? {
           title: "安全",
-          body: "修改邮箱密码登录账号的密码；第三方登录账号请继续使用对应登录方式。",
+          body: "修改内网账号的邮箱密码登录凭据。",
           current: "当前密码",
           next: "新密码",
           minPassword: "新密码至少 8 位",
@@ -27,7 +27,7 @@ export function SecuritySection({ locale = "zh" }: { locale?: Locale }) {
         }
       : {
           title: "Security",
-          body: "Update the password for email-based sign-in. Third-party sign-in accounts should continue using their provider.",
+          body: "Update the email/password credentials for your intranet account.",
           current: "Current password",
           next: "New password",
           minPassword: "New password must be at least 8 characters",

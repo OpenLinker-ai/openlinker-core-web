@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * Webhook 投递历史表格。
+ * Agent 回调投递历史表格。
  *
- * 由 Server Component（hub/agents/[id]/webhook/page.tsx）拉数据后传入。
+ * 由 Server Component（hub/agents/[id]/delivery/page.tsx）拉数据后传入。
  * 纯展示，不发起请求。
  *
  * 列：
@@ -63,7 +63,7 @@ export function DeliveryTable({ items, locale = "zh" }: Props) {
   const copy =
     locale === "zh"
       ? {
-          empty: "暂无投递记录。Agent 被调用且 webhook 已配置后，每次调用会在这里留下一条记录。",
+          empty: "暂无投递记录。Agent 被调用并配置回调后，每次投递都会在这里留下一条记录。",
           time: "时间",
           status: "状态",
           response: "响应码",
@@ -72,7 +72,7 @@ export function DeliveryTable({ items, locale = "zh" }: Props) {
           nextRetry: "下次重试",
         }
       : {
-          empty: "No delivery records yet. After the Agent is called and webhook is configured, each call leaves a record here.",
+          empty: "No delivery records yet. After the Agent is called and a callback is configured, each delivery leaves a record here.",
           time: "Time",
           status: "Status",
           response: "Response",

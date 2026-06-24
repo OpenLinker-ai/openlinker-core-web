@@ -148,7 +148,6 @@ function A2APublicIntro({ callbackUrl, locale }: { callbackUrl: string; locale: 
           h1: "A2A 调用闭环",
           lead: "查看 Parent Agent 如何委派 Child Agent、运行记录如何串联，以及 Skill、MCP 和运行事件如何形成一条可追踪的协作链。",
           login: "登录后查看调用链",
-          register: "创建账号",
           publicTitle: "A2A 公开说明",
           privateChip: "登录后读取个人运行记录",
           step1: "Parent 发起委派",
@@ -177,7 +176,6 @@ function A2APublicIntro({ callbackUrl, locale }: { callbackUrl: string; locale: 
           h1: "A2A Invocation Loop",
           lead: "See how a Parent Agent delegates to Child Agents, how run records are linked, and how Skills, MCP, and run events create a traceable collaboration chain.",
           login: "Sign in to view call chains",
-          register: "Create account",
           publicTitle: "A2A Public Overview",
           privateChip: "Personal run records load after sign-in",
           step1: "Parent delegates",
@@ -214,9 +212,6 @@ function A2APublicIntro({ callbackUrl, locale }: { callbackUrl: string; locale: 
           <div className="flex flex-wrap gap-2">
             <Link href={`/login?${authQuery}`} className="ol-btn">
               {copy.login}
-            </Link>
-            <Link href={`/register?${authQuery}`} className="ol-mini-btn">
-              {copy.register}
             </Link>
           </div>
         </div>

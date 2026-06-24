@@ -3,9 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import { RunDeliverySection } from "@/components/delivery/run-delivery-section";
 import { RunEventStream } from "@/components/run/run-event-stream";
-import { RunPushWebhookSection } from "@/components/run/run-push-webhook-section";
 import { Icon } from "@/components/ui/icon";
 import type { Locale } from "@/lib/i18n";
 
@@ -201,16 +199,16 @@ export function RunDetail({
           inbox: "站内通知",
           withParent: "随父运行",
           queued: "已入队",
-          webhookNoSeparate: "不单独投递",
-          webhookWaiting: "等待投递",
-          webhookConfigured: "已配置",
-          webhookNotConfigured: "未配置",
-          configureWebhook: "去配置",
+          externalDelivery: "外部投递",
+          deliveryNoSeparate: "随父运行",
+          deliveryCallbackSet: "回调已配置",
+          deliveryReview: "查看设置",
+          deliverySettings: "投递设置",
           noDelivery: "不投递",
           costRecord: "费用记录",
           delegatedRun: "委派运行",
           recorded: "已记录",
-          manageDelivery: "管理投递目标",
+          manageDelivery: "打开投递设置",
           evidence: "证据摘要",
           coverage: "覆盖状态",
           matchedSkills: "命中 Skill",
@@ -245,16 +243,16 @@ export function RunDetail({
           inbox: "In-app notification",
           withParent: "With parent run",
           queued: "Queued",
-          webhookNoSeparate: "No separate delivery",
-          webhookWaiting: "Waiting for delivery",
-          webhookConfigured: "Configured",
-          webhookNotConfigured: "Not configured",
-          configureWebhook: "Configure",
+          externalDelivery: "External delivery",
+          deliveryNoSeparate: "With parent run",
+          deliveryCallbackSet: "Callback configured",
+          deliveryReview: "Review settings",
+          deliverySettings: "Delivery settings",
           noDelivery: "Not delivered",
           costRecord: "Cost record",
           delegatedRun: "Delegated run",
           recorded: "Recorded",
-          manageDelivery: "Manage delivery targets",
+          manageDelivery: "Open delivery settings",
           evidence: "Evidence summary",
           coverage: "Coverage",
           matchedSkills: "Matched Skills",
@@ -277,16 +275,16 @@ export function RunDetail({
   const success = view.status === "success";
   const delegated = view.billingMode === "free_delegation";
   const chip = statusChip(view.status, locale);
-  const webhookConfigHref =
+  const deliverySettingsHref =
     view.agentSlug || view.agentId
-      ? `/hub/agents/${encodeURIComponent(view.agentSlug || view.agentId || "")}/webhook`
-      : "";
-  const webhookStatus = delegated
-    ? copy.webhookNoSeparate
+      ? `/hub/agents/${encodeURIComponent(view.agentSlug || view.agentId || "")}/delivery?run_id=${encodeURIComponent(view.id)}`
+      : `/connect?tab=delivery&run_id=${encodeURIComponent(view.id)}`;
+  const externalDeliveryStatus = delegated
+    ? copy.deliveryNoSeparate
     : view.agentWebhookSet
-      ? success ? copy.webhookWaiting : copy.webhookConfigured
-      : copy.webhookNotConfigured;
-  const webhookTone = delegated
+      ? copy.deliveryCallbackSet
+      : copy.deliveryReview;
+  const externalDeliveryTone = delegated
     ? "mint"
     : view.agentWebhookSet
       ? "mint"
@@ -354,7 +352,7 @@ export function RunDetail({
         <StatCell label={copy.cost} value={delegated ? copy.freeDelegation : fmtPriceField(view.costCents, locale)} divider={false} />
         <StatCell label={copy.duration} value={fmtMs(view.durationMs)} />
         <StatCell label={copy.status} value={success ? "success" : view.status} />
-        <StatCell label={copy.delivery} value={delegated ? "to parent" : success ? "queued" : "skipped"} />
+        <StatCell label={copy.delivery} value={delegated ? copy.deliveryNoSeparate : copy.deliverySettings} />
       </section>
 
       {view.evidenceSummary ? (
@@ -383,8 +381,6 @@ export function RunDetail({
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]">
         <section className="min-w-0 space-y-5">
           <RunEventStream locale={locale} runId={view.id} enabled={run !== null} fallbackStatus={view.status} />
-
-          <RunPushWebhookSection locale={locale} runId={view.id} enabled={run !== null} />
 
           <RunMessagesPanel locale={locale} run={view} messages={messages} />
 
@@ -483,9 +479,7 @@ export function RunDetail({
             <div className="ol-panel ol-panel-pad text-[13px] font-semibold text-[color:var(--ol-muted)]">
               {copy.delegatedNote}
             </div>
-          ) : (
-            <RunDeliverySection locale={locale} runId={view.id} runStatus={view.status} />
-          )}
+          ) : null}
         </section>
 
         <aside className="min-w-0 grid content-start gap-3.5">
@@ -509,7 +503,7 @@ export function RunDetail({
 
           <RequirementEvidencePanel locale={locale} evidence={view.requirementEvidence} />
 
-          <div className="ol-panel ol-panel-pad">
+          <div id="delivery" className="ol-panel ol-panel-pad scroll-mt-24">
             <strong className="text-[14px] font-[900] text-[color:var(--ol-ink)]">{copy.deliveryStatus}</strong>
             <div className="mt-3 grid gap-2.5">
               <DeliveryRow
@@ -517,12 +511,12 @@ export function RunDetail({
                 value={delegated ? copy.withParent : copy.queued}
                 tone={delegated ? "mint" : "green"}
               />
-              <WebhookDeliveryRow
-                label="Webhook"
-                value={webhookStatus}
-                tone={webhookTone}
-                href={!delegated && !view.agentWebhookSet ? webhookConfigHref : ""}
-                actionLabel={copy.configureWebhook}
+              <DeliveryActionRow
+                label={copy.externalDelivery}
+                value={externalDeliveryStatus}
+                tone={externalDeliveryTone}
+                href={!delegated ? deliverySettingsHref : ""}
+                actionLabel={copy.deliverySettings}
               />
               <DeliveryRow
                 label={copy.costRecord}
@@ -532,7 +526,7 @@ export function RunDetail({
             </div>
             {!delegated ? (
               <Link
-                href="#delivery"
+                href={deliverySettingsHref}
                 className="ol-mini-btn mt-3 inline-flex w-full items-center justify-center bg-[color:var(--ol-soft)] text-[color:var(--ol-ink)] hover:bg-[color:var(--ol-line)]"
               >
                 {copy.manageDelivery}
@@ -902,7 +896,7 @@ function DeliveryRow({
   );
 }
 
-function WebhookDeliveryRow({
+function DeliveryActionRow({
   label,
   value,
   tone,

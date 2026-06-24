@@ -4,7 +4,7 @@
  * 鉴权拦截：
  *   - 未登录访问 protected 路由组（/my /runs /publish /hub /settings /playground /inbox /run /admin）
  *     → 跳 /login?callbackUrl=<原 path>，登录成功后由登录页 router.push(callbackUrl || "/")
- *   - 已登录访问 /login /register → 跳首页
+ *   - 已登录访问 /login → 跳首页
  *
  * Next.js 16 强制 proxy 跑在 nodejs runtime，所以 NextAuth `auth()` 可以直接用。
  * 不需要 edge-safe 拆分。
@@ -27,7 +27,7 @@ const PROTECTED_PREFIXES = [
 ];
 
 // 已登录用户不应该再看到的页面
-const AUTH_PAGES = ["/login", "/register"];
+const AUTH_PAGES = ["/login"];
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -44,7 +44,7 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // 已登录 → /login /register 没意义，跳首页
+  // 已登录 → /login 没意义，跳首页
   if (isAuthPage && session) {
     const url = req.nextUrl.clone();
     url.pathname = "/";

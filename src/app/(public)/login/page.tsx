@@ -5,7 +5,7 @@
  *
  * 结构：
  *   - 统一 <Topbar />
- *   - 2 列 auth-layout：左 auth-panel（kicker + h2 + tabs + 表单 + OAuth + 底链）
+ *   - 2 列 auth-layout：左 auth-panel（kicker + h2 + 表单）
  *                        右 auth-side（深绿 hero + 4 特性 + 4 数据）
  */
 

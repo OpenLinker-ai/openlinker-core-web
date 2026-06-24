@@ -18,10 +18,10 @@
  * 累计收入 2 位小数（金额一般较大）。
  */
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { WebhookDialog } from "@/components/creator/webhook-dialog";
 import { useApi } from "@/hooks/use-api";
 import { ApiError } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
@@ -58,7 +58,6 @@ export function AgentRow({
   const { fetch: apiFetch } = useApi();
   const [showReason, setShowReason] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [webhookOpen, setWebhookOpen] = useState(false);
   const copy =
     locale === "zh"
       ? {
@@ -74,7 +73,7 @@ export function AgentRow({
           viewReason: "查看拒绝原因",
           disabling: "下架中...",
           disable: "下架",
-          webhook: "配置 Webhook",
+          delivery: "投递设置",
         }
       : {
           confirmDisable: (name: string) =>
@@ -89,7 +88,7 @@ export function AgentRow({
           viewReason: "View rejection reason",
           disabling: "Disabling...",
           disable: "Disable",
-          webhook: "Configure Webhook",
+          delivery: "Delivery settings",
         };
 
   const handleDisable = async () => {
@@ -168,26 +167,14 @@ export function AgentRow({
             </Button>
           ) : null}
           {canDisable ? (
-            <Button
-              onClick={() => setWebhookOpen(true)}
-              variant="outline"
-              size="sm"
-            >
-              {copy.webhook}
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/hub/agents/${agent.slug}/delivery`}>
+                {copy.delivery}
+              </Link>
             </Button>
           ) : null}
         </div>
       </div>
-      {canDisable && webhookOpen ? (
-        <WebhookDialog
-          agentId={agent.id}
-          agentSlug={agent.slug}
-          agentName={agent.name}
-          initialUrl={agent.webhook_url ?? null}
-          open={true}
-          onClose={() => setWebhookOpen(false)}
-        />
-      ) : null}
     </li>
   );
 }

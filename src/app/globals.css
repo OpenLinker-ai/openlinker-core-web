@@ -1355,7 +1355,7 @@ body > main {
   }
 
   /* ============================================================
-     登录 / 注册页（/login, /register）
+     登录页（/login）
      来源：prototype/openlinker-flow-21-auth.png + #flow-auth
      ============================================================ */
 
@@ -1401,43 +1401,6 @@ body > main {
     color: var(--ol-muted);
     font-size: 13.5px;
     line-height: 1.55;
-  }
-
-  /* auth-tabs：登录/注册 切换 chip（实际是 Link 跳转） */
-  .ol-auth-tabs {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px;
-    margin-top: 18px;
-    border: 1px solid var(--ol-line);
-    border-radius: 12px;
-    background: var(--ol-soft);
-  }
-
-  .ol-auth-tabs > a {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 30px;
-    padding: 0 16px;
-    border-radius: 8px;
-    color: var(--ol-muted);
-    font-size: 12.5px;
-    font-weight: 850;
-    line-height: 1;
-    text-decoration: none;
-    transition: background-color 0.15s, color 0.15s;
-  }
-
-  .ol-auth-tabs > a:hover {
-    color: var(--ol-ink);
-  }
-
-  .ol-auth-tabs > a.active {
-    background: #ffffff;
-    color: var(--ol-ink);
-    box-shadow: 0 1px 2px rgba(25, 66, 84, 0.08);
   }
 
   /* 表单字段 */
@@ -1500,80 +1463,6 @@ body > main {
     cursor: not-allowed;
   }
 
-  /* 分隔线 "或使用第三方账号" */
-  .ol-auth-divider {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 16px 0 14px;
-    color: var(--ol-subtle);
-    font-size: 11.5px;
-    font-weight: 800;
-  }
-
-  .ol-auth-divider::before,
-  .ol-auth-divider::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background: var(--ol-line);
-  }
-
-  .ol-auth-divider span {
-    padding: 0 12px;
-  }
-
-  /* OAuth 4 按钮 grid（grid-cols-2） */
-  .ol-oauth-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .ol-oauth-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    height: 44px;
-    padding: 0 14px;
-    border: 1px solid var(--ol-line);
-    border-radius: 12px;
-    background: #ffffff;
-    color: var(--ol-ink);
-    font-size: 13px;
-    font-weight: 850;
-    cursor: pointer;
-    transition: border-color 0.15s, background-color 0.15s;
-  }
-
-  .ol-oauth-btn:hover:not(:disabled) {
-    border-color: rgba(15, 145, 135, 0.32);
-    background: var(--ol-soft);
-  }
-
-  .ol-oauth-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .ol-oauth-ico {
-    display: grid;
-    place-items: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
-    color: #ffffff;
-    font-size: 11px;
-    font-weight: 950;
-    flex-shrink: 0;
-  }
-
-  .ol-oauth-ico.google { background: #4285f4; }
-  .ol-oauth-ico.github { background: #1a1a1a; }
-  .ol-oauth-ico.wechat { background: #07c160; }
-
   /* 底部辅助行（记住登录 / 忘记密码） */
   .ol-auth-row {
     display: flex;
@@ -1603,25 +1492,6 @@ body > main {
 
   .ol-auth-row a:hover,
   .ol-auth-row button:hover {
-    text-decoration: underline;
-  }
-
-  /* 底部链接 */
-  .ol-auth-bottom {
-    margin-top: 18px;
-    text-align: center;
-    color: var(--ol-muted);
-    font-size: 12.5px;
-    font-weight: 700;
-  }
-
-  .ol-auth-bottom a {
-    margin-left: 6px;
-    color: var(--ol-primary-dark);
-    font-weight: 900;
-  }
-
-  .ol-auth-bottom a:hover {
     text-decoration: underline;
   }
 

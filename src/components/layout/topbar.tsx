@@ -105,20 +105,12 @@ function DefaultRightSlot({
 }) {
   if (!signedIn) {
     return (
-      <>
-        <Link
-          href="/login"
-          className="hidden whitespace-nowrap text-[13px] font-bold text-[color:var(--ol-muted)] hover:text-[color:var(--ol-ink)] min-[430px]:inline"
-        >
-          {locale === "zh" ? "登录" : "Sign in"}
-        </Link>
-        <Link
-          href="/register"
-          className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-xl bg-[color:var(--ol-primary)] px-3 text-[12px] font-bold text-white shadow-sm hover:bg-[color:var(--ol-primary-dark)] sm:px-4 sm:text-[13px]"
-        >
-          {locale === "zh" ? "注册" : "Sign up"}
-        </Link>
-      </>
+      <Link
+        href="/login"
+        className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-xl bg-[color:var(--ol-primary)] px-3 text-[12px] font-bold text-white shadow-sm hover:bg-[color:var(--ol-primary-dark)] sm:px-4 sm:text-[13px]"
+      >
+        {locale === "zh" ? "登录" : "Sign in"}
+      </Link>
     );
   }
 

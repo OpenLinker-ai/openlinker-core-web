@@ -23,7 +23,6 @@ import { PlayCircle } from "lucide-react";
 import { useState } from "react";
 
 import { avatarFromSlug } from "@/components/market/avatar";
-import { WebhookDialog } from "@/components/creator/webhook-dialog";
 import { SkillsDialog } from "@/components/creator/skills-dialog";
 import type { Locale } from "@/lib/i18n";
 
@@ -174,7 +173,7 @@ function AgentItemRow({
     locale === "zh"
       ? {
           totalCalls: "累计调用",
-          configuredWebhook: "webhook 已配置",
+          configuredWebhook: "投递回调已配置",
           disabled: "已下架",
           calls: "调用",
           month: "本月",
@@ -187,14 +186,14 @@ function AgentItemRow({
           runHistory: "调用记录",
           runHistoryTitle: "查看这个 Agent 被用户、访问令牌或 MCP 触发的调用记录",
           benchmarkTitle: "对已声明 Skill 跑测评，verified 后详情页加徽章",
-          webhookTitleConfigured: "管理 Webhook 配置与投递历史",
-          webhookTitleEmpty: "配置 Webhook 接收异步回调",
+          deliveryTitle: "管理投递目标、Agent 回调与投递历史",
+          delivery: "投递",
           progress: "查看进度",
           progressLabel: (name: string) => `查看 ${name} 进度`,
         }
       : {
           totalCalls: "total calls",
-          configuredWebhook: "webhook configured",
+          configuredWebhook: "delivery callback configured",
           disabled: "Unlisted",
           calls: "calls",
           month: "this month",
@@ -207,8 +206,8 @@ function AgentItemRow({
           runHistory: "Run history",
           runHistoryTitle: "View calls triggered by users, access tokens, or MCP",
           benchmarkTitle: "Run benchmarks for declared Skills; verified Agents show a badge",
-          webhookTitleConfigured: "Manage Webhook configuration and delivery history",
-          webhookTitleEmpty: "Configure a Webhook for async callbacks",
+          deliveryTitle: "Manage delivery targets, Agent callback, and delivery history",
+          delivery: "Delivery",
           progress: "View progress",
           progressLabel: (name: string) => `View ${name} progress`,
         };
@@ -216,7 +215,6 @@ function AgentItemRow({
   const isPending = row.certificationStatus === "pending";
   const isActive = row.lifecycleStatus === "active";
   const isListed = isActive && row.visibility === "public";
-  const [webhookOpen, setWebhookOpen] = useState(false);
   const [skillsOpen, setSkillsOpen] = useState(false);
 
   // 待处理行：黄色高亮（按 prompt 要求的样式 token）
@@ -300,14 +298,13 @@ function AgentItemRow({
             >
               Benchmark
             </Link>
-            <button
-              type="button"
-              onClick={() => setWebhookOpen(true)}
+            <Link
+              href={`/hub/agents/${row.slug}/delivery`}
               className="ol-mini-btn"
-              title={row.webhookUrl ? copy.webhookTitleConfigured : copy.webhookTitleEmpty}
+              title={copy.deliveryTitle}
             >
-              Webhook{row.webhookUrl ? " ✓" : ""}
-            </button>
+              {copy.delivery}{row.webhookUrl ? " ✓" : ""}
+            </Link>
           </div>
         </div>
       ) : (
@@ -319,18 +316,8 @@ function AgentItemRow({
           {copy.progress}
         </Link>
       )}
-      {isActive && (webhookOpen || skillsOpen) ? (
+      {isActive && skillsOpen ? (
         <>
-          {webhookOpen ? (
-            <WebhookDialog
-              agentId={row.id}
-              agentSlug={row.slug}
-              agentName={row.name}
-              initialUrl={row.webhookUrl}
-              open={true}
-              onClose={() => setWebhookOpen(false)}
-            />
-          ) : null}
           {skillsOpen ? (
             <SkillsDialog
               agentId={row.id}

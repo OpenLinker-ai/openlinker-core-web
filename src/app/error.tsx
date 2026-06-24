@@ -30,15 +30,9 @@ export default function Error({
           <div className="ol-topbar-actions flex shrink-0 items-center gap-2 sm:gap-3">
             <Link
               href="/login"
-              className="hidden whitespace-nowrap text-[13px] font-bold text-[color:var(--ol-muted)] hover:text-[color:var(--ol-ink)] min-[430px]:inline"
-            >
-              登录
-            </Link>
-            <Link
-              href="/register"
               className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-xl bg-[color:var(--ol-primary)] px-3 text-[12px] font-bold text-white shadow-sm hover:bg-[color:var(--ol-primary-dark)] sm:px-4 sm:text-[13px]"
             >
-              注册
+              登录
             </Link>
           </div>
         </div>

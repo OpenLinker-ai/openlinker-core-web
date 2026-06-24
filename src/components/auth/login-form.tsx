@@ -5,16 +5,10 @@
  *
  * 流程：zod 校验 → next-auth signIn("credentials") → 成功 push 到首页 / callbackUrl。
  * 错误：NextAuth credentials provider 失败时返回 res.error，统一显示"邮箱或密码错误"。
- *
- * Phase 1：
- *   - "记住登录状态" UI 显示但不实现（NextAuth 默认 24h）
- *   - "忘记密码" → mailto: support@openlinker.ai
- *   - OAuth 4 按钮 grid（Google 走业务，其他 disabled）
  */
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
@@ -22,8 +16,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { OAuthGrid, hasEnabledOAuthProviders } from "@/components/auth/oauth-grid";
-import { authHref, safeAuthCallback } from "@/components/auth/callback-url";
+import { safeAuthCallback } from "@/components/auth/callback-url";
 import {
   Form,
   FormControl,
@@ -64,9 +57,6 @@ export function LoginForm({ locale = "zh" }: { locale?: Locale }) {
           forgot: "忘记密码？",
           submit: "登录",
           submitting: "登录中…",
-          divider: "或使用第三方账号",
-          noAccount: "还没账号？",
-          register: "免费注册",
         }
       : {
           invalid: "Email or password is incorrect",
@@ -78,9 +68,6 @@ export function LoginForm({ locale = "zh" }: { locale?: Locale }) {
           forgot: "Forgot password?",
           submit: "Sign in",
           submitting: "Signing in…",
-          divider: "Or use a third-party account",
-          noAccount: "No account yet?",
-          register: "Sign up for free",
         };
 
   const form = useForm<LoginValues>({
@@ -180,19 +167,6 @@ export function LoginForm({ locale = "zh" }: { locale?: Locale }) {
           {submitting ? copy.submitting : copy.submit}
         </button>
 
-        {hasEnabledOAuthProviders() ? (
-          <>
-            <div className="ol-auth-divider">
-              <span>{copy.divider}</span>
-            </div>
-            <OAuthGrid disabled={submitting} />
-          </>
-        ) : null}
-
-        <p className="ol-auth-bottom">
-          {copy.noAccount}
-          <Link href={authHref("/register", callbackUrl)}>{copy.register}</Link>
-        </p>
       </form>
     </Form>
   );

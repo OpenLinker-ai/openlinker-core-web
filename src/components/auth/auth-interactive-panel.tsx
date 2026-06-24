@@ -2,20 +2,15 @@
 
 import { useSyncExternalStore } from "react";
 
-import { AuthTabs } from "@/components/auth/auth-tabs";
 import { LoginForm } from "@/components/auth/login-form";
-import { RegisterForm } from "@/components/auth/register-form";
 import type { Locale } from "@/lib/i18n";
 
 interface AuthInteractivePanelProps {
-  active: "login" | "register";
+  active?: "login";
   locale?: Locale;
 }
 
-export function AuthInteractivePanel({
-  active,
-  locale = "zh",
-}: AuthInteractivePanelProps) {
+export function AuthInteractivePanel({ locale = "zh" }: AuthInteractivePanelProps) {
   const mounted = useSyncExternalStore(
     subscribeMounted,
     getClientMountedSnapshot,
@@ -33,16 +28,9 @@ export function AuthInteractivePanel({
   }
 
   return (
-    <>
-      <AuthTabs active={active} locale={locale} />
-      <div className="mt-6">
-        {active === "login" ? (
-          <LoginForm locale={locale} />
-        ) : (
-          <RegisterForm locale={locale} />
-        )}
-      </div>
-    </>
+    <div className="mt-6">
+      <LoginForm locale={locale} />
+    </div>
   );
 }
 
