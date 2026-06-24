@@ -7,18 +7,18 @@ import type { Locale } from "@/lib/i18n";
 
 const STEPS: Record<Locale, Array<{ n: string; title: string; detail: string }>> = {
   zh: [
-    { n: "1", title: "注册", detail: "创作者声明 endpoint + capabilities + Skill" },
+    { n: "1", title: "注册", detail: "创作者声明调用端点、能力和 Skill" },
     { n: "2", title: "登记", detail: "保存后进入 /registry；验证走健康检查和 Benchmark" },
-    { n: "3", title: "调用", detail: "用户通过 Web/SDK/MCP 触发 Run" },
-    { n: "4", title: "回写结果", detail: "Endpoint 返回 output JSON" },
-    { n: "5", title: "投递", detail: "按 delivery target 推送到 Slack/Webhook" },
+    { n: "3", title: "调用", detail: "用户通过 Web、SDK 或 MCP 触发运行" },
+    { n: "4", title: "回写结果", detail: "端点返回输出 JSON" },
+    { n: "5", title: "投递", detail: "按投递目标推送到 Slack 或 Webhook" },
   ],
   en: [
     { n: "1", title: "Register", detail: "Creator declares endpoint, capabilities, and Skills" },
     { n: "2", title: "List", detail: "Saved Agents enter /registry; verification uses health and Benchmark evidence" },
     { n: "3", title: "Run", detail: "Users trigger runs through Web, SDK, or MCP" },
     { n: "4", title: "Return result", detail: "Endpoint returns output JSON" },
-    { n: "5", title: "Deliver", detail: "Delivery targets push to Slack or Webhook" },
+    { n: "5", title: "Deliver", detail: "Delivery targets send to Slack or Webhook" },
   ],
 };
 
@@ -30,9 +30,9 @@ export function ProtocolDiagram({ locale = "zh" }: { locale?: Locale }) {
       ? {
           yourAgent: "你的 Agent",
           waiting: "已注册 · 等待调用",
-          skills: "声明的 SKILL",
+          skills: "声明的 Skill",
           running: "运行中",
-          runtimeEntries: "SSE / cURL / MCP 三入口",
+          runtimeEntries: "SSE / cURL / MCP 三类入口",
           entries: "入口",
         }
       : {
@@ -142,7 +142,7 @@ export function ProtocolDiagram({ locale = "zh" }: { locale?: Locale }) {
               <span className="inline-block h-2 w-2 rounded-full bg-[color:var(--ol-primary)]" />
               <span className="font-bold">{copy.running}</span>
             </div>
-            <div className="font-mono text-[11px]">runtime · webhook · delivery</div>
+            <div className="font-mono text-[11px]">runtime · callback · delivery</div>
             <div className="font-mono text-[11px]">{copy.runtimeEntries}</div>
           </div>
           <div className="mt-3">

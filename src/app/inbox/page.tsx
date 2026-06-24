@@ -25,13 +25,13 @@ export default async function InboxPage() {
       ? {
           my: "我的",
           current: "通知中心",
-          heading: "审核、运行、权益和 Webhook 事件",
+          heading: "审核、运行、权益和投递事件",
           lead: "所有需要你回看的站内事件集中在这里，可以按类型筛选、标记已读并跳到对应详情。",
         }
       : {
           my: "My",
           current: "Inbox",
-          heading: "Review, run, plan, and Webhook events",
+          heading: "Review, run, plan, and delivery events",
           lead: "Review in-app events here, filter by type, mark them as read, and jump to the related detail page.",
         };
   const availabilityAlerts = await apiFetchAuthed<{

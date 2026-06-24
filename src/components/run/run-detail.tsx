@@ -148,7 +148,7 @@ function fmtMs(ms: number): string {
 
 function fmtPriceField(cents: number, locale: Locale): string {
   return cents > 0
-    ? locale === "zh" ? "价格字段" : "Future price field"
+    ? `$${(cents / 100).toFixed(2)}`
     : locale === "zh" ? "免费运行" : "Free run";
 }
 
@@ -187,6 +187,8 @@ export function RunDetail({
           duration: "耗时",
           status: "状态",
           delivery: "投递",
+          outputDelivered: "已输出",
+          outputFailed: "失败",
           output: "输出结果",
           error: "错误信息",
           structured: "结构化输出",
@@ -199,16 +201,16 @@ export function RunDetail({
           inbox: "站内通知",
           withParent: "随父运行",
           queued: "已入队",
-          externalDelivery: "外部投递",
+          externalDelivery: "外部投递设置",
           deliveryNoSeparate: "随父运行",
-          deliveryCallbackSet: "回调已配置",
+          deliveryCallbackSet: "已配置 Agent 回调",
           deliveryReview: "查看设置",
-          deliverySettings: "投递设置",
+          deliverySettings: "投递与回调设置",
           noDelivery: "不投递",
           costRecord: "费用记录",
           delegatedRun: "委派运行",
           recorded: "已记录",
-          manageDelivery: "打开投递设置",
+          manageDelivery: "打开投递与回调设置",
           evidence: "证据摘要",
           coverage: "覆盖状态",
           matchedSkills: "命中 Skill",
@@ -231,6 +233,8 @@ export function RunDetail({
           duration: "Duration",
           status: "Status",
           delivery: "Delivery",
+          outputDelivered: "Output ready",
+          outputFailed: "Failed",
           output: "Output",
           error: "Error",
           structured: "Structured output",
@@ -243,16 +247,16 @@ export function RunDetail({
           inbox: "In-app notification",
           withParent: "With parent run",
           queued: "Queued",
-          externalDelivery: "External delivery",
+          externalDelivery: "External delivery settings",
           deliveryNoSeparate: "With parent run",
-          deliveryCallbackSet: "Callback configured",
+          deliveryCallbackSet: "Agent callback configured",
           deliveryReview: "Review settings",
-          deliverySettings: "Delivery settings",
+          deliverySettings: "Delivery and callback settings",
           noDelivery: "Not delivered",
           costRecord: "Cost record",
           delegatedRun: "Delegated run",
           recorded: "Recorded",
-          manageDelivery: "Open delivery settings",
+          manageDelivery: "Open delivery and callback settings",
           evidence: "Evidence summary",
           coverage: "Coverage",
           matchedSkills: "Matched Skills",
@@ -388,7 +392,7 @@ export function RunDetail({
             <div className="ol-panel-head">
               <strong>{success ? copy.output : copy.error}</strong>
               <span className={success ? "ol-chip ol-chip-green" : "ol-chip ol-chip-amber"}>
-                {success ? "Delivered" : "Failed"}
+                {success ? copy.outputDelivered : copy.outputFailed}
               </span>
             </div>
             <div className="p-5">

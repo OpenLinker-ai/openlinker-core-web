@@ -94,11 +94,11 @@ function formatRelative(iso: string, locale: Locale): string {
 function formatCost(run: Run, locale: Locale): string {
   if (locale === "en") {
     if (run.status !== "success") return "No fee";
-    if (run.cost_cents > 0) return "Price field";
+    if (run.cost_cents > 0) return `$${(run.cost_cents / 100).toFixed(2)}`;
     return "Free run";
   }
   if (run.status !== "success") return "未产生费用";
-  if (run.cost_cents > 0) return "价格字段";
+  if (run.cost_cents > 0) return `$${(run.cost_cents / 100).toFixed(2)}`;
   return "免费运行";
 }
 
@@ -231,7 +231,7 @@ function RunItemRow({ run, locale }: { run: Run; locale: Locale }) {
           <Link
             href={`/run/${encodeURIComponent(run.id)}`}
             className="ol-mini-btn"
-            title={locale === "zh" ? "查看本次运行的状态、输出和未来价格字段" : "View status, output, and future price field for this run"}
+            title={locale === "zh" ? "查看本次运行的状态、输出和费用信息" : "View status, output, and cost details for this run"}
           >
             {locale === "zh" ? "详情" : "Details"}
           </Link>

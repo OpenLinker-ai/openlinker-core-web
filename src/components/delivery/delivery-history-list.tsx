@@ -27,7 +27,7 @@ export function DeliveryHistoryList({
           attempt: (n: number) => `第 ${n} 次`,
           retrying: "重试中…",
           retry: "重试",
-          nextRetry: "下次重试",
+          nextRetry: "下次重试：",
           run: "Run",
         }
       : {
@@ -35,7 +35,7 @@ export function DeliveryHistoryList({
           attempt: (n: number) => `Attempt ${n}`,
           retrying: "Retrying…",
           retry: "Retry",
-          nextRetry: "Next retry",
+          nextRetry: "Next retry:",
           run: "Run",
         };
 
@@ -57,9 +57,11 @@ export function DeliveryHistoryList({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <span className={cn("ol-chip", chipForStatus(delivery.status))}>
-                {delivery.status}
+                {statusLabel(delivery.status, locale)}
               </span>
-              <span className="ol-chip ol-chip-mint">{delivery.target_type}</span>
+              <span className="ol-chip ol-chip-mint">
+                {targetTypeLabel(delivery.target_type)}
+              </span>
               <span className="text-[11px] font-bold text-[color:var(--ol-muted)]">
                 {copy.attempt(delivery.attempt_count)}
               </span>
@@ -107,6 +109,20 @@ function chipForStatus(status: string): string {
   if (status === "success") return "ol-chip-green";
   if (status === "failed") return "ol-chip-amber";
   return "ol-chip-mint";
+}
+
+function statusLabel(status: string, locale: Locale): string {
+  if (status === "success") return locale === "zh" ? "成功" : "Success";
+  if (status === "failed") return locale === "zh" ? "失败" : "Failed";
+  if (status === "pending") return locale === "zh" ? "待处理" : "Pending";
+  return status;
+}
+
+function targetTypeLabel(type: string): string {
+  if (type === "webhook") return "Webhook";
+  if (type === "slack") return "Slack";
+  if (type === "email") return "Email";
+  return type;
 }
 
 function formatTime(iso: string, locale: Locale): string {

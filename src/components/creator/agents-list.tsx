@@ -206,7 +206,7 @@ function AgentItemRow({
           runHistory: "Run history",
           runHistoryTitle: "View calls triggered by users, access tokens, or MCP",
           benchmarkTitle: "Run benchmarks for declared Skills; verified Agents show a badge",
-          deliveryTitle: "Manage delivery targets, Agent callback, and delivery history",
+          deliveryTitle: "Manage delivery targets, Agent callback, and external delivery history",
           delivery: "Delivery",
           progress: "View progress",
           progressLabel: (name: string) => `View ${name} progress`,

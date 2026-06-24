@@ -52,9 +52,9 @@ const SOURCES: readonly SourceCardSpec[] = [
     key: "mcp_server",
     icon: "MCP",
     iconClass: "amber",
-    title: { zh: "已有 MCP Tool（高级）", en: "Existing MCP Tool (Advanced)" },
+    title: { zh: "已有 MCP 工具（高级）", en: "Existing MCP tool (advanced)" },
     desc: {
-      zh: "不是 MCP Server 上架入口；仅用于把远程 HTTP JSON-RPC / MCP tool 包装成 Agent。",
+      zh: "不是 MCP Server 上架入口；仅用于把远程 HTTP JSON-RPC / MCP 工具包装成 Agent。",
       en: "Not the MCP Server listing flow. Use only to wrap a remote HTTP JSON-RPC / MCP tool as an Agent.",
     },
   },

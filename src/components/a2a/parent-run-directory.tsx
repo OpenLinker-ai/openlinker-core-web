@@ -51,14 +51,14 @@ export function ParentRunDirectory({
   const copy =
     locale === "zh"
       ? {
-          title: "我的 Parent 调用链",
+          title: "我的父调用链",
           total: (n: number) => `共 ${n} 条`,
-          body: "每条 Parent 都是一次真实发起子 Agent 委派的运行。这里按你的运行记录自动生成，不需要再手动输入 parent_run_id。",
-          loadFailed: "暂时无法加载 Parent 调用链。",
-          empty: "还没有 Parent 调用链。运行会委派子调用的 Agent 后，这里会自动出现记录。",
+          body: "每条父调用链都来自一次真实的子 Agent 委派运行。这里按你的运行记录自动生成，不需要再手动输入 parent_run_id。",
+          loadFailed: "暂时无法加载父调用链。",
+          empty: "还没有父调用链。运行会委派子调用的 Agent 后，这里会自动出现记录。",
           viewAgents: "查看我的 Agent",
           viewA2A: "查看 A2A 接入方式",
-          parentAgent: "Parent Agent",
+          parentAgent: "父 Agent",
           childCalls: "子调用",
           success: "成功",
           running: "运行中",
@@ -71,7 +71,7 @@ export function ParentRunDirectory({
       : {
           title: "My Parent Call Chains",
           total: (n: number) => `${n} total`,
-          body: "Each Parent is a real run that delegated work to a Child Agent. This list is generated from your run history, so there is no manual parent_run_id entry.",
+          body: "Each parent call chain comes from a real run that delegated work to a child Agent. This list is generated from your run history, so there is no manual parent_run_id entry.",
           loadFailed: "Unable to load Parent call chains.",
           empty: "No Parent call chains yet. They will appear after you run an Agent that delegates work.",
           viewAgents: "View My Agents",

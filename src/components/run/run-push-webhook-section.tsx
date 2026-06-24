@@ -28,14 +28,14 @@ type Props = {
 };
 
 const EVENT_OPTIONS = [
-  { value: "run.completed", label: { zh: "完成", en: "Completed" }, hint: { zh: "Run 成功完成后推送", en: "Push after the run completes successfully" } },
+  { value: "run.completed", label: { zh: "完成", en: "Completed" }, hint: { zh: "运行成功完成后推送", en: "Push after the run completes successfully" } },
   { value: "run.failed", label: { zh: "失败", en: "Failed" }, hint: { zh: "失败、超时或异常时推送", en: "Push on failure, timeout, or exception" } },
   { value: "run.canceled", label: { zh: "取消", en: "Canceled" }, hint: { zh: "用户或协议客户端取消时推送", en: "Push when a user or protocol client cancels" } },
   { value: "run.requirements.snapshotted", label: { zh: "运行要求", en: "Requirements" }, hint: { zh: "Skill/MCP 证据快照", en: "Skill/MCP evidence snapshot" } },
   { value: "run.message.delta", label: { zh: "消息流", en: "Message stream" }, hint: { zh: "Agent 中间消息", en: "Agent intermediate messages" } },
-  { value: "run.artifact.delta", label: { zh: "产物流", en: "Artifact stream" }, hint: { zh: "流式 artifact chunk", en: "Streaming artifact chunks" } },
-  { value: "run.child.created", label: { zh: "子调用创建", en: "Child created" }, hint: { zh: "A2A child run 创建", en: "A2A child run created" } },
-  { value: "run.child.completed", label: { zh: "子调用完成", en: "Child completed" }, hint: { zh: "A2A child run 完成", en: "A2A child run completed" } },
+  { value: "run.artifact.delta", label: { zh: "产物流", en: "Artifact stream" }, hint: { zh: "流式产物片段", en: "Streaming artifact chunks" } },
+  { value: "run.child.created", label: { zh: "子调用创建", en: "Child created" }, hint: { zh: "A2A 子运行创建", en: "A2A child run created" } },
+  { value: "run.child.completed", label: { zh: "子调用完成", en: "Child completed" }, hint: { zh: "A2A 子运行完成", en: "A2A child run completed" } },
 ] as const;
 
 const DEFAULT_EVENTS = ["run.completed", "run.failed", "run.canceled"];
@@ -59,12 +59,13 @@ export function RunPushWebhookSection({ locale = "zh", runId, enabled }: Props) 
           copied: "已复制 secret",
           copyFailed: "复制失败，请手动选中",
           title: "A2A Push 事件订阅",
-          body: "把此 Run 的 run_events 按 A2A Push Notification 方式推送到指定接收地址。",
+          body: "订阅此运行的 run_events，并按 A2A Push Notification 方式推送到指定接收地址。",
           refresh: "刷新",
           secretOnce: "Secret 仅本次显示",
           secretHint: "接收方用它校验 `X-OpenLinker-Signature`。",
           copySecret: "复制 secret",
           urlHint: "生产环境要求 HTTPS；本地开发可由后端配置允许 loopback HTTP。",
+          receiverUrl: "接收 URL",
           creating: "创建中…",
           create: "创建订阅",
           selected: "当前选择：",
@@ -85,12 +86,13 @@ export function RunPushWebhookSection({ locale = "zh", runId, enabled }: Props) 
           copied: "Secret copied",
           copyFailed: "Copy failed. Select it manually.",
           title: "A2A Push event subscription",
-          body: "Push this Run's run_events to a configured receiver using the A2A Push Notification pattern.",
+          body: "Subscribe to this run's run_events and push them to a configured receiver using the A2A Push Notification pattern.",
           refresh: "Refresh",
           secretOnce: "Secret shown only once",
           secretHint: "Receivers use it to verify `X-OpenLinker-Signature`.",
           copySecret: "Copy secret",
           urlHint: "Production requires HTTPS. Backend config may allow loopback HTTP for local development.",
+          receiverUrl: "Receiver URL",
           creating: "Creating…",
           create: "Create subscription",
           selected: "Selected: ",
@@ -270,7 +272,7 @@ export function RunPushWebhookSection({ locale = "zh", runId, enabled }: Props) 
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
             <div className="space-y-1.5">
               <label className="text-[11px] font-black uppercase tracking-[0.06em] text-[color:var(--ol-subtle)]">
-                Webhook URL
+                {copy.receiverUrl}
               </label>
               <input
                 value={targetURL}
@@ -366,9 +368,9 @@ function RunWebhookList({
   const copy =
     locale === "zh"
       ? {
-          loading: "正在加载 Push Webhook…",
-          empty: "暂无 Run 级事件订阅。创建后，平台会把匹配的 `run_events` 签名推送到你的服务。",
-          failures: "failures",
+          loading: "正在加载 A2A Push 订阅…",
+          empty: "暂无 A2A Push 订阅。创建后，平台会把匹配的 `run_events` 签名推送到你的服务。",
+          failures: "连续失败",
           busy: "处理中…",
           pause: "暂停",
           resume: "恢复",
@@ -376,9 +378,9 @@ function RunWebhookList({
           updatedAt: "更新于",
         }
       : {
-          loading: "Loading Push Webhooks…",
-          empty: "No Run-level event subscriptions yet. After creation, OpenLinker signs matching `run_events` and pushes them to your service.",
-          failures: "failures",
+          loading: "Loading A2A Push subscriptions…",
+          empty: "No A2A Push subscriptions yet. After creation, OpenLinker signs matching `run_events` and pushes them to your service.",
+          failures: "Consecutive failures",
           busy: "Working…",
           pause: "Pause",
           resume: "Resume",
@@ -417,7 +419,7 @@ function RunWebhookList({
                     {statusLabel(item.status, locale)}
                   </span>
                   <span className="text-[11px] font-bold text-[color:var(--ol-muted)]">
-                    {copy.failures} {item.consecutive_failures}
+                    {copy.failures}: {item.consecutive_failures}
                   </span>
                 </div>
                 <div className="mt-2 truncate font-mono text-[12px] font-bold text-[color:var(--ol-ink)]">
@@ -482,7 +484,7 @@ function chipForStatus(status: string): string {
 function statusLabel(status: string, locale: Locale): string {
   if (status === "active") return locale === "zh" ? "推送中" : "Pushing";
   if (status === "paused") return locale === "zh" ? "已暂停" : "Paused";
-  if (status === "failed") return locale === "zh" ? "失败暂停" : "Paused after failure";
+  if (status === "failed") return locale === "zh" ? "失败后暂停" : "Paused after failure";
   return status;
 }
 

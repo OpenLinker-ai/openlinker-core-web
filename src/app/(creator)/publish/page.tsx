@@ -93,7 +93,7 @@ function PublishHead({ activePill, locale }: { activePill: string | null; locale
       ? {
           kicker: "我的 / 接入 Agent",
           heading: "选择接入方式并发布你的 Agent",
-          lead: "公网 HTTPS 可直连；本地 / 内网 / NAT Agent 默认用 Agent Node WebSocket；Runtime Pull 只作降级。已有 MCP tool 可作为高级包装，不是 MCP Server 上架入口。",
+          lead: "公网 HTTPS 可直连；本地、内网或 NAT Agent 默认用 Agent Node WebSocket；Runtime Pull 只作降级。已有 MCP 工具可包装成高级 Agent 来源，不是 MCP Server 上架入口。",
           later: "后续步骤",
           pills: [
             { id: "basic", label: "基础信息" },
@@ -105,7 +105,7 @@ function PublishHead({ activePill, locale }: { activePill: string | null; locale
       : {
           kicker: "My / Connect Agent",
           heading: "Choose a connection mode and publish your Agent",
-          lead: "Use a public HTTPS endpoint when reachable. For local, private-network, or NAT Agents, use Agent Node WebSocket by default; Runtime Pull is only the fallback. Existing MCP tools can be wrapped as an advanced Agent source, not listed as MCP Servers here.",
+          lead: "Use a public HTTPS endpoint when reachable. For local, private-network, or NAT Agents, use Agent Node WebSocket by default; Runtime Pull is only the fallback. Existing MCP tools can be wrapped as advanced Agent sources; MCP Servers are not listed here.",
           later: "Later step",
           pills: [
             { id: "basic", label: "Basics" },

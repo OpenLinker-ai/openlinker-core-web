@@ -73,30 +73,29 @@ export function A2AConsole({
       ? {
           title: "Agent 调用链详情",
           parentDetail: "父运行详情",
-          selectedParent: "selected parent",
+          selectedParent: "已选父运行",
           source: "入口",
           boundTokens: "绑定令牌",
-          parentNoSkills: "Parent 尚未声明 Skill",
-          parentExplainer: "Parent run_id 来自 Agent 被平台调用时收到的请求体。A2A 控制台只负责展示和追踪，不再让人手动输入 parent_run_id 来拼调用链。",
-          selectParent: "从上方 Parent 调用链选择一条记录，查看真实 Agent-to-Agent 闭环。",
-          placeholderSlug: "选择 Parent 后绑定真实 run_id",
+          parentNoSkills: "父 Agent 尚未声明 Skill",
+          parentExplainer: "parent_run_id 来自 Agent 被平台调用时收到的请求体。A2A 控制台只负责展示和追踪，不再让人手动输入 parent_run_id 来拼调用链。",
+          selectParent: "从上方父调用链选择一条记录，查看真实 Agent-to-Agent 闭环。",
+          placeholderSlug: "选择父运行后绑定真实 run_id",
           childCalls: "子调用",
           successRunning: "成功 / 运行中",
-          costField: "委派费用字段",
+          costField: "委派费用",
           freeNow: "当前免费",
-          futurePrice: "价格字段",
-          noDelegations: "该运行还没有 Agent 委派记录；当 Parent Agent 调用子 Agent 后会自动出现。",
+          noDelegations: "该运行还没有 Agent 委派记录；当父 Agent 调用子 Agent 后会自动出现。",
           missingReason: "未提供调用原因",
           callMethod: "调用方式",
           targetNoSkills: "目标 Agent 尚未声明 Skill",
           freeDelegation: "免费委派",
           viewChildRun: "查看子运行",
           relationships: "运行关系",
-          chooseFirst: "先从 Parent 目录选择一条调用链。",
+          chooseFirst: "先从父调用链目录选择一条记录。",
           related: "关联页面",
           creatorHub: ["创作者中心", "查看自注册 Agent、能力声明和调用记录。"],
           skills: ["Skill 注册表", "查看能力标签、声明 Skill 和推荐依据。"],
-          connect: ["接入中心", "查看 MCP/API、Auth 边界和外部工具调用说明。"],
+          connect: ["接入中心", "查看 MCP/API、鉴权边界和外部工具调用说明。"],
         }
       : {
           title: "Agent Call Chain Details",
@@ -110,9 +109,8 @@ export function A2AConsole({
           placeholderSlug: "Select a Parent to bind a real run_id",
           childCalls: "Child calls",
           successRunning: "Success / Running",
-          costField: "Delegation cost field",
+          costField: "Delegation cost",
           freeNow: "Free now",
-          futurePrice: "Future price field",
           noDelegations: "This run has no Agent delegation records yet. They will appear after the Parent Agent invokes a Child Agent.",
           missingReason: "No reason provided",
           callMethod: "Invocation method",
@@ -124,7 +122,7 @@ export function A2AConsole({
           related: "Related pages",
           creatorHub: ["Creator Hub", "View self-registered Agents, Skill claims, and run history."],
           skills: ["Skill Registry", "Review capability tags, Skill claims, and matching signals."],
-          connect: ["Connect Center", "Read MCP/API, auth boundary, and external tool guidance."],
+          connect: ["Connect Center", "Read MCP/API, auth boundaries, and external tool guidance."],
         };
   const selectedRunId = initialData?.parent_run_id ?? initialRunId;
   const children = initialData?.items ?? [];
@@ -214,7 +212,7 @@ export function A2AConsole({
           <div className="grid gap-3 border-b border-[color:var(--ol-line)] bg-white/70 p-5 sm:grid-cols-3">
             <Metric label={copy.childCalls} value={`${children.length}`} />
             <Metric label={copy.successRunning} value={`${successfulCount} / ${runningCount}`} />
-            <Metric label={copy.costField} value={totalCost === 0 ? copy.freeNow : copy.futurePrice} />
+            <Metric label={copy.costField} value={totalCost === 0 ? copy.freeNow : `$${(totalCost / 100).toFixed(2)}`} />
           </div>
         ) : null}
 
@@ -265,8 +263,8 @@ export function A2AConsole({
                       <p className="mt-1 text-[12.5px] font-bold leading-5 text-[color:var(--ol-muted)]">
                         {locale === "zh" ? (
                           <>
-                            Parent Agent 使用自己的运行凭证调用{" "}
-                            <code>/api/v1/agent-runtime/call-agent</code>，平台创建 child run 并写入
+                            父 Agent 使用自己的运行凭证调用{" "}
+                            <code>/api/v1/agent-runtime/call-agent</code>，平台创建子运行并写入
                             <code> run_delegations</code> 和 <code>run_events</code>。
                           </>
                         ) : (
@@ -286,7 +284,7 @@ export function A2AConsole({
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--ol-line)] pt-3 text-[12px] font-bold text-[color:var(--ol-muted)]">
                       <span>
                         {formatDate(child.started_at, locale)} · {fmtMs(child.duration_ms, locale)} ·{" "}
-                        {child.billing_mode === "free_delegation" || child.cost_cents === 0 ? copy.freeDelegation : copy.futurePrice}
+                        {child.billing_mode === "free_delegation" || child.cost_cents === 0 ? copy.freeDelegation : `$${(child.cost_cents / 100).toFixed(2)}`}
                         {" · "}
                         {sourceLabel(child.source)}
                       </span>
@@ -355,10 +353,10 @@ function A2ACallGraph({
   const copy =
     locale === "zh"
       ? {
-          childAgent: "Child Agent",
-          autoChild: "真实委派后自动生成 child run",
+          childAgent: "子 Agent",
+          autoChild: "真实委派后自动生成子运行",
           title: "可拖拽调用关系图",
-          body: "关系图用于看清 Parent 到 Child 的真实运行链；拖拽只改变本页排布，不影响后端调用。",
+          body: "关系图用于看清父运行到子运行的真实链路；拖拽只改变本页排布，不影响后端调用。",
           dragHint: "拖动节点整理视图",
           emptyNode: "子 Agent 调用发生后会自动出现节点。",
         }
@@ -366,7 +364,7 @@ function A2ACallGraph({
           childAgent: "Child Agent",
           autoChild: "A child run is created after real delegation",
           title: "Draggable call graph",
-          body: "Use the graph to inspect the real Parent-to-Child run chain. Dragging only changes this view and does not affect backend calls.",
+          body: "Use the graph to inspect the real parent-to-child run chain. Dragging only changes this view and does not affect backend calls.",
           dragHint: "Drag nodes to organize the view",
           emptyNode: "Child Agent nodes appear after delegation.",
         };
@@ -607,7 +605,7 @@ function A2AFlowCard({ locale }: { locale: Locale }) {
             },
             {
               title: "A2A 调用",
-              desc: "Parent Agent 从本次请求拿到 run_id，再用自身绑定用途调用 call-agent，平台自动创建 child run 和调用链事件。",
+              desc: "父 Agent 从本次请求拿到 run_id，再用自身绑定用途调用 call-agent，平台自动创建子运行和调用链事件。",
             },
           ],
         }

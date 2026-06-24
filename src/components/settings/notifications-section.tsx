@@ -20,7 +20,7 @@ const COPY: Record<Locale, {
 }> = {
   zh: {
     title: "通知能力",
-    body: "当前可用渠道是站内告警、签名 Run Webhook 和 A2A Push Config；邮件与移动推送后续开放。",
+    body: "当前可用渠道是站内告警、签名投递 Webhook 和 A2A Push 事件订阅；邮件与移动推送后续开放。",
     available: "可用",
     unavailable: "后续开放",
     open: "打开",
@@ -33,8 +33,8 @@ const COPY: Record<Locale, {
         action: "查看通知",
       },
       {
-        label: "Run 事件推送",
-        available: ["签名 Webhook", "A2A Push Config"],
+        label: "运行事件推送",
+        available: ["签名投递 Webhook", "A2A Push 订阅"],
         unavailable: ["邮件摘要"],
         href: "/run",
         action: "查看运行",
@@ -48,7 +48,7 @@ const COPY: Record<Locale, {
   },
   en: {
     title: "Notification Capabilities",
-    body: "In-app alerts, signed Run Webhooks, and A2A Push Config are available now. Email and mobile push are planned for a later phase.",
+    body: "In-app alerts, signed delivery Webhooks, and A2A Push event subscriptions are available now. Email and mobile push are planned for a later phase.",
     available: "available",
     unavailable: "planned",
     open: "Open",
@@ -62,7 +62,7 @@ const COPY: Record<Locale, {
       },
       {
         label: "Run event delivery",
-        available: ["Signed Webhook", "A2A Push Config"],
+        available: ["Signed delivery Webhook", "A2A Push subscription"],
         unavailable: ["Email digest"],
         href: "/run",
         action: "View runs",

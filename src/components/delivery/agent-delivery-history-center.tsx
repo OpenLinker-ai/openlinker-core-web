@@ -37,9 +37,9 @@ export function AgentDeliveryHistoryCenter({
     locale === "zh"
       ? {
           title: "外部投递历史",
-          subtitle: "查看此 Agent 下当前账号的外部投递记录；Webhook、Slack 和后续 Email 目标都在这里汇总。",
+          subtitle: "查看当前账号触发此 Agent 时产生的外部投递记录，包含 Webhook、Slack 和后续 Email 目标。",
           backSettings: "返回投递设置",
-          runDetail: "返回 Run",
+          runDetail: "返回运行详情",
           retryQueued: "已加入重试队列",
           retryFailed: "重试失败",
           all: "全部",
@@ -47,13 +47,13 @@ export function AgentDeliveryHistoryCenter({
           success: "成功",
           failed: "失败",
           empty: "当前筛选条件下没有外部投递历史。",
-          total: "记录",
+          total: "总数",
         }
       : {
           title: "External delivery history",
-          subtitle: "Review this account's external delivery records for the Agent. Webhook, Slack, and future Email targets are summarized here.",
+          subtitle: "Review external delivery records created when this account invokes the Agent, including Webhook, Slack, and future Email targets.",
           backSettings: "Back to delivery settings",
-          runDetail: "Back to Run",
+          runDetail: "Back to run detail",
           retryQueued: "Added to retry queue",
           retryFailed: "Retry failed",
           all: "All",
@@ -61,7 +61,7 @@ export function AgentDeliveryHistoryCenter({
           success: "Success",
           failed: "Failed",
           empty: "No external delivery history matches this filter.",
-          total: "Records",
+          total: "Total",
         };
 
   const counts = {

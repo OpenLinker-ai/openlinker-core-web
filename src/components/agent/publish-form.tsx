@@ -77,7 +77,7 @@ function isAllowedEndpointURL(value: string): boolean {
 function connectionModeLabel(mode: AgentConnectionMode, locale: Locale): string {
   if (mode === "runtime_ws") return "Agent Node / WebSocket";
   if (mode === "runtime_pull") return locale === "zh" ? "Runtime Pull 降级" : "Runtime Pull fallback";
-  if (mode === "mcp_server") return locale === "zh" ? "已有 MCP Tool" : "Existing MCP tool";
+  if (mode === "mcp_server") return locale === "zh" ? "已有 MCP 工具" : "Existing MCP tool";
   return "HTTP Endpoint";
 }
 
@@ -101,7 +101,7 @@ const VALIDATION_COPY = {
     mcpEndpointRequired: "请填写 MCP endpoint URL",
     endpointRequired: "请填写 endpoint URL",
     httpsRequired: "必须使用 HTTPS；本地 loopback 调试需开启 NEXT_PUBLIC_ALLOW_LOCAL_HTTP_ENDPOINTS=true",
-    mcpToolRequired: "请填写 MCP tool 名称",
+    mcpToolRequired: "请填写 MCP 工具名称",
   },
   en: {
     min3: "Use at least 3 characters",
@@ -616,13 +616,13 @@ function EndpointSection({
           httpsOnly: "Endpoint URL（必须 HTTPS）",
           localHint: "本地调试模式已开启；生产发布请改为 HTTPS endpoint。",
           mcpEndpoint: "远程 HTTP JSON-RPC / MCP Endpoint URL",
-          mcpTool: "远程 MCP Tool 名称",
+          mcpTool: "远程 MCP 工具名称",
           mcpHint: (
             <>
-              这里只是把已有远程 HTTP JSON-RPC / MCP tool 包装成 Agent；真正的 MCP Server 上架入口应在 MCP 中心。平台会发送 <code>tools/call</code>，把用户 input 作为 arguments。
+              这里只是把已有远程 HTTP JSON-RPC / MCP 工具包装成 Agent；真正的 MCP Server 上架入口应在 MCP 中心。平台会发送 <code>tools/call</code>，把用户输入作为 arguments。
             </>
           ),
-          mcpAuth: "MCP Tool 鉴权（可选）",
+          mcpAuth: "MCP 工具鉴权（可选）",
           endpointAuth: "鉴权 Header（可选，平台调用 endpoint 时携带）",
         }
       : {

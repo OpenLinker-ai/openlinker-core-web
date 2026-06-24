@@ -208,7 +208,7 @@ function endpointHost(endpointURL: string): string {
 
 function connectionModeLabel(agent: OnboardingAgent, locale: Locale): string {
   if (agent.connection_mode === "mcp_server") {
-    return `${locale === "zh" ? "已有 MCP Tool" : "Existing MCP tool"} · ${agent.mcp_tool_name || (locale === "zh" ? "未配置工具" : "tool not configured")}`;
+    return `${locale === "zh" ? "已有 MCP 工具" : "Existing MCP tool"} · ${agent.mcp_tool_name || (locale === "zh" ? "未配置工具" : "tool not configured")}`;
   }
   if (agent.connection_mode === "runtime_ws") {
     return locale === "zh" ? "Agent Node / WebSocket · 出站长连接" : "Agent Node / WebSocket · outbound socket";

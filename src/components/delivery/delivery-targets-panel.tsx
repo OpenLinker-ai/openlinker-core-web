@@ -29,7 +29,7 @@ export function DeliveryTargetsPanel({ locale = "zh", initialItems }: Props) {
           deleteFailed: "删除失败",
           defaultSet: (name: string) => `已设为默认：${name}`,
           defaultFailed: "设为默认失败",
-          title: "投递目标",
+          title: "通知投递目标",
           add: "新增目标",
           default: "默认",
           defaultDone: "已默认",
@@ -42,7 +42,7 @@ export function DeliveryTargetsPanel({ locale = "zh", initialItems }: Props) {
           deleteFailed: "Delete failed",
           defaultSet: (name: string) => `Set as default: ${name}`,
           defaultFailed: "Failed to set default",
-          title: "Delivery targets",
+          title: "Notification delivery targets",
           add: "Add target",
           default: "Default",
           defaultDone: "Default",
@@ -200,12 +200,12 @@ function EmptyState({ locale, onCreate }: { locale: Locale; onCreate: () => void
     locale === "zh"
       ? {
           title: "尚未配置投递目标",
-          body: `Run 完成后可自动把输出投递到你的 Webhook 或 Slack 频道。最多保留 ${MAX_TARGETS} 个目标。`,
+          body: `运行完成后可手动或默认自动把输出投递到你的 Webhook 或 Slack 频道。最多保留 ${MAX_TARGETS} 个目标。`,
           add: "+ 添加第一个目标",
         }
       : {
           title: "No delivery targets configured",
-          body: `After a Run completes, OpenLinker can deliver output to your Webhook or Slack channel. Up to ${MAX_TARGETS} targets are retained.`,
+          body: `After a run completes, OpenLinker can manually or automatically deliver output to your Webhook or Slack channel. Up to ${MAX_TARGETS} targets are retained.`,
           add: "+ Add first target",
         };
   return (

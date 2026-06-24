@@ -39,7 +39,7 @@ const CONNECT_TABS: ReadonlyArray<{
   {
     id: "delivery",
     label: { zh: "结果投递", en: "Delivery" },
-    desc: { zh: "Delivery Target 与 Run 交付", en: "Delivery targets and run handoff" },
+    desc: { zh: "投递目标与运行交付", en: "Delivery targets and run handoff" },
     href: "/connect?tab=delivery",
   },
   {
@@ -72,7 +72,7 @@ export default async function ConnectPage({
           home: "首页",
           current: "接入文档",
           heading: "从 Agent 接入、MCP 到 A2A 调用的 core 链路",
-          lead: "公开 HTTPS 可直连；本地 / 内网 Agent 默认用 Agent Node WebSocket 出站连接；Runtime Pull 只作降级，已有 MCP Tool 可包装成 Agent。",
+          lead: "公开 HTTPS 可直连；本地或内网 Agent 默认用 Agent Node WebSocket 出站连接；Runtime Pull 只作降级，已有 MCP 工具可包装成 Agent。",
           loginTitle: "登录后配置投递目标",
           loginDesc: "Webhook 和 Slack 投递目标属于账号配置。你可以先阅读接入方式，登录后再添加、删除或设为默认目标。",
         }
@@ -157,7 +157,7 @@ function ConnectResources({ signedIn, locale }: { signedIn: boolean; locale: Loc
       ? [
           { href: signedIn ? "/hub?tab=access" : "/login?callbackUrl=/hub%3Ftab%3Daccess", title: "Agent 自注册邀请", desc: "登录后为 unattended Agent 生成一次性注册邀请。" },
           { href: "/skills", title: "Skill 注册表", desc: "查看 Agent 声明、Benchmark 和运行证据共用的能力标签。" },
-          { href: "/status", title: "平台状态", desc: "检查 API、Registry、Webhook 投递和运行链路的状态说明。" },
+          { href: "/status", title: "平台状态", desc: "检查 API、Registry、外部投递和运行链路的状态说明。" },
         ]
       : [
           { href: signedIn ? "/hub?tab=access" : "/login?callbackUrl=/hub%3Ftab%3Daccess", title: "Agent registration invites", desc: "Create one-time registration invites for unattended Agents after signing in." },

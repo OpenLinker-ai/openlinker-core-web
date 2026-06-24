@@ -58,12 +58,12 @@ export default async function SettingsPage({
       ? {
           kicker: "settings",
           heading: "账户、安全与通知",
-          lead: "管理登录资料、密码、站内告警和 Run Webhook 入口。Agent 自注册邀请在创作者中心的接入页维护。",
+          lead: "管理登录资料、密码、站内告警和运行投递/回调入口。Agent 自注册邀请在创作者中心的接入页维护。",
         }
       : {
           kicker: "settings",
           heading: "Account, Security, and Notifications",
-          lead: "Manage profile details, password, in-app alerts, and Run Webhook entry points. Agent self-registration invites live in Creator Hub access.",
+          lead: "Manage profile details, password, in-app alerts, and run delivery/callback entry points. Agent self-registration invites live in Creator Hub access.",
         };
 
   let me: MeResponse | null = null;

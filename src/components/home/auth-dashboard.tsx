@@ -68,7 +68,7 @@ export function AuthDashboard({ userName, dashboard, locale = "zh" }: AuthDashbo
               title: isCreator ? "创作者中心 / 我的 Agent" : "成为创作者",
               desc: isCreator ? "管理自注册 Agent、Skill、调用记录。" : "接入 Agent，注册后出现在我的 Agent。",
             },
-            { href: "/connect", icon: "key" as IconName, title: "接入中心", desc: "查看 MCP/API、Auth 边界和外部工具接入方式。" },
+            { href: "/connect", icon: "key" as IconName, title: "接入中心", desc: "查看 MCP/API、鉴权边界和外部工具接入方式。" },
           ],
         }
       : {

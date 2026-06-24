@@ -151,8 +151,8 @@ const MODES: Record<Mode, ModeSpec> = {
   },
   webhook: {
     label: "Webhook",
-    title: "接收运行事件",
-    blurb: "Run 终态后平台 POST 投递事件，X-OpenLinker-Signature 带 HMAC-SHA256。",
+    title: "接收投递事件",
+    blurb: "运行到达终态后，平台向投递目标 POST 签名事件，X-OpenLinker-Signature 带 HMAC-SHA256。",
     bestFor: "创作者侧异步对账 · 自建管线",
     icon: "bell",
     accent: "var(--ol-amber)",
@@ -165,16 +165,16 @@ const MODES: Record<Mode, ModeSpec> = {
       "  \"output\": { \"summary\": \"...\" }",
       "}",
     ].join("\n"),
-    bullets: ["1m / 5m / 30m 退避重试", "X-OpenLinker-Signature 校验", "投递历史在创作者中心可查"],
+    bullets: ["1m / 5m / 30m 退避重试", "X-OpenLinker-Signature 校验", "外部投递历史在创作者中心可查"],
   },
 };
 
 const EVENTS = [
-  { event: "run.created", desc: "创建 Run，校验预算 + 生成 run_id" },
-  { event: "run.started", desc: "Endpoint 被调用" },
+  { event: "run.created", desc: "创建运行，校验预算并生成 run_id" },
+  { event: "run.started", desc: "调用端点已触发" },
   { event: "run.message.delta", desc: "Agent 流式返回消息片段" },
   { event: "run.artifact.delta", desc: "Agent 推送中间产物" },
-  { event: "run.completed", desc: "终态成功 · 含 output / 用量" },
+  { event: "run.completed", desc: "终态成功，包含输出与用量" },
   { event: "run.failed", desc: "失败 / 超时 / 取消" },
 ];
 
@@ -185,7 +185,7 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "label" | "title" | 
     endpoint: {
       label: "Endpoint",
       title: "HTTPS Endpoint 接入",
-      blurb: "声明一个公开 HTTPS endpoint，平台调用时 POST 输入并等返回。",
+      blurb: "声明一个公网 HTTPS 调用端点，平台调用时 POST 输入并等待返回。",
       bestFor: "创作者接入 · 最简方案",
       bullets: ["返回 output JSON 即终态", "失败调用保持免费期口径", "可配置预共享 Header 鉴权"],
     },
@@ -199,7 +199,7 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "label" | "title" | 
     sdk: {
       label: "SDK",
       title: "从应用侧调用 Agent",
-      blurb: "用访问令牌触发 Run；可订阅 SSE 实时事件流；run_id 持久可查。",
+      blurb: "用访问令牌触发运行；可订阅 SSE 实时事件流；run_id 持久可查。",
       bestFor: "生产应用 · 嵌入式集成",
       bullets: ["返回 run_id + running", "SSE 事件流可订阅", "GET /runs/{id} 查终态"],
     },
@@ -217,10 +217,10 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "label" | "title" | 
     },
     webhook: {
       label: "Webhook",
-      title: "接收运行事件",
-      blurb: "Run 终态后平台 POST 投递事件，X-OpenLinker-Signature 带 HMAC-SHA256。",
+      title: "接收投递事件",
+      blurb: "运行到达终态后，平台向投递目标 POST 签名事件，X-OpenLinker-Signature 带 HMAC-SHA256。",
       bestFor: "创作者侧异步对账 · 自建管线",
-      bullets: ["1m / 5m / 30m 退避重试", "X-OpenLinker-Signature 校验", "投递历史在创作者中心可查"],
+      bullets: ["1m / 5m / 30m 退避重试", "X-OpenLinker-Signature 校验", "外部投递历史在创作者中心可查"],
     },
   },
   en: {
@@ -259,10 +259,10 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "label" | "title" | 
     },
     webhook: {
       label: "Webhook",
-      title: "Receive run events",
-      blurb: "After a Run reaches a terminal state, OpenLinker POSTs an HMAC-SHA256 signed event.",
+      title: "Receive delivery events",
+      blurb: "When a run reaches a terminal state, OpenLinker POSTs an HMAC-SHA256 signed event to the delivery target.",
       bestFor: "Async creator reconciliation · custom pipeline",
-      bullets: ["1m / 5m / 30m retry backoff", "Verify X-OpenLinker-Signature", "Delivery history is visible in Creator Hub"],
+      bullets: ["1m / 5m / 30m retry backoff", "Verify X-OpenLinker-Signature", "External delivery history is visible in Creator Hub"],
     },
   },
 };
@@ -270,8 +270,8 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "label" | "title" | 
 const EVENT_COPY: Record<Locale, Array<{ event: string; desc: string }>> = {
   zh: EVENTS,
   en: [
-    { event: "run.created", desc: "Create Run, validate request, generate run_id" },
-    { event: "run.started", desc: "Endpoint is called" },
+    { event: "run.created", desc: "Create a run, validate the request, and generate run_id" },
+    { event: "run.started", desc: "Invocation endpoint is called" },
     { event: "run.message.delta", desc: "Agent streams message fragments" },
     { event: "run.artifact.delta", desc: "Agent pushes intermediate artifacts" },
     { event: "run.completed", desc: "Successful final state with output / usage" },
@@ -315,9 +315,9 @@ export function ConnectConsole({ locale = "zh" }: { locale?: Locale }) {
           copy: "复制",
           checklist: "检查项",
           simpleCurl: "最简 cURL",
-          webhookEvents: "Webhook 事件",
+          webhookEvents: "投递事件",
           configureDelivery: "配置投递目标 →",
-          eventBody: "所有事件都会通过 SSE 推送，也会向你的 Webhook URL POST，body 中带 HMAC 签名。",
+          eventBody: "运行事件可通过 SSE 读取；配置投递目标后，终态事件会 POST 到你的 Webhook URL，body 带 HMAC 签名。",
           signature: "签名：",
           auth: "Auth 信息",
           rate: "速率",
@@ -337,9 +337,9 @@ export function ConnectConsole({ locale = "zh" }: { locale?: Locale }) {
           copy: "Copy",
           checklist: "Checklist",
           simpleCurl: "Minimal cURL",
-          webhookEvents: "Webhook Events",
+          webhookEvents: "Delivery events",
           configureDelivery: "Configure delivery targets →",
-          eventBody: "All events are pushed through SSE and POSTed to your Webhook URL with an HMAC signature.",
+          eventBody: "Run events are available over SSE. After you configure a delivery target, terminal events are POSTed to your Webhook URL with an HMAC signature.",
           signature: "Signature:",
           auth: "Auth Info",
           rate: "Rate",
