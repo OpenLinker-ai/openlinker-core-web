@@ -69,7 +69,9 @@ async function proxy(request: Request): Promise<Response> {
     return upstreamUnavailableResponse(new URL(request.url).pathname);
   }
 
-  return new Response(method === "HEAD" ? null : await upstream.arrayBuffer(), {
+  const emptyBody =
+    method === "HEAD" || upstream.status === 204 || upstream.status === 304;
+  return new Response(emptyBody ? null : await upstream.arrayBuffer(), {
     status: upstream.status,
     headers: responseHeaders(upstream),
   });
