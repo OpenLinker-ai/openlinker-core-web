@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
 import { ApiError, apiFetchAuthed } from "@/lib/api";
 
-import { updateUserFlagsAction } from "../actions";
+import { createUserAction, updateUserFlagsAction } from "../actions";
 import {
   ADMIN_PAGE_SIZE,
   AdminShell,
@@ -24,6 +24,9 @@ import {
   searchValue,
   shortID,
 } from "../_components/shared";
+
+const fieldClassName =
+  "mt-1 h-10 w-full rounded-xl border border-[color:var(--ol-line)] bg-white px-3 text-[13px] outline-none focus:border-[color:var(--ol-primary)]";
 
 function messageFromError(error: unknown, fallback: string): string {
   if (error instanceof ApiError) return error.message;
@@ -67,6 +70,70 @@ export default async function AdminUsersPage({
 
   return (
     <AdminShell active="users" locale={locale} status={params.status} error={params.error}>
+      <section className="ol-panel ol-panel-pad mt-6">
+        <div className="ol-panel-head items-start gap-4">
+          <div>
+            <strong>{copy.addUser}</strong>
+            <p>{copy.addUserLead}</p>
+          </div>
+        </div>
+        <form action={createUserAction} className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,.9fr)_auto]">
+          <input type="hidden" name="return_to" value={returnTo} />
+          <label className="text-[12px] font-bold text-[color:var(--ol-muted)]">
+            {copy.email}
+            <input
+              required
+              type="email"
+              name="email"
+              maxLength={120}
+              autoComplete="off"
+              className={fieldClassName}
+            />
+          </label>
+          <label className="text-[12px] font-bold text-[color:var(--ol-muted)]">
+            {copy.displayName}
+            <input
+              required
+              name="display_name"
+              minLength={2}
+              maxLength={50}
+              autoComplete="off"
+              className={fieldClassName}
+            />
+          </label>
+          <label className="text-[12px] font-bold text-[color:var(--ol-muted)]">
+            {copy.initialPassword}
+            <input
+              required
+              type="password"
+              name="password"
+              minLength={8}
+              maxLength={72}
+              autoComplete="new-password"
+              className={fieldClassName}
+            />
+          </label>
+          <div className="flex flex-wrap items-end gap-3 xl:justify-end">
+            <label className="inline-flex h-10 items-center gap-1.5 text-[12px] font-bold text-[color:var(--ol-muted)]">
+              <input type="checkbox" name="is_admin" value="true" />
+              {copy.adminFlag}
+            </label>
+            <label className="inline-flex h-10 items-center gap-1.5 text-[12px] font-bold text-[color:var(--ol-muted)]">
+              <input type="checkbox" name="is_creator" value="true" />
+              {copy.creatorFlag}
+            </label>
+            <label className="inline-flex h-10 items-center gap-1.5 text-[12px] font-bold text-[color:var(--ol-muted)]">
+              <input type="checkbox" name="creator_verified" value="true" />
+              {copy.verifiedFlag}
+            </label>
+            <button className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[color:var(--ol-primary)] px-4 text-[12px] font-black text-white">
+              <Icon name="users" size="sm" />
+              {copy.createUser}
+            </button>
+          </div>
+        </form>
+      </section>
+
       <section className="ol-panel ol-panel-pad mt-6">
         <div className="ol-panel-head items-start gap-4">
           <div>

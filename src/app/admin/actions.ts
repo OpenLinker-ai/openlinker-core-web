@@ -39,8 +39,8 @@ function revalidateAdmin() {
 }
 
 export async function updateUserFlagsAction(formData: FormData) {
-  const id = String(formData.get("id") ?? "").trim();
-  if (!id) adminRedirect(formData, "error", "缺少用户 ID", "/admin/users");
+	const id = String(formData.get("id") ?? "").trim();
+	if (!id) adminRedirect(formData, "error", "缺少用户 ID", "/admin/users");
 
   try {
     await apiFetchAuthed(`/api/v1/admin/users/${id}/flags`, {
@@ -56,12 +56,33 @@ export async function updateUserFlagsAction(formData: FormData) {
     adminRedirect(formData, "error", messageFromError(error, "更新用户权限失败"), "/admin/users");
   }
 
-  adminRedirect(formData, "status", "用户权限已更新", "/admin/users");
+	adminRedirect(formData, "status", "用户权限已更新", "/admin/users");
+}
+
+export async function createUserAction(formData: FormData) {
+	try {
+		await apiFetchAuthed("/api/v1/admin/users", {
+			method: "POST",
+			body: {
+				email: String(formData.get("email") ?? "").trim(),
+				display_name: String(formData.get("display_name") ?? "").trim(),
+				password: String(formData.get("password") ?? ""),
+				is_admin: checked(formData, "is_admin"),
+				is_creator: checked(formData, "is_creator"),
+				creator_verified: checked(formData, "creator_verified"),
+			},
+		});
+		revalidateAdmin();
+	} catch (error) {
+		adminRedirect(formData, "error", messageFromError(error, "创建用户失败"), "/admin/users");
+	}
+
+	adminRedirect(formData, "status", "用户已创建", "/admin/users");
 }
 
 export async function updateAgentModerationAction(formData: FormData) {
-  const id = String(formData.get("id") ?? "").trim();
-  if (!id) adminRedirect(formData, "error", "缺少 Agent ID", "/admin/agents");
+	const id = String(formData.get("id") ?? "").trim();
+	if (!id) adminRedirect(formData, "error", "缺少 Agent ID", "/admin/agents");
 
   try {
     await apiFetchAuthed(`/api/v1/admin/agents/${id}/moderation`, {

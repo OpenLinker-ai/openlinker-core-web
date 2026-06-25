@@ -20,7 +20,7 @@ const COPY: Record<Locale, {
 }> = {
   zh: {
     title: "通知能力",
-    body: "完成、失败、取消、投递失败等事件统一进入通知投递配置；调用方不持续监听时的任务回调在发起任务或运行详情中单独配置。",
+    body: "完成、失败、取消、投递失败等事件统一进入通知投递配置；调用方不持续监听时，可在发起任务时声明任务回调，运行详情只显示投递记录。",
     available: "可用",
     unavailable: "后续开放",
     open: "打开",
@@ -48,7 +48,7 @@ const COPY: Record<Locale, {
   },
   en: {
     title: "Notification Capabilities",
-    body: "Completion, failure, cancellation, and delivery-failure events are handled through notification delivery settings. Optional task callbacks for callers that are not continuously listening are configured when starting a task or from run detail.",
+    body: "Completion, failure, cancellation, and delivery-failure events are handled through notification delivery settings. Callers that are not continuously listening can declare optional task callbacks when starting a task; run detail only shows delivery records.",
     available: "available",
     unavailable: "planned",
     open: "Open",
