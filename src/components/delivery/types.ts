@@ -3,6 +3,7 @@ export interface DeliveryTarget {
   name: string;
   type: "webhook" | "slack";
   url: string;
+  event_types: string[];
   secret?: string;
   is_default: boolean;
   created_at: string;

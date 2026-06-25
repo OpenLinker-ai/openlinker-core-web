@@ -19,6 +19,18 @@ interface Props {
 }
 
 const MAX_TARGETS = 10;
+const DEFAULT_DELIVERY_EVENTS = ["run.completed", "run.failed", "run.canceled"];
+const DELIVERY_EVENT_OPTIONS = [
+  { value: "run.completed", label: { zh: "完成", en: "Completed" } },
+  { value: "run.failed", label: { zh: "失败", en: "Failed" } },
+  { value: "run.canceled", label: { zh: "取消", en: "Canceled" } },
+] as const;
+
+function targetEventTypes(target: DeliveryTarget): string[] {
+  return target.event_types && target.event_types.length > 0
+    ? target.event_types
+    : DEFAULT_DELIVERY_EVENTS;
+}
 
 export function DeliveryTargetsPanel({ locale = "zh", initialItems }: Props) {
   const copy =
@@ -35,6 +47,13 @@ export function DeliveryTargetsPanel({ locale = "zh", initialItems }: Props) {
           defaultDone: "已默认",
           setDefault: "设为默认",
           delete: "删除",
+          events: "通知类型",
+          editEvents: "编辑类型",
+          saveEvents: "保存类型",
+          cancel: "取消",
+          updateFailed: "更新通知类型失败",
+          updated: "通知类型已更新",
+          eventRequired: "至少选择一个通知类型",
         }
       : {
           confirmDelete: (name: string) => `Delete "${name}"? Delivery history will be kept.`,
@@ -48,12 +67,21 @@ export function DeliveryTargetsPanel({ locale = "zh", initialItems }: Props) {
           defaultDone: "Default",
           setDefault: "Set default",
           delete: "Delete",
+          events: "Events",
+          editEvents: "Edit events",
+          saveEvents: "Save events",
+          cancel: "Cancel",
+          updateFailed: "Failed to update notification types",
+          updated: "Notification types updated",
+          eventRequired: "Select at least one notification type",
         };
   const router = useRouter();
   const { fetch: apiFetch } = useApi();
   const [createOpen, setCreateOpen] = useState(false);
   const [items, setItems] = useState<DeliveryTarget[]>(initialItems);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftEvents, setDraftEvents] = useState<string[]>(DEFAULT_DELIVERY_EVENTS);
   const [, startTransition] = useTransition();
 
   const refresh = () => startTransition(() => router.refresh());
@@ -101,6 +129,42 @@ export function DeliveryTargetsPanel({ locale = "zh", initialItems }: Props) {
     }
   };
 
+  const startEditEvents = (target: DeliveryTarget) => {
+    setEditingId(target.id);
+    setDraftEvents(targetEventTypes(target));
+  };
+
+  const toggleDraftEvent = (event: string) => {
+    setDraftEvents((prev) =>
+      prev.includes(event) ? prev.filter((item) => item !== event) : [...prev, event],
+    );
+  };
+
+  const handleUpdateEvents = async (target: DeliveryTarget) => {
+    if (draftEvents.length === 0) {
+      toast.error(copy.eventRequired);
+      return;
+    }
+    setBusyId(target.id);
+    try {
+      const updated = await apiFetch<DeliveryTarget>(
+        `/api/v1/delivery-targets/${target.id}`,
+        {
+          method: "PATCH",
+          body: { event_types: draftEvents },
+        },
+      );
+      setItems((prev) => prev.map((item) => (item.id === target.id ? updated : item)));
+      setEditingId(null);
+      toast.success(copy.updated);
+      refresh();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : copy.updateFailed);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <section className="ol-panel">
       <div className="ol-panel-head">
@@ -131,54 +195,121 @@ export function DeliveryTargetsPanel({ locale = "zh", initialItems }: Props) {
         ) : (
           <ul className="grid gap-3">
             {items.map((target) => (
-              <li
-                key={target.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[color:var(--ol-line)] bg-white p-4"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate text-[14px] font-[900] text-[color:var(--ol-ink)]">
-                      {target.name}
-                    </span>
-                    <span
+              <li key={target.id} className="rounded-2xl border border-[color:var(--ol-line)] bg-white p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-[14px] font-[900] text-[color:var(--ol-ink)]">
+                        {target.name}
+                      </span>
+                      <span
+                        className={cn(
+                          "ol-chip",
+                          target.type === "slack" ? "ol-chip-amber" : "ol-chip-mint",
+                        )}
+                      >
+                        {target.type}
+                      </span>
+                      {target.is_default ? (
+                        <span className="ol-chip ol-chip-green">{copy.default}</span>
+                      ) : null}
+                    </div>
+                    <div className="mt-1 truncate text-[12px] text-[color:var(--ol-muted)]">
+                      {target.url}
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <span className="text-[11px] font-black uppercase tracking-[0.06em] text-[color:var(--ol-subtle)]">
+                        {copy.events}
+                      </span>
+                      {targetEventTypes(target).map((event) => (
+                        <span
+                          key={event}
+                          className="rounded-lg bg-[color:var(--ol-soft)] px-2 py-1 font-mono text-[11px] font-bold text-[color:var(--ol-muted)]"
+                        >
+                          {event}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => startEditEvents(target)}
+                      disabled={busyId === target.id}
+                      className="ol-mini-btn bg-[color:var(--ol-soft)] text-[color:var(--ol-ink)] hover:bg-[color:var(--ol-line)]"
+                    >
+                      {copy.editEvents}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={target.is_default || busyId === target.id}
+                      onClick={() => handleSetDefault(target)}
                       className={cn(
-                        "ol-chip",
-                        target.type === "slack" ? "ol-chip-amber" : "ol-chip-mint",
+                        "ol-mini-btn",
+                        target.is_default
+                          ? "cursor-not-allowed bg-[color:var(--ol-soft)] text-[color:var(--ol-subtle)]"
+                          : "bg-[color:var(--ol-soft)] text-[color:var(--ol-ink)] hover:bg-[color:var(--ol-line)]",
                       )}
                     >
-                      {target.type}
-                    </span>
-                    {target.is_default ? (
-                      <span className="ol-chip ol-chip-green">{copy.default}</span>
-                    ) : null}
-                  </div>
-                  <div className="mt-1 truncate text-[12px] text-[color:var(--ol-muted)]">
-                    {target.url}
+                      {target.is_default ? copy.defaultDone : copy.setDefault}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(target)}
+                      disabled={busyId === target.id}
+                      className="ol-mini-btn bg-[#fde7e7] text-[#d93b3b] hover:bg-[#fbd5d5]"
+                    >
+                      {copy.delete}
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={target.is_default || busyId === target.id}
-                    onClick={() => handleSetDefault(target)}
-                    className={cn(
-                      "ol-mini-btn",
-                      target.is_default
-                        ? "cursor-not-allowed bg-[color:var(--ol-soft)] text-[color:var(--ol-subtle)]"
-                        : "bg-[color:var(--ol-soft)] text-[color:var(--ol-ink)] hover:bg-[color:var(--ol-line)]",
-                    )}
-                  >
-                    {target.is_default ? copy.defaultDone : copy.setDefault}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(target)}
-                    disabled={busyId === target.id}
-                    className="ol-mini-btn bg-[#fde7e7] text-[#d93b3b] hover:bg-[#fbd5d5]"
-                  >
-                    {copy.delete}
-                  </button>
-                </div>
+                {editingId === target.id ? (
+                  <div className="mt-4 rounded-2xl border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] p-3">
+                    <div className="grid gap-2 sm:grid-cols-3">
+                      {DELIVERY_EVENT_OPTIONS.map((option) => (
+                        <label
+                          key={option.value}
+                          className={cn(
+                            "cursor-pointer rounded-xl border bg-white p-3 text-[12px] font-bold transition-colors",
+                            draftEvents.includes(option.value)
+                              ? "border-[color:var(--ol-primary)]/40 text-[color:var(--ol-ink)]"
+                              : "border-[color:var(--ol-line)] text-[color:var(--ol-muted)] hover:border-[color:var(--ol-primary)]/30",
+                          )}
+                        >
+                          <span className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={draftEvents.includes(option.value)}
+                              onChange={() => toggleDraftEvent(option.value)}
+                              className="size-4"
+                            />
+                            {option.label[locale]}
+                          </span>
+                          <span className="mt-1 block font-mono text-[11px] text-[color:var(--ol-muted)]">
+                            {option.value}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    <div className="mt-3 flex flex-wrap justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        className="ol-mini-btn bg-white text-[color:var(--ol-muted)]"
+                      >
+                        {copy.cancel}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateEvents(target)}
+                        disabled={busyId === target.id}
+                        className="ol-mini-btn bg-[color:var(--ol-primary)] text-white hover:bg-[color:var(--ol-primary-dark)]"
+                      >
+                        {copy.saveEvents}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -200,12 +331,12 @@ function EmptyState({ locale, onCreate }: { locale: Locale; onCreate: () => void
     locale === "zh"
       ? {
           title: "尚未配置投递目标",
-          body: `运行完成后可手动或默认自动把输出投递到你的 Webhook 或 Slack 频道。最多保留 ${MAX_TARGETS} 个目标。`,
+          body: `可按完成、失败、取消等通知类型，把运行结果投递到你的 Webhook 或 Slack 频道。最多保留 ${MAX_TARGETS} 个目标。`,
           add: "+ 添加第一个目标",
         }
       : {
           title: "No delivery targets configured",
-          body: `After a run completes, OpenLinker can manually or automatically deliver output to your Webhook or Slack channel. Up to ${MAX_TARGETS} targets are retained.`,
+          body: `Deliver run results to your Webhook or Slack channel for completion, failure, or cancellation notifications. Up to ${MAX_TARGETS} targets are retained.`,
           add: "+ Add first target",
         };
   return (

@@ -21,6 +21,22 @@ type TaskCallbackSubscription = {
   updated_at: string;
 };
 
+type TaskCallbackDelivery = {
+  id: string;
+  subscription_id: string;
+  run_event_id: string;
+  event_type: string;
+  target_url: string;
+  status: "pending" | "success" | "failed" | string;
+  response_status?: number;
+  error_message?: string;
+  attempt_count: number;
+  next_retry_at?: string;
+  delivered_at?: string;
+  created_at: string;
+  updated_at: string;
+};
+
 type Props = {
   locale?: Locale;
   runId: string;
@@ -45,6 +61,7 @@ export function TaskCallbackSection({ locale = "zh", runId, enabled }: Props) {
     locale === "zh"
       ? {
           fetchFailed: "拉取任务回调失败",
+          deliveryFetchFailed: "拉取任务回调投递记录失败",
           noneSelected: "未选择事件",
           missingUrl: "请填写接收地址",
           eventRequired: "至少选择一个事件类型",
@@ -72,6 +89,7 @@ export function TaskCallbackSection({ locale = "zh", runId, enabled }: Props) {
         }
       : {
           fetchFailed: "Failed to load task callbacks",
+          deliveryFetchFailed: "Failed to load task callback delivery records",
           noneSelected: "No events selected",
           missingUrl: "Enter a receiver URL",
           eventRequired: "Select at least one event type",
@@ -99,9 +117,11 @@ export function TaskCallbackSection({ locale = "zh", runId, enabled }: Props) {
         };
   const { fetch: apiFetch, isAuthenticated } = useApi();
   const [items, setItems] = useState<TaskCallbackSubscription[]>([]);
+  const [deliveryItems, setDeliveryItems] = useState<TaskCallbackDelivery[]>([]);
   const [targetURL, setTargetURL] = useState("");
   const [selectedEvents, setSelectedEvents] = useState<string[]>(DEFAULT_EVENTS);
   const [loading, setLoading] = useState(false);
+  const [deliveryLoading, setDeliveryLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [secret, setSecret] = useState<{ id: string; value: string } | null>(null);
@@ -128,10 +148,25 @@ export function TaskCallbackSection({ locale = "zh", runId, enabled }: Props) {
         if (!cancelled) setLoading(false);
       });
 
+    apiFetch<{ items: TaskCallbackDelivery[] }>(
+      `/api/v1/runs/${encodeURIComponent(runId)}/task-callbacks/deliveries?limit=50`,
+    )
+      .then((data) => {
+        if (!cancelled) setDeliveryItems(data?.items ?? []);
+      })
+      .catch((err) => {
+        if (!cancelled && err instanceof ApiError && err.status !== 401) {
+          toast.error(err.message || copy.deliveryFetchFailed);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDeliveryLoading(false);
+      });
+
     return () => {
       cancelled = true;
     };
-  }, [apiFetch, copy.fetchFailed, enabled, isAuthenticated, reloadKey, runId]);
+  }, [apiFetch, copy.deliveryFetchFailed, copy.fetchFailed, enabled, isAuthenticated, reloadKey, runId]);
 
   const selectedLabel = useMemo(() => {
     if (selectedEvents.length === 0) return copy.noneSelected;
@@ -146,7 +181,11 @@ export function TaskCallbackSection({ locale = "zh", runId, enabled }: Props) {
     );
   };
 
-  const reload = () => setReloadKey((key) => key + 1);
+  const reload = () => {
+    setLoading(true);
+    setDeliveryLoading(true);
+    setReloadKey((key) => key + 1);
+  };
 
   const createTaskCallback = async () => {
     const url = targetURL.trim();
@@ -173,6 +212,7 @@ export function TaskCallbackSection({ locale = "zh", runId, enabled }: Props) {
       setItems((prev) => [created, ...prev.filter((item) => item.id !== created.id)]);
       setSecret(created.secret ? { id: created.id, value: created.secret } : null);
       setTargetURL("");
+      reload();
       toast.success(copy.created);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : copy.createFailed);
@@ -343,8 +383,108 @@ export function TaskCallbackSection({ locale = "zh", runId, enabled }: Props) {
           onResume={(item) => setStatus(item, "resume")}
           onDelete={deleteTaskCallback}
         />
+
+        <TaskCallbackDeliveryList
+          locale={locale}
+          loading={deliveryLoading}
+          items={deliveryItems}
+        />
       </div>
     </section>
+  );
+}
+
+function TaskCallbackDeliveryList({
+  locale,
+  loading,
+  items,
+}: {
+  locale: Locale;
+  loading: boolean;
+  items: TaskCallbackDelivery[];
+}) {
+  const copy =
+    locale === "zh"
+      ? {
+          title: "任务回调投递记录",
+          loading: "正在加载投递记录…",
+          empty: "暂无投递记录。创建回调后，匹配事件触发时会在这里显示每次投递结果。",
+          attempts: "尝试",
+          response: "HTTP",
+          nextRetry: "下次重试",
+          delivered: "投递于",
+          created: "创建于",
+        }
+      : {
+          title: "Task callback delivery records",
+          loading: "Loading delivery records…",
+          empty: "No delivery records yet. After a callback is created, matching events will show each delivery result here.",
+          attempts: "Attempts",
+          response: "HTTP",
+          nextRetry: "Next retry",
+          delivered: "Delivered",
+          created: "Created",
+        };
+
+  return (
+    <div className="rounded-2xl border border-[color:var(--ol-line)] bg-white p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="text-[13px] font-black text-[color:var(--ol-ink)]">
+          {copy.title}
+        </div>
+        <span className="text-[11px] font-bold text-[color:var(--ol-muted)]">
+          {items.length}
+        </span>
+      </div>
+      {loading ? (
+        <div className="rounded-2xl bg-[color:var(--ol-soft)] px-4 py-6 text-center text-[12.5px] text-[color:var(--ol-muted)]">
+          {copy.loading}
+        </div>
+      ) : items.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-[color:var(--ol-line)] bg-white px-4 py-6 text-center text-[12.5px] text-[color:var(--ol-muted)]">
+          {copy.empty}
+        </div>
+      ) : (
+        <ul className="grid gap-2">
+          {items.map((item) => (
+            <li
+              key={item.id}
+              className="rounded-2xl border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] p-4"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={cn("ol-chip", deliveryChipForStatus(item.status))}>
+                      {deliveryStatusLabel(item.status, locale)}
+                    </span>
+                    <span className="rounded-lg bg-white px-2 py-1 font-mono text-[11px] font-bold text-[color:var(--ol-muted)]">
+                      {item.event_type}
+                    </span>
+                  </div>
+                  <div className="mt-2 truncate font-mono text-[12px] font-bold text-[color:var(--ol-ink)]">
+                    {item.target_url}
+                  </div>
+                  {item.error_message ? (
+                    <div className="mt-2 rounded-xl bg-white px-3 py-2 text-[12px] font-semibold text-[#7a1f1f]">
+                      {item.error_message}
+                    </div>
+                  ) : null}
+                </div>
+                <div className="grid gap-1 text-right text-[11.5px] font-bold text-[color:var(--ol-muted)]">
+                  <span>{copy.attempts}: {item.attempt_count}</span>
+                  {item.response_status ? <span>{copy.response}: {item.response_status}</span> : null}
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold text-[color:var(--ol-subtle)]">
+                <span>{copy.created} {formatTime(item.created_at, locale)}</span>
+                {item.delivered_at ? <span>{copy.delivered} {formatTime(item.delivered_at, locale)}</span> : null}
+                {item.next_retry_at ? <span>{copy.nextRetry} {formatTime(item.next_retry_at, locale)}</span> : null}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -485,6 +625,20 @@ function statusLabel(status: string, locale: Locale): string {
   if (status === "active") return locale === "zh" ? "推送中" : "Pushing";
   if (status === "paused") return locale === "zh" ? "已暂停" : "Paused";
   if (status === "failed") return locale === "zh" ? "失败后暂停" : "Paused after failure";
+  return status;
+}
+
+function deliveryChipForStatus(status: string): string {
+  if (status === "success") return "ol-chip-green";
+  if (status === "pending") return "ol-chip-mint";
+  if (status === "failed") return "ol-chip-amber";
+  return "ol-chip";
+}
+
+function deliveryStatusLabel(status: string, locale: Locale): string {
+  if (status === "success") return locale === "zh" ? "成功" : "Success";
+  if (status === "pending") return locale === "zh" ? "等待/重试中" : "Pending";
+  if (status === "failed") return locale === "zh" ? "失败" : "Failed";
   return status;
 }
 

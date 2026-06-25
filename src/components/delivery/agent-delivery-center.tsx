@@ -6,7 +6,6 @@ import type { AgentResponse } from "@/components/agent/my-agents-card";
 import { DeliveryTargetsPanel } from "@/components/delivery/delivery-targets-panel";
 import { RunDeliverySection } from "@/components/delivery/run-delivery-section";
 import type { DeliveryTarget } from "@/components/delivery/types";
-import { TaskCallbackSection } from "@/components/run/task-callback-section";
 import { Icon } from "@/components/ui/icon";
 import type { Locale } from "@/lib/i18n";
 
@@ -32,7 +31,7 @@ export function AgentDeliveryCenter({
     locale === "zh"
       ? {
           title: "通知投递设置",
-          subtitle: "配置 Webhook、Slack 等通知投递目标；调用方不持续监听时，可在发起任务或当前运行中配置可选任务回调。",
+          subtitle: "配置 Webhook、Slack 等通知投递目标，并选择哪些完成、失败、取消事件会触发自动通知。",
           back: "返回 Agent",
           runDetail: "返回运行详情",
           channels: "配置概览",
@@ -47,9 +46,9 @@ export function AgentDeliveryCenter({
           slackDesc: "通过账号级投递目标发送运行输出。",
           emailDesc: "后续作为通知投递目标接入，不作为独立页面。",
           runDelivery: "当前运行的投递动作",
-          runDeliveryDesc: "从运行详情或使用记录进入时，当前运行的手动通知投递和调用方可选任务回调在这里处理。",
+          runDeliveryDesc: "从运行详情或使用记录进入时，可在这里处理当前运行的手动通知投递和重试。",
           noRunTitle: "当前未绑定运行",
-          noRunDesc: "从运行详情或使用记录进入会带上 run_id；届时可在这里进行单次运行的通知投递、重试和调用方任务回调配置。",
+          noRunDesc: "从运行详情或使用记录进入会带上 run_id；届时可在这里进行单次运行的通知投递和重试。",
           targetsTitle: "通知投递目标",
           externalHistory: "通知投递历史",
           externalHistoryDesc: "Webhook、Slack 和后续 Email 等通知投递记录单独查看，避免配置页堆叠过长。",
@@ -57,7 +56,7 @@ export function AgentDeliveryCenter({
         }
       : {
           title: "Notification delivery settings",
-          subtitle: "Configure Webhook, Slack, and future notification delivery targets. Callers can optionally configure a task callback when they start a task or manage the current run.",
+          subtitle: "Configure Webhook, Slack, and future notification delivery targets, and choose which completion, failure, or cancellation events trigger automatic notifications.",
           back: "Back to Agent",
           runDetail: "Back to run detail",
           channels: "Configuration overview",
@@ -72,9 +71,9 @@ export function AgentDeliveryCenter({
           slackDesc: "Send run output through account-level delivery targets.",
           emailDesc: "Email will be added as a notification delivery target, not a separate page.",
           runDelivery: "Delivery actions for this run",
-          runDeliveryDesc: "When opened from run detail or run history, manual notification delivery and optional caller-owned task callbacks for that run are managed here.",
+          runDeliveryDesc: "When opened from run detail or run history, manual notification delivery and retries for that run are managed here.",
           noRunTitle: "No run selected",
-          noRunDesc: "Open this page from run detail or run history to include run_id. Then this page can manage notification delivery, retry, and caller-owned task callback configuration for that run.",
+          noRunDesc: "Open this page from run detail or run history to include run_id. Then this page can manage notification delivery and retries for that run.",
           targetsTitle: "Notification delivery targets",
           externalHistory: "Notification delivery history",
           externalHistoryDesc: "Webhook, Slack, and future Email notification delivery records are reviewed separately so settings stay focused.",
@@ -172,16 +171,13 @@ export function AgentDeliveryCenter({
           </p>
         </div>
         {runId ? (
-          <>
-            <RunDeliverySection
-              locale={locale}
-              runId={runId}
-              runStatus={runStatus ?? "running"}
-              historyHref={historyHref}
-              historyMode="link"
-            />
-            <TaskCallbackSection locale={locale} runId={runId} enabled />
-          </>
+          <RunDeliverySection
+            locale={locale}
+            runId={runId}
+            runStatus={runStatus ?? "running"}
+            historyHref={historyHref}
+            historyMode="link"
+          />
         ) : (
           <div className="rounded-2xl border border-dashed border-[color:var(--ol-line)] bg-white p-8 text-center">
             <div className="text-[15px] font-black text-[color:var(--ol-ink)]">

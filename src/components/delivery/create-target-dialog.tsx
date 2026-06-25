@@ -45,20 +45,31 @@ const TYPE_HINTS: Record<"webhook" | "slack", { label: Record<Locale, string>; p
   },
 };
 
+const DELIVERY_EVENT_OPTIONS = [
+  { value: "run.completed", label: { zh: "完成", en: "Completed" }, hint: { zh: "运行成功完成后通知", en: "Notify after a run completes successfully" } },
+  { value: "run.failed", label: { zh: "失败", en: "Failed" }, hint: { zh: "失败、超时或异常时通知", en: "Notify on failure, timeout, or exception" } },
+  { value: "run.canceled", label: { zh: "取消", en: "Canceled" }, hint: { zh: "用户或协议客户端取消时通知", en: "Notify when a user or protocol client cancels" } },
+] as const;
+
+const DEFAULT_DELIVERY_EVENTS = DELIVERY_EVENT_OPTIONS.map((option) => option.value);
+
 export function CreateTargetDialog({ locale = "zh", open, onOpenChange, onCreated }: Props) {
   const copy =
     locale === "zh"
       ? {
           nameRequired: "请填写名称",
           httpsRequired: "URL 必须以 https:// 开头",
+          eventRequired: "至少选择一个通知类型",
           createFailed: "创建失败",
           copied: "已复制 secret",
           copyFailed: "复制失败，请手动选中",
           title: "新增投递目标",
-          desc: "配置通知投递目标后，可在运行详情里手动投递；设为默认后，运行完成会自动投递。",
+          desc: "配置通知投递目标后，可在运行详情里手动投递；设为默认后，匹配所选类型的运行事件会自动投递。",
           name: "名称",
           type: "类型",
-          default: "设为默认（运行完成后自动投递到这里）",
+          events: "通知类型",
+          eventsHint: "通知投递只处理完成、失败、取消等终态事件；中间流式事件请使用任务回调或 SSE/WS。",
+          default: "设为默认（匹配所选通知类型时自动投递到这里）",
           cancel: "取消",
           creating: "创建中…",
           create: "创建",
@@ -73,14 +84,17 @@ export function CreateTargetDialog({ locale = "zh", open, onOpenChange, onCreate
       : {
           nameRequired: "Enter a name",
           httpsRequired: "URL must start with https://",
+          eventRequired: "Select at least one notification type",
           createFailed: "Create failed",
           copied: "Secret copied",
           copyFailed: "Copy failed. Select it manually.",
           title: "Add delivery target",
-          desc: "After configuring a notification delivery target, you can deliver manually from run detail or mark it as the default for automatic delivery when a run completes.",
+          desc: "After configuring a notification delivery target, you can deliver manually from run detail or mark it as the default for automatic delivery when selected run events match.",
           name: "Name",
           type: "Type",
-          default: "Set as default for automatic delivery after Run completion",
+          events: "Notification types",
+          eventsHint: "Notification delivery only handles terminal events: completion, failure, and cancellation. Use task callbacks or SSE/WS for streaming events.",
+          default: "Set as default for automatic delivery when selected events match",
           cancel: "Cancel",
           creating: "Creating…",
           create: "Create",
@@ -96,6 +110,7 @@ export function CreateTargetDialog({ locale = "zh", open, onOpenChange, onCreate
   const [name, setName] = useState("");
   const [type, setType] = useState<"webhook" | "slack">("webhook");
   const [url, setUrl] = useState("");
+  const [selectedEvents, setSelectedEvents] = useState<string[]>(DEFAULT_DELIVERY_EVENTS);
   const [isDefault, setIsDefault] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [revealedSecret, setRevealedSecret] = useState<{ target: DeliveryTarget } | null>(null);
@@ -106,6 +121,7 @@ export function CreateTargetDialog({ locale = "zh", open, onOpenChange, onCreate
         setName("");
         setType("webhook");
         setUrl("");
+        setSelectedEvents(DEFAULT_DELIVERY_EVENTS);
         setIsDefault(false);
         setSubmitting(false);
         setRevealedSecret(null);
@@ -123,6 +139,10 @@ export function CreateTargetDialog({ locale = "zh", open, onOpenChange, onCreate
       toast.error(copy.httpsRequired);
       return;
     }
+    if (selectedEvents.length === 0) {
+      toast.error(copy.eventRequired);
+      return;
+    }
     setSubmitting(true);
     try {
       const target = await apiFetch<DeliveryTarget>("/api/v1/delivery-targets", {
@@ -131,6 +151,7 @@ export function CreateTargetDialog({ locale = "zh", open, onOpenChange, onCreate
           name: name.trim(),
           type,
           url: url.trim(),
+          event_types: selectedEvents,
           is_default: isDefault,
         },
       });
@@ -155,6 +176,11 @@ export function CreateTargetDialog({ locale = "zh", open, onOpenChange, onCreate
   };
 
   const hints = TYPE_HINTS[type];
+  const toggleEvent = (event: string) => {
+    setSelectedEvents((prev) =>
+      prev.includes(event) ? prev.filter((item) => item !== event) : [...prev, event],
+    );
+  };
 
   return (
     <Dialog
@@ -167,7 +193,7 @@ export function CreateTargetDialog({ locale = "zh", open, onOpenChange, onCreate
         onOpenChange(next);
       }}
     >
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl">
         {!revealedSecret ? (
           <>
             <DialogHeader>
@@ -223,6 +249,42 @@ export function CreateTargetDialog({ locale = "zh", open, onOpenChange, onCreate
                   autoComplete="off"
                   spellCheck={false}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label>{copy.events}</Label>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {DELIVERY_EVENT_OPTIONS.map((option) => (
+                    <label
+                      key={option.value}
+                      className={
+                        "cursor-pointer rounded-xl border p-3 transition-colors " +
+                        (selectedEvents.includes(option.value)
+                          ? "border-[color:var(--ol-primary)]/40 bg-[color:var(--ol-soft)]"
+                          : "border-[color:var(--ol-line)] bg-white hover:border-[color:var(--ol-primary)]/30")
+                      }
+                    >
+                      <span className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedEvents.includes(option.value)}
+                          onChange={() => toggleEvent(option.value)}
+                          className="size-4"
+                        />
+                        <span className="text-[12.5px] font-black text-[color:var(--ol-ink)]">
+                          {option.label[locale]}
+                        </span>
+                      </span>
+                      <span className="mt-1 block font-mono text-[11px] font-bold text-[color:var(--ol-muted)]">
+                        {option.value}
+                      </span>
+                      <span className="mt-1 block text-[11.5px] font-semibold text-[color:var(--ol-subtle)]">
+                        {option.hint[locale]}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">{copy.eventsHint}</p>
               </div>
 
               <label className="flex items-center gap-2 text-[12.5px] text-[color:var(--ol-ink)]">

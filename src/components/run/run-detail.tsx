@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { RunEventStream } from "@/components/run/run-event-stream";
+import { TaskCallbackSection } from "@/components/run/task-callback-section";
 import { Icon } from "@/components/ui/icon";
 import type { Locale } from "@/lib/i18n";
 
@@ -201,12 +202,12 @@ export function RunDetail({
           externalDelivery: "通知投递设置",
           deliveryNoSeparate: "随父运行",
           deliveryReview: "查看设置",
-          deliverySettings: "通知投递与调用方任务回调",
+          deliverySettings: "通知投递设置",
           noDelivery: "不投递",
           costRecord: "费用记录",
           delegatedRun: "委派运行",
           recorded: "已记录",
-          manageDelivery: "打开通知投递与调用方任务回调",
+          manageDelivery: "打开通知投递设置",
           evidence: "证据摘要",
           coverage: "覆盖状态",
           matchedSkills: "命中 Skill",
@@ -246,12 +247,12 @@ export function RunDetail({
           externalDelivery: "Notification delivery settings",
           deliveryNoSeparate: "With parent run",
           deliveryReview: "Review settings",
-          deliverySettings: "Notification delivery and caller task callback",
+          deliverySettings: "Notification delivery settings",
           noDelivery: "Not delivered",
           costRecord: "Cost record",
           delegatedRun: "Delegated run",
           recorded: "Recorded",
-          manageDelivery: "Open notification delivery and caller task callback",
+          manageDelivery: "Open notification delivery settings",
           evidence: "Evidence summary",
           coverage: "Coverage",
           matchedSkills: "Matched Skills",
@@ -378,6 +379,10 @@ export function RunDetail({
           <RunEventStream locale={locale} runId={view.id} enabled={run !== null} fallbackStatus={view.status} />
 
           <RunMessagesPanel locale={locale} run={view} messages={messages} />
+
+          {!delegated ? (
+            <TaskCallbackSection locale={locale} runId={view.id} enabled />
+          ) : null}
 
           <div className="ol-panel overflow-hidden">
             <div className="ol-panel-head">
