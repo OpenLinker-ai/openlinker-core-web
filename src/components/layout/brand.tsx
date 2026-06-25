@@ -6,7 +6,6 @@
  *   - BrandFull 含 core 版副标题
  */
 
-import Image from "next/image";
 import Link from "next/link";
 import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -23,15 +22,7 @@ interface BrandProps {
 export function Brand({ asLink = true, withSubtitle = true, locale = "zh", className }: BrandProps) {
   const inner = (
     <span className={cn("inline-flex items-center gap-3", className)}>
-      <Image
-        src="/openlinker-logo.svg"
-        alt=""
-        width={40}
-        height={40}
-        className="ol-brand-logo"
-        aria-hidden="true"
-        priority
-      />
+      <span className="ol-brand-logo" aria-hidden="true" />
       <span className="leading-tight">
         <span className="block text-[19px] font-extrabold tracking-tight text-[color:var(--ol-ink)]">
           OpenLinker
