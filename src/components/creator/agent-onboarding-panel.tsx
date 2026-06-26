@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { PlayCircle } from "lucide-react";
+import { PlayCircle, Settings } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -152,7 +152,7 @@ interface Props {
 const DEFAULT_INPUT_SCHEMA = {
   type: "object",
   properties: {
-    query: { type: "string", description: "用户运行输入" },
+    query: { type: "string", description: "用户任务描述" },
   },
   required: ["query"],
 };
@@ -306,10 +306,10 @@ export function AgentOnboardingPanel({
           adding: "添加中...",
           addExample: "添加示例",
           tokenPolling: "用绑定当前 Agent 的访问令牌建立 WebSocket；必要时可降级为轮询领取运行请求，不需要平台访问你的 IPv4 地址。",
-          visibility: "Registry 可见性",
+          visibility: "市场可见性",
           visibilityOptions: {
-            public: "公开 - 出现在 Registry",
-            unlisted: "链接可见 - 不列入 Registry",
+            public: "公开 - 出现在市场",
+            unlisted: "链接可见 - 不列入市场",
             private: "私有 - 仅创作者管理",
           },
           certification: "认证状态",
@@ -319,6 +319,7 @@ export function AgentOnboardingPanel({
           noSkills: "尚未声明 Skill，Benchmark 会先缺少测评对象。",
           editSkills: "编辑 Skill",
           backHub: "返回中心",
+          settings: "基础设置",
           publicDetail: "公开详情",
           healthTitle: "健康检查 / Dry-run",
           lastChecked: "最近检查",
@@ -364,9 +365,9 @@ export function AgentOnboardingPanel({
           adding: "Adding...",
           addExample: "Add example",
           tokenPolling: "Use an access token bound to this Agent to open WebSocket; fall back to polling claims only when needed. The platform does not need to reach your IPv4 address.",
-          visibility: "Registry visibility",
+          visibility: "Market visibility",
           visibilityOptions: {
-            public: "Public - listed in Registry",
+            public: "Public - listed in market",
             unlisted: "Unlisted - link visible",
             private: "Private - creator only",
           },
@@ -377,6 +378,7 @@ export function AgentOnboardingPanel({
           noSkills: "No Skills declared yet, so Benchmark has nothing to test.",
           editSkills: "Edit Skills",
           backHub: "Back to Hub",
+          settings: "Settings",
           publicDetail: "Public detail",
           healthTitle: "Health check / Dry-run",
           lastChecked: "Last checked",
@@ -803,6 +805,10 @@ export function AgentOnboardingPanel({
           <div className="flex flex-wrap gap-2">
             <Link href="/hub" className="ol-mini-btn">
               {copy.backHub}
+            </Link>
+            <Link href={`/hub/agents/${agentState.slug}/settings`} className="ol-mini-btn gap-1.5">
+              <Settings className="size-3.5" aria-hidden="true" />
+              {copy.settings}
             </Link>
             {agentState.visibility !== "private" ? (
               <Link href={`/agents/${agentState.slug}`} className="ol-mini-btn">

@@ -19,7 +19,7 @@
  */
 
 import Link from "next/link";
-import { PlayCircle } from "lucide-react";
+import { PlayCircle, Settings } from "lucide-react";
 import { useState } from "react";
 
 import { avatarFromSlug } from "@/components/market/avatar";
@@ -177,6 +177,8 @@ function AgentItemRow({
           skillTitle: "编辑该 Agent 声明的 skill（最多 5 个）",
           setup: "接入",
           setupTitle: "维护能力声明、示例和 dry-run 状态",
+          settings: "设置",
+          settingsTitle: "编辑基础信息、连接方式和可见性",
           runHistory: "调用记录",
           runHistoryTitle: "查看这个 Agent 被用户、访问令牌或 MCP 触发的调用记录",
           benchmarkTitle: "对已声明 Skill 跑测评，verified 后详情页加徽章",
@@ -196,6 +198,8 @@ function AgentItemRow({
           skillTitle: "Edit this Agent's declared Skills, up to 5",
           setup: "Setup",
           setupTitle: "Maintain capability claims, examples, and dry-run status",
+          settings: "Settings",
+          settingsTitle: "Edit basic information, connection, and visibility",
           runHistory: "Run history",
           runHistoryTitle: "View calls triggered by users, access tokens, or MCP",
           benchmarkTitle: "Run benchmarks for declared Skills; verified Agents show a badge",
@@ -269,6 +273,14 @@ function AgentItemRow({
             >
               Skill
             </button>
+            <Link
+              href={`/hub/agents/${row.slug}/settings`}
+              className="ol-mini-btn gap-1.5"
+              title={copy.settingsTitle}
+            >
+              <Settings className="size-3.5" aria-hidden="true" />
+              {copy.settings}
+            </Link>
             <Link
               href={`/hub/agents/${row.slug}/onboarding`}
               className="ol-mini-btn"
