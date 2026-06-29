@@ -4,6 +4,24 @@
   "private": true,
   "license": "Apache-2.0",
   "description": "Open-source Core web UI for OpenLinker self-hosted deployments.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OpenLinker-ai/openlinker-core-web.git"
+  },
+  "bugs": {
+    "url": "https://github.com/OpenLinker-ai/openlinker-core-web/issues"
+  },
+  "homepage": "https://github.com/OpenLinker-ai/openlinker-core-web#readme",
+  "keywords": [
+    "openlinker",
+    "ai-agents",
+    "agent-registry",
+    "nextjs",
+    "self-hosted"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
