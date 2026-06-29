@@ -103,3 +103,12 @@ openlinker-core-web/
 
 Do not add commercial product flows to this package. Add those to
 `openlinker-web`.
+
+## Contributing and Security
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for development rules and
+[SECURITY.md](./SECURITY.md) for vulnerability reporting.
+
+## License
+
+Apache-2.0. See [LICENSE](./LICENSE).

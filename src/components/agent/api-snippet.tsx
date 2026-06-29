@@ -84,14 +84,17 @@ export function ApiSnippet({
   const requestBodyStringLiteral = JSON.stringify(requestBodyJSON);
 
   const snippets: Record<Tab, string> = {
-    curl: `curl -X POST ${apiURL}/api/v1/runs \\
-  -H "Authorization: Bearer YOUR_TOKEN" \\
+    curl: `OPENLINKER_API_KEY=your_access_token
+AUTH_HEADER="Authorization: Bearer $OPENLINKER_API_KEY"
+
+curl -X POST ${apiURL}/api/v1/runs \\
+  -H "$AUTH_HEADER" \\
   -H "Content-Type: application/json" \\
   -d '${requestBodyJSON}'
 
 # 响应会返回 {"run_id":"...","status":"running"}
 curl -N ${apiURL}/api/v1/runs/RUN_ID/stream \\
-  -H "Authorization: Bearer YOUR_TOKEN" \\
+  -H "$AUTH_HEADER" \\
   -H "Accept: text/event-stream"`,
     python: `import json
 import requests
