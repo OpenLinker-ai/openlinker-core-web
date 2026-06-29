@@ -109,7 +109,8 @@ Do not add commercial product flows to this package. Add those to
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for development rules and
 [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) for conduct expectations.
 Use [SUPPORT.md](./SUPPORT.md) for help, [SECURITY.md](./SECURITY.md) for
-vulnerability reporting, and [CHANGELOG.md](./CHANGELOG.md) for release notes.
+vulnerability reporting, [CHANGELOG.md](./CHANGELOG.md) for release notes, and
+[RELEASE.md](./RELEASE.md) for release checks.
 
 ## License
 
