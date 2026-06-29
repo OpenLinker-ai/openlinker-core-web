@@ -350,19 +350,19 @@ async function checkJSONRPCSend(
     id: "page-send-message",
     method: "SendMessage",
     params: {
-      message: {
-        messageId: `page-message-${Date.now()}`,
-        contextId,
-        role: "user",
-        parts: [{ kind: "text", text: sample.trim() || "A2A standard check" }],
-      },
-      configuration: { acceptedOutputModes: ["application/json", "text/plain"], blocking: true },
+        message: {
+          messageId: `page-message-${Date.now()}`,
+          contextId,
+          role: "ROLE_USER",
+          parts: [{ text: sample.trim() || "A2A standard check" }],
+        },
+      configuration: { acceptedOutputModes: ["application/json", "text/plain"], returnImmediately: false },
       metadata: { client: "openlinker-web-a2a-conformance" },
     },
   }, token, { "A2A-Version": "1.0" });
   const body = asRecord(json);
   assertNoRPCError(body);
-  const result = asRecord(body.result);
+  const result = asRecord(asRecord(body.result).task);
   const taskId = String(result.id ?? "");
   if (!taskId) throw new Error("SendMessage result must include task id");
   assertTaskState(asRecord(result.status).state);
@@ -426,25 +426,22 @@ async function checkHTTPListTasks(
 }
 
 async function checkPushConfig(slug: string, token: string, taskId: string, setCheck: (id: string, patch: Partial<CheckItem>) => void) {
-  setCheck("push-config", { state: "running", detail: "set/list/get/delete pushNotificationConfig" });
-  const basePath = `/api/v1/a2a/agents/${encodeURIComponent(slug)}/tasks/${encodeURIComponent(taskId)}/pushNotificationConfig`;
+  setCheck("push-config", { state: "running", detail: "set/list/get/delete pushNotificationConfigs" });
+  const basePath = `/api/v1/a2a/agents/${encodeURIComponent(slug)}/tasks/${encodeURIComponent(taskId)}/pushNotificationConfigs`;
   const setResult = await requestJSON(basePath, "POST", {
-    pushNotificationConfig: {
-      url: "https://example.com/openlinker-a2a-conformance-webhook",
-      eventTypes: ["run.completed"],
-      metadata: { client: "openlinker-web-a2a-conformance" },
-    },
+    url: "https://example.com/openlinker-a2a-conformance-webhook",
+    eventTypes: ["run.completed"],
+    metadata: { client: "openlinker-web-a2a-conformance" },
   }, token, { "A2A-Version": "1.0" });
   const created = asRecord(setResult.json);
-  const config = asRecord(created.pushNotificationConfig);
-  const configId = String(config.id ?? "");
+  const configId = String(created.id ?? "");
   if (!configId) throw new Error("Push config response must include id");
   const listed = await requestJSON(basePath, "GET", undefined, token, { "A2A-Version": "1.0" });
-  if (!asArray(asRecord(listed.json).items).some((item) => asRecord(asRecord(item).pushNotificationConfig).id === configId)) {
+  if (!asArray(asRecord(listed.json).configs).some((item) => asRecord(item).id === configId)) {
     throw new Error("List push configs must include the created config");
   }
   const got = await requestJSON(`${basePath}/${encodeURIComponent(configId)}`, "GET", undefined, token, { "A2A-Version": "1.0" });
-  assertEqual(asRecord(asRecord(got.json).pushNotificationConfig).id, configId, "Get push config must return created id");
+  assertEqual(asRecord(got.json).id, configId, "Get push config must return created id");
   const deleted = await fetch(`${API_BASE_URL}${basePath}/${encodeURIComponent(configId)}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}`, "A2A-Version": "1.0" },
@@ -474,8 +471,8 @@ async function checkStream(
       body: JSON.stringify({
         message: {
           messageId: `page-stream-${Date.now()}`,
-          role: "user",
-          parts: [{ kind: "text", text: sample.trim() || "A2A stream check" }],
+          role: "ROLE_USER",
+          parts: [{ text: sample.trim() || "A2A stream check" }],
         },
         configuration: { acceptedOutputModes: ["application/json", "text/plain"] },
         metadata: { client: "openlinker-web-a2a-conformance" },
@@ -507,7 +504,7 @@ async function checkLongOnline(
 ) {
   let taskId = "";
   let canceled = false;
-  setCheck("long-online", { state: "running", detail: "POST SendMessage blocking=false" });
+  setCheck("long-online", { state: "running", detail: "POST SendMessage returnImmediately=true" });
   try {
     const start = await requestJSON(`/api/v1/a2a/agents/${encodeURIComponent(slug)}`, "POST", {
       jsonrpc: "2.0",
@@ -517,16 +514,16 @@ async function checkLongOnline(
         message: {
           messageId: `page-long-online-${Date.now()}`,
           contextId: `page-long-online-${Date.now()}`,
-          role: "user",
-          parts: [{ kind: "text", text: sample.trim() || "A2A long-online check" }],
+          role: "ROLE_USER",
+          parts: [{ text: sample.trim() || "A2A long-online check" }],
         },
-        configuration: { acceptedOutputModes: ["application/json", "text/plain"], blocking: false },
+        configuration: { acceptedOutputModes: ["application/json", "text/plain"], returnImmediately: true },
         metadata: { client: "openlinker-web-a2a-long-online" },
       },
     }, token, { "A2A-Version": "1.0" });
     const body = asRecord(start.json);
     assertNoRPCError(body);
-    const task = asRecord(body.result);
+    const task = asRecord(asRecord(body.result).task);
     taskId = String(task.id ?? "");
     if (!taskId) throw new Error("SendMessage result must include task id");
     const state = String(asRecord(task.status).state ?? "");
