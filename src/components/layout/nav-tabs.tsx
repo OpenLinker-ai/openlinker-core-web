@@ -2,7 +2,7 @@
  * <NavTabs /> —— 顶部胶囊式导航条。
  *
  * 来自 prototype 的 .flow-tabs。
- *   首页 / Registry / 接入 / A2A / 运行 / 状态
+ *   首页 / Registry / 接入 / A2A / 运行
  */
 
 "use client";
@@ -45,11 +45,6 @@ const ITEMS: NavItem[] = [
     match: (p) =>
       p.startsWith("/runs") ||
       p.startsWith("/run"),
-  },
-  {
-    label: { zh: "状态", en: "Status" },
-    href: "/status",
-    match: (p) => p.startsWith("/status"),
   },
 ];
 
