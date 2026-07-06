@@ -133,3 +133,11 @@ export async function rejectCertificationAction(formData: FormData) {
 
   adminRedirect(formData, "status", "Agent 认证已拒绝", "/admin/agents");
 }
+
+export async function payWithdrawalAction(formData: FormData) {
+  adminRedirect(formData, "error", "core-web 不支持提现结算，请在 cloud 管理端处理。", "/admin/withdrawals");
+}
+
+export async function rejectWithdrawalAction(formData: FormData) {
+  adminRedirect(formData, "error", "core-web 不支持提现结算，请在 cloud 管理端处理。", "/admin/withdrawals");
+}
