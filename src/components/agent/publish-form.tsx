@@ -600,14 +600,14 @@ function EndpointSection({
           runtimeWSTitle: "Agent Node / WebSocket：内网 Agent 默认选择",
           runtimeWSBody: (
             <>
-              保存后在创作者中心生成绑定该 Agent 的访问令牌。你的 Agent Node 不需要公网入站地址，只要用该令牌建立{" "}
+              保存后在创作者中心生成绑定该 Agent 的接入凭证。你的 Agent Node 不需要公网入站地址，只要用该凭证建立{" "}
               <code>/api/v1/agent-runtime/ws</code> 出站长连接，就能实时接收运行请求、回传事件和最终结果；WebSocket 无法保活时可用 Runtime Pull 降级。
             </>
           ),
           runtimePullTitle: "Runtime Pull：仅作为 WebSocket 降级",
           runtimeBody: (
             <>
-              保存后在创作者中心生成绑定该 Agent 的访问令牌。你的本地 Agent 不需要公网入站地址，只要定时请求{" "}
+              保存后在创作者中心生成绑定该 Agent 的接入凭证。你的本地 Agent 不需要公网入站地址，只要定时请求{" "}
               <code>/api/v1/agent-runtime/heartbeat</code> 读取是否有待领取运行请求，并用{" "}
               <code>/api/v1/agent-runtime/runs/claim?wait=25</code> 长轮询领取运行请求，再 POST{" "}
               <code>/api/v1/agent-runtime/runs/&lt;id&gt;/result</code> 回传结果。
@@ -630,14 +630,14 @@ function EndpointSection({
           runtimeWSTitle: "Agent Node / WebSocket: default for private Agents",
           runtimeWSBody: (
             <>
-              After saving, Creator Hub generates a token bound to this Agent. Agent Node does not need a public inbound URL. It opens an outbound{" "}
-              <code>/api/v1/agent-runtime/ws</code> connection with that token to receive run requests in real time, stream events, and send final results. Use Runtime Pull only when WebSocket cannot stay connected.
+              After saving, Creator Hub generates an access credential bound to this Agent. Agent Node does not need a public inbound URL. It opens an outbound{" "}
+              <code>/api/v1/agent-runtime/ws</code> connection with that credential to receive run requests in real time, stream events, and send final results. Use Runtime Pull only when WebSocket cannot stay connected.
             </>
           ),
           runtimePullTitle: "Runtime Pull: WebSocket fallback only",
           runtimeBody: (
             <>
-              After saving, Creator Hub generates a token bound to this Agent. Your local Agent does not need a public inbound URL. It periodically calls{" "}
+              After saving, Creator Hub generates an access credential bound to this Agent. Your local Agent does not need a public inbound URL. It periodically calls{" "}
               <code>/api/v1/agent-runtime/heartbeat</code> to check for pending run requests, long-polls{" "}
               <code>/api/v1/agent-runtime/runs/claim?wait=25</code> to claim a run, then POSTs the result to{" "}
               <code>/api/v1/agent-runtime/runs/&lt;id&gt;/result</code>.

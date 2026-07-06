@@ -78,7 +78,7 @@ export function A2AConsole({
           parentDetail: "父运行详情",
           selectedParent: "已选父运行",
           source: "入口",
-          boundTokens: "绑定令牌",
+          boundTokens: "绑定凭证",
           parentNoSkills: "父 Agent 尚未声明 Skill",
           parentExplainer: "parent_run_id 来自 Agent 被平台调用时收到的请求体。A2A 控制台只负责展示和追踪，不再让人手动输入 parent_run_id 来拼调用链。",
           selectParent: "从上方父调用链选择一条记录，查看真实 Agent-to-Agent 闭环。",
@@ -106,7 +106,7 @@ export function A2AConsole({
           parentDetail: "Parent run detail",
           selectedParent: "selected parent",
           source: "Source",
-          boundTokens: "Bound tokens",
+          boundTokens: "Bound credentials",
           parentNoSkills: "Parent has not declared Skills",
           parentExplainer: "The parent run_id comes from the request body an Agent receives when OpenLinker invokes it. The A2A console only displays and traces the chain, so there is no manual parent_run_id entry.",
           selectParent: "Select a Parent call chain above to inspect a real Agent-to-Agent loop.",
@@ -268,14 +268,14 @@ export function A2AConsole({
                       <p className="mt-1 text-[12.5px] font-bold leading-5 text-[color:var(--ol-muted)]">
                         {locale === "zh" ? (
                           <>
-                            父 Agent 使用自己的 <code>ol_agent_*</code> 访问令牌调用{" "}
+                            父 Agent 使用自己的 Agent 接入凭证（<code>ol_agent_*</code>）调用{" "}
                             <code>/api/v1/agent-runtime/call-agent</code>，平台创建子运行并写入
                             <code> run_delegations</code> 和 <code>run_events</code>。
                           </>
                         ) : (
                           <>
                             The Parent Agent calls <code>/api/v1/agent-runtime/call-agent</code> with
-                            its own <code>ol_agent_*</code> access token; OpenLinker creates the child
+                            its own Agent access credential (<code>ol_agent_*</code>); OpenLinker creates the child
                             run and writes <code> run_delegations</code> plus <code>run_events</code>.
                           </>
                         )}
@@ -612,7 +612,7 @@ function A2AFlowCard({ locale }: { locale: Locale }) {
           steps: [
             {
               title: "Agent 自注册",
-              desc: "创作者在 /hub 发起自注册；Agent 读取 /skill/publish-agent 后带 endpoint、tags、skill_ids 注册自己，平台用统一访问令牌承载注册和运行用途。",
+              desc: "创作者在 /hub 发起自注册；Agent 读取 /skill/publish-agent 后带 endpoint、tags、skill_ids 注册自己，平台用 Agent 接入凭证承载注册和运行用途。",
             },
             {
               title: "Skill / MCP 关联",
@@ -629,7 +629,7 @@ function A2AFlowCard({ locale }: { locale: Locale }) {
           steps: [
             {
               title: "Agent self-registration",
-              desc: "The creator starts self-registration from /hub. The Agent reads /skill/publish-agent and registers itself with endpoint, tags, and skill_ids. OpenLinker uses one access-token format for registration and runtime credentials.",
+              desc: "The creator starts self-registration from /hub. The Agent reads /skill/publish-agent and registers itself with endpoint, tags, and skill_ids. OpenLinker uses Agent access credentials for registration and runtime.",
             },
             {
               title: "Skill / MCP linkage",

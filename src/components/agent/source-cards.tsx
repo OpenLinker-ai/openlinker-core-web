@@ -44,8 +44,8 @@ const SOURCES: readonly SourceCardSpec[] = [
     iconClass: "blue",
     title: { zh: "Runtime Pull 降级方案", en: "Runtime Pull Fallback" },
     desc: {
-      zh: "仅当 WebSocket 无法保活时使用；Agent 用绑定令牌主动领取运行请求。",
-      en: "Use only when WebSocket cannot stay connected. The runtime uses heartbeat + claim with its bound token.",
+      zh: "仅当 WebSocket 无法保活时使用；Agent 用绑定凭证主动领取运行请求。",
+      en: "Use only when WebSocket cannot stay connected. The runtime uses heartbeat + claim with its bound credential.",
     },
   },
   {

@@ -23,12 +23,12 @@ const NAV_ITEMS: ReadonlyArray<{
   {
     id: "access",
     label: { zh: "注册邀请", en: "Registration Invites" },
-    desc: { zh: "无人值守 Agent", en: "Unattended Agents" },
+    desc: { zh: "生成 Agent 接入凭证", en: "Create Agent credentials" },
     href: "/hub/access",
   },
   {
     id: "tokens",
-    label: { zh: "Token 管理", en: "Token Management" },
+    label: { zh: "Agent 接入凭证", en: "Agent Credentials" },
     desc: { zh: "查看、排序、撤销", en: "Review, sort, revoke" },
     href: "/hub/tokens",
   },
@@ -65,7 +65,7 @@ export function CreatorHubFrame({
           mine: "我的",
           creator: "创作者中心",
           kicker: coreCopy ? "Core 供给" : "创作者工作台 · 我发布的能力",
-          heading: coreCopy ? "创作者中心 · Agent、Token 与 Skill" : "创作者中心 · Agent、Token、审批与 Skill",
+          heading: coreCopy ? "创作者中心 · Agent、接入凭证与 Skill" : "创作者中心 · Agent、接入凭证、审批与 Skill",
           lead: coreCopy
             ? "管理开源 core 需要的 Agent 供给能力：发布、认证、运行记录、注册邀请、审批和 Skill 声明。"
             : "管理 Agent 可见性与认证、注册邀请、审批和 Skill 声明。跨节点 Bridge 已移到开发者中心。",
@@ -75,7 +75,7 @@ export function CreatorHubFrame({
           mine: "My",
           creator: "Creator Hub",
           kicker: coreCopy ? "core supply" : "Creator workspace · What I publish",
-          heading: coreCopy ? "Creator Hub · Agents, Tokens, and Skills" : "Creator Hub · Agents, Tokens, Approvals, and Skills",
+          heading: coreCopy ? "Creator Hub · Agents, Credentials, and Skills" : "Creator Hub · Agents, Credentials, Approvals, and Skills",
           lead: coreCopy
             ? "Manage the Agent supply capabilities required by open-source core: publishing, verification, runs, registration invites, approvals, and Skill claims."
             : "Manage Agent visibility, verification, registration invites, approvals, and Skill claims. Cross-node Bridge now lives in Developer Center.",
@@ -145,8 +145,8 @@ export function CreatorHubGuide({
             : "创作者中心负责作者自己的 Agent 供给、注册邀请和审批；跨节点 Bridge 属于开发者中心。不同页面只加载自己的数据。",
           guide: {
             agents: "Agent 列表会加载统计和筛选数据，适合处理大量供给项。",
-            access: "注册邀请页只创建一次性 Agent 注册邀请，不再预加载 token 列表或审批列表。",
-            tokens: "Token 管理页只读取 Agent Token 列表，支持分页、排序和撤销。",
+            access: "注册邀请页只创建一次性 Agent 接入凭证，不再预加载凭证列表或审批列表。",
+            tokens: "Agent 接入凭证页只读取凭证列表，支持分页、排序和撤销。",
             approvals: "审批页只读取待处理高风险动作，空列表也会快速返回。",
             skills: "Skill 声明页才加载 Agent 详情和能力标签。",
           } satisfies Record<CreatorHubSection, string>,
@@ -160,8 +160,8 @@ export function CreatorHubGuide({
             : "Creator Hub owns the creator's Agents, registration invites, and approvals. Cross-node Bridge belongs in Developer Center. Each page loads only its own data.",
           guide: {
             agents: "The Agent list loads stats and filters for larger supply sets.",
-            access: "The registration invite page only mints one-time Agent invites; it does not preload token or approval lists.",
-            tokens: "Token management only reads Agent Tokens, with pagination, sorting, and revoke actions.",
+            access: "The registration invite page only creates one-time Agent access credentials; it does not preload credential or approval lists.",
+            tokens: "Agent Credentials only reads the credential list, with pagination, sorting, and revoke actions.",
             approvals: "Approvals only reads pending high-risk actions, so an empty list returns quickly.",
             skills: "Skill claims is the only page that loads Agent details and capability tags.",
           } satisfies Record<CreatorHubSection, string>,

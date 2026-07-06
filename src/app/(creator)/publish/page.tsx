@@ -93,16 +93,16 @@ function SelfRegistrationEntry({ locale }: { locale: Locale }) {
     locale === "zh"
       ? {
           kicker: "发布方式",
-          title: "无人值守 Agent 可先生成注册邀请",
-          body: "如果你正在手动发布一个公网 Endpoint 或 MCP 工具，继续填写下方表单。若是本地脚本、CLI、内网服务或 Agent Node 需要自己完成首次注册，请生成一次性注册邀请，再把启动包交给 Agent。",
-          primary: "生成 Agent 注册邀请",
+          title: "无人值守 Agent 可先生成接入凭证",
+          body: "如果你正在手动发布一个公网 Endpoint 或 MCP 工具，继续填写下方表单。若是本地脚本、CLI、内网服务或 Agent Node 需要自己完成首次注册，请生成一次性 Agent 接入凭证，再把启动包交给 Agent。",
+          primary: "生成 Agent 接入凭证",
           secondary: "继续手动发布",
         }
       : {
           kicker: "Publishing mode",
-          title: "Unattended Agents can start with a registration invite",
-          body: "Keep using the form below when you are manually publishing a public endpoint or MCP tool. For a local script, CLI, private service, or Agent Node that needs to register itself, create a one-time invite and pass the startup packet to the Agent.",
-          primary: "Create Agent registration invite",
+          title: "Unattended Agents can start with an access credential",
+          body: "Keep using the form below when you are manually publishing a public endpoint or MCP tool. For a local script, CLI, private service, or Agent Node that needs to register itself, create a one-time Agent access credential and pass the startup packet to the Agent.",
+          primary: "Create Agent credential",
           secondary: "Continue manual publishing",
         };
 
@@ -146,7 +146,7 @@ function PublishHead({ activePill, locale }: { activePill: string | null; locale
       ? {
           kicker: "我的 / 发布 Agent",
           heading: "发布你的 Agent",
-          lead: "手动发布可配置公网 HTTPS、Agent Node WebSocket、Runtime Pull 或 MCP 工具包装；无人值守 Agent 可先生成注册邀请，让 Agent 自己完成注册。",
+          lead: "手动发布可配置公网 HTTPS、Agent Node WebSocket、Runtime Pull 或 MCP 工具包装；无人值守 Agent 可先生成接入凭证，让 Agent 自己完成注册。",
           later: "后续步骤",
           progressAria: "发布进度",
           pills: [
@@ -159,7 +159,7 @@ function PublishHead({ activePill, locale }: { activePill: string | null; locale
       : {
           kicker: "My / Publish Agent",
           heading: "Publish your Agent",
-          lead: "Publish manually with HTTPS, Agent Node WebSocket, Runtime Pull, or an MCP tool wrapper. For unattended Agents, create a registration invite first so the Agent can register itself.",
+          lead: "Publish manually with HTTPS, Agent Node WebSocket, Runtime Pull, or an MCP tool wrapper. For unattended Agents, create an access credential first so the Agent can register itself.",
           later: "Later step",
           progressAria: "Publishing progress",
           pills: [
