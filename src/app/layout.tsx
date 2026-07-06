@@ -36,7 +36,7 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col">
         <IconSprite />
         <div className="flex min-h-screen flex-1 flex-col">
-          <Providers>{children}</Providers>
+          <Providers locale={locale}>{children}</Providers>
         </div>
         <footer className="shrink-0 border-t border-slate-200/70 bg-white/80 px-6 py-5 text-center text-xs text-slate-500">
           <span>OpenLinker</span>

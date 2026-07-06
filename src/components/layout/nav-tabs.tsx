@@ -7,7 +7,7 @@
 
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -53,11 +53,33 @@ const ITEMS: NavItem[] = [
   },
 ];
 
+function NavPendingDot({ locale }: { locale: Locale }) {
+  const { pending } = useLinkStatus();
+
+  return (
+    <>
+      <span
+        className="ol-nav-pending-dot"
+        aria-hidden="true"
+        data-visible={pending ? "true" : undefined}
+      />
+      {pending && (
+        <span className="sr-only">
+          {locale === "zh" ? "页面加载中" : "Page loading"}
+        </span>
+      )}
+    </>
+  );
+}
+
 export function NavTabs({ className, locale = "zh" }: { className?: string; locale?: Locale }) {
   const pathname = usePathname() || "/";
 
   return (
-    <nav className={cn("ol-flow-tabs", className)} aria-label={locale === "zh" ? "主导航" : "Primary navigation"}>
+    <nav
+      className={cn("ol-flow-tabs", className)}
+      aria-label={locale === "zh" ? "主导航" : "Primary navigation"}
+    >
       {ITEMS.map((item) => {
         const isActive = item.match(pathname);
         return (
@@ -67,7 +89,8 @@ export function NavTabs({ className, locale = "zh" }: { className?: string; loca
             className={cn(isActive && "active")}
             aria-current={isActive ? "page" : undefined}
           >
-            {item.label[locale]}
+            <span className="ol-nav-label">{item.label[locale]}</span>
+            <NavPendingDot locale={locale} />
           </Link>
         );
       })}

@@ -174,8 +174,11 @@ body > main {
 
   .ol-flow-tabs > a,
   .ol-flow-tabs > span {
-    display: inline-flex;
+    display: inline-grid;
+    grid-template-columns: 6px auto 6px;
     align-items: center;
+    justify-items: center;
+    column-gap: 7px;
     height: 38px;
     padding: 0 12px;
     border-radius: 999px;
@@ -185,16 +188,125 @@ body > main {
     line-height: 1;
     white-space: nowrap;
     flex: 0 0 auto;
-    transition: background-color 0.15s, color 0.15s;
+    transition: background-color 0.15s, color 0.15s, opacity 0.15s;
+  }
+
+  .ol-flow-tabs > a::before,
+  .ol-flow-tabs > span::before {
+    content: "";
+    width: 6px;
+    height: 6px;
   }
 
   .ol-flow-tabs > a:hover {
     color: var(--ol-ink);
   }
 
+  .ol-nav-label {
+    grid-column: 2;
+  }
+
   .ol-flow-tabs > .active {
     background: var(--ol-mint);
     color: var(--ol-primary-dark);
+  }
+
+  .ol-flow-tabs > a:has(.ol-nav-pending-dot[data-visible="true"]) {
+    background: color-mix(in oklab, var(--ol-primary) 12%, white);
+    color: var(--ol-primary-dark);
+  }
+
+  .ol-nav-pending-dot {
+    grid-column: 3;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0;
+    transform: scale(0.72);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  .ol-nav-pending-dot[data-visible="true"] {
+    opacity: 1;
+    transform: scale(1);
+    animation: ol-loading-pulse 0.85s ease-in-out infinite;
+  }
+
+  .ol-global-route-feedback {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+  }
+
+  .ol-global-route-meter {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 81;
+    height: 3px;
+    width: 42%;
+    border-radius: 0 999px 999px 0;
+    background: var(--ol-primary);
+    box-shadow: 0 0 18px color-mix(in oklab, var(--ol-primary) 44%, transparent);
+    animation: ol-route-progress 1.2s ease-in-out infinite;
+  }
+
+  .ol-route-activity {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 46px;
+    border: 1px solid color-mix(in oklab, var(--ol-primary) 18%, var(--ol-line));
+    border-radius: 999px;
+    background: color-mix(in oklab, white 88%, var(--ol-mint));
+    box-shadow: 0 18px 54px rgba(15, 23, 42, 0.14);
+    color: var(--ol-primary-dark);
+    padding: 9px 14px 9px 11px;
+    font-size: 12.5px;
+    font-weight: 950;
+    letter-spacing: 0;
+    backdrop-filter: blur(14px);
+  }
+
+  .ol-route-activity-orbit {
+    position: relative;
+    width: 26px;
+    height: 26px;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    border: 1px solid color-mix(in oklab, var(--ol-primary) 25%, white);
+  }
+
+  .ol-route-activity-orbit::before {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border-radius: inherit;
+    background: color-mix(in oklab, var(--ol-primary) 14%, white);
+  }
+
+  .ol-route-activity-orbit > span {
+    position: absolute;
+    top: -3px;
+    left: 50%;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--ol-primary);
+    box-shadow: 0 0 12px color-mix(in oklab, var(--ol-primary) 70%, transparent);
+    transform: translateX(-50%);
+    transform-origin: 50% 16px;
+    animation: ol-route-orbit 0.78s linear infinite;
+  }
+
+  .ol-route-busy,
+  .ol-route-busy * {
+    cursor: progress !important;
   }
 
   .ol-topbar {
@@ -219,9 +331,10 @@ body > main {
   }
 
   .ol-topbar-nav-slot {
+    display: flex;
     flex: 1 1 auto;
+    justify-content: center;
     min-width: 0;
-    text-align: center;
   }
 
   .ol-topbar-nav-slot .ol-flow-tabs {
@@ -1907,5 +2020,61 @@ body > main {
     font-size: 11.5px;
     font-weight: 700;
     overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 760px) {
+  .ol-global-route-feedback {
+    align-items: start;
+    padding-top: 34vh;
+  }
+}
+
+@keyframes ol-route-orbit {
+  from {
+    transform: translateX(-50%) rotate(0deg);
+  }
+
+  to {
+    transform: translateX(-50%) rotate(360deg);
+  }
+}
+
+@keyframes ol-loading-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.72);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes ol-route-progress {
+  0% {
+    transform: translateX(-115%);
+  }
+
+  52% {
+    transform: translateX(85vw);
+  }
+
+  100% {
+    transform: translateX(240vw);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ol-nav-pending-dot,
+  .ol-global-route-meter,
+  .ol-route-activity-orbit > span {
+    animation: none;
+  }
+
+  .ol-global-route-meter {
+    width: 100%;
   }
 }
