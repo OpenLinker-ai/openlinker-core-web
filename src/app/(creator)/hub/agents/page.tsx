@@ -1,8 +1,12 @@
 import { redirect } from "next/navigation";
 
 import type { AgentResponse } from "@/components/agent/my-agents-card";
-import type { AgentStatsItem } from "@/components/agent/agent-stats-list";
-import { AgentsList } from "@/components/creator/agents-list";
+import {
+  AgentsList,
+  type AgentCounts,
+  type AgentListControls,
+  type AgentListPage,
+} from "@/components/creator/agents-list";
 import { CreatorHubFrame } from "@/components/creator/creator-hub-frame";
 import { apiFetchAuthed } from "@/lib/api";
 import { auth } from "@/lib/auth";
@@ -10,49 +14,135 @@ import type { Locale } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n-server";
 
 interface CreatorDashboard {
-  summary: {
+  creator?: {
     this_month_calls_received: number;
+    this_month_revenue_cents: number;
     total_agents: number;
-    public_agents?: number;
+    public_agents: number;
     pending_agents: number;
+  } | null;
+}
+
+type AgentsPayload = AgentResponse[] | Partial<AgentListPage>;
+type SearchParams = {
+  q?: string;
+  status?: string;
+  visibility?: string;
+  certification_status?: string;
+  sort_by?: string;
+  limit?: string;
+  page?: string;
+};
+
+const DEFAULT_COUNTS: AgentCounts = {
+  total: 0,
+  online: 0,
+  public: 0,
+  unlisted: 0,
+  private: 0,
+  pending: 0,
+};
+
+function parseControls(params: SearchParams): AgentListControls {
+  const pageSize = parseBoundedInt(params.limit, 25, 10, 100);
+  const page = parseBoundedInt(params.page, 1, 1, 100000);
+  return {
+    query: (params.q ?? "").trim(),
+    status: parseChoice(params.status, ["all", "online", "offline", "degraded", "disabled", "review"], "all"),
+    visibility: parseChoice(params.visibility, ["all", "public", "unlisted", "private"], "all"),
+    certification: parseChoice(params.certification_status, ["all", "unreviewed", "pending", "certified", "rejected"], "all"),
+    sortBy: parseChoice(params.sort_by, ["calls_this_month", "lifetime_calls", "name", "created_at"], "calls_this_month"),
+    pageSize,
+    page,
   };
-  agents: AgentStatsItem[];
 }
 
-type AgentsPayload = AgentResponse[] | { items?: AgentResponse[] };
-
-function normalizeAgents(payload: AgentsPayload): AgentResponse[] {
-  return Array.isArray(payload) ? payload : payload.items ?? [];
+function parseBoundedInt(value: string | undefined, fallback: number, min: number, max: number) {
+  const parsed = Number.parseInt(value ?? "", 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(max, Math.max(min, parsed));
 }
 
-export default async function CreatorHubAgentsPage() {
+function parseChoice<T extends string>(value: string | undefined, choices: readonly T[], fallback: T): T {
+  return choices.includes(value as T) ? (value as T) : fallback;
+}
+
+function agentListPath(controls: AgentListControls) {
+  const params = new URLSearchParams();
+  params.set("limit", String(controls.pageSize));
+  params.set("offset", String((controls.page - 1) * controls.pageSize));
+  if (controls.query) params.set("q", controls.query);
+  if (controls.status !== "all") params.set("status", controls.status);
+  if (controls.visibility !== "all") params.set("visibility", controls.visibility);
+  if (controls.certification !== "all") params.set("certification_status", controls.certification);
+  if (controls.sortBy !== "calls_this_month") params.set("sort_by", controls.sortBy);
+  return `/api/v1/creator/agents?${params.toString()}`;
+}
+
+function normalizeAgentPage(payload: AgentsPayload, controls: AgentListControls): AgentListPage {
+  if (Array.isArray(payload)) {
+    return {
+      items: payload,
+      total: payload.length,
+      limit: controls.pageSize,
+      offset: (controls.page - 1) * controls.pageSize,
+      counts: {
+        ...DEFAULT_COUNTS,
+        total: payload.length,
+        public: payload.filter((agent) => agent.lifecycle_status === "active" && agent.visibility === "public").length,
+        unlisted: payload.filter((agent) => agent.lifecycle_status === "active" && agent.visibility === "unlisted").length,
+        private: payload.filter((agent) => agent.lifecycle_status === "active" && agent.visibility === "private").length,
+        pending: payload.filter((agent) => agent.certification_status === "pending").length,
+      },
+    };
+  }
+  return {
+    items: payload.items ?? [],
+    total: payload.total ?? 0,
+    limit: payload.limit ?? controls.pageSize,
+    offset: payload.offset ?? (controls.page - 1) * controls.pageSize,
+    counts: payload.counts ?? DEFAULT_COUNTS,
+  };
+}
+
+export default async function CreatorHubAgentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
   const session = await auth();
   if (!session?.jwt) redirect("/login?callbackUrl=/hub/agents");
 
+  const controls = parseControls(await searchParams);
   const locale = await getLocale();
-  const [agents, dashboard] = await Promise.all([
-    apiFetchAuthed<AgentsPayload>("/api/v1/creator/agents")
-      .then(normalizeAgents)
-      .catch(() => [] as AgentResponse[]),
-    apiFetchAuthed<CreatorDashboard>("/api/v1/creator/dashboard").catch(() => null),
+  const [agentPage, dashboard] = await Promise.all([
+    apiFetchAuthed<AgentsPayload>(agentListPath(controls))
+      .then((payload) => normalizeAgentPage(payload, controls))
+      .catch(() => normalizeAgentPage({ items: [], total: 0, limit: controls.pageSize, offset: 0, counts: DEFAULT_COUNTS }, controls)),
+    apiFetchAuthed<CreatorDashboard>("/api/v1/dashboard").catch(() => null),
   ]);
 
-  const activeAgents = agents.filter((agent) => agent.lifecycle_status !== "disabled");
+  const creatorSummary = dashboard?.creator;
   const overview = {
-    totalAgents: dashboard?.summary.total_agents ?? activeAgents.length,
-    pendingAgents:
-      dashboard?.summary.pending_agents ??
-      agents.filter((agent) => agent.certification_status === "pending").length,
-    publicAgents:
-      dashboard?.summary.public_agents ??
-      activeAgents.filter((agent) => agent.visibility === "public").length,
-    callsThisMonth: dashboard?.summary.this_month_calls_received ?? 0,
+    totalAgents: creatorSummary?.total_agents ?? agentPage.counts.total,
+    pendingAgents: creatorSummary?.pending_agents ?? agentPage.counts.pending,
+    publicAgents: creatorSummary?.public_agents ?? agentPage.counts.public,
+    callsThisMonth: creatorSummary?.this_month_calls_received ?? 0,
   };
+  const listKey = [
+    controls.query,
+    controls.status,
+    controls.visibility,
+    controls.certification,
+    controls.sortBy,
+    controls.pageSize,
+    controls.page,
+  ].join("|");
 
   return (
     <CreatorHubFrame active="agents" locale={locale} coreCopy>
       <CoreHubOverview locale={locale} overview={overview} />
-      <AgentsList locale={locale} stats={dashboard?.agents ?? null} agents={agents} />
+      <AgentsList key={listKey} locale={locale} agentPage={agentPage} controls={controls} />
     </CreatorHubFrame>
   );
 }

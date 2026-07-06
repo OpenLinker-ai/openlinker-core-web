@@ -42,6 +42,8 @@ export interface AgentResponse {
   rejection_reason?: string | null;
   total_calls: number;
   total_revenue_cents: number;
+  calls_this_month?: number;
+  revenue_this_month_cents?: number;
   availability?: {
     status: "unknown" | "healthy" | "degraded" | "unreachable" | string;
     label: string;
