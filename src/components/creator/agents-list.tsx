@@ -92,14 +92,23 @@ function computeAgentCounts(
     readiness?: AgentResponse["readiness"];
   }>,
 ): AgentCounts {
-  const activeRows = rows.filter((row) => row.lifecycleStatus === "active");
+  // 单次遍历计算所有计数，避免多次 filter
+  let online = 0, pub = 0, unlisted = 0, priv = 0, pending = 0;
+  for (const row of rows) {
+    if (row.certificationStatus === "pending") pending++;
+    if (row.lifecycleStatus !== "active") continue;
+    if (isAgentCallable(row)) online++;
+    if (row.visibility === "public") pub++;
+    else if (row.visibility === "unlisted") unlisted++;
+    else if (row.visibility === "private") priv++;
+  }
   return {
     total: rows.length,
-    online: activeRows.filter(isAgentCallable).length,
-    public: activeRows.filter((row) => row.visibility === "public").length,
-    unlisted: activeRows.filter((row) => row.visibility === "unlisted").length,
-    private: activeRows.filter((row) => row.visibility === "private").length,
-    pending: rows.filter((row) => row.certificationStatus === "pending").length,
+    online,
+    public: pub,
+    unlisted,
+    private: priv,
+    pending,
   };
 }
 
@@ -240,7 +249,7 @@ function AgentItemRow({
           settingsTitle: "编辑基础信息、连接方式和可见性",
           runHistory: "调用记录",
           runHistoryTitle: "查看这个 Agent 被用户、访问令牌或 MCP 触发的调用记录",
-          benchmarkTitle: "对已声明 Skill 跑测评，verified 后详情页加徽章",
+          benchmarkTitle: "为已声明 Skill 运行测评，通过后详情页会显示已验证徽章",
           deliveryTitle: "管理通知投递目标与通知投递历史",
           delivery: "投递",
           progress: "查看进度",
@@ -248,7 +257,7 @@ function AgentItemRow({
         }
       : {
           totalCalls: "total calls",
-          disabled: "Unlisted",
+          disabled: "Disabled",
           calls: "calls",
           month: "this month",
           records: "records",
@@ -262,7 +271,7 @@ function AgentItemRow({
           settingsTitle: "Edit basic information, connection, and visibility",
           runHistory: "Run history",
           runHistoryTitle: "View calls triggered by users, access tokens, or MCP",
-          benchmarkTitle: "Run benchmarks for declared Skills; verified Agents show a badge",
+          benchmarkTitle: "Run benchmarks for declared Skills; passed ones show a Verified badge on the detail page",
           deliveryTitle: "Manage notification delivery targets and delivery history",
           delivery: "Delivery",
           progress: "View progress",

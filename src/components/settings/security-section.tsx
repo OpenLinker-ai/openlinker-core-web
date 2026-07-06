@@ -43,6 +43,7 @@ export function SecuritySection({
           body: "修改内网账号的邮箱密码登录凭据。",
           oauthOnlyBody: `此账号通过 ${providerLabel || "第三方 OAuth"} 登录，当前没有邮箱密码，因此不能在这里修改密码。请继续使用对应登录方式。`,
           oauthBadge: "第三方登录账号",
+          oauthProviderPrefix: "OAuth",
           current: "当前密码",
           next: "新密码",
           confirm: "确认新密码",
@@ -59,6 +60,7 @@ export function SecuritySection({
           body: "Update the email/password credentials for your intranet account.",
           oauthOnlyBody: `This account signs in with ${providerLabel || "a third-party OAuth provider"} and does not have an email password, so password changes are not available here. Continue signing in with that provider.`,
           oauthBadge: "Third-party sign-in",
+          oauthProviderPrefix: "OAuth",
           current: "Current password",
           next: "New password",
           confirm: "Confirm new password",
@@ -122,7 +124,7 @@ export function SecuritySection({
         <div className="mt-4 rounded-xl border border-[color:var(--ol-line)] bg-white px-4 py-3">
           <div className="flex flex-wrap items-center gap-2 text-[12px] font-bold text-[color:var(--ol-muted)]">
             <span className="ol-chip ol-chip-blue">{copy.oauthBadge}</span>
-            {isOAuthUser && providerLabel ? <span className="ol-chip">OAuth · {providerLabel}</span> : null}
+            {isOAuthUser && providerLabel ? <span className="ol-chip">{copy.oauthProviderPrefix} · {providerLabel}</span> : null}
           </div>
         </div>
       ) : null}

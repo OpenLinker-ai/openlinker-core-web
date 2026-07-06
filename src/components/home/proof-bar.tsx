@@ -16,13 +16,13 @@ const STATS: Record<Locale, ProofStat[]> = {
   zh: [
   { value: "免费", label: "当前运行阶段" },
   { value: "HTTPS", label: "Endpoint 接入" },
-  { value: "Scope", label: "最小权限 Key" },
-  { value: "人工", label: "高风险动作确认" },
+  { value: "权限控制", label: "令牌只开必要权限" },
+  { value: "人工确认", label: "高风险动作审批" },
   ],
   en: [
     { value: "Free", label: "Current access phase" },
     { value: "HTTPS", label: "Endpoint onboarding" },
-    { value: "Scope", label: "Least-privilege keys" },
+    { value: "Access control", label: "Tokens with minimum required permissions" },
     { value: "Review", label: "High-risk action checks" },
   ],
 };

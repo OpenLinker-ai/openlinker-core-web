@@ -42,9 +42,9 @@ const SOURCES: readonly SourceCardSpec[] = [
     key: "runtime_pull",
     icon: "Pull",
     iconClass: "blue",
-    title: { zh: "Runtime Pull 高级降级", en: "Runtime Pull Advanced Fallback" },
+    title: { zh: "Runtime Pull 降级方案", en: "Runtime Pull Fallback" },
     desc: {
-      zh: "仅当 WebSocket 无法保活时使用；runtime 用绑定令牌 heartbeat + claim 主动领取运行请求。",
+      zh: "仅当 WebSocket 无法保活时使用；Agent 用绑定令牌主动领取运行请求。",
       en: "Use only when WebSocket cannot stay connected. The runtime uses heartbeat + claim with its bound token.",
     },
   },
@@ -54,7 +54,7 @@ const SOURCES: readonly SourceCardSpec[] = [
     iconClass: "amber",
     title: { zh: "已有 MCP 工具（高级）", en: "Existing MCP tool (advanced)" },
     desc: {
-      zh: "不是 MCP Server 上架入口；仅用于把远程 HTTP JSON-RPC / MCP 工具包装成 Agent。",
+      zh: "用于把已有远程 HTTP JSON-RPC / MCP 工具包装成 Agent，不是发布独立 MCP Server 的入口。",
       en: "Not the MCP Server listing flow. Use only to wrap a remote HTTP JSON-RPC / MCP tool as an Agent.",
     },
   },
