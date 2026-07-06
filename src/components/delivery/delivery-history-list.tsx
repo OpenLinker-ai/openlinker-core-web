@@ -1,6 +1,7 @@
 "use client";
 
 import type { Locale } from "@/lib/i18n";
+import { targetTypeLabel } from "@/lib/i18n-labels";
 import { cn } from "@/lib/utils";
 
 import type { DeliveryItem } from "./types";
@@ -60,7 +61,7 @@ export function DeliveryHistoryList({
                 {statusLabel(delivery.status, locale)}
               </span>
               <span className="ol-chip ol-chip-mint">
-                {targetTypeLabel(delivery.target_type)}
+                {targetTypeLabel(delivery.target_type, locale)}
               </span>
               <span className="text-[11px] font-bold text-[color:var(--ol-muted)]">
                 {copy.attempt(delivery.attempt_count)}
@@ -116,13 +117,6 @@ function statusLabel(status: string, locale: Locale): string {
   if (status === "failed") return locale === "zh" ? "失败" : "Failed";
   if (status === "pending") return locale === "zh" ? "待处理" : "Pending";
   return status;
-}
-
-function targetTypeLabel(type: string): string {
-  if (type === "webhook") return "Webhook";
-  if (type === "slack") return "Slack";
-  if (type === "email") return "Email";
-  return type;
 }
 
 function formatTime(iso: string, locale: Locale): string {

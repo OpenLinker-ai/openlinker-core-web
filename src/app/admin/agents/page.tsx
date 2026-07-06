@@ -15,6 +15,9 @@ import {
   ForbiddenAdmin,
   Pagination,
   Select,
+  adminConnectionModeLabel,
+  adminCertificationStatusLabel,
+  adminStatusLabel,
   adminCopy,
   buildQuery,
   formatDate,
@@ -146,9 +149,9 @@ export default async function AdminAgentsPage({
                       </td>
                       <td className="border-y border-[color:var(--ol-line)] px-3 py-3">
                         <div className="flex flex-wrap gap-1.5">
-                          <span className={statusChip(agent.lifecycle_status)}>{agent.lifecycle_status}</span>
-                          <span className={statusChip(agent.visibility)}>{agent.visibility}</span>
-                          <span className={statusChip(agent.certification_status)}>{agent.certification_status}</span>
+                          <span className={statusChip(agent.lifecycle_status)}>{adminStatusLabel(agent.lifecycle_status, locale)}</span>
+                          <span className={statusChip(agent.visibility)}>{adminStatusLabel(agent.visibility, locale)}</span>
+                          <span className={statusChip(agent.certification_status)}>{adminCertificationStatusLabel(agent.certification_status, locale)}</span>
                         </div>
                         {agent.rejection_reason ? (
                           <div className="mt-2 max-w-[260px] text-[12px] text-[color:var(--ol-muted)]">
@@ -157,9 +160,9 @@ export default async function AdminAgentsPage({
                         ) : null}
                       </td>
                       <td className="border-y border-[color:var(--ol-line)] px-3 py-3 text-[12px] text-[color:var(--ol-muted)]">
-                        <div>{formatNumber(agent.total_calls)} calls</div>
+                        <div>{formatNumber(agent.total_calls)} {copy.runCount}</div>
                         <div>{formatUsd(agent.total_revenue_cents)}</div>
-                        <div>{agent.connection_mode}</div>
+                        <div>{adminConnectionModeLabel(agent.connection_mode, locale)}</div>
                         <div>
                           {copy.recommended}: {formatNumber(agent.recommended_task_count)}
                         </div>
@@ -176,12 +179,13 @@ export default async function AdminAgentsPage({
                           <form action={updateAgentModerationAction} className="grid grid-cols-[1fr_1fr_1fr_1.4fr_auto] gap-2">
                             <input type="hidden" name="id" value={agent.id} />
                             <input type="hidden" name="return_to" value={returnTo} />
-                            <Select name="lifecycle_status" value={agent.lifecycle_status} options={["active", "disabled"]} />
-                            <Select name="visibility" value={agent.visibility} options={["public", "unlisted", "private"]} />
+                            <Select name="lifecycle_status" value={agent.lifecycle_status} options={["active", "disabled"]} labels={copy} />
+                            <Select name="visibility" value={agent.visibility} options={["public", "unlisted", "private"]} labels={copy} />
                             <Select
                               name="certification_status"
                               value={agent.certification_status}
                               options={["unreviewed", "pending", "certified", "rejected"]}
+                              labels={copy}
                             />
                             <input
                               name="rejection_reason"

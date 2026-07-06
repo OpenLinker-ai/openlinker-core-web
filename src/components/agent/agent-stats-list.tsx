@@ -23,6 +23,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { fallbackEnumLabel } from "@/lib/i18n-labels";
 
 export interface AgentStatsItem {
   id: string;
@@ -146,7 +147,7 @@ function StatusBadge({ status, locale }: { status: string; locale: Locale }) {
       className: "bg-gray-100 text-gray-700",
     },
   };
-  const c = map[status] ?? { label: status, className: "bg-gray-100" };
+  const c = map[status] ?? { label: fallbackEnumLabel(status, locale), className: "bg-gray-100" };
   return (
     <span
       className={`rounded px-1.5 py-0.5 text-xs font-semibold ${c.className}`}

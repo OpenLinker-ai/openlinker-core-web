@@ -9,6 +9,10 @@ import { Icon } from "@/components/ui/icon";
 import { useApi } from "@/hooks/use-api";
 import { localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
+import {
+  deliveryEventLabel,
+  targetTypeLabel,
+} from "@/lib/i18n-labels";
 import { cn } from "@/lib/utils";
 
 import type { DeliveryTarget } from "./types";
@@ -208,7 +212,7 @@ export function DeliveryTargetsPanel({ locale = "zh", initialItems }: Props) {
                           target.type === "slack" ? "ol-chip-amber" : "ol-chip-mint",
                         )}
                       >
-                        {target.type}
+                        {targetTypeLabel(target.type, locale)}
                       </span>
                       {target.is_default ? (
                         <span className="ol-chip ol-chip-green">{copy.default}</span>
@@ -224,9 +228,10 @@ export function DeliveryTargetsPanel({ locale = "zh", initialItems }: Props) {
                       {targetEventTypes(target).map((event) => (
                         <span
                           key={event}
-                          className="rounded-lg bg-[color:var(--ol-soft)] px-2 py-1 font-mono text-[11px] font-bold text-[color:var(--ol-muted)]"
+                          className="rounded-lg bg-[color:var(--ol-soft)] px-2 py-1 text-[11px] font-bold text-[color:var(--ol-muted)]"
+                          title={event}
                         >
-                          {event}
+                          {deliveryEventLabel(event, locale)}
                         </span>
                       ))}
                     </div>

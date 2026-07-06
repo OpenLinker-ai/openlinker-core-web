@@ -9,6 +9,7 @@ import { Icon } from "@/components/ui/icon";
 import { useApi } from "@/hooks/use-api";
 import { ApiError, localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
+import { targetTypeLabel } from "@/lib/i18n-labels";
 import { cn } from "@/lib/utils";
 
 import type { DeliveryItem, DeliveryTarget } from "./types";
@@ -234,7 +235,7 @@ export function RunDeliverySection({
               >
                 {targets.map((t) => (
                   <option key={t.id} value={t.id}>
-                    {t.name} · {t.type}
+                    {t.name} · {targetTypeLabel(t.type, locale)}
                     {t.is_default ? copy.default : ""}
                   </option>
                 ))}

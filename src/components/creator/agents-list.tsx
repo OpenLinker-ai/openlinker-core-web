@@ -32,6 +32,10 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { avatarFromSlug } from "@/components/market/avatar";
 import { SkillsDialog } from "@/components/creator/skills-dialog";
 import type { Locale } from "@/lib/i18n";
+import {
+  availabilityStatusHint,
+  availabilityStatusLabel,
+} from "@/lib/i18n-labels";
 
 import type { AgentResponse } from "@/components/agent/my-agents-card";
 import type { AgentStatsItem } from "@/components/agent/agent-stats-list";
@@ -76,8 +80,9 @@ function availabilityLabel(
   locale: Locale,
 ) {
   if (callable) return locale === "zh" ? "在线" : "Online";
-  if (availability?.status === "degraded") return locale === "zh" ? "不稳定" : "Degraded";
-  if (availability?.status === "unreachable") return locale === "zh" ? "离线" : "Offline";
+  if (availability?.status === "degraded" || availability?.status === "unreachable") {
+    return availabilityStatusLabel(availability.status, locale, availability.label);
+  }
   return locale === "zh" ? "未在线" : "Not online";
 }
 
@@ -722,7 +727,11 @@ function AgentItemRow({
             ) : (
               <span
                 className="ol-mini-btn cursor-not-allowed gap-1.5 opacity-60"
-                title={row.availability?.hint ?? copy.playgroundUnavailable}
+                title={
+                  row.availability
+                    ? availabilityStatusHint(row.availability.status, locale, row.availability.hint)
+                    : copy.playgroundUnavailable
+                }
               >
                 <PlayCircle className="size-3.5" aria-hidden="true" />
                 {copy.playgroundUnavailable}

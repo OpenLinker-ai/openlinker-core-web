@@ -10,6 +10,13 @@ import { toast } from "sonner";
 import { useApi } from "@/hooks/use-api";
 import { localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
+import {
+  availabilityStatusHint,
+  certificationStatusLabel,
+  connectionModeLabel as localizedConnectionModeLabel,
+  lifecycleStatusLabel,
+  visibilityLabel,
+} from "@/lib/i18n-labels";
 
 type Visibility = "public" | "unlisted" | "private";
 type LifecycleStatus = "active" | "disabled";
@@ -96,17 +103,9 @@ function parseTags(input: string): string[] {
 
 function statusLabel(agent: EditableAgent, locale: Locale): string {
   if (agent.lifecycle_status === "disabled") {
-    return locale === "zh" ? "已下架" : "Disabled";
+    return lifecycleStatusLabel(agent.lifecycle_status, locale);
   }
-  const visibility: Record<Visibility, string> =
-    locale === "zh"
-      ? { public: "公开", unlisted: "链接可见", private: "私有" }
-      : { public: "Public", unlisted: "Unlisted", private: "Private" };
-  const certification: Record<CertificationStatus, string> =
-    locale === "zh"
-      ? { unreviewed: "未认证", pending: "认证中", certified: "已认证", rejected: "认证未通过" }
-      : { unreviewed: "Unreviewed", pending: "In review", certified: "Certified", rejected: "Rejected" };
-  return `${visibility[agent.visibility]} · ${certification[agent.certification_status]}`;
+  return `${visibilityLabel(agent.visibility, locale)} · ${certificationStatusLabel(agent.certification_status, locale)}`;
 }
 
 function isEditableAgentCallable(agent: EditableAgent): boolean {
@@ -385,10 +384,10 @@ export function AgentSettingsPanel({ agent, locale }: Props) {
                   value={form.connectionMode}
                   onChange={(event) => updateForm("connectionMode", event.target.value as ConnectionMode)}
                 >
-                  <option value="direct_http">direct_http</option>
-                  <option value="runtime_ws">runtime_ws</option>
-                  <option value="runtime_pull">runtime_pull</option>
-                  <option value="mcp_server">mcp_server</option>
+                  <option value="direct_http">{localizedConnectionModeLabel("direct_http", locale)}</option>
+                  <option value="runtime_ws">{localizedConnectionModeLabel("runtime_ws", locale)}</option>
+                  <option value="runtime_pull">{localizedConnectionModeLabel("runtime_pull", locale)}</option>
+                  <option value="mcp_server">{localizedConnectionModeLabel("mcp_server", locale)}</option>
                 </select>
               </label>
               <label className="block">
@@ -465,7 +464,7 @@ export function AgentSettingsPanel({ agent, locale }: Props) {
                     className="sr-only"
                   />
                   <strong className="block text-[14px] font-black text-[color:var(--ol-ink)]">
-                    {visibility}
+                    {visibilityLabel(visibility, locale)}
                   </strong>
                   <span className="mt-2 block text-[12.5px] font-semibold leading-5 text-[color:var(--ol-muted)]">
                     {visibility === "public" ? copy.public : visibility === "unlisted" ? copy.unlisted : copy.private}
@@ -502,7 +501,11 @@ export function AgentSettingsPanel({ agent, locale }: Props) {
           ) : (
             <span
               className="ol-mini-btn h-10 cursor-not-allowed gap-2 px-4 opacity-60"
-              title={agentState.availability?.hint ?? copy.playgroundUnavailable}
+              title={
+                agentState.availability
+                  ? availabilityStatusHint(agentState.availability.status, locale, agentState.availability.hint)
+                  : copy.playgroundUnavailable
+              }
             >
               <PlayCircle className="size-4" aria-hidden="true" />
               {copy.playgroundUnavailable}
@@ -529,14 +532,14 @@ export function AgentSettingsPanel({ agent, locale }: Props) {
           </div>
           <div className="ol-info-card">
             <strong>{copy.lifecycle}</strong>
-            <span>{agentState.lifecycle_status}</span>
+            <span>{lifecycleStatusLabel(agentState.lifecycle_status, locale)}</span>
             {disabled ? <span className="mt-1 text-[#b9263c]">{copy.disabledHint}</span> : null}
           </div>
           <div className="ol-info-card">
             <strong>{copy.certification}</strong>
             <span className="inline-flex items-center gap-1.5">
               <ShieldCheck className="size-3.5" aria-hidden="true" />
-              {agentState.certification_status}
+              {certificationStatusLabel(agentState.certification_status, locale)}
             </span>
             <span className="mt-1">{copy.certifiedHint}</span>
             {agentState.rejection_reason ? (

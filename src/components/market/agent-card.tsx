@@ -1,5 +1,5 @@
 /**
- * Registry 列表项（横排卡片）。
+ * 市场列表项（横排卡片）。
  *
  * 视觉来自 prototype/openlinker-flow-07-market.png 的 .agent-card：
  *   - 3 列布局：app-icon (48px) / agent-copy / meta (170px)
@@ -13,9 +13,13 @@
 import Link from "next/link";
 
 import type { Locale } from "@/lib/i18n";
+import {
+  availabilityStatusHint,
+  availabilityStatusLabel,
+} from "@/lib/i18n-labels";
 import { avatarFromSlug } from "./avatar";
 
-type AvailabilityStatus = "unknown" | "healthy" | "degraded" | "unreachable";
+type AvailabilityStatus = "unknown" | "healthy" | "degraded" | "unreachable" | string;
 
 interface AgentCardProps {
   agent: {
@@ -28,8 +32,8 @@ interface AgentCardProps {
     creator: { display_name: string };
     availability?: {
       status: AvailabilityStatus;
-      label: string;
-      hint: string;
+      label?: string;
+      hint?: string;
       consecutive_failures: number;
     };
     readiness?: {
@@ -73,17 +77,14 @@ function tagColor(tag: string, idx: number): string {
 export function AgentCard({ agent, active = false, locale = "zh" }: AgentCardProps) {
   const avatar = avatarFromSlug(agent.slug);
   const price = formatPrice(agent.price_per_call_cents, locale);
-  const availability = agent.availability ?? {
-    status: "unknown" as const,
-    label: locale === "zh" ? "未验证" : "Unverified",
-    hint: locale === "zh" ? "Agent 还没有真实运行记录。" : "This Agent does not have real run evidence yet.",
-    consecutive_failures: 0,
-  };
-  const callable = agent.readiness?.callable ?? availability.status === "healthy";
+  const availabilityStatus = agent.availability?.status ?? "unknown";
+  const availabilityLabel = availabilityStatusLabel(availabilityStatus, locale, agent.availability?.label);
+  const availabilityHint = availabilityStatusHint(availabilityStatus, locale, agent.availability?.hint);
+  const callable = agent.readiness?.callable ?? availabilityStatus === "healthy";
   const copy =
     locale === "zh"
-      ? { calls: "次调用", detail: "详情", try: "试用", waiting: "等待可用" }
-      : { calls: "calls", detail: "Details", try: "Try", waiting: "Waiting" };
+      ? { calls: "次调用", detail: "详情", try: "试用", waiting: "暂不可试用" }
+      : { calls: "calls", detail: "Details", try: "Try", waiting: "Not ready yet" };
 
   return (
     <article className={`ol-agent-card${active ? " active" : ""}`}>
@@ -120,10 +121,10 @@ export function AgentCard({ agent, active = false, locale = "zh" }: AgentCardPro
           {formatCalls(agent.total_calls)} {copy.calls}
         </div>
         <span
-          className={`ol-chip ${availabilityChipClass(availability.status)}`}
-          title={availability.hint}
+          className={`ol-chip ${availabilityChipClass(availabilityStatus)}`}
+          title={availabilityHint}
         >
-          {availability.label}
+          {availabilityLabel}
         </span>
         <div className="ol-meta-actions">
           <Link href={`/agents/${agent.slug}`} className="ol-mini-btn">
@@ -139,7 +140,7 @@ export function AgentCard({ agent, active = false, locale = "zh" }: AgentCardPro
           ) : (
             <span
               className="ol-mini-btn cursor-not-allowed opacity-60"
-              title={availability.hint}
+              title={availabilityHint}
             >
               {copy.waiting}
             </span>

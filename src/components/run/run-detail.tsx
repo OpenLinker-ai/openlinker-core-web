@@ -7,6 +7,11 @@ import { RunEventStream } from "@/components/run/run-event-stream";
 import { TaskCallbackSection } from "@/components/run/task-callback-section";
 import { Icon } from "@/components/ui/icon";
 import type { Locale } from "@/lib/i18n";
+import {
+  artifactVisibilityLabel,
+  coverageStatusLabel,
+  runStatusLabel,
+} from "@/lib/i18n-labels";
 
 export type RunDetailData = {
   run_id: string;
@@ -151,13 +156,11 @@ function fmtPriceField(cents: number, locale: Locale): string {
 }
 
 function statusChip(status: string, locale: Locale): { tone: string; label: string } {
-  const label = (zh: string, en: string) => (locale === "zh" ? zh : en);
-  if (status === "success") return { tone: "ol-chip ol-chip-green", label: label("成功", "Success") };
-  if (status === "failed") return { tone: "ol-chip ol-chip-amber", label: label("失败", "Failed") };
-  if (status === "timeout") return { tone: "ol-chip ol-chip-amber", label: label("超时", "Timed out") };
-  if (status === "canceled") return { tone: "ol-chip", label: label("已取消", "Canceled") };
-  if (status === "running") return { tone: "ol-chip ol-chip-mint", label: label("运行中", "Running") };
-  return { tone: "ol-chip ol-chip-mint", label: status };
+  if (status === "success") return { tone: "ol-chip ol-chip-green", label: runStatusLabel(status, locale) };
+  if (status === "failed" || status === "timeout") return { tone: "ol-chip ol-chip-amber", label: runStatusLabel(status, locale) };
+  if (status === "canceled") return { tone: "ol-chip", label: runStatusLabel(status, locale) };
+  if (status === "running") return { tone: "ol-chip ol-chip-mint", label: runStatusLabel(status, locale) };
+  return { tone: "ol-chip ol-chip-mint", label: runStatusLabel(status, locale) };
 }
 
 export function RunDetail({
@@ -178,9 +181,10 @@ export function RunDetail({
           copied: "已复制",
           kicker: "运行详情",
           copyId: "复制 ID",
-          rerun: "打开 Registry",
+          rerun: "再跑一次",
           back: "返回历史",
           chain: "查看协作链",
+          workflow: "工作流实验画布",
           cost: "费用状态",
           freeDelegation: "免费委派",
           duration: "耗时",
@@ -216,17 +220,21 @@ export function RunDetail({
           usedMCP: "使用 MCP",
           artifactCount: "产物",
           messageCount: "消息",
+          artifactsUnit: "个产物",
+          messagesUnit: "条消息",
+          unknownError: "未知错误",
           privateEvidence: "仅 owner 可见",
-          publicExample: "含公开案例产物",
+          publicExample: "含可公开展示的示例结果",
         }
       : {
           loadFailed: "Unable to load this run detail. Return to run history and try again.",
           copied: "Copied",
           kicker: "Run detail",
           copyId: "Copy ID",
-          rerun: "Open Registry",
+          rerun: "Run again",
           back: "Back to history",
           chain: "View chain",
+          workflow: "Workflow canvas",
           cost: "Cost status",
           freeDelegation: "Free delegation",
           duration: "Duration",
@@ -262,8 +270,11 @@ export function RunDetail({
           usedMCP: "MCP used",
           artifactCount: "Artifacts",
           messageCount: "Messages",
+          artifactsUnit: "artifacts",
+          messagesUnit: "messages",
+          unknownError: "unknown error",
           privateEvidence: "Owner-only",
-          publicExample: "Includes public example artifact",
+          publicExample: "Contains a shareable example result",
         };
   const [copied, setCopied] = useState(false);
   if (!run) {
@@ -325,13 +336,13 @@ export function RunDetail({
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
-              href="/registry"
+              href={view.agentSlug ? `/playground/${encodeURIComponent(view.agentSlug)}` : "/market"}
               className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12.5px] font-[900] text-[color:var(--ol-ink)] hover:border-[color:var(--ol-primary)]/40"
             >
               {copy.rerun}
             </Link>
             <Link
-              href="/runs"
+              href="/usage"
               className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12.5px] font-[900] text-[color:var(--ol-ink)] hover:border-[color:var(--ol-primary)]/40"
             >
               {copy.back}
@@ -342,6 +353,12 @@ export function RunDetail({
             >
               {copy.chain}
             </Link>
+            <Link
+              href="/workflow"
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12.5px] font-[900] text-[color:var(--ol-ink)] hover:border-[color:var(--ol-primary)]/40"
+            >
+              {copy.workflow}
+            </Link>
           </div>
         </div>
       </section>
@@ -349,7 +366,7 @@ export function RunDetail({
       <section className="ol-panel grid gap-6 p-5 md:grid-cols-4">
         <StatCell label={copy.cost} value={delegated ? copy.freeDelegation : fmtPriceField(view.costCents, locale)} divider={false} />
         <StatCell label={copy.duration} value={fmtMs(view.durationMs)} />
-        <StatCell label={copy.status} value={success ? "success" : view.status} />
+        <StatCell label={copy.status} value={runStatusLabel(view.status, locale)} />
         <StatCell label={copy.delivery} value={delegated ? copy.deliveryNoSeparate : copy.deliverySettings} />
       </section>
 
@@ -359,7 +376,7 @@ export function RunDetail({
             <div>
               <div className="ol-kicker">{copy.evidence}</div>
               <h2 className="mt-1 text-[18px] font-black text-[color:var(--ol-ink)]">
-                {coverageLabel(view.evidenceSummary.coverage_status, locale)}
+                {coverageStatusLabel(view.evidenceSummary.coverage_status, locale)}
               </h2>
             </div>
             <span className={`ol-chip ${view.evidenceSummary.public_safe ? "ol-chip-green" : "ol-chip-mint"}`}>
@@ -367,7 +384,7 @@ export function RunDetail({
             </span>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <EvidenceStat label={copy.coverage} value={view.evidenceSummary.coverage_status} />
+            <EvidenceStat label={copy.coverage} value={coverageStatusLabel(view.evidenceSummary.coverage_status, locale)} />
             <EvidenceStat label={copy.matchedSkills} value={String(view.evidenceSummary.matched_skill_count)} />
             <EvidenceStat label={copy.missingItems} value={String(view.evidenceSummary.missing_skill_count)} />
             <EvidenceStat label={copy.usedMCP} value={String(view.evidenceSummary.used_mcp_tool_count)} />
@@ -415,7 +432,7 @@ export function RunDetail({
                   <code>
                     {success
                       ? JSON.stringify(view.output, null, 2)
-                      : JSON.stringify({ error: view.error ?? "unknown error" }, null, 2)}
+                      : JSON.stringify({ error: view.error ?? copy.unknownError }, null, 2)}
                   </code>
                 </pre>
               </div>
@@ -426,7 +443,9 @@ export function RunDetail({
             <div className="ol-panel overflow-hidden">
               <div className="ol-panel-head">
                 <strong>{copy.artifacts}</strong>
-                <span className="ol-chip ol-chip-blue">{artifacts.length} artifacts</span>
+                <span className="ol-chip ol-chip-blue">
+                  {artifacts.length} {copy.artifactsUnit}
+                </span>
               </div>
               <div className="grid gap-3 p-5">
                 {artifacts.map((artifact) => (
@@ -439,7 +458,7 @@ export function RunDetail({
                         {artifact.title}
                       </strong>
                       <span className="ol-chip ol-chip-mint">{artifact.artifact_type}</span>
-                      <span className="ol-chip">{artifact.visibility}</span>
+                      <span className="ol-chip">{artifactVisibilityLabel(artifact.visibility, locale)}</span>
                       {artifact.mime_type ? <span className="ol-chip">{artifact.mime_type}</span> : null}
                       {artifact.source_artifact_id ? (
                         <span className="font-mono text-[11.5px] font-black text-[color:var(--ol-muted)]">
@@ -489,7 +508,7 @@ export function RunDetail({
             <strong className="text-[14px] font-[900] text-[color:var(--ol-ink)]">{copy.meta}</strong>
             <div className="mt-3 grid gap-2 text-[12.5px]">
               <MetaRow label="Run ID" value={view.id} mono />
-              <MetaRow label={copy.status} value={view.status} />
+              <MetaRow label={copy.status} value={runStatusLabel(view.status, locale)} />
               <MetaRow label={copy.cost} value={delegated ? copy.freeDelegation : fmtPriceField(view.costCents, locale)} />
               <MetaRow label={copy.duration} value={fmtMs(view.durationMs)} mono />
               {view.parentRunId ? (
@@ -547,8 +566,8 @@ function RequirementEvidencePanel({ locale, evidence }: { locale: Locale; eviden
   const copy =
     locale === "zh"
       ? {
-          title: "运行要求证据",
-          empty: "这次运行没有附带要求证据。通过 MCP metadata 或 Agent 调用上下文启动时，可在这里展示 Skill/MCP 覆盖证据。",
+          title: "任务要求证据",
+          empty: "这次运行没有绑定任务 ID。从任务详情或带 MCP `metadata.task_id` 启动时，这里会展示 Skill/MCP 覆盖情况。",
           requiredSkill: "要求 Skill",
           noDeclared: "未声明",
           matchedSkill: "命中 Skill",
@@ -558,10 +577,11 @@ function RequirementEvidencePanel({ locale, evidence }: { locale: Locale; eviden
           requiredMCP: "要求 MCP",
           usedMCP: "本次使用 MCP",
           noMCPRun: "未通过 MCP 工具运行",
+          viewTask: "查看关联任务",
         }
       : {
           title: "Requirement evidence",
-          empty: "This run does not include requirement evidence. Runs started with MCP metadata or Agent call context can show Skill/MCP coverage here.",
+          empty: "This run is not linked to a task ID. Runs started from task detail or with MCP `metadata.task_id` show Skill/MCP coverage evidence here.",
           requiredSkill: "Required Skills",
           noDeclared: "None declared",
           matchedSkill: "Matched Skills",
@@ -571,6 +591,7 @@ function RequirementEvidencePanel({ locale, evidence }: { locale: Locale; eviden
           requiredMCP: "Required MCP",
           usedMCP: "MCP used in this run",
           noMCPRun: "Not run through MCP tools",
+          viewTask: "View linked task",
         };
   if (!evidence) {
     return (
@@ -589,7 +610,7 @@ function RequirementEvidencePanel({ locale, evidence }: { locale: Locale; eviden
     <div className="ol-panel ol-panel-pad">
       <div className="flex items-start justify-between gap-3">
         <strong className="text-[14px] font-[900] text-[color:var(--ol-ink)]">{copy.title}</strong>
-        <span className={`ol-chip ${chip}`}>{coverageLabel(evidence.coverage_status, locale)}</span>
+        <span className={`ol-chip ${chip}`}>{coverageStatusLabel(evidence.coverage_status, locale)}</span>
       </div>
       <div className="mt-3 grid gap-3">
         <EvidenceGroup title={copy.requiredSkill} items={evidence.required_skill_ids} empty={copy.noDeclared} />
@@ -597,6 +618,12 @@ function RequirementEvidencePanel({ locale, evidence }: { locale: Locale; eviden
         <EvidenceGroup title={copy.missingSkill} items={evidence.missing_skill_ids} empty={copy.noMissing} tone="amber" />
         <EvidenceGroup title={copy.requiredMCP} items={evidence.required_mcp_tools} empty={copy.noDeclared} />
         <EvidenceGroup title={copy.usedMCP} items={evidence.used_mcp_tools} empty={copy.noMCPRun} tone="blue" />
+        <Link
+          href={`/tasks/${encodeURIComponent(evidence.task_id)}`}
+          className="text-[12px] font-black text-[color:var(--ol-primary-dark)] hover:underline"
+        >
+          {copy.viewTask}
+        </Link>
       </div>
     </div>
   );
@@ -647,13 +674,6 @@ function EvidenceGroup({
   );
 }
 
-function coverageLabel(status: string, locale: Locale): string {
-  if (status === "covered") return locale === "zh" ? "已覆盖" : "Covered";
-  if (status === "partial") return locale === "zh" ? "部分覆盖" : "Partial";
-  if (status === "missing_requirements") return locale === "zh" ? "未覆盖" : "Missing";
-  return locale === "zh" ? "无要求" : "No requirements";
-}
-
 type ReplayMessage = {
   id: string;
   role: string;
@@ -684,6 +704,7 @@ function RunMessagesPanel({
           errorFallback: "运行错误",
           structured: "结构化内容",
           synthetic: "详情补全",
+          messagesUnit: "条消息",
         }
       : {
           title: "Message replay",
@@ -694,6 +715,7 @@ function RunMessagesPanel({
           errorFallback: "Run error",
           structured: "Structured content",
           synthetic: "Detail fallback",
+          messagesUnit: "messages",
         };
   const replayMessages = buildReplayMessages(run, messages, locale, {
     input: copy.inputFallback,
@@ -704,7 +726,9 @@ function RunMessagesPanel({
     <div className="ol-panel overflow-hidden">
       <div className="ol-panel-head">
         <strong>{copy.title}</strong>
-        <span className="ol-chip ol-chip-blue">{replayMessages.length} messages</span>
+        <span className="ol-chip ol-chip-blue">
+          {replayMessages.length} {copy.messagesUnit}
+        </span>
       </div>
       {replayMessages.length > 0 ? (
         <div className="grid gap-3 p-5">
@@ -936,7 +960,7 @@ function NextActionPanel({ locale, action }: { locale: Locale; action?: RunNextA
     locale === "zh"
       ? {
           fallbackLabel: "查看结果并决定下一步",
-          fallbackHint: "运行详情会根据状态、Agent 输出和投递设置给出下一步动作。当前可先查看输出或返回 Registry。",
+          fallbackHint: "运行详情会根据状态、Agent 输出和投递设置给出下一步动作。当前可先查看输出或返回任务闭环。",
           title: "下一步建议",
           agent: "Agent 建议",
           platform: "平台建议",
@@ -944,7 +968,7 @@ function NextActionPanel({ locale, action }: { locale: Locale; action?: RunNextA
         }
       : {
           fallbackLabel: "Review the result and choose the next step",
-          fallbackHint: "Run detail suggests a next step based on status, Agent output, and delivery settings. You can review output or return to the Registry first.",
+          fallbackHint: "Run detail suggests a next step based on status, Agent output, and delivery settings. You can review output or return to the task loop first.",
           title: "Suggested next step",
           agent: "Agent suggestion",
           platform: "Platform suggestion",

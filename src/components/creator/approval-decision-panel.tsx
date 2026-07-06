@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useApi } from "@/hooks/use-api";
 import { localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
+import { fallbackEnumLabel } from "@/lib/i18n-labels";
 
 interface Props {
   locale: Locale;
@@ -68,7 +69,7 @@ export function ApprovalDecisionPanel({ approval, locale }: Props) {
         <div className="ol-kicker">{copy.kicker}</div>
         <h1 className="mt-2 text-[26px] font-black">{approval.action}</h1>
         <p className="mt-2 text-[13px] text-[color:var(--ol-muted)]">
-          {copy.status}: {approval.status} · {copy.expiresAt}:{" "}
+          {copy.status}: {approvalStatusLabel(approval.status, locale)} · {copy.expiresAt}:{" "}
           {new Date(approval.expires_at).toLocaleString(locale === "zh" ? "zh-CN" : "en-US")}
         </p>
       </div>
@@ -83,4 +84,11 @@ export function ApprovalDecisionPanel({ approval, locale }: Props) {
       ) : null}
     </div>
   );
+}
+
+function approvalStatusLabel(status: string, locale: Locale): string {
+  if (status === "pending") return locale === "zh" ? "待处理" : "Pending";
+  if (status === "confirmed") return locale === "zh" ? "已确认" : "Confirmed";
+  if (status === "rejected") return locale === "zh" ? "已拒绝" : "Rejected";
+  return fallbackEnumLabel(status, locale);
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { a2aSessionLabel } from "@/lib/a2a-session.mjs";
 import type { Locale } from "@/lib/i18n";
+import { runStatusLabel } from "@/lib/i18n-labels";
 
 export type A2ASkillRef = {
   id: string;
@@ -282,19 +283,11 @@ function a2aHref({ runId, page, query }: { runId?: string; page?: number; query?
 }
 
 function statusChip(status: string, locale: Locale): { tone: string; label: string } {
-  const labels: Record<string, { zh: string; en: string }> = {
-    success: { zh: "成功", en: "Success" },
-    running: { zh: "运行中", en: "Running" },
-    failed: { zh: "失败", en: "Failed" },
-    timeout: { zh: "超时", en: "Timed out" },
-    canceled: { zh: "已取消", en: "Canceled" },
-  };
-  if (status === "success") return { tone: "ol-chip ol-chip-green", label: labels.success[locale] };
-  if (status === "running") return { tone: "ol-chip ol-chip-mint", label: labels.running[locale] };
-  if (status === "failed") return { tone: "ol-chip ol-chip-amber", label: labels.failed[locale] };
-  if (status === "timeout") return { tone: "ol-chip ol-chip-amber", label: labels.timeout[locale] };
-  if (status === "canceled") return { tone: "ol-chip", label: labels.canceled[locale] };
-  return { tone: "ol-chip ol-chip-mint", label: status };
+  if (status === "success") return { tone: "ol-chip ol-chip-green", label: runStatusLabel(status, locale) };
+  if (status === "running") return { tone: "ol-chip ol-chip-mint", label: runStatusLabel(status, locale) };
+  if (status === "failed" || status === "timeout") return { tone: "ol-chip ol-chip-amber", label: runStatusLabel(status, locale) };
+  if (status === "canceled") return { tone: "ol-chip", label: runStatusLabel(status, locale) };
+  return { tone: "ol-chip ol-chip-mint", label: runStatusLabel(status, locale) };
 }
 
 function sourceLabel(source?: string): string {

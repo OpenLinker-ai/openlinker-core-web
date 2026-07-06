@@ -16,6 +16,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApi } from "@/hooks/use-api";
 import { localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
+import {
+  benchmarkStatusLabel,
+  runStatusLabel,
+} from "@/lib/i18n-labels";
 import { cn } from "@/lib/utils";
 
 export interface BenchmarkAgent {
@@ -376,7 +380,7 @@ function BatchView({ detail, locale }: { detail: BatchDetail; locale: Locale }) 
           {detail.batch_id.slice(0, 8)}
         </code>
         {detail.average_score != null ? <span>· {copy.avg} {detail.average_score}</span> : null}
-        <span>· {copy.status} {detail.status}</span>
+        <span>· {copy.status} {benchmarkStatusLabel(detail.status, locale)}</span>
       </div>
       <div className="space-y-2">
         {detail.items.map((item) => (
@@ -391,7 +395,7 @@ function BatchView({ detail, locale }: { detail: BatchDetail; locale: Locale }) 
               <span className="text-[12px] text-[color:var(--ol-muted)]">
                 {item.status === "success" && item.score != null
                   ? `${item.score} ${copy.score}`
-                  : item.status}
+                  : runStatusLabel(item.status, locale)}
               </span>
             </div>
             {item.judge_reasoning ? (

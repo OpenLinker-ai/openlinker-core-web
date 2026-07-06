@@ -3,18 +3,18 @@
  *
  * 视觉对照原型 prototype/openlinker-flow-08-agent-detail.png：
  *   - Topbar
- *   - 面包屑：首页 / Registry / [Agent 名]
+ *   - 面包屑：首页 / 市场 / [Agent 名]
  *   - 3 列 detail-layout：hero(330) / 主区(自适应) / action(320)
  *
  * 数据：GET /api/v1/agents/:slug（公开接口，不需 auth）
  *   - 404 → notFound()
  *   - 其他错误 → 抛出给 error.tsx 兜底
  *
- * Phase 1 简化：
+ * Phase 1 简化（详见 task spec）：
  *   - 评价系统未上线；可用性来自真实运行记录
  *   - Skill 清单可由后端返回，无则降级为「功能介绍 + tag list」
  *   - 用户评价用空状态
- *   - 商业产品侧的撮合、编排和部署租用不在 core-web 展示
+ *   - 工作流入口跳到已上线编排页；部署租用属于后续计划能力
  *
  * Next 16 约定：params 是 Promise，必须 await。
  */
@@ -28,6 +28,11 @@ import { ReviewEmpty } from "@/components/agent/review-empty";
 import { Topbar } from "@/components/layout/topbar";
 import { ApiError, apiFetch } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
+import {
+  availabilityStatusHint,
+  availabilityStatusLabel,
+  availabilityStatusSummary,
+} from "@/lib/i18n-labels";
 import { getLocale } from "@/lib/i18n-server";
 
 interface AgentDetail {
@@ -42,8 +47,8 @@ interface AgentDetail {
   certification_status?: "unreviewed" | "pending" | "certified" | "rejected";
   availability?: {
     status: "unknown" | "healthy" | "degraded" | "unreachable";
-    label: string;
-    hint: string;
+    label?: string;
+    hint?: string;
     last_successful_run_at?: string;
     last_failed_run_at?: string;
     last_checked_at?: string;
@@ -125,7 +130,7 @@ export default async function AgentDetailPage({
     locale === "zh"
       ? {
           home: "首页",
-          market: "Registry",
+          market: "市场",
           currentFree: "当前免费调用",
           price: (price: string) => `$${price} / 次（展示价格预留，当前免费）`,
           unknownLabel: "未验证",
@@ -148,13 +153,13 @@ export default async function AgentDetailPage({
           unavailableKicker: "agent detail unavailable",
           unavailableTitle: "Agent 详情暂时不可用",
           unavailableLead:
-            "当前数据源暂时无法访问。页面外壳和导航保持可用，你可以稍后重试或回到 Registry 继续浏览。",
+            "当前数据源暂时无法访问。页面外壳和导航保持可用，你可以稍后重试或回到市场继续浏览。",
           retryHint: "不可用的 Agent 标识",
-          backToRegistry: "回到 Registry",
+          backToMarket: "回到市场",
         }
       : {
           home: "Home",
-          market: "Registry",
+          market: "Market",
           currentFree: "Free access now",
           price: (price: string) => `$${price} / run (display price reserved; current runs are free)`,
           unknownLabel: "Unverified",
@@ -177,9 +182,9 @@ export default async function AgentDetailPage({
           unavailableKicker: "agent detail unavailable",
           unavailableTitle: "Agent detail is temporarily unavailable",
           unavailableLead:
-            "The data source is not reachable right now. The page shell and navigation remain available; try again later or return to Registry.",
+            "The data source is not reachable right now. The page shell and navigation remain available; try again later or return to Market.",
           retryHint: "Unavailable Agent slug",
-          backToRegistry: "Back to Registry",
+          backToMarket: "Back to Market",
         };
 
   let agent: AgentDetail;
@@ -196,7 +201,7 @@ export default async function AgentDetailPage({
               {copy.home}
             </Link>
             <span className="text-[color:var(--ol-subtle)]">/</span>
-            <Link href="/registry" className="hover:text-[color:var(--ol-ink)]">
+            <Link href="/market" className="hover:text-[color:var(--ol-ink)]">
               {copy.market}
             </Link>
             <span className="text-[color:var(--ol-subtle)]">/</span>
@@ -216,8 +221,8 @@ export default async function AgentDetailPage({
             <p className="mt-2 break-all text-[14px] font-bold text-[color:var(--ol-ink)]">
               {slug}
             </p>
-            <Link href="/registry" className="ol-mini-btn ol-mini-btn-primary mt-5">
-              {copy.backToRegistry}
+            <Link href="/market" className="ol-mini-btn ol-mini-btn-primary mt-5">
+              {copy.backToMarket}
             </Link>
           </section>
         </main>
@@ -244,14 +249,8 @@ export default async function AgentDetailPage({
     hint: copy.unknownHint,
     consecutive_failures: 0,
   };
-  const availabilityLabel =
-    locale === "en"
-      ? availabilityStatusCopy(availability.status, locale)
-      : availability.label;
-  const availabilityHintText =
-    locale === "en"
-      ? availabilityHintCopy(availability.status)
-      : availability.hint;
+  const availabilityLabel = availabilityStatusLabel(availability.status, locale, availability.label);
+  const availabilityHintText = availabilityStatusHint(availability.status, locale, availability.hint);
   const callable = agent.readiness?.callable ?? availability.status === "healthy";
 
   return (
@@ -265,7 +264,7 @@ export default async function AgentDetailPage({
             {copy.home}
           </Link>
           <span className="text-[color:var(--ol-subtle)]">/</span>
-          <Link href="/registry" className="hover:text-[color:var(--ol-ink)]">
+          <Link href="/market" className="hover:text-[color:var(--ol-ink)]">
             {copy.market}
           </Link>
           <span className="text-[color:var(--ol-subtle)]">/</span>
@@ -324,7 +323,7 @@ export default async function AgentDetailPage({
               <div className="grid min-w-0 grid-cols-1 gap-3 text-[12px] text-[color:var(--ol-muted)] sm:grid-cols-2 lg:grid-cols-4">
                 <MetaCell label={copy.scope} value={copy.scopeValue} />
                 <MetaCell label={copy.pricing} value={billingDescription} />
-                <MetaCell label={copy.availability} value={`${availabilityLabel} · ${availabilityStatusCopy(availability.status, locale)}`} />
+                <MetaCell label={copy.availability} value={`${availabilityLabel} · ${availabilityStatusSummary(availability.status, locale)}`} />
                 <MetaCell label={copy.integration} value="API · Agent Node · MCP" />
               </div>
             </div>
@@ -384,26 +383,6 @@ export default async function AgentDetailPage({
       </main>
     </>
   );
-}
-
-function availabilityStatusCopy(status: NonNullable<AgentDetail["availability"]>["status"], locale: Locale = "zh") {
-  if (locale === "en") {
-    if (status === "healthy") return "Recent run succeeded";
-    if (status === "degraded") return "Recent run failed";
-    if (status === "unreachable") return "Repeated failures";
-    return "Waiting for first run";
-  }
-  if (status === "healthy") return "最近调用成功";
-  if (status === "degraded") return "最近调用失败";
-  if (status === "unreachable") return "连续失败";
-  return "等待首次调用";
-}
-
-function availabilityHintCopy(status: NonNullable<AgentDetail["availability"]>["status"]) {
-  if (status === "healthy") return "This Agent has recent successful run evidence.";
-  if (status === "degraded") return "The latest run failed. Direct trials may be limited until a healthy run is recorded.";
-  if (status === "unreachable") return "Recent checks failed repeatedly. Direct trials are paused until the Agent recovers.";
-  return "This Agent does not have real run evidence yet.";
 }
 
 function availabilityChipClass(status: NonNullable<AgentDetail["availability"]>["status"]) {

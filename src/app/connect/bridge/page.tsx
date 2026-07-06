@@ -49,7 +49,7 @@ const CONNECT_TABS: ReadonlyArray<{
   },
   {
     label: { zh: "MCP / API 调用", en: "MCP / API Calls" },
-    desc: { zh: "令牌、run_agent、get_run", en: "Tokens, run_agent, get_run" },
+    desc: { zh: "令牌、run_agent、create_task", en: "Tokens, run_agent, create_task" },
     href: "/connect?tab=mcp",
   },
   {
@@ -82,10 +82,12 @@ export default async function ConnectBridgePage() {
   const copy =
     locale === "zh"
       ? {
+          kicker: "接入 / Bridge",
           heading: "跨节点 Bridge",
           lead: "Bridge 是接入中心能力：创建 Registry Node，再显式把可公开同步的 Agent 链接为 Registry Listing。",
         }
       : {
+          kicker: "connect / bridge",
           heading: "Cross-node Bridge",
           lead: "Bridge belongs in Connect: create a Registry Node, then explicitly link bridgeable Agents as Registry Listings.",
         };
@@ -108,7 +110,7 @@ export default async function ConnectBridgePage() {
       <main className="mx-auto max-w-7xl px-6 pb-16">
         <div className="ol-page-head">
           <div className="ol-page-title">
-            <div className="ol-kicker">connect / bridge</div>
+            <div className="ol-kicker">{copy.kicker}</div>
             <h1>{copy.heading}</h1>
             <p>{copy.lead}</p>
           </div>

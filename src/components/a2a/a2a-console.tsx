@@ -12,6 +12,7 @@ import type { A2AContextRef, A2ASkillRef, ParentRunSummary } from "@/components/
 import { Icon } from "@/components/ui/icon";
 import { a2aSessionLabel } from "@/lib/a2a-session.mjs";
 import type { Locale } from "@/lib/i18n";
+import { runStatusLabel } from "@/lib/i18n-labels";
 
 type ChildRun = {
   child_run_id: string;
@@ -739,14 +740,11 @@ function Metric({ label, value }: { label: string; value: string }) {
 }
 
 function statusChip(status: string, locale: Locale): { tone: string; label: string } {
-  const label = (zh: string, en: string) => (locale === "zh" ? zh : en);
-  if (status === "success") return { tone: "ol-chip ol-chip-green", label: label("成功", "Success") };
-  if (status === "running") return { tone: "ol-chip ol-chip-mint", label: label("运行中", "Running") };
-  if (status === "failed") return { tone: "ol-chip ol-chip-amber", label: label("失败", "Failed") };
-  if (status === "timeout") return { tone: "ol-chip ol-chip-amber", label: label("超时", "Timed out") };
-  if (status === "canceled") return { tone: "ol-chip", label: label("已取消", "Canceled") };
-  if (status === "waiting") return { tone: "ol-chip", label: label("待调用", "Waiting") };
-  return { tone: "ol-chip ol-chip-mint", label: status };
+  if (status === "success") return { tone: "ol-chip ol-chip-green", label: runStatusLabel(status, locale) };
+  if (status === "running") return { tone: "ol-chip ol-chip-mint", label: runStatusLabel(status, locale) };
+  if (status === "failed" || status === "timeout") return { tone: "ol-chip ol-chip-amber", label: runStatusLabel(status, locale) };
+  if (status === "canceled" || status === "waiting") return { tone: "ol-chip", label: runStatusLabel(status, locale) };
+  return { tone: "ol-chip ol-chip-mint", label: runStatusLabel(status, locale) };
 }
 
 function sourceLabel(source?: string): string {

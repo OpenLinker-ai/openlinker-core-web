@@ -10,6 +10,13 @@ import { SkillsDialog } from "@/components/creator/skills-dialog";
 import { useApi } from "@/hooks/use-api";
 import { localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
+import {
+  availabilityStatusHint,
+  availabilityStatusLabel,
+  connectionModeLabel as localizedConnectionModeLabel,
+  dryRunResultLabel,
+  runStatusLabel,
+} from "@/lib/i18n-labels";
 
 type JSONMap = Record<string, unknown>;
 
@@ -249,11 +256,8 @@ function statusLabel(agent: OnboardingAgent, locale: Locale): string {
 function unknownAvailability(locale: Locale): AgentAvailability {
   return {
     status: "unknown",
-    label: locale === "zh" ? "未验证" : "Unverified",
-    hint:
-      locale === "zh"
-        ? "Agent 已注册，但还没有成功运行或失败记录。执行健康检查后会刷新可用性。"
-        : "The Agent is registered, but has no success or failure record yet. Run a health check to refresh availability.",
+    label: availabilityStatusLabel("unknown", locale),
+    hint: availabilityStatusHint("unknown", locale),
     consecutive_failures: 0,
   };
 }
@@ -441,6 +445,8 @@ export function AgentOnboardingPanel({
   const [savingVisibility, setSavingVisibility] = useState(false);
   const [requestingCertification, setRequestingCertification] = useState(false);
   const callable = agentState.lifecycle_status === "active" && isAvailabilityCallable(availability);
+  const localizedAvailabilityLabel = availabilityStatusLabel(availability.status, locale, availability.label);
+  const localizedAvailabilityHint = availabilityStatusHint(availability.status, locale, availability.hint);
 
   const completedCount = useMemo(() => {
     const s = onboarding.status;
@@ -641,7 +647,7 @@ export function AgentOnboardingPanel({
             <Step
               title={copy.dryRun}
               done={onboarding.status.dry_run_passed}
-              detail={onboarding.status.dry_run_last_result}
+              detail={dryRunResultLabel(onboarding.status.dry_run_last_result, locale)}
             />
           </div>
         </div>
@@ -843,7 +849,7 @@ export function AgentOnboardingPanel({
             ) : (
               <span
                 className="ol-mini-btn cursor-not-allowed gap-1.5 opacity-60"
-                title={availability.hint}
+                title={localizedAvailabilityHint}
               >
                 <PlayCircle className="size-3.5" aria-hidden="true" />
                 {copy.playgroundUnavailable}
@@ -863,7 +869,7 @@ export function AgentOnboardingPanel({
           </strong>
           <div className="flex flex-wrap items-center gap-2">
             <span className={`ol-chip ${availabilityChipClass(availability.status)}`}>
-              {availability.label}
+              {localizedAvailabilityLabel}
             </span>
             {availability.last_checked_at ? (
               <span className="text-[12px] font-bold text-[color:var(--ol-muted)]">
@@ -882,7 +888,7 @@ export function AgentOnboardingPanel({
           </p>
           {availability.status !== "healthy" ? (
             <div className="rounded-xl border border-[color:var(--ol-amber)]/25 bg-[color:var(--ol-amber-soft)] p-3 text-[12.5px] font-semibold leading-6 text-[#7a4b12]">
-              {availability.hint}
+              {localizedAvailabilityHint}
             </div>
           ) : null}
           <button
@@ -1021,7 +1027,7 @@ function RuntimeWorkbenchPanel({
         <div>
           <div className="ol-kicker">{title}</div>
           <strong className="mt-1 block text-[15px] font-black text-[color:var(--ol-ink)]">
-            {connectionMode}
+            {localizedConnectionModeLabel(connectionMode, locale)}
           </strong>
         </div>
         <span className={`ol-chip ${callable ? "ol-chip-green" : "ol-chip-amber"}`}>
@@ -1065,7 +1071,7 @@ function RuntimeWorkbenchPanel({
               <div key={run.run_id} className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <span className={`ol-chip ${run.status === "success" ? "ol-chip-green" : run.status === "running" ? "ol-chip-mint" : "ol-chip-amber"}`}>
-                    {run.status}
+                    {runStatusLabel(run.status, locale)}
                   </span>
                   <code className="ml-2 text-[11px] text-[color:var(--ol-muted)]">
                     {run.run_id.slice(0, 8)}

@@ -21,6 +21,8 @@ import {
   pageFromParams,
   searchValue,
   shortID,
+  adminDeliveryVisibilityLabel,
+  adminStatusLabel,
   statusChip,
 } from "../_components/shared";
 
@@ -196,9 +198,9 @@ export default async function AdminTasksPage({
                       </td>
                       <td className="border-y border-[color:var(--ol-line)] px-3 py-3">
                         <div className="flex flex-wrap gap-1.5">
-                          <span className={statusChip(task.status)}>{task.status}</span>
-                          <span className={statusChip(task.visibility)}>{task.visibility}</span>
-                          <span className={statusChip(task.delivery_status)}>{task.delivery_status}</span>
+                          <span className={statusChip(task.status)}>{adminStatusLabel(task.status, locale)}</span>
+                          <span className={statusChip(task.visibility)}>{adminStatusLabel(task.visibility, locale)}</span>
+                          <span className={statusChip(task.delivery_status)}>{adminStatusLabel(task.delivery_status, locale)}</span>
                         </div>
                       </td>
                       <td className="border-y border-[color:var(--ol-line)] px-3 py-3 text-[12px] text-[color:var(--ol-muted)]">
@@ -218,7 +220,7 @@ export default async function AdminTasksPage({
                         {task.claimed_by ? <div className="mt-1">{task.claimed_by.email}</div> : null}
                       </td>
                       <td className="border-y border-[color:var(--ol-line)] px-3 py-3 text-[12px] text-[color:var(--ol-muted)]">
-                        <div>{task.delivery_visibility}</div>
+                        <div>{adminDeliveryVisibilityLabel(task.delivery_visibility, locale)}</div>
                         {task.completion_summary ? (
                           <div className="mt-1 max-w-[260px] leading-5">{task.completion_summary}</div>
                         ) : null}

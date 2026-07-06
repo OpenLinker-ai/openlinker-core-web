@@ -7,6 +7,10 @@ import type { AgentResponse } from "@/components/agent/my-agents-card";
 import { useApi } from "@/hooks/use-api";
 import { localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
+import {
+  fallbackEnumLabel,
+  visibilityLabel,
+} from "@/lib/i18n-labels";
 
 type RegistryNode = {
   id: string;
@@ -69,8 +73,8 @@ export function RegistryBridgePanel({
           listingCount: (count: number) => `${count} 个显式 Listing`,
           bridgeKicker: "桥接节点",
           title: "本地 Agent 不会自动公开",
-          body: "先创建 Registry Node，再显式把某个 Agent 链接成 Registry Listing。后续拉取代理任务会复用同一个节点身份和载荷策略。",
-          empty: "暂无 Registry Listing。创建后，Core Registry 才会把该 Agent 视为可桥接资源。",
+          body: "先创建 Registry Node，再显式把某个 Agent 链接成 Registry Listing。之后的任务会沿用这个节点配置。",
+          empty: "暂无 Registry Listing。创建后，市场侧才能把该 Agent 视为可桥接资源。",
           createNodeTitle: "创建 Registry Node",
           nodeNamePlaceholder: "本地桥接节点",
           baseUrlPlaceholder: "可选 base_url，例如 http://127.0.0.1:3000",
@@ -92,8 +96,8 @@ export function RegistryBridgePanel({
           listingCount: (count: number) => `${count} explicit listings`,
           bridgeKicker: "bridge node",
           title: "Local agents are not published automatically",
-          body: "Create a Registry Node first, then explicitly link an agent as a Registry Listing. Later pull proxy runs reuse the same node identity and payload policy.",
-          empty: "No Registry Listings yet. Create one before Core Registry treats this agent as a bridgeable resource.",
+          body: "Create a Registry Node first, then explicitly link an agent as a Registry Listing. Future tasks will reuse this node configuration.",
+          empty: "No Registry Listings yet. Create one before the marketplace can treat this agent as a bridgeable resource.",
           createNodeTitle: "Create Registry Node",
           nodeNamePlaceholder: "Local Bridge Node",
           baseUrlPlaceholder: "Optional base_url, for example http://127.0.0.1:3000",
@@ -209,9 +213,9 @@ export function RegistryBridgePanel({
                     <strong className="text-[13px] font-black text-[color:var(--ol-ink)]">
                       {listing.agent_name}
                     </strong>
-                    <span className="ol-chip ol-chip-blue">{listing.routing_mode}</span>
-                    <span className="ol-chip ol-chip-mint">{listing.payload_policy}</span>
-                    <span className="ol-chip">{listing.sync_status}</span>
+                    <span className="ol-chip ol-chip-blue">{fallbackEnumLabel(listing.routing_mode, locale)}</span>
+                    <span className="ol-chip ol-chip-mint">{fallbackEnumLabel(listing.payload_policy, locale)}</span>
+                    <span className="ol-chip">{fallbackEnumLabel(listing.sync_status, locale)}</span>
                   </div>
                   <div className="mt-2 grid gap-1 text-[12px] font-semibold text-[color:var(--ol-muted)]">
                     <span>Node: {listing.node_name}</span>
@@ -274,7 +278,7 @@ export function RegistryBridgePanel({
               <option value="">{copy.chooseNode}</option>
               {nodes.map((node) => (
                 <option key={node.id} value={node.id}>
-                  {node.node_name} · {node.heartbeat_status}
+                  {node.node_name} · {fallbackEnumLabel(node.heartbeat_status, locale)}
                 </option>
               ))}
             </select>
@@ -286,7 +290,7 @@ export function RegistryBridgePanel({
               <option value="">{copy.chooseAgent}</option>
               {activeAgents.map((agent) => (
                 <option key={agent.id} value={agent.id}>
-                  {agent.name} · {agent.visibility}
+                  {agent.name} · {visibilityLabel(agent.visibility, locale)}
                 </option>
               ))}
             </select>

@@ -6,6 +6,16 @@ import { Icon } from "@/components/ui/icon";
 import { apiFetchAuthed } from "@/lib/api";
 import { auth } from "@/lib/auth";
 import type { Locale } from "@/lib/i18n";
+import {
+  certificationStatusLabel,
+  connectionModeLabel,
+  deliveryStatusLabel,
+  deliveryVisibilityLabel,
+  fallbackEnumLabel,
+  lifecycleStatusLabel,
+  taskStatusLabel,
+  visibilityLabel,
+} from "@/lib/i18n-labels";
 import { getLocale } from "@/lib/i18n-server";
 
 export const ADMIN_PAGE_SIZE = 20;
@@ -53,6 +63,8 @@ export interface AdminUser {
   is_creator: boolean;
   creator_verified: boolean;
   is_admin: boolean;
+  disabled: boolean;
+  disabled_at?: string;
   created_at: string;
   updated_at: string;
   agent_count: number;
@@ -159,6 +171,23 @@ export interface AdminTaskList {
   offset: number;
 }
 
+export interface WithdrawalAdminItem {
+  id: string;
+  creator_id: string;
+  amount_cents: number;
+  status: string;
+  notes?: string;
+  created_at: string;
+  paid_at?: string;
+}
+
+export interface WithdrawalListResponse {
+  items: WithdrawalAdminItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 export type AdminSearchParams = {
   error?: string;
   status?: string;
@@ -172,7 +201,7 @@ export type AdminSearchParams = {
   page?: string;
 };
 
-type AdminTab = "overview" | "tasks" | "users" | "agents";
+type AdminTab = "overview" | "tasks" | "users" | "agents" | "withdrawals";
 
 export function adminCopy(locale: Locale) {
   return locale === "zh"
@@ -182,15 +211,16 @@ export function adminCopy(locale: Locale) {
         tasks: "任务",
         users: "用户",
         agents: "Agent",
-        kicker: "管理员视角 · Core 运营",
-        heading: "Core 运营管理台",
-        lead: "按模块处理 Core 运营任务。概览只加载关键指标，任务、用户和 Agent 在独立页面分页加载。",
+        withdrawals: "提现",
+        kicker: "管理员视角 · 平台运营",
+        heading: "平台运营管理台",
+        lead: "按模块处理运营任务。概览只加载关键指标，任务、用户、Agent 和提现在独立页面分页加载。",
         totalUsers: "用户总数",
         admins: "管理员",
         creators: "创作者",
         verifiedCreators: "认证创作者",
         totalAgents: "Agent 总数",
-        activeAgents: "Active Agent",
+        activeAgents: "活跃 Agent",
         pendingAgents: "待认证 Agent",
         certifiedAgents: "已认证 Agent",
         totalTasks: "任务总数",
@@ -208,18 +238,21 @@ export function adminCopy(locale: Locale) {
         page: "第",
         total: "共",
         items: "条",
+        noData: "暂无数据",
         noUsers: "没有匹配用户",
         noUsersBody: "换一个搜索或身份筛选。",
+        noAgents: "没有匹配 Agent",
+        noAgentsBody: "换一个搜索或状态筛选。",
         noTasks: "没有匹配任务",
         noTasksBody: "换一个搜索、可见性或任务状态筛选。",
+        noWithdrawals: "暂无待处理提现",
+        noWithdrawalsBody: "新的创作者提现申请会出现在这里。",
         addUser: "添加用户",
         addUserLead: "创建可用邮箱密码登录的用户，并按需预设管理员或创作者身份。",
         email: "邮箱",
         displayName: "显示名称",
         initialPassword: "初始密码",
         createUser: "添加用户",
-        noAgents: "没有匹配 Agent",
-        noAgentsBody: "换一个搜索或状态筛选。",
         userCol: "用户",
         roleCol: "身份",
         authCol: "登录方式",
@@ -234,9 +267,14 @@ export function adminCopy(locale: Locale) {
         creatorCol: "创作者",
         stateCol: "状态",
         metricsCol: "指标",
+        withdrawalCol: "提现",
+        amountCol: "金额",
+        notesCol: "备注",
         adminFlag: "管理员",
         creatorFlag: "创作者",
         verifiedFlag: "认证",
+        disabledFlag: "禁用账号",
+        disabledAt: "禁用时间",
         regular: "普通用户",
         passwordAuth: "密码",
         oauthAuth: "OAuth",
@@ -246,24 +284,24 @@ export function adminCopy(locale: Locale) {
         searchUsers: "搜索用户",
         searchAgents: "搜索 Agent",
         searchTasks: "搜索任务 / 用户 / Agent",
-        active: "active",
-        disabled: "disabled",
-        public: "public",
-        unlisted: "unlisted",
-        private: "private",
-        unreviewed: "unreviewed",
-        pending: "pending",
-        certified: "certified",
-        rejected: "rejected",
-        submitted: "submitted",
-        failed: "failed",
+        active: "启用",
+        disabled: "已禁用",
+        public: "公开",
+        unlisted: "链接可见",
+        private: "私有",
+        unreviewed: "未认证",
+        pending: "待处理",
+        certified: "已认证",
+        rejected: "已拒绝",
+        submitted: "已提交",
+        failed: "失败",
         openStatus: "待选择",
-        accepted: "accepted",
-        revision_requested: "revision_requested",
-        completed: "completed",
-        in_progress: "in_progress",
-        matched: "matched",
-        needs_agent: "needs_agent",
+        accepted: "已接受",
+        revision_requested: "请求修改",
+        completed: "已完成",
+        in_progress: "进行中",
+        matched: "已匹配",
+        needs_agent: "需要 Agent",
         draft: "草稿",
         recommended: "推荐",
         chosen: "已选择",
@@ -275,7 +313,9 @@ export function adminCopy(locale: Locale) {
         lastTask: "最近任务",
         lastRun: "最近调用",
         reason: "拒绝原因",
+        notesPlaceholder: "转账单号 / 备注",
         reasonPlaceholder: "拒绝原因",
+        markPaid: "已支付",
       }
     : {
         admin: "Admin",
@@ -283,9 +323,10 @@ export function adminCopy(locale: Locale) {
         tasks: "Tasks",
         users: "Users",
         agents: "Agents",
-        kicker: "Admin view · Core operations",
-        heading: "Core Admin Console",
-        lead: "Operate Core modules separately. Overview loads only key metrics; tasks, users, and agents page data independently.",
+        withdrawals: "Withdrawals",
+        kicker: "Admin view · Platform operations",
+        heading: "Platform Admin Console",
+        lead: "Operate by module. Overview loads only key metrics; tasks, users, agents, and withdrawals page data separately.",
         totalUsers: "Total users",
         admins: "Admins",
         creators: "Creators",
@@ -309,18 +350,21 @@ export function adminCopy(locale: Locale) {
         page: "Page",
         total: "Total",
         items: "items",
+        noData: "No data",
         noUsers: "No matching users",
         noUsersBody: "Try another search or role filter.",
+        noAgents: "No matching agents",
+        noAgentsBody: "Try another search or state filter.",
         noTasks: "No matching tasks",
         noTasksBody: "Try another search, visibility, or task status filter.",
+        noWithdrawals: "No pending withdrawals",
+        noWithdrawalsBody: "New creator withdrawal requests will appear here.",
         addUser: "Add user",
         addUserLead: "Create an email/password user and preset admin or creator roles when needed.",
         email: "Email",
         displayName: "Display name",
         initialPassword: "Initial password",
         createUser: "Add user",
-        noAgents: "No matching agents",
-        noAgentsBody: "Try another search or state filter.",
         userCol: "User",
         roleCol: "Roles",
         authCol: "Sign-in",
@@ -335,9 +379,14 @@ export function adminCopy(locale: Locale) {
         creatorCol: "Creator",
         stateCol: "State",
         metricsCol: "Metrics",
+        withdrawalCol: "Withdrawal",
+        amountCol: "Amount",
+        notesCol: "Notes",
         adminFlag: "Admin",
         creatorFlag: "Creator",
         verifiedFlag: "Verified",
+        disabledFlag: "Disabled",
+        disabledAt: "Disabled at",
         regular: "Regular",
         passwordAuth: "Password",
         oauthAuth: "OAuth",
@@ -376,7 +425,9 @@ export function adminCopy(locale: Locale) {
         lastTask: "Last task",
         lastRun: "Last run",
         reason: "Reason",
+        notesPlaceholder: "Transfer ref / notes",
         reasonPlaceholder: "Reject reason",
+        markPaid: "Paid",
       };
 }
 
@@ -443,6 +494,7 @@ export function AdminShell({
     { key: "tasks", href: "/admin/tasks", label: copy.tasks },
     { key: "users", href: "/admin/users", label: copy.users },
     { key: "agents", href: "/admin/agents", label: copy.agents },
+    { key: "withdrawals", href: "/admin/withdrawals", label: copy.withdrawals },
   ];
   const activeLabel = tabs.find((tab) => tab.key === active)?.label ?? copy.overview;
 
@@ -595,7 +647,17 @@ export function Pagination({
   );
 }
 
-export function Select({ name, value, options }: { name: string; value: string; options: string[] }) {
+export function Select({
+  name,
+  value,
+  options,
+  labels,
+}: {
+  name: string;
+  value: string;
+  options: string[];
+  labels?: Record<string, string>;
+}) {
   return (
     <select
       name={name}
@@ -604,7 +666,7 @@ export function Select({ name, value, options }: { name: string; value: string; 
     >
       {options.map((option) => (
         <option key={option} value={option}>
-          {option}
+          {labels?.[option] ?? option}
         </option>
       ))}
     </select>
@@ -642,6 +704,7 @@ export function statusChip(value: string): string {
     value === "active" ||
     value === "public" ||
     value === "certified" ||
+    value === "paid" ||
     value === "accepted" ||
     value === "completed"
   ) {
@@ -654,6 +717,37 @@ export function statusChip(value: string): string {
     return "ol-chip ol-chip-amber";
   }
   return "ol-chip";
+}
+
+export function adminStatusLabel(value: string, locale: Locale): string {
+  if (value === "active" || value === "disabled") {
+    return lifecycleStatusLabel(value, locale);
+  }
+  if (value === "public" || value === "unlisted" || value === "private") {
+    return visibilityLabel(value, locale);
+  }
+  if (value === "unreviewed" || value === "certified" || value === "rejected") {
+    return certificationStatusLabel(value, locale);
+  }
+  if (value === "open" || value === "matched" || value === "in_progress" || value === "completed" || value === "accepted" || value === "revision_requested" || value === "needs_agent" || value === "draft" || value === "submitted") {
+    return taskStatusLabel(value, locale);
+  }
+  if (value === "pending" || value === "success" || value === "failed" || value === "timeout" || value === "canceled") {
+    return deliveryStatusLabel(value, locale);
+  }
+  return fallbackEnumLabel(value, locale);
+}
+
+export function adminCertificationStatusLabel(value: string, locale: Locale): string {
+  return certificationStatusLabel(value, locale);
+}
+
+export function adminDeliveryVisibilityLabel(value: string, locale: Locale): string {
+  return deliveryVisibilityLabel(value, locale);
+}
+
+export function adminConnectionModeLabel(value: string, locale: Locale): string {
+  return connectionModeLabel(value, locale);
 }
 
 export function formatUsd(cents: number): string {
