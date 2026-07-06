@@ -19,8 +19,15 @@
  */
 
 import Link from "next/link";
-import { PlayCircle, Settings } from "lucide-react";
-import { useState } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  PlayCircle,
+  Search,
+  Settings,
+  X,
+} from "lucide-react";
+import { useDeferredValue, useMemo, useState } from "react";
 
 import { avatarFromSlug } from "@/components/market/avatar";
 import { SkillsDialog } from "@/components/creator/skills-dialog";
@@ -112,7 +119,79 @@ function computeAgentCounts(
   };
 }
 
+type AgentListRow = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  endpointUrl: string;
+  tags: string[];
+  lifecycleStatus: AgentResponse["lifecycle_status"];
+  visibility: AgentResponse["visibility"];
+  certificationStatus: AgentResponse["certification_status"];
+  lifetimeCalls: number;
+  callsThisMonth: number;
+  createdAt: string;
+  availability?: AgentResponse["availability"];
+  readiness?: AgentResponse["readiness"];
+};
+
+type StatusFilter = "all" | "online" | "offline" | "degraded" | "disabled" | "review";
+type VisibilityFilter = "all" | AgentResponse["visibility"];
+type CertificationFilter = "all" | AgentResponse["certification_status"];
+type SortKey = "calls_this_month" | "lifetime_calls" | "name" | "created_at";
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
+const PAGE_SIZE_LABELS = Object.fromEntries(
+  PAGE_SIZE_OPTIONS.map((size) => [String(size), String(size)]),
+) as Record<string, string>;
+
+function normalizeSearch(value: string) {
+  return value.trim().toLocaleLowerCase();
+}
+
+function rowSearchText(row: AgentListRow) {
+  return [
+    row.name,
+    row.slug,
+    row.description,
+    row.endpointUrl,
+    row.visibility,
+    row.certificationStatus,
+    row.availability?.status,
+    row.tags.join(" "),
+  ].join(" ").toLocaleLowerCase();
+}
+
+function createdAtTime(value: string) {
+  const time = Date.parse(value);
+  return Number.isFinite(time) ? time : 0;
+}
+
+function sortRows(rows: AgentListRow[], sortBy: SortKey) {
+  return [...rows].sort((a, b) => {
+    if (sortBy === "name") {
+      return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+    }
+    if (sortBy === "created_at") {
+      return createdAtTime(b.createdAt) - createdAtTime(a.createdAt);
+    }
+    if (sortBy === "lifetime_calls") {
+      return b.lifetimeCalls - a.lifetimeCalls;
+    }
+    return b.callsThisMonth - a.callsThisMonth;
+  });
+}
+
 export function AgentsList({ locale, stats, agents }: Props) {
+  const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>("all");
+  const [certificationFilter, setCertificationFilter] = useState<CertificationFilter>("all");
+  const [sortBy, setSortBy] = useState<SortKey>("calls_this_month");
+  const [pageSize, setPageSize] = useState<number>(25);
+  const [page, setPage] = useState(1);
   const copy =
     locale === "zh"
       ? {
@@ -120,6 +199,48 @@ export function AgentsList({ locale, stats, agents }: Props) {
           noneYet: "还没接入",
           empty: "还没有接入 Agent。",
           publish: "立即接入 →",
+          searchLabel: "搜索 Agent",
+          searchPlaceholder: "搜索名称、slug、标签、端点或状态",
+          filterStatus: "状态",
+          filterVisibility: "可见性",
+          filterCertification: "认证",
+          sortBy: "排序",
+          pageSize: "每页",
+          clear: "清除",
+          noMatch: "没有匹配的 Agent。",
+          noMatchHint: "换个关键词或放宽筛选条件。",
+          filteredSummary: (shown: number, matched: number, total: number) =>
+            `显示 ${shown} / 匹配 ${matched} / 总数 ${total}`,
+          pageLabel: (current: number, total: number) => `第 ${current} / ${total} 页`,
+          previous: "上一页",
+          next: "下一页",
+          statusOptions: {
+            all: "全部状态",
+            online: "在线可调用",
+            offline: "离线/不可用",
+            degraded: "不稳定",
+            disabled: "已下架",
+            review: "认证中",
+          } satisfies Record<StatusFilter, string>,
+          visibilityOptions: {
+            all: "全部可见性",
+            public: "已公开",
+            unlisted: "链接可见",
+            private: "私有",
+          } satisfies Record<VisibilityFilter, string>,
+          certificationOptions: {
+            all: "全部认证",
+            unreviewed: "未认证",
+            pending: "认证中",
+            certified: "已认证",
+            rejected: "认证未通过",
+          } satisfies Record<CertificationFilter, string>,
+          sortOptions: {
+            calls_this_month: "本月调用",
+            lifetime_calls: "累计调用",
+            name: "名称 A-Z",
+            created_at: "最新接入",
+          } satisfies Record<SortKey, string>,
           summary: (counts: AgentCounts) =>
             `总数 ${counts.total} · 在线 ${counts.online} · 公开 ${counts.public} · 链接 ${counts.unlisted} · 私有 ${counts.private}${
               counts.pending > 0 ? ` · 认证中 ${counts.pending}` : ""
@@ -130,6 +251,48 @@ export function AgentsList({ locale, stats, agents }: Props) {
           noneYet: "No Agents yet",
           empty: "No Agents connected yet.",
           publish: "Connect now →",
+          searchLabel: "Search Agents",
+          searchPlaceholder: "Search name, slug, tags, endpoint, or status",
+          filterStatus: "Status",
+          filterVisibility: "Visibility",
+          filterCertification: "Verification",
+          sortBy: "Sort",
+          pageSize: "Per page",
+          clear: "Clear",
+          noMatch: "No matching Agents.",
+          noMatchHint: "Try a different keyword or loosen the filters.",
+          filteredSummary: (shown: number, matched: number, total: number) =>
+            `Showing ${shown} / matched ${matched} / total ${total}`,
+          pageLabel: (current: number, total: number) => `Page ${current} / ${total}`,
+          previous: "Previous page",
+          next: "Next page",
+          statusOptions: {
+            all: "All status",
+            online: "Online callable",
+            offline: "Offline/unavailable",
+            degraded: "Degraded",
+            disabled: "Disabled",
+            review: "In review",
+          } satisfies Record<StatusFilter, string>,
+          visibilityOptions: {
+            all: "All visibility",
+            public: "Public",
+            unlisted: "Unlisted",
+            private: "Private",
+          } satisfies Record<VisibilityFilter, string>,
+          certificationOptions: {
+            all: "All verification",
+            unreviewed: "Unverified",
+            pending: "In review",
+            certified: "Verified",
+            rejected: "Rejected",
+          } satisfies Record<CertificationFilter, string>,
+          sortOptions: {
+            calls_this_month: "Calls this month",
+            lifetime_calls: "Total calls",
+            name: "Name A-Z",
+            created_at: "Newest",
+          } satisfies Record<SortKey, string>,
           summary: (counts: AgentCounts) =>
             `Total ${counts.total} · Online ${counts.online} · Public ${counts.public} · Unlisted ${counts.unlisted} · Private ${counts.private}${
               counts.pending > 0 ? ` · Pending ${counts.pending}` : ""
@@ -137,42 +300,112 @@ export function AgentsList({ locale, stats, agents }: Props) {
         };
   // 用 stats 为主，按 id 拼上 agents 里的 status
   // dashboard.agents 没传 status 时（旧版字段为 string），fallback 到 agents 表
-  const agentById = new Map<string, AgentResponse>();
-  for (const a of agents) {
-    agentById.set(a.id, a);
-  }
+  const agentById = useMemo(() => {
+    const map = new Map<string, AgentResponse>();
+    for (const agent of agents) {
+      map.set(agent.id, agent);
+    }
+    return map;
+  }, [agents]);
 
   // 没有本月数据时，全部从 agents 构造（每行无本月数字，只显示 "—"）
-  const rows = stats && stats.length > 0
-    ? stats.map((s) => {
-        const agent = agentById.get(s.id);
-        return ({
-        id: s.id,
-        slug: s.slug,
-        name: s.name,
-        lifecycleStatus: agent?.lifecycle_status ?? "active",
-        visibility: agent?.visibility ?? "public",
-          certificationStatus: agent?.certification_status ?? "unreviewed",
-          lifetimeCalls: s.lifetime_calls,
-          callsThisMonth: s.calls_this_month,
-          availability: agent?.availability,
-          readiness: agent?.readiness,
-      });
-      })
-    : agents.map((a) => ({
-        id: a.id,
-        slug: a.slug,
-        name: a.name,
-        lifecycleStatus: a.lifecycle_status,
-        visibility: a.visibility,
-          certificationStatus: a.certification_status,
-          lifetimeCalls: a.total_calls,
-          callsThisMonth: 0,
-          availability: a.availability,
-          readiness: a.readiness,
-      }));
+  const rows = useMemo<AgentListRow[]>(
+    () =>
+      stats && stats.length > 0
+        ? stats.map((s) => {
+            const agent = agentById.get(s.id);
+            return {
+              id: s.id,
+              slug: s.slug,
+              name: s.name,
+              description: agent?.description ?? "",
+              endpointUrl: agent?.endpoint_url ?? "",
+              tags: agent?.tags ?? [],
+              lifecycleStatus: agent?.lifecycle_status ?? "active",
+              visibility: agent?.visibility ?? "public",
+              certificationStatus: agent?.certification_status ?? "unreviewed",
+              lifetimeCalls: s.lifetime_calls,
+              callsThisMonth: s.calls_this_month,
+              createdAt: agent?.created_at ?? agent?.approved_at ?? "",
+              availability: agent?.availability,
+              readiness: agent?.readiness,
+            };
+          })
+        : agents.map((a) => ({
+            id: a.id,
+            slug: a.slug,
+            name: a.name,
+            description: a.description,
+            endpointUrl: a.endpoint_url,
+            tags: a.tags,
+            lifecycleStatus: a.lifecycle_status,
+            visibility: a.visibility,
+            certificationStatus: a.certification_status,
+            lifetimeCalls: a.total_calls,
+            callsThisMonth: 0,
+            createdAt: a.created_at ?? a.approved_at ?? "",
+            availability: a.availability,
+            readiness: a.readiness,
+          })),
+    [agentById, agents, stats],
+  );
 
-  const counts = computeAgentCounts(rows);
+  const counts = useMemo(() => computeAgentCounts(rows), [rows]);
+  const searchQuery = normalizeSearch(deferredQuery);
+  const filteredRows = useMemo(() => {
+    const matched = rows.filter((row) => {
+      const active = row.lifecycleStatus === "active";
+      const callable = active && isAgentCallable(row);
+      if (searchQuery && !rowSearchText(row).includes(searchQuery)) {
+        return false;
+      }
+      if (statusFilter === "online" && !callable) {
+        return false;
+      }
+      if (
+        statusFilter === "offline" &&
+        (!active || callable || row.availability?.status === "degraded")
+      ) {
+        return false;
+      }
+      if (statusFilter === "degraded" && row.availability?.status !== "degraded") {
+        return false;
+      }
+      if (statusFilter === "disabled" && row.lifecycleStatus !== "disabled") {
+        return false;
+      }
+      if (statusFilter === "review" && row.certificationStatus !== "pending") {
+        return false;
+      }
+      if (visibilityFilter !== "all" && row.visibility !== visibilityFilter) {
+        return false;
+      }
+      if (certificationFilter !== "all" && row.certificationStatus !== certificationFilter) {
+        return false;
+      }
+      return true;
+    });
+    return sortRows(matched, sortBy);
+  }, [certificationFilter, rows, searchQuery, sortBy, statusFilter, visibilityFilter]);
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * pageSize;
+  const pageRows = filteredRows.slice(pageStart, pageStart + pageSize);
+  const hasActiveFilters =
+    query.trim() !== "" ||
+    statusFilter !== "all" ||
+    visibilityFilter !== "all" ||
+    certificationFilter !== "all";
+  const shownCount = pageRows.length;
+
+  const resetPage = () => setPage(1);
+  const clearFilters = () => {
+    setQuery("");
+    setStatusFilter("all");
+    setVisibilityFilter("all");
+    setCertificationFilter("all");
+    resetPage();
+  };
 
   if (rows.length === 0) {
     return (
@@ -204,12 +437,172 @@ export function AgentsList({ locale, stats, agents }: Props) {
           {copy.summary(counts)}
         </span>
       </div>
+      <div className="border-b border-[color:var(--ol-line)] px-[18px] py-4">
+        <div className="grid gap-3 lg:grid-cols-[minmax(260px,0.9fr)_minmax(520px,1.1fr)] lg:items-end">
+          <label className="block">
+            <span className="sr-only">{copy.searchLabel}</span>
+            <span className="relative block">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[color:var(--ol-subtle)]"
+                aria-hidden="true"
+              />
+              <input
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  resetPage();
+                }}
+                placeholder={copy.searchPlaceholder}
+                className="h-11 w-full rounded-[14px] border border-[color:var(--ol-line)] bg-white pl-9 pr-10 text-[13px] font-bold text-[color:var(--ol-ink)] outline-none transition focus:border-[color:var(--ol-primary)] focus:ring-2 focus:ring-[rgba(15,145,135,0.12)]"
+              />
+              {query ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery("");
+                    resetPage();
+                  }}
+                  className="absolute right-2 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full text-[color:var(--ol-muted)] hover:bg-[color:var(--ol-soft)] hover:text-[color:var(--ol-primary-dark)]"
+                  aria-label={copy.clear}
+                >
+                  <X className="size-4" aria-hidden="true" />
+                </button>
+              ) : null}
+            </span>
+          </label>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+            <FilterSelect
+              label={copy.filterStatus}
+              value={statusFilter}
+              options={copy.statusOptions}
+              onChange={(value) => {
+                setStatusFilter(value as StatusFilter);
+                resetPage();
+              }}
+            />
+            <FilterSelect
+              label={copy.filterVisibility}
+              value={visibilityFilter}
+              options={copy.visibilityOptions}
+              onChange={(value) => {
+                setVisibilityFilter(value as VisibilityFilter);
+                resetPage();
+              }}
+            />
+            <FilterSelect
+              label={copy.filterCertification}
+              value={certificationFilter}
+              options={copy.certificationOptions}
+              onChange={(value) => {
+                setCertificationFilter(value as CertificationFilter);
+                resetPage();
+              }}
+            />
+            <FilterSelect
+              label={copy.sortBy}
+              value={sortBy}
+              options={copy.sortOptions}
+              onChange={(value) => {
+                setSortBy(value as SortKey);
+                resetPage();
+              }}
+            />
+            <FilterSelect
+              label={copy.pageSize}
+              value={String(pageSize)}
+              options={PAGE_SIZE_LABELS}
+              onChange={(value) => {
+                setPageSize(Number(value));
+                resetPage();
+              }}
+            />
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[12.5px] font-bold text-[color:var(--ol-muted)]">
+          <span>{copy.filteredSummary(shownCount, filteredRows.length, rows.length)}</span>
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--ol-line)] bg-white px-3 text-[12px] font-black text-[color:var(--ol-primary-dark)] hover:bg-[color:var(--ol-soft)]"
+            >
+              <X className="size-3.5" aria-hidden="true" />
+              {copy.clear}
+            </button>
+          ) : null}
+        </div>
+      </div>
       <div className="p-[18px]">
-        {rows.map((row) => (
-          <AgentItemRow key={row.id} locale={locale} row={row} />
-        ))}
+        {pageRows.length > 0 ? (
+          pageRows.map((row) => (
+            <AgentItemRow key={row.id} locale={locale} row={row} />
+          ))
+        ) : (
+          <div className="rounded-[14px] border border-dashed border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] px-4 py-8 text-center">
+            <div className="text-[14px] font-black text-[color:var(--ol-ink)]">{copy.noMatch}</div>
+            <div className="mt-1 text-[12.5px] font-bold text-[color:var(--ol-muted)]">{copy.noMatchHint}</div>
+          </div>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--ol-line)] px-[18px] py-4">
+        <span className="text-[12.5px] font-bold text-[color:var(--ol-muted)]">
+          {copy.pageLabel(currentPage, totalPages)}
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPage((value) => Math.max(1, value - 1))}
+            disabled={currentPage <= 1}
+            className="ol-mini-btn gap-1.5 disabled:cursor-not-allowed disabled:opacity-45"
+            aria-label={copy.previous}
+          >
+            <ChevronLeft className="size-3.5" aria-hidden="true" />
+            {locale === "zh" ? "上一页" : "Prev"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+            disabled={currentPage >= totalPages}
+            className="ol-mini-btn gap-1.5 disabled:cursor-not-allowed disabled:opacity-45"
+            aria-label={copy.next}
+          >
+            {locale === "zh" ? "下一页" : "Next"}
+            <ChevronRight className="size-3.5" aria-hidden="true" />
+          </button>
+        </div>
       </div>
     </div>
+  );
+}
+
+function FilterSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: Record<string, string>;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block min-w-0">
+      <span className="mb-1 block text-[11px] font-black uppercase text-[color:var(--ol-subtle)]">
+        {label}
+      </span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-10 w-full rounded-[12px] border border-[color:var(--ol-line)] bg-white px-3 text-[12.5px] font-extrabold text-[color:var(--ol-ink)] outline-none transition focus:border-[color:var(--ol-primary)] focus:ring-2 focus:ring-[rgba(15,145,135,0.12)]"
+      >
+        {Object.entries(options).map(([optionValue, optionLabel]) => (
+          <option key={optionValue} value={optionValue}>
+            {optionLabel}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -218,18 +611,7 @@ function AgentItemRow({
   row,
 }: {
   locale: Locale;
-  row: {
-    id: string;
-    slug: string;
-    name: string;
-    lifecycleStatus: AgentResponse["lifecycle_status"];
-    visibility: AgentResponse["visibility"];
-      certificationStatus: AgentResponse["certification_status"];
-      lifetimeCalls: number;
-      callsThisMonth: number;
-      availability?: AgentResponse["availability"];
-      readiness?: AgentResponse["readiness"];
-  };
+  row: AgentListRow;
 }) {
   const copy =
     locale === "zh"
