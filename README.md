@@ -48,6 +48,27 @@ Excluded:
 - finance administration and hosted marketplace ranking controls
 - cloud-only customer account features
 
+## Open-source Architecture
+
+Core Web is a self-hosted UI over Core-owned APIs. If a hosted deployment adds a
+bridge, it should stay outside this repository and talk to Core through the same
+public boundary.
+
+```mermaid
+flowchart LR
+  Browser["Browser"] --> CoreWeb["openlinker-core-web<br/>Next.js UI + API proxy"]
+  CoreWeb -->|"browser / server component API calls"| Core["openlinker-core<br/>auth / registry / runs / admin"]
+
+  SDKs["openlinker-js / openlinker-go"] -->|"same Core API contract"| Core
+  AgentNode["openlinker-agent-node"] <-->|"runtime_ws / runtime_pull"| Core
+
+  Core -->|"direct_http"| HTTPAgent["Public HTTPS Agent"]
+  Core -->|"mcp_server"| MCPAgent["Remote MCP / JSON-RPC server"]
+  AgentNode -->|"adapter call"| Backend["Agent backend"]
+
+  HostedBridge["Hosted Bridge<br/>optional deployment adapter"] -.->|"authorized Core APIs"| Core
+```
+
 ## Quick Start
 
 Prerequisites:

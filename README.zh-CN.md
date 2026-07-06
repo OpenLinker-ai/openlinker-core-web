@@ -42,6 +42,26 @@ English documentation: [README.md](./README.md)
 - 财务管理和托管市场排序控制
 - Cloud-only 客户账户功能
 
+## 开源架构图
+
+Core Web 是面向 Core-owned API 的自托管 UI。托管部署如果需要 bridge，应在本仓库之外实现，
+并通过同一组公开 Core API 边界接入。
+
+```mermaid
+flowchart LR
+  Browser["Browser"] --> CoreWeb["openlinker-core-web<br/>Next.js UI + API proxy"]
+  CoreWeb -->|"浏览器 / Server Component API 调用"| Core["openlinker-core<br/>auth / registry / runs / admin"]
+
+  SDKs["openlinker-js / openlinker-go"] -->|"同一 Core API contract"| Core
+  AgentNode["openlinker-agent-node"] <-->|"runtime_ws / runtime_pull"| Core
+
+  Core -->|"direct_http"| HTTPAgent["公网 HTTPS Agent"]
+  Core -->|"mcp_server"| MCPAgent["远程 MCP / JSON-RPC server"]
+  AgentNode -->|"adapter call"| Backend["Agent backend"]
+
+  HostedBridge["Hosted Bridge<br/>可选部署适配层"] -.->|"授权后的 Core API"| Core
+```
+
 ## 快速开始
 
 依赖：
