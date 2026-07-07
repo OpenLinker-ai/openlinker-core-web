@@ -15,7 +15,7 @@
  * Core 版不展示商业产品侧的撮合入口。
  */
 
-import { apiFetchAuthed } from "@/lib/api";
+import { apiFetchAuthedWithFallback } from "@/lib/api";
 import { auth } from "@/lib/auth";
 import { getLocale } from "@/lib/i18n-server";
 import { Topbar } from "@/components/layout/topbar";
@@ -71,9 +71,9 @@ export default async function Home() {
 
   let dashboard: DashboardData | null = null;
   if (session) {
-    dashboard = await apiFetchAuthed<DashboardData>("/api/v1/dashboard").catch(
-      () => null,
-    );
+    dashboard = await apiFetchAuthedWithFallback<DashboardData | null>("/api/v1/dashboard", null, {
+      timeoutMs: 2500,
+    });
   }
 
   const userName = session?.user?.name ?? session?.user?.email ?? null;

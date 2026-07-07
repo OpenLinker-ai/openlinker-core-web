@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { Topbar } from "@/components/layout/topbar";
 import { MyWorkspaceSwitcher } from "@/components/my/workspace-switcher";
 import { RunHistory, type Run } from "@/components/runs/run-history";
-import { apiFetchAuthed } from "@/lib/api";
+import { apiFetchAuthed, apiFetchAuthedWithFallback } from "@/lib/api";
 import { auth } from "@/lib/auth";
 import { getLocale } from "@/lib/i18n-server";
 
@@ -90,7 +90,9 @@ export default async function RunsPage({
         };
 
   const [dashboard, runs] = await Promise.all([
-    apiFetchAuthed<DashboardData>("/api/v1/dashboard").catch(() => null),
+    apiFetchAuthedWithFallback<DashboardData | null>("/api/v1/dashboard", null, {
+      timeoutMs: 2500,
+    }),
     apiFetchAuthed<RunListResp>(`/api/v1/runs?page=${page}&size=${size}`).catch(
       () => ({ items: [], total: 0, page, size }) satisfies RunListResp,
     ),

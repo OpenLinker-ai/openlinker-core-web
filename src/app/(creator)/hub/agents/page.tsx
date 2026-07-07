@@ -8,7 +8,7 @@ import {
   type AgentListPage,
 } from "@/components/creator/agents-list";
 import { CreatorHubFrame } from "@/components/creator/creator-hub-frame";
-import { apiFetchAuthed } from "@/lib/api";
+import { apiFetchAuthed, apiFetchAuthedWithFallback } from "@/lib/api";
 import { auth } from "@/lib/auth";
 import type { Locale } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n-server";
@@ -119,7 +119,9 @@ export default async function CreatorHubAgentsPage({
     apiFetchAuthed<AgentsPayload>(agentListPath(controls))
       .then((payload) => normalizeAgentPage(payload, controls))
       .catch(() => normalizeAgentPage({ items: [], total: 0, limit: controls.pageSize, offset: 0, counts: DEFAULT_COUNTS }, controls)),
-    apiFetchAuthed<CreatorDashboard>("/api/v1/dashboard").catch(() => null),
+    apiFetchAuthedWithFallback<CreatorDashboard | null>("/api/v1/dashboard", null, {
+      timeoutMs: 2500,
+    }),
   ]);
 
   const creatorSummary = dashboard?.creator;

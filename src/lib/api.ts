@@ -177,3 +177,24 @@ export async function apiFetchAuthed<T = unknown>(
   const session = await auth();
   return apiFetch<T>(path, { ...opts, token: session?.jwt });
 }
+
+export async function apiFetchAuthedWithFallback<T = unknown>(
+  path: string,
+  fallback: T,
+  opts: Omit<FetchOptions, "token" | "signal"> & { timeoutMs?: number } = {},
+): Promise<T> {
+  const { timeoutMs = 3000, ...fetchOpts } = opts;
+  if (timeoutMs <= 0) {
+    return apiFetchAuthed<T>(path, fetchOpts).catch(() => fallback);
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await apiFetchAuthed<T>(path, { ...fetchOpts, signal: controller.signal });
+  } catch {
+    return fallback;
+  } finally {
+    clearTimeout(timeout);
+  }
+}

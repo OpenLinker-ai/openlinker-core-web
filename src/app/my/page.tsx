@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { Topbar } from "@/components/layout/topbar";
 import { MyWorkspaceSwitcher } from "@/components/my/workspace-switcher";
-import { apiFetchAuthed } from "@/lib/api";
+import { apiFetchAuthedWithFallback } from "@/lib/api";
 import { auth } from "@/lib/auth";
 import { getLocale } from "@/lib/i18n-server";
 
@@ -58,9 +58,13 @@ export default async function MyPage() {
   const locale = await getLocale();
 
   const [dashboard, agentsPayload] = await Promise.all([
-    apiFetchAuthed<DashboardData>("/api/v1/dashboard").catch(() => ZERO_DASHBOARD),
-    apiFetchAuthed<CreatorAgentsResponse>("/api/v1/creator/agents").catch(
-      () => ({ items: [] }) satisfies CreatorAgentsPayload,
+    apiFetchAuthedWithFallback<DashboardData>("/api/v1/dashboard", ZERO_DASHBOARD, {
+      timeoutMs: 2500,
+    }),
+    apiFetchAuthedWithFallback<CreatorAgentsResponse>(
+      "/api/v1/creator/agents?limit=100&offset=0",
+      { items: [] } satisfies CreatorAgentsPayload,
+      { timeoutMs: 3500 },
     ),
   ]);
 
