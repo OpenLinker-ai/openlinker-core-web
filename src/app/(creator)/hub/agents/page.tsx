@@ -51,7 +51,7 @@ function parseControls(params: SearchParams): AgentListControls {
     status: parseChoice(params.status, ["all", "online", "offline", "degraded", "disabled", "review"], "all"),
     visibility: parseChoice(params.visibility, ["all", "public", "unlisted", "private"], "all"),
     certification: parseChoice(params.certification_status, ["all", "unreviewed", "pending", "certified", "rejected"], "all"),
-    sortBy: parseChoice(params.sort_by, ["calls_this_month", "lifetime_calls", "name", "created_at"], "calls_this_month"),
+    sortBy: parseChoice(params.sort_by, ["calls_this_month", "lifetime_calls", "name", "created_at"], "created_at"),
     pageSize,
     page,
   };
@@ -75,7 +75,7 @@ function agentListPath(controls: AgentListControls) {
   if (controls.status !== "all") params.set("status", controls.status);
   if (controls.visibility !== "all") params.set("visibility", controls.visibility);
   if (controls.certification !== "all") params.set("certification_status", controls.certification);
-  if (controls.sortBy !== "calls_this_month") params.set("sort_by", controls.sortBy);
+  if (controls.sortBy !== "created_at") params.set("sort_by", controls.sortBy);
   return `/api/v1/creator/agents?${params.toString()}`;
 }
 

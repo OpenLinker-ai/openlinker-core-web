@@ -266,7 +266,7 @@ export function AgentsList({ locale, agentPage, controls }: Props) {
     setDefaultedParam(params, "status", nextStatus, "all");
     setDefaultedParam(params, "visibility", nextVisibility, "all");
     setDefaultedParam(params, "certification_status", nextCertification, "all");
-    setDefaultedParam(params, "sort_by", nextSortBy, "calls_this_month");
+    setDefaultedParam(params, "sort_by", nextSortBy, "created_at");
     setDefaultedParam(params, "limit", String(nextPageSize), "25");
     setDefaultedParam(params, "page", String(nextPage), "1");
 
