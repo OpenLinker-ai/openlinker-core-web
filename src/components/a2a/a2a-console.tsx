@@ -36,6 +36,7 @@ type ChildRun = {
   source: string;
   billing_mode: string;
   a2a_context?: A2AContextRef;
+  children?: ChildRun[];
 };
 
 export type ChildrenPayload = {
@@ -54,8 +55,19 @@ type GraphNode = {
   label: string;
   subtitle: string;
   status: string;
-  kind: "parent" | "child";
+  kind: "root" | "child";
   defaultPosition: GraphPosition;
+};
+
+type GraphEdge = {
+  from: string;
+  to: string;
+};
+
+type ChildRunEntry = {
+  child: ChildRun;
+  depth: number;
+  path: string;
 };
 
 export function A2AConsole({
@@ -74,56 +86,56 @@ export function A2AConsole({
   const copy =
     locale === "zh"
       ? {
-          title: "Agent 调用链详情",
-          parentDetail: "父运行详情",
-          selectedParent: "已选父运行",
+          title: "Agent 调用树详情",
+          parentDetail: "根运行详情",
+          selectedParent: "已选协作会话",
           source: "入口",
           boundTokens: "绑定凭证",
-          parentNoSkills: "父 Agent 尚未声明 Skill",
-          parentExplainer: "parent_run_id 来自 Agent 被平台调用时收到的请求体。A2A 控制台只负责展示和追踪，不再让人手动输入 parent_run_id 来拼调用链。",
-          selectParent: "从上方父调用链选择一条记录，查看真实 Agent-to-Agent 闭环。",
-          placeholderSlug: "选择父运行后绑定真实 run_id",
-          childCalls: "子调用",
+          parentNoSkills: "入口 Agent 尚未声明 Skill",
+          parentExplainer: "该视图按 root_context_id / 根运行聚合。同一次任务里的 fan-out、串行委派和中间 Agent 再委派都会收在这棵调用树下。",
+          selectParent: "从上方协作会话选择一条记录，查看真实 Agent-to-Agent 调用树。",
+          placeholderSlug: "选择协作会话后绑定真实 run_id",
+          childCalls: "总调用",
           successRunning: "成功 / 运行中",
           costField: "委派费用",
           freeNow: "当前免费",
-          noDelegations: "该运行还没有 Agent 委派记录；当父 Agent 调用子 Agent 后会自动出现。",
+          noDelegations: "该会话还没有 Agent 委派记录；当入口 Agent 调用子 Agent 后会自动出现。",
           missingReason: "未提供调用原因",
           callMethod: "调用方式",
           context: "协议上下文",
           targetNoSkills: "目标 Agent 尚未声明 Skill",
           freeDelegation: "免费委派",
-          viewChildRun: "查看子运行",
+          viewChildRun: "查看运行",
           relationships: "运行关系",
-          chooseFirst: "先从父调用链目录选择一条记录。",
+          chooseFirst: "先从协作会话目录选择一条记录。",
           related: "关联页面",
           creatorHub: ["Agent 管理", "查看自注册 Agent、能力声明和调用记录。"],
           skills: ["Skill 注册表", "查看能力标签、声明 Skill 和推荐依据。"],
           connect: ["开发者中心", "查看 API/MCP、鉴权边界和外部工具调用说明。"],
         }
       : {
-          title: "Agent Call Chain Details",
-          parentDetail: "Parent run detail",
-          selectedParent: "selected parent",
+          title: "Agent Call Tree Details",
+          parentDetail: "Root run detail",
+          selectedParent: "selected session",
           source: "Source",
           boundTokens: "Bound credentials",
-          parentNoSkills: "Parent has not declared Skills",
-          parentExplainer: "The parent run_id comes from the request body an Agent receives when OpenLinker invokes it. The A2A console only displays and traces the chain, so there is no manual parent_run_id entry.",
-          selectParent: "Select a Parent call chain above to inspect a real Agent-to-Agent loop.",
-          placeholderSlug: "Select a Parent to bind a real run_id",
-          childCalls: "Child calls",
+          parentNoSkills: "Entry Agent has not declared Skills",
+          parentExplainer: "This view is grouped by root_context_id / root run. Fan-out, serial delegation, and downstream delegation stay inside one call tree.",
+          selectParent: "Select a collaboration session above to inspect a real Agent-to-Agent call tree.",
+          placeholderSlug: "Select a session to bind a real run_id",
+          childCalls: "Total calls",
           successRunning: "Success / Running",
           costField: "Delegation cost",
           freeNow: "Free now",
-          noDelegations: "This run has no Agent delegation records yet. They will appear after the Parent Agent invokes a Child Agent.",
+          noDelegations: "This session has no Agent delegation records yet. They will appear after the Entry Agent invokes a Child Agent.",
           missingReason: "No reason provided",
           callMethod: "Invocation method",
           context: "Protocol context",
           targetNoSkills: "Target Agent has not declared Skills",
           freeDelegation: "Free delegation",
-          viewChildRun: "View child run",
+          viewChildRun: "View run",
           relationships: "Run relationships",
-          chooseFirst: "Select a call chain from the Parent directory first.",
+          chooseFirst: "Select a session from the collaboration directory first.",
           related: "Related pages",
           creatorHub: ["Agent Console", "View self-registered Agents, Skill claims, and run history."],
           skills: ["Skill Registry", "Review capability tags, Skill claims, and matching signals."],
@@ -131,12 +143,14 @@ export function A2AConsole({
         };
   const selectedRunId = initialData?.parent_run_id ?? initialRunId;
   const children = initialData?.items ?? [];
-  const successfulCount = children.filter((item) => item.status === "success").length;
-  const runningCount = children.filter((item) => item.status === "running").length;
-  const totalCost = children.reduce((sum, item) => sum + item.cost_cents, 0);
+  const childEntries = flattenChildRuns(children);
+  const allChildren = childEntries.map((entry) => entry.child);
+  const successfulCount = allChildren.filter((item) => item.status === "success").length;
+  const runningCount = allChildren.filter((item) => item.status === "running").length;
+  const totalCost = allChildren.reduce((sum, item) => sum + item.cost_cents, 0);
   const firstChild = children[0];
   const callerName =
-    activeParent?.caller_agent_name ?? firstChild?.caller_agent_name ?? "Parent Agent";
+    activeParent?.caller_agent_name ?? firstChild?.caller_agent_name ?? "Entry Agent";
   const callerSlug = activeParent?.caller_agent_slug ?? firstChild?.caller_agent_slug ?? "";
   const callerSkills = activeParent?.caller_skills ?? firstChild?.caller_skills ?? [];
   const callerTags = activeParent?.caller_agent_tags ?? firstChild?.caller_agent_tags ?? [];
@@ -199,14 +213,16 @@ export function A2AConsole({
             selectedRunId={selectedRunId}
             callerName={callerName}
             callerSlug={callerSlug}
+            rootStatus={activeParent?.status ?? "parent"}
             childRuns={children}
             locale={locale}
           />
         ) : null}
         {!selectedRunId && !initialError ? (
           <A2ACallGraph
-            callerName="Parent Agent"
+            callerName="Entry Agent"
             callerSlug={copy.placeholderSlug}
+            rootStatus="waiting"
             childRuns={[]}
             locale={locale}
             placeholder
@@ -215,7 +231,7 @@ export function A2AConsole({
 
         {selectedRunId && !initialError ? (
           <div className="grid gap-3 border-b border-[color:var(--ol-line)] bg-white/70 p-5 sm:grid-cols-3">
-            <Metric label={copy.childCalls} value={`${children.length}`} />
+            <Metric label={copy.childCalls} value={`${allChildren.length}`} />
             <Metric label={copy.successRunning} value={`${successfulCount} / ${runningCount}`} />
             <Metric label={copy.costField} value={totalCost === 0 ? copy.freeNow : `$${(totalCost / 100).toFixed(2)}`} />
           </div>
@@ -232,12 +248,13 @@ export function A2AConsole({
           ) : null}
           {!initialError && children.length > 0 ? (
             <div className="grid gap-3">
-              {children.map((child, index) => {
+              {childEntries.map(({ child, depth, path }) => {
                 const chip = statusChip(child.status, locale);
                 return (
                   <article
                     key={child.child_run_id}
                     className="rounded-[8px] border border-[color:var(--ol-line)] bg-white p-4"
+                    style={{ marginLeft: depth > 1 ? Math.min((depth - 1) * 18, 54) : 0 }}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="flex min-w-0 gap-3">
@@ -246,7 +263,7 @@ export function A2AConsole({
                         </div>
                         <div className="min-w-0">
                           <p className="text-[11px] font-black uppercase text-[color:var(--ol-subtle)]">
-                            call {index + 1}
+                            call {path}
                           </p>
                           <h2 className="truncate text-[14px] font-black text-[color:var(--ol-ink)]">
                             {child.target_agent_name}
@@ -268,13 +285,13 @@ export function A2AConsole({
                       <p className="mt-1 text-[12.5px] font-bold leading-5 text-[color:var(--ol-muted)]">
                         {locale === "zh" ? (
                           <>
-                            父 Agent 使用自己的 Agent 接入凭证（<code>ol_agent_*</code>）调用{" "}
+                            入口 Agent 使用自己的 Agent 接入凭证（<code>ol_agent_*</code>）调用{" "}
                             <code>/api/v1/agent-runtime/call-agent</code>，平台创建子运行并写入
                             <code> run_delegations</code> 和 <code>run_events</code>。
                           </>
                         ) : (
                           <>
-                            The Parent Agent calls <code>/api/v1/agent-runtime/call-agent</code> with
+                            The Entry Agent calls <code>/api/v1/agent-runtime/call-agent</code> with
                             its own Agent access credential (<code>ol_agent_*</code>); OpenLinker creates the child
                             run and writes <code> run_delegations</code> plus <code>run_events</code>.
                           </>
@@ -325,9 +342,9 @@ export function A2AConsole({
           <div className="mt-4 grid gap-2">
             {selectedRunId ? (
               <>
-                <RunLink label={`Parent · ${callerName}`} id={selectedRunId} />
-                {children.map((child) => (
-                  <RunLink key={child.child_run_id} label={child.target_agent_name} id={child.child_run_id} />
+                <RunLink label={`Root · ${callerName}`} id={selectedRunId} />
+                {childEntries.map(({ child, path }) => (
+                  <RunLink key={child.child_run_id} label={`${path} · ${child.target_agent_name}`} id={child.child_run_id} />
                 ))}
               </>
             ) : (
@@ -350,11 +367,22 @@ export function A2AConsole({
   );
 }
 
+function flattenChildRuns(items: ChildRun[], depth = 1, prefix = ""): ChildRunEntry[] {
+  const entries: ChildRunEntry[] = [];
+  items.forEach((child, index) => {
+    const path = prefix ? `${prefix}.${index + 1}` : `${index + 1}`;
+    entries.push({ child, depth, path });
+    entries.push(...flattenChildRuns(child.children ?? [], depth + 1, path));
+  });
+  return entries;
+}
+
 function A2ACallGraph({
   locale,
   selectedRunId,
   callerName,
   callerSlug,
+  rootStatus,
   childRuns,
   placeholder = false,
 }: {
@@ -362,6 +390,7 @@ function A2ACallGraph({
   selectedRunId?: string;
   callerName: string;
   callerSlug: string;
+  rootStatus: string;
   childRuns: ChildRun[];
   placeholder?: boolean;
 }) {
@@ -370,67 +399,91 @@ function A2ACallGraph({
       ? {
           childAgent: "子 Agent",
           autoChild: "真实委派后自动生成子运行",
-          title: "可拖拽调用关系图",
-          body: "关系图用于看清父运行到子运行的真实链路；拖拽只改变本页排布，不影响后端调用。",
+          title: "可拖拽调用树",
+          body: "关系图按真实委派层级展示 fan-out 与串行调用；拖拽只改变本页排布，不影响后端调用。",
           dragHint: "拖动节点整理视图",
           emptyNode: "子 Agent 调用发生后会自动出现节点。",
         }
       : {
           childAgent: "Child Agent",
           autoChild: "A child run is created after real delegation",
-          title: "Draggable call graph",
-          body: "Use the graph to inspect the real parent-to-child run chain. Dragging only changes this view and does not affect backend calls.",
+          title: "Draggable call tree",
+          body: "The graph follows real delegation depth, showing fan-out and serial calls in one tree. Dragging only changes this view and does not affect backend calls.",
           dragHint: "Drag nodes to organize the view",
           emptyNode: "Child Agent nodes appear after delegation.",
         };
-  const nodes = useMemo<GraphNode[]>(() => {
+  const graph = useMemo<{ nodes: GraphNode[]; edges: GraphEdge[]; width: number; height: number }>(() => {
     const parentID = selectedRunId ?? "placeholder-parent";
     const parent: GraphNode = {
       id: `parent-${parentID}`,
       runId: selectedRunId,
       label: callerName,
-      subtitle: callerSlug || "Parent run",
-      status: "parent",
-      kind: "parent",
+      subtitle: callerSlug || "Root run",
+      status: rootStatus,
+      kind: "root",
       defaultPosition: { x: 32, y: 112 },
     };
+    const nodes: GraphNode[] = [parent];
+    const edges: GraphEdge[] = [];
+    let row = 0;
+    let maxDepth = 0;
 
-    const childNodes =
-      placeholder && childRuns.length === 0
-        ? [
-            {
-              id: "placeholder-child",
-              label: copy.childAgent,
-              subtitle: copy.autoChild,
-              status: "waiting",
-              kind: "child" as const,
-              defaultPosition: { x: 380, y: 96 },
-            },
-          ]
-        : childRuns.map((child, index) => ({
-            id: `child-${child.child_run_id}`,
-            runId: child.child_run_id,
-            label: child.target_agent_name,
-            subtitle: child.target_agent_slug,
-            status: child.status,
-            kind: "child" as const,
-            defaultPosition: {
-              x: 380,
-              y: 42 + index * 118,
-            },
-          }));
+    const addChildNodes = (items: ChildRun[], parentNodeId: string, depth: number) => {
+      maxDepth = Math.max(maxDepth, depth);
+      for (const child of items) {
+        const node: GraphNode = {
+          id: `child-${child.child_run_id}`,
+          runId: child.child_run_id,
+          label: child.target_agent_name,
+          subtitle: child.target_agent_slug,
+          status: child.status,
+          kind: "child" as const,
+          defaultPosition: {
+            x: 320 + (depth - 1) * 260,
+            y: 42 + row * 118,
+          },
+        };
+        row += 1;
+        nodes.push(node);
+        edges.push({ from: parentNodeId, to: node.id });
+        addChildNodes(child.children ?? [], node.id, depth + 1);
+      }
+    };
 
-    return [parent, ...childNodes];
-  }, [callerName, callerSlug, childRuns, copy.autoChild, copy.childAgent, placeholder, selectedRunId]);
+    if (placeholder && childRuns.length === 0) {
+      nodes.push({
+        id: "placeholder-child",
+        label: copy.childAgent,
+        subtitle: copy.autoChild,
+        status: "waiting",
+        kind: "child" as const,
+        defaultPosition: { x: 320, y: 96 },
+      });
+      edges.push({ from: parent.id, to: "placeholder-child" });
+      row = 1;
+      maxDepth = 1;
+    } else {
+      addChildNodes(childRuns, parent.id, 1);
+    }
 
+    return {
+      nodes,
+      edges,
+      width: Math.max(680, 320 + Math.max(1, maxDepth) * 260),
+      height: Math.max(300, 120 + Math.max(1, row) * 118),
+    };
+  }, [callerName, callerSlug, childRuns, copy.autoChild, copy.childAgent, placeholder, rootStatus, selectedRunId]);
+  const nodeById = useMemo(
+    () => new Map(graph.nodes.map((node) => [node.id, node])),
+    [graph.nodes],
+  );
   const [positions, setPositions] = useState<Record<string, GraphPosition>>({});
   const [dragging, setDragging] = useState<{
     id: string;
     offsetX: number;
     offsetY: number;
   } | null>(null);
-  const canvasHeight = Math.max(300, 120 + Math.max(1, childRuns.length) * 118);
-  const parentNode = nodes[0];
+  const parentNode = graph.nodes[0];
   const parentPosition =
     positions[parentNode.id] ?? parentNode.defaultPosition;
 
@@ -441,8 +494,8 @@ function A2ACallGraph({
       setPositions((state) => ({
         ...state,
         [dragging.id]: {
-          x: Math.max(16, Math.min(500, event.clientX - dragging.offsetX)),
-          y: Math.max(16, Math.min(canvasHeight - 92, event.clientY - dragging.offsetY)),
+          x: Math.max(16, Math.min(graph.width - 236, event.clientX - dragging.offsetX)),
+          y: Math.max(16, Math.min(graph.height - 92, event.clientY - dragging.offsetY)),
         },
       }));
     };
@@ -454,7 +507,7 @@ function A2ACallGraph({
       window.removeEventListener("pointermove", handleMove);
       window.removeEventListener("pointerup", handleUp);
     };
-  }, [canvasHeight, dragging]);
+  }, [dragging, graph.height, graph.width]);
 
   return (
     <div className="border-b border-[color:var(--ol-line)] bg-[color:var(--ol-soft)]/60 p-5">
@@ -473,7 +526,7 @@ function A2ACallGraph({
       <div className="mt-4 overflow-x-auto">
         <div
           className="relative min-w-[680px] overflow-hidden rounded-[18px] border border-dashed border-[color:var(--ol-line)] bg-white"
-          style={{ height: canvasHeight }}
+          style={{ height: graph.height, width: graph.width }}
         >
           <svg className="pointer-events-none absolute inset-0 h-full w-full">
             <defs>
@@ -500,15 +553,19 @@ function A2ACallGraph({
                 markerEnd="url(#a2a-arrow)"
               />
             ) : (
-              nodes.slice(1).map((node) => {
-                const pos = positions[node.id] ?? node.defaultPosition;
+              graph.edges.map((edge) => {
+                const fromNode = nodeById.get(edge.from);
+                const toNode = nodeById.get(edge.to);
+                if (!fromNode || !toNode) return null;
+                const fromPos = positions[fromNode.id] ?? fromNode.defaultPosition;
+                const toPos = positions[toNode.id] ?? toNode.defaultPosition;
                 return (
                   <line
-                    key={node.id}
-                    x1={parentPosition.x + 220}
-                    y1={parentPosition.y + 42}
-                    x2={pos.x}
-                    y2={pos.y + 42}
+                    key={`${edge.from}-${edge.to}`}
+                    x1={fromPos.x + 220}
+                    y1={fromPos.y + 42}
+                    x2={toPos.x}
+                    y2={toPos.y + 42}
                     stroke="rgba(15,145,135,0.45)"
                     strokeWidth="2"
                     markerEnd="url(#a2a-arrow)"
@@ -518,7 +575,7 @@ function A2ACallGraph({
             )}
           </svg>
 
-          {nodes.map((node) => {
+          {graph.nodes.map((node) => {
             const pos = positions[node.id] ?? node.defaultPosition;
             return (
               <GraphNodeCard
@@ -562,9 +619,9 @@ function GraphNodeCard({
 }) {
   const copy =
     locale === "zh"
-      ? { title: "拖动节点整理关系图", viewRun: "查看运行", waiting: "等待运行" }
-      : { title: "Drag node to organize the graph", viewRun: "View run", waiting: "Waiting for run" };
-  const chip = node.kind === "parent" ? { tone: "ol-chip ol-chip-mint", label: "Parent" } : statusChip(node.status, locale);
+      ? { title: "拖动节点整理调用树", viewRun: "查看运行", waiting: "等待运行", root: "根" }
+      : { title: "Drag node to organize the call tree", viewRun: "View run", waiting: "Waiting for run", root: "Root" };
+  const chip = node.kind === "root" ? { tone: "ol-chip ol-chip-mint", label: copy.root } : statusChip(node.status, locale);
 
   return (
     <div
@@ -576,7 +633,7 @@ function GraphNodeCard({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[10.5px] font-black uppercase tracking-[0.05em] text-[color:var(--ol-subtle)]">
-            {node.kind === "parent" ? "caller" : "target"}
+            {node.kind === "root" ? "entry" : "target"}
           </p>
           <h3 className="mt-1 truncate text-[13.5px] font-black text-[color:var(--ol-ink)]">
             {node.label}
@@ -620,7 +677,7 @@ function A2AFlowCard({ locale }: { locale: Locale }) {
             },
             {
               title: "A2A 调用",
-              desc: "父 Agent 从本次请求拿到 run_id，再用自身绑定用途调用 call-agent，平台自动创建子运行和调用链事件。",
+              desc: "入口 Agent 从本次请求拿到 run_id，再用自身绑定用途调用 call-agent，平台自动创建子运行和调用树事件。",
             },
           ],
         }
@@ -637,7 +694,7 @@ function A2AFlowCard({ locale }: { locale: Locale }) {
             },
             {
               title: "A2A invocation",
-              desc: "The Parent Agent receives run_id in the current request, calls call-agent with its bound credential, and OpenLinker creates the child run plus call-chain events.",
+              desc: "The Entry Agent receives run_id in the current request, calls call-agent with its bound credential, and OpenLinker creates the child run plus call-tree events.",
             },
           ],
         };

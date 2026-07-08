@@ -19,11 +19,12 @@ export const metadata = {
 export default async function A2APage({
   searchParams,
 }: {
-  searchParams: Promise<{ run_id?: string; parent_page?: string }>;
+  searchParams: Promise<{ run_id?: string; parent_page?: string; q?: string }>;
 }) {
-  const { run_id: runId, parent_page: parentPageParam } = await searchParams;
+  const { run_id: runId, parent_page: parentPageParam, q: rawQuery } = await searchParams;
   const session = await auth();
   const locale = await getLocale();
+  const query = rawQuery?.trim() ?? "";
   const copy =
     locale === "zh"
       ? {
@@ -31,25 +32,30 @@ export default async function A2APage({
           current: "A2A 协作",
           kicker: "Agent 到 Agent",
           h1: "A2A 调用闭环",
-          lead: "从 Parent 目录进入真实调用链，查看 Agent 自注册、Skill 能力、MCP 入口与 Agent 绑定调用如何串成闭环。",
-          readError: "无法读取该调用链",
+          lead: "从协作会话进入真实调用树，查看 Agent 自注册、Skill 能力、MCP 入口与 Agent 绑定调用如何串成闭环。",
+          readError: "无法读取该调用树",
         }
       : {
           home: "Home",
           current: "A2A Collaboration",
           kicker: "Agent to Agent",
           h1: "A2A Invocation Loop",
-          lead: "Open a real call chain from the Parent directory and inspect how Agent self-registration, Skills, MCP entry points, and bound Agent calls connect.",
-          readError: "Unable to read this call chain",
+          lead: "Open a real call tree from the collaboration sessions and inspect how Agent self-registration, Skills, MCP entry points, and bound Agent calls connect.",
+          readError: "Unable to read this call tree",
         };
   if (!session) {
-    return <A2APublicIntro callbackUrl={a2aCallbackUrl(runId, parentPageParam)} locale={locale} />;
+    return <A2APublicIntro callbackUrl={a2aCallbackUrl(runId, parentPageParam, query)} locale={locale} />;
   }
 
   const parentPage = Math.max(1, Number(parentPageParam ?? "1") || 1);
   const parentPageSize = 10;
+  const parentQuery = new URLSearchParams({
+    page: String(parentPage),
+    size: String(parentPageSize),
+  });
+  if (query) parentQuery.set("q", query);
   const parentResult = await apiFetchAuthed<ParentRunListPayload>(
-    `/api/v1/a2a/parents?page=${parentPage}&size=${parentPageSize}`,
+    `/api/v1/a2a/parents?${parentQuery.toString()}`,
   )
     .then((data) => ({
       data: normalizeParentRunList(data, parentPage, parentPageSize),
@@ -99,6 +105,7 @@ export default async function A2APage({
             data={parentResult.data}
             activeRunId={runId}
             failed={parentResult.failed}
+            query={query}
           />
           <div className="mt-5">
             <A2AConformancePanel
@@ -120,12 +127,13 @@ export default async function A2APage({
   );
 }
 
-function a2aCallbackUrl(runId?: string, parentPage?: string): string {
+function a2aCallbackUrl(runId?: string, parentPage?: string, query?: string): string {
   const params = new URLSearchParams();
   if (runId) params.set("run_id", runId);
   if (parentPage) params.set("parent_page", parentPage);
-  const query = params.toString();
-  return query ? `/a2a?${query}` : "/a2a";
+  if (query) params.set("q", query);
+  const encoded = params.toString();
+  return encoded ? `/a2a?${encoded}` : "/a2a";
 }
 
 function normalizeParentRunList(
@@ -149,58 +157,58 @@ function A2APublicIntro({ callbackUrl, locale }: { callbackUrl: string; locale: 
           current: "A2A 协作",
           kicker: "Agent 到 Agent",
           h1: "A2A 调用闭环",
-          lead: "查看父 Agent 如何委派子 Agent、运行记录如何串联，以及 Skill、MCP 和运行事件如何形成一条可追踪的协作链。",
-          login: "登录后查看调用链",
+          lead: "查看入口 Agent 如何委派多个子 Agent、运行记录如何按 root_context_id 聚合，以及 Skill、MCP 和运行事件如何形成一棵可追踪的调用树。",
+          login: "登录后查看调用树",
           publicTitle: "A2A 公开说明",
           privateChip: "登录后读取个人运行记录",
-          step1: "父 Agent 发起委派",
+          step1: "入口 Agent 发起委派",
           step1Desc: "Agent 在一次运行中拿到 parent_run_id，并用绑定令牌请求平台调用目标 Agent。",
           step2: "平台创建子运行",
           step2Desc: "OpenLinker 记录子运行、调用方、目标、原因、计费模式与运行事件。",
-          step3: "调用链可追踪",
-          step3Desc: "登录后可以按父运行查看子调用、状态、Skill 标签和关联运行详情。",
+          step3: "调用树可追踪",
+          step3Desc: "登录后可以按协作会话查看 fan-out、串行调用、状态、Skill 标签和关联运行详情。",
           visible: "登录后可见内容",
           caps: [
-            "我的父调用链目录",
-            "父运行到子运行的关系图",
+            "我的协作会话目录",
+            "根运行到多层子运行的调用树",
             "子运行状态、耗时和免费委派字段",
             "跳转运行详情排查失败或查看产物",
           ],
           start: "开始调用",
-          guideConnect: ["开发者中心", "查看 API/MCP 与 A2A 在同一运行链上的关系。"],
+          guideConnect: ["开发者中心", "查看 API/MCP 与 A2A 在同一协作会话里的关系。"],
           guideSkill: ["消费 Agent Skill", "读取 Agent 调用示例和所需权限范围。"],
           guideMarket: ["浏览 Agent", "先从可调用 Agent 理解运行入口。"],
           reason: "需要登录的原因",
-          reasonBody: "A2A 控制台会展示你的运行 ID、Agent 委派关系和子运行详情。公开页只展示协议说明，个人调用链和运行记录需要登录后读取。",
+          reasonBody: "A2A 控制台会展示你的运行 ID、Agent 委派关系和子运行详情。公开页只展示协议说明，个人调用树和运行记录需要登录后读取。",
         }
       : {
           home: "Home",
           current: "A2A Collaboration",
           kicker: "Agent to Agent",
           h1: "A2A Invocation Loop",
-          lead: "See how a Parent Agent delegates to Child Agents, how run records are linked, and how Skills, MCP, and run events create a traceable collaboration chain.",
-          login: "Sign in to view call chains",
+          lead: "See how an Entry Agent delegates to multiple Child Agents, how run records group by root_context_id, and how Skills, MCP, and run events create a traceable call tree.",
+          login: "Sign in to view call trees",
           publicTitle: "A2A Public Overview",
           privateChip: "Personal run records load after sign-in",
-          step1: "Parent delegates",
+          step1: "Entry Agent delegates",
           step1Desc: "During a run, an Agent receives a parent run_id and uses a bound token to ask OpenLinker to invoke a target Agent.",
           step2: "OpenLinker creates a child run",
           step2Desc: "OpenLinker records the child run, caller, target, reason, billing_mode, and run events.",
-          step3: "The chain is traceable",
-          step3Desc: "After sign-in, you can inspect child calls, status, Skill tags, and linked run details by Parent.",
+          step3: "The call tree is traceable",
+          step3Desc: "After sign-in, you can inspect fan-out, serial calls, status, Skill tags, and linked run details by session.",
           visible: "Available after sign-in",
           caps: [
-            "My Parent call-chain directory",
-            "Parent-to-child run relationship map",
+            "My collaboration sessions directory",
+            "Root-to-descendant run call tree",
             "Child-run status, duration, and free-delegation fields",
             "Jump to run detail for failures or artifacts",
           ],
           start: "Start calling",
-          guideConnect: ["Developer Center", "See how API/MCP and A2A share one run chain."],
+          guideConnect: ["Developer Center", "See how API/MCP and A2A share one collaboration session."],
           guideSkill: ["Consume Agent Skill", "Read Agent invocation examples and required scopes."],
           guideMarket: ["Browse Agents", "Start with callable Agents to understand the run entry."],
           reason: "Why sign-in is required",
-          reasonBody: "The A2A console shows your run IDs, Agent delegation links, and child run details. The public page only explains the protocol; personal call chains and run records require sign-in.",
+          reasonBody: "The A2A console shows your run IDs, Agent delegation links, and child run details. The public page only explains the protocol; personal call trees and run records require sign-in.",
         };
 
   return (
