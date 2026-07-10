@@ -1,20 +1,14 @@
 /**
  * Agent 详情页（Server Component）。
  *
- * 视觉对照原型 prototype/openlinker-flow-08-agent-detail.png：
- *   - Topbar
- *   - 面包屑：首页 / 市场 / [Agent 名]
- *   - 3 列 detail-layout：hero(330) / 主区(自适应) / action(320)
+ * 三列展示 Agent 概览、能力与示例，以及调用入口。
  *
  * 数据：GET /api/v1/agents/:slug（公开接口，不需 auth）
  *   - 404 → notFound()
  *   - 其他错误 → 抛出给 error.tsx 兜底
  *
- * Phase 1 简化（详见 task spec）：
- *   - 评价系统未上线；可用性来自真实运行记录
- *   - Skill 清单可由后端返回，无则降级为「功能介绍 + tag list」
- *   - 用户评价用空状态
- *   - 工作流入口跳到已上线编排页；部署租用属于后续计划能力
+ * 可用性、Skill、Benchmark、示例和 readiness 均来自公开 Agent API；
+ * 没有公开反馈数据时展示明确空状态。
  *
  * Next 16 约定：params 是 Promise，必须 await。
  */
@@ -65,7 +59,7 @@ interface AgentDetail {
   creator: { display_name: string; creator_verified?: boolean };
   created_at: string;
   approved_at?: string;
-  /** 后端 sibling A 在补：详情可能携带 Skill 列表，无则降级。 */
+  /** 公开详情可能携带 Skill 列表。 */
   skills?: { id: string; category?: string; name: string; description?: string }[];
   capability?: {
     id: string;
@@ -130,16 +124,16 @@ export default async function AgentDetailPage({
     locale === "zh"
       ? {
           home: "首页",
-          market: "市场",
-          currentFree: "当前免费调用",
-          price: (price: string) => `$${price} / 次（展示价格预留，当前免费）`,
+          market: "Registry",
+          noReferencePrice: "未提供外部参考价格 · 可选兼容元数据 · Core 不据此扣费",
+          price: (price: string) => `外部参考价格 $${price} / 次 · 可选兼容元数据 · Core 不据此扣费`,
           unknownLabel: "未验证",
-          unknownHint: "Agent 还没有真实运行记录。",
+          unknownHint: "还没有运行记录，暂时无法确认这个 Agent 是否可调用。",
           intro: "功能介绍",
           tagCount: (n: number) => `共 ${n} 个标签`,
-          scope: "权限范围",
-          scopeValue: "只读上下文 · 沙箱执行",
-          pricing: "价格状态",
+          scope: "运行数据",
+          scopeValue: "调用方提供输入 · 输出写入 Run",
+          pricing: "外部参考价格",
           availability: "可用性",
           integration: "集成方式",
           availabilityHint: "可用性提示",
@@ -150,25 +144,25 @@ export default async function AgentDetailPage({
           tryExample: "用此示例试用",
           viewOnlyTitle: "该 Agent 当前不可调用，示例仅供查看。",
           viewOnly: "示例仅供查看",
-          unavailableKicker: "agent detail unavailable",
+          unavailableKicker: "Agent 详情",
           unavailableTitle: "Agent 详情暂时不可用",
           unavailableLead:
-            "当前数据源暂时无法访问。页面外壳和导航保持可用，你可以稍后重试或回到市场继续浏览。",
-          retryHint: "不可用的 Agent 标识",
-          backToMarket: "回到市场",
+            "实例暂时无法读取该 Agent 的详情。请稍后重试，或返回 Registry 查看其他 Agent。",
+          retryHint: "Agent 标识",
+          backToMarket: "回到 Registry",
         }
       : {
           home: "Home",
-          market: "Market",
-          currentFree: "Free access now",
-          price: (price: string) => `$${price} / run (display price reserved; current runs are free)`,
+          market: "Registry",
+          noReferencePrice: "No external reference price provided · optional compatibility metadata · not used for Core billing",
+          price: (price: string) => `External reference price: $${price} / run · optional compatibility metadata · not used for Core billing`,
           unknownLabel: "Unverified",
-          unknownHint: "This Agent does not have real run evidence yet.",
+          unknownHint: "There is no run history yet, so this Agent's availability is still unknown.",
           intro: "Overview",
           tagCount: (n: number) => `${n} tags`,
-          scope: "Permission scope",
-          scopeValue: "Read-only context · sandbox execution",
-          pricing: "Price status",
+          scope: "Run data",
+          scopeValue: "Caller-provided input · output recorded on the Run",
+          pricing: "External reference price",
           availability: "Availability",
           integration: "Integration",
           availabilityHint: "Availability Note",
@@ -179,12 +173,12 @@ export default async function AgentDetailPage({
           tryExample: "Try this example",
           viewOnlyTitle: "This Agent is not callable right now. The example is view-only.",
           viewOnly: "View-only example",
-          unavailableKicker: "agent detail unavailable",
+          unavailableKicker: "Agent detail",
           unavailableTitle: "Agent detail is temporarily unavailable",
           unavailableLead:
-            "The data source is not reachable right now. The page shell and navigation remain available; try again later or return to Market.",
-          retryHint: "Unavailable Agent slug",
-          backToMarket: "Back to Market",
+            "This instance cannot read the Agent detail right now. Try again later or return to Registry to browse other Agents.",
+          retryHint: "Agent identifier",
+          backToMarket: "Back to Registry",
         };
 
   let agent: AgentDetail;
@@ -201,7 +195,7 @@ export default async function AgentDetailPage({
               {copy.home}
             </Link>
             <span className="text-[color:var(--ol-subtle)]">/</span>
-            <Link href="/market" className="hover:text-[color:var(--ol-ink)]">
+            <Link href="/registry" className="hover:text-[color:var(--ol-ink)]">
               {copy.market}
             </Link>
             <span className="text-[color:var(--ol-subtle)]">/</span>
@@ -221,7 +215,7 @@ export default async function AgentDetailPage({
             <p className="mt-2 break-all text-[14px] font-bold text-[color:var(--ol-ink)]">
               {slug}
             </p>
-            <Link href="/market" className="ol-mini-btn ol-mini-btn-primary mt-5">
+            <Link href="/registry" className="ol-mini-btn ol-mini-btn-primary mt-5">
               {copy.backToMarket}
             </Link>
           </section>
@@ -239,10 +233,10 @@ export default async function AgentDetailPage({
   }));
 
   const priceUSD = (agent.price_per_call_cents / 100).toFixed(3);
-  const billingDescription =
+  const priceMetadataDescription =
     agent.price_per_call_cents > 0
       ? copy.price(priceUSD)
-      : copy.currentFree;
+      : copy.noReferencePrice;
   const availability = agent.availability ?? {
     status: "unknown" as const,
     label: copy.unknownLabel,
@@ -264,7 +258,7 @@ export default async function AgentDetailPage({
             {copy.home}
           </Link>
           <span className="text-[color:var(--ol-subtle)]">/</span>
-          <Link href="/market" className="hover:text-[color:var(--ol-ink)]">
+          <Link href="/registry" className="hover:text-[color:var(--ol-ink)]">
             {copy.market}
           </Link>
           <span className="text-[color:var(--ol-subtle)]">/</span>
@@ -318,13 +312,13 @@ export default async function AgentDetailPage({
               ) : null}
             </div>
 
-            {/* 价格与计费（4 卡） */}
+            {/* 运行与接入概览 */}
             <div className="ol-panel min-w-0 overflow-hidden px-4 py-4">
               <div className="grid min-w-0 grid-cols-1 gap-3 text-[12px] text-[color:var(--ol-muted)] sm:grid-cols-2 lg:grid-cols-4">
                 <MetaCell label={copy.scope} value={copy.scopeValue} />
-                <MetaCell label={copy.pricing} value={billingDescription} />
+                <MetaCell label={copy.pricing} value={priceMetadataDescription} />
                 <MetaCell label={copy.availability} value={`${availabilityLabel} · ${availabilityStatusSummary(availability.status, locale)}`} />
-                <MetaCell label={copy.integration} value="API · Agent Node · MCP" />
+                <MetaCell label={copy.integration} value="HTTP · MCP · WebSocket · Pull" />
               </div>
             </div>
 

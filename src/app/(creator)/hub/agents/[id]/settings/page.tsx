@@ -42,7 +42,7 @@ export default async function AgentSettingsPage({
           current: "设置",
           kicker: "Agent 设置 / 所有者可编辑",
           title: "Agent 设置",
-          lead: "编辑所有者可维护的基础信息、连接方式和可见性。平台审核、认证、健康度和统计只在这里展示。",
+          lead: "编辑所有者可维护的基础信息、连接方式和可见性。实例认证、健康度和统计为只读信息。",
           back: "返回 Agent 管理",
         }
       : {
@@ -50,7 +50,7 @@ export default async function AgentSettingsPage({
           current: "Settings",
           kicker: "Agent settings / Owner editable",
           title: "Agent settings",
-          lead: "Edit owner-managed basic information, connection, and visibility. Platform review, certification, health, and metrics are read-only here.",
+          lead: "Edit owner-managed basic information, connection, and visibility. Instance certification, health, and metrics are read-only here.",
           back: "Back to Agent Console",
         };
 

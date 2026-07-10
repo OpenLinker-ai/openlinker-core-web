@@ -1,5 +1,5 @@
 /**
- * Agent 所有者发布 Agent 页（Server Component）。
+ * Agent 所有者接入 Agent 页（Server Component）。
  *
  * 视觉来自 prototype/openlinker-flow-17-publish.png：
  *   - <Topbar /> 顶部导航
@@ -13,7 +13,7 @@
  *      is_creator=false → <BecomeCreatorPrompt /> 引导一键开通
  *   4. 后端不可用 → 显示降级提示，不抛错让 RSC tree 崩溃
  *
- * Agent 支持 HTTP Endpoint、Agent Node WebSocket、Runtime Pull fallback，以及已有 MCP Tool 包装；无人值守 Agent 可从这里进入自注册邀请。能力声明 / dry-run / 认证状态作为后续步骤展示。
+ * Agent 支持 HTTP Endpoint、Agent Node WebSocket、Runtime Pull fallback，以及已有 MCP Tool 包装；无人值守 Agent 可从这里进入自注册邀请。创建后可继续补充能力声明、dry-run 与实例认证信息。
  */
 
 import Link from "next/link";
@@ -43,8 +43,8 @@ export default async function PublishPage() {
   const locale = await getLocale();
   const copy =
     locale === "zh"
-      ? { loadFailed: "无法读取用户信息，请检查后端服务是否启动。" }
-      : { loadFailed: "Unable to read user information. Check that the backend service is running." };
+      ? { loadFailed: "账号信息暂时无法读取，请稍后重试。" }
+      : { loadFailed: "Account information is temporarily unavailable. Try again later." };
 
   let me: MeResponse | null = null;
   let loadFailed = false;
@@ -92,18 +92,18 @@ function SelfRegistrationEntry({ locale }: { locale: Locale }) {
   const copy =
     locale === "zh"
       ? {
-          kicker: "发布方式",
+          kicker: "接入方式",
           title: "无人值守 Agent 可先生成接入凭证",
-          body: "如果你正在手动发布一个公网 Endpoint 或 MCP 工具，继续填写下方表单。若是本地脚本、CLI、内网服务或 Agent Node 需要自己完成首次注册，请生成一次性 Agent 接入凭证，再把启动包交给 Agent。",
+          body: "如果你正在手动接入公网 Endpoint 或 MCP 工具，继续填写下方表单。若是本地脚本、CLI、内网服务或 Agent Node 需要自己完成首次注册，请生成限时 Agent 接入凭证；明文只显示一次，注册后同一个 Token 继续作为运行身份。",
           primary: "生成 Agent 接入凭证",
-          secondary: "继续手动发布",
+          secondary: "继续手动接入",
         }
       : {
-          kicker: "Publishing mode",
+          kicker: "Connection method",
           title: "Unattended Agents can start with an access credential",
-          body: "Keep using the form below when you are manually publishing a public endpoint or MCP tool. For a local script, CLI, private service, or Agent Node that needs to register itself, create a one-time Agent access credential and pass the startup packet to the Agent.",
+          body: "Keep using the form below when you are manually connecting a public endpoint or MCP tool. For unattended registration, create a time-limited Agent access credential whose plaintext is shown once; the same Token becomes the runtime identity after registration.",
           primary: "Create Agent credential",
-          secondary: "Continue manual publishing",
+          secondary: "Continue manual setup",
         };
 
   return (
@@ -138,35 +138,35 @@ function SelfRegistrationEntry({ locale }: { locale: Locale }) {
 /**
  * page-head：左 kicker + h1 + 副标题；右 4 段进度 filter-pills。
  *
- * Phase 1：仅"基础信息"active，其他 disabled。
+ * 基础信息是创建步骤；能力声明、示例与实例认证在创建后继续完善。
  */
 function PublishHead({ activePill, locale }: { activePill: string | null; locale: Locale }) {
   const copy =
     locale === "zh"
       ? {
-          kicker: "我的 / 发布 Agent",
-          heading: "发布你的 Agent",
-          lead: "手动发布可配置公网 HTTPS、Agent Node WebSocket、Runtime Pull 或 MCP 工具包装；无人值守 Agent 可先生成接入凭证，让 Agent 自己完成注册。",
-          later: "后续步骤",
-          progressAria: "发布进度",
+          kicker: "我的 / 接入 Agent",
+          heading: "把 Agent 接入当前实例",
+          lead: "手动接入可配置公网 HTTPS、Agent Node WebSocket、Runtime Pull 或 MCP 工具包装；无人值守 Agent 可先生成接入凭证，让 Agent 自己完成注册。",
+          later: "创建后可继续",
+          progressAria: "接入进度",
           pills: [
             { id: "basic", label: "基础信息" },
             { id: "skills", label: "能力声明" },
             { id: "examples", label: "示例" },
-            { id: "certification", label: "认证" },
+            { id: "certification", label: "实例认证" },
           ],
         }
       : {
-          kicker: "My / Publish Agent",
-          heading: "Publish your Agent",
-          lead: "Publish manually with HTTPS, Agent Node WebSocket, Runtime Pull, or an MCP tool wrapper. For unattended Agents, create an access credential first so the Agent can register itself.",
-          later: "Later step",
-          progressAria: "Publishing progress",
+          kicker: "My / Connect Agent",
+          heading: "Connect an Agent to this instance",
+          lead: "Connect manually with HTTPS, Agent Node WebSocket, Runtime Pull, or an MCP tool wrapper. For unattended Agents, create an access credential first so the Agent can register itself.",
+          later: "Available after creation",
+          progressAria: "Connection progress",
           pills: [
             { id: "basic", label: "Basics" },
             { id: "skills", label: "Capability claims" },
             { id: "examples", label: "Examples" },
-            { id: "certification", label: "Certification" },
+            { id: "certification", label: "Instance certification" },
           ],
         };
 

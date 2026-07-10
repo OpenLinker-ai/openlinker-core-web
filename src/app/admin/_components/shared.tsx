@@ -171,23 +171,6 @@ export interface AdminTaskList {
   offset: number;
 }
 
-export interface WithdrawalAdminItem {
-  id: string;
-  creator_id: string;
-  amount_cents: number;
-  status: string;
-  notes?: string;
-  created_at: string;
-  paid_at?: string;
-}
-
-export interface WithdrawalListResponse {
-  items: WithdrawalAdminItem[];
-  total: number;
-  limit: number;
-  offset: number;
-}
-
 export type AdminSearchParams = {
   error?: string;
   status?: string;
@@ -201,7 +184,7 @@ export type AdminSearchParams = {
   page?: string;
 };
 
-type AdminTab = "overview" | "tasks" | "users" | "agents" | "withdrawals";
+type AdminTab = "overview" | "tasks" | "users" | "agents";
 
 export function adminCopy(locale: Locale) {
   return locale === "zh"
@@ -211,18 +194,17 @@ export function adminCopy(locale: Locale) {
         tasks: "任务",
         users: "用户",
         agents: "Agent",
-        withdrawals: "提现",
-        kicker: "管理员视角 · 平台运营",
-        heading: "平台运营管理台",
-        lead: "按模块处理运营任务。概览只加载关键指标，任务、用户、Agent 和提现在独立页面分页加载。",
+        kicker: "管理员视角 · 当前实例",
+        heading: "实例管理台",
+        lead: "管理当前实例中的任务、用户和 Agent。",
         totalUsers: "用户总数",
         admins: "管理员",
         creators: "Agent 所有者",
-        verifiedCreators: "认证 Agent 所有者",
+        verifiedCreators: "已验证 Agent 所有者",
         totalAgents: "Agent 总数",
         activeAgents: "活跃 Agent",
-        pendingAgents: "待认证 Agent",
-        certifiedAgents: "已认证 Agent",
+        pendingAgents: "实例认证中 Agent",
+        certifiedAgents: "实例已认证 Agent",
         totalTasks: "任务总数",
         publicTasks: "公开任务",
         openTasks: "待选择任务",
@@ -245,8 +227,6 @@ export function adminCopy(locale: Locale) {
         noAgentsBody: "换一个搜索或状态筛选。",
         noTasks: "没有匹配任务",
         noTasksBody: "换一个搜索、可见性或任务状态筛选。",
-        noWithdrawals: "暂无待处理提现",
-        noWithdrawalsBody: "新的 Agent 所有者提现申请会出现在这里。",
         addUser: "添加用户",
         addUserLead: "创建可用邮箱密码登录的用户，并按需预设管理员或 Agent 所有者身份。",
         email: "邮箱",
@@ -261,18 +241,15 @@ export function adminCopy(locale: Locale) {
         actionCol: "操作",
         agentCol: "Agent",
         taskCol: "任务",
-        ownerCol: "发布者",
+        ownerCol: "所有者",
         matchCol: "匹配 / 接单",
         deliveryCol: "交付",
         creatorCol: "Agent 所有者",
         stateCol: "状态",
         metricsCol: "指标",
-        withdrawalCol: "提现",
-        amountCol: "金额",
-        notesCol: "备注",
         adminFlag: "管理员",
         creatorFlag: "Agent 所有者",
-        verifiedFlag: "认证",
+        verifiedFlag: "已验证",
         disabledFlag: "禁用账号",
         disabledAt: "禁用时间",
         regular: "普通用户",
@@ -284,15 +261,15 @@ export function adminCopy(locale: Locale) {
         searchUsers: "搜索用户",
         searchAgents: "搜索 Agent",
         searchTasks: "搜索任务 / 用户 / Agent",
-        active: "启用",
-        disabled: "已禁用",
+        active: "已启用",
+        disabled: "已停用",
         public: "公开",
         unlisted: "链接可见",
         private: "私有",
-        unreviewed: "未认证",
+        unreviewed: "未提交实例认证",
         pending: "待处理",
-        certified: "已认证",
-        rejected: "已拒绝",
+        certified: "实例已认证",
+        rejected: "实例认证未通过",
         submitted: "已提交",
         failed: "失败",
         openStatus: "待选择",
@@ -313,9 +290,7 @@ export function adminCopy(locale: Locale) {
         lastTask: "最近任务",
         lastRun: "最近调用",
         reason: "拒绝原因",
-        notesPlaceholder: "转账单号 / 备注",
         reasonPlaceholder: "拒绝原因",
-        markPaid: "已支付",
       }
     : {
         admin: "Admin",
@@ -323,18 +298,17 @@ export function adminCopy(locale: Locale) {
         tasks: "Tasks",
         users: "Users",
         agents: "Agents",
-        withdrawals: "Withdrawals",
-        kicker: "Admin view · Platform operations",
-        heading: "Platform Admin Console",
-        lead: "Operate by module. Overview loads only key metrics; tasks, users, agents, and withdrawals page data separately.",
+        kicker: "Admin view · Current instance",
+        heading: "Instance Admin Console",
+        lead: "Manage tasks, users, and Agents in this instance.",
         totalUsers: "Total users",
         admins: "Admins",
         creators: "Agent owners",
         verifiedCreators: "Verified Agent owners",
         totalAgents: "Total agents",
         activeAgents: "Active agents",
-        pendingAgents: "Pending agents",
-        certifiedAgents: "Certified agents",
+        pendingAgents: "Instance certification pending",
+        certifiedAgents: "Instance-certified Agents",
         totalTasks: "Total tasks",
         publicTasks: "Public tasks",
         openTasks: "Open tasks",
@@ -357,8 +331,6 @@ export function adminCopy(locale: Locale) {
         noAgentsBody: "Try another search or state filter.",
         noTasks: "No matching tasks",
         noTasksBody: "Try another search, visibility, or task status filter.",
-        noWithdrawals: "No pending withdrawals",
-        noWithdrawalsBody: "New Agent owner withdrawal requests will appear here.",
         addUser: "Add user",
         addUserLead: "Create an email/password user and preset admin or Agent owner roles when needed.",
         email: "Email",
@@ -379,9 +351,6 @@ export function adminCopy(locale: Locale) {
         creatorCol: "Agent owner",
         stateCol: "State",
         metricsCol: "Metrics",
-        withdrawalCol: "Withdrawal",
-        amountCol: "Amount",
-        notesCol: "Notes",
         adminFlag: "Admin",
         creatorFlag: "Agent owner",
         verifiedFlag: "Verified",
@@ -401,10 +370,10 @@ export function adminCopy(locale: Locale) {
         public: "public",
         unlisted: "unlisted",
         private: "private",
-        unreviewed: "unreviewed",
+        unreviewed: "not instance-certified",
         pending: "pending",
-        certified: "certified",
-        rejected: "rejected",
+        certified: "instance certified",
+        rejected: "instance certification rejected",
         submitted: "submitted",
         failed: "failed",
         openStatus: "Open",
@@ -425,9 +394,7 @@ export function adminCopy(locale: Locale) {
         lastTask: "Last task",
         lastRun: "Last run",
         reason: "Reason",
-        notesPlaceholder: "Transfer ref / notes",
         reasonPlaceholder: "Reject reason",
-        markPaid: "Paid",
       };
 }
 
@@ -494,7 +461,6 @@ export function AdminShell({
     { key: "tasks", href: "/admin/tasks", label: copy.tasks },
     { key: "users", href: "/admin/users", label: copy.users },
     { key: "agents", href: "/admin/agents", label: copy.agents },
-    { key: "withdrawals", href: "/admin/withdrawals", label: copy.withdrawals },
   ];
   const activeLabel = tabs.find((tab) => tab.key === active)?.label ?? copy.overview;
 
@@ -739,7 +705,13 @@ export function adminStatusLabel(value: string, locale: Locale): string {
 }
 
 export function adminCertificationStatusLabel(value: string, locale: Locale): string {
-  return certificationStatusLabel(value, locale);
+  const labels: Record<string, Record<Locale, string>> = {
+    unreviewed: { zh: "未提交实例认证", en: "Not instance-certified" },
+    pending: { zh: "实例认证中", en: "Instance certification pending" },
+    certified: { zh: "实例已认证", en: "Instance certified" },
+    rejected: { zh: "实例认证未通过", en: "Instance certification rejected" },
+  };
+  return labels[value]?.[locale] ?? certificationStatusLabel(value, locale);
 }
 
 export function adminDeliveryVisibilityLabel(value: string, locale: Locale): string {

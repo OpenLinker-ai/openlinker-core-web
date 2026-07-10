@@ -2,9 +2,9 @@
 
 OpenLinker Core Web is the **open-source self-hosted frontend** for
 [openlinker-core](https://github.com/OpenLinker-ai/openlinker-core) deployments.
-It covers the complete UI surface of an AI agent registry: Agent market, creator
-hub, A2A/MCP playground, task workflow console, runtime setup guide, and local
-admin dashboard.
+It brings the Agent Registry, connection setup, invocation, run records, and
+instance administration into one browser interface. It is built for teams that
+want to manage Agents, accounts, and run data on their own infrastructure.
 
 > **Repository map**
 >
@@ -12,15 +12,15 @@ admin dashboard.
 > |-----------|---------|-------------|
 > | `openlinker-core` | Backend API server | ✅ Yes |
 > | `openlinker-core-web` ← **this repo** | Self-hosted frontend for core | ✅ Yes |
-> | Commercial hosted frontend | openlinker.ai cloud-specific features | ❌ Closed source |
+> | Hosted product frontend | openlinker.ai hosted service | ❌ Closed source |
 >
-> The commercial hosted frontend (not in this repo) contains openlinker.ai-specific
-> features: wallet, pricing, commercial billing, cloud-only user token dashboards, and
-> marketplace ranking UI. These are intentionally excluded from Core Web.
+> This repository follows the `openlinker-core` API boundary. Operators choose
+> their own domain, access model, retention, and operations policy. Hosted accounts,
+> commercial billing, and marketplace operations for openlinker.ai are implemented
+> in a separate product.
 
-This repository is intentionally limited to Core-owned APIs. Commercial wallet,
-billing, withdrawal, and hosted marketplace product surfaces live outside this
-package.
+Core Web only calls APIs provided by Core. It runs without an openlinker.ai
+hosted account or commercial service.
 
 Chinese documentation: [README.zh-CN.md](./README.zh-CN.md)
 
@@ -30,23 +30,30 @@ This frontend is pre-1.0 and follows `openlinker-core` API evolution. Route
 names, forms, and API response handling can change while the Core contract is
 being stabilized.
 
+User Token management is part of the Core contract. The UI and protocol guides
+already distinguish User Tokens from Agent Tokens; the local issuance and
+verification API is the next backend slice.
+
 ## Scope
 
 Included:
 
-- public Agent market, Agent detail pages, and callable playground
+- public Agent Registry, Agent detail pages, and callable playground
 - user auth, personal workspace, run history, run detail, inbox, and settings
-- creator hub, Agent onboarding, approvals, runtime setup, and delivery views
-- A2A console, MCP/connect views, skills, workflows, status, and tasks
+- User Token contract and protocol guidance for scoped user-side API and MCP
+  calls; the local management page is the next implementation slice
+- creator hub, setup for all four connection modes, availability alerts,
+  benchmarks, and delivery views
+- A2A console, MCP/connect views, Skills, service status, and run inspection
 - local admin pages backed by `openlinker-core`
 - API proxy from `/api/v1/*` to the Core API
 
-Excluded:
+Separated from the Core API boundary:
 
 - wallet, charges, withdrawals, Stripe, and pricing flows
-- commercial User Token product dashboards
+- openlinker.ai managed account, token-policy, and commercial access dashboards
 - finance administration and hosted marketplace ranking controls
-- cloud-only customer account features
+- hosted-only managed account features outside the Core contract
 
 ## Open-source Architecture
 
@@ -111,8 +118,9 @@ NEXTAUTH_URL=http://localhost:3000
 use the local Next.js `/api/v1/*` proxy. Server components use `CORE_API_URL`
 or `API_URL` to reach Core directly.
 
-`NEXTAUTH_SECRET` must match the JWT/session expectation used by the Core
-deployment you are testing against.
+`AUTH_SECRET` or `NEXTAUTH_SECRET` signs the frontend session. Use a separate,
+random value in production; do not reuse Core's `JWT_SECRET`. If both frontend
+variables are set, keep their values identical.
 
 ## Common Commands
 
@@ -139,7 +147,7 @@ The container expects `API_URL` or `CORE_API_URL` to point at the Core API.
 
 ```text
 openlinker-core-web/
-├── proxy.ts
+├── src/proxy.ts
 ├── Dockerfile.server
 ├── src/app/
 │   ├── page.tsx
@@ -152,6 +160,7 @@ openlinker-core-web/
 │   ├── registry/
 │   └── api/v1/[...path]/route.ts
 ├── src/components/
+├── src/messages/       # typed, domain-oriented zh/en product copy
 └── src/lib/
 ```
 
@@ -167,8 +176,12 @@ server components call Core without exposing private deployment details.
 - Keep commercial product flows out of this repository.
 - Prefer existing components and layout patterns before adding new UI
   primitives.
-- Keep visible text localized through the existing i18n helpers when a page is
-  already localized.
+- Put reused or substantial feature copy in typed domain modules under
+  `src/messages/`. A few one-off labels may stay beside a component; protocol
+  fields, code samples, and user data are not translation resources.
+- Keep Core product framing instance-scoped. Shared protocol labels may align
+  with Hosted Web, but marketplace, billing, and managed-service copy must not
+  be forced into Core catalogs.
 - Redact tokens, private URLs, screenshots with customer data, and `.env.local`
   values from public issues.
 
@@ -180,7 +193,9 @@ vulnerabilities through [SECURITY.md](./SECURITY.md).
 
 ## Contributing
 
-Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request.
+Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request. New
+pages and flows should be backed by public `openlinker-core` APIs and remain
+independently usable in self-hosted deployments.
 
 ## Support and Releases
 

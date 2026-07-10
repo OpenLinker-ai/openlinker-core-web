@@ -52,9 +52,8 @@ export function LoginForm({ locale = "zh" }: { locale?: Locale }) {
           invalid: "邮箱或密码错误",
           success: "登录成功",
           failed: "登录失败，请稍后重试",
-          email: "邮箱 / 用户名",
+          email: "邮箱",
           password: "密码",
-          remember: "记住登录状态",
           registerPrompt: "没有账号？",
           register: "注册",
           submit: "登录",
@@ -64,9 +63,8 @@ export function LoginForm({ locale = "zh" }: { locale?: Locale }) {
           invalid: "Email or password is incorrect",
           success: "Signed in",
           failed: "Sign-in failed. Try again later.",
-          email: "Email / username",
+          email: "Email",
           password: "Password",
-          remember: "Keep me signed in",
           registerPrompt: "Need an account?",
           register: "Sign up",
           submit: "Sign in",
@@ -153,11 +151,7 @@ export function LoginForm({ locale = "zh" }: { locale?: Locale }) {
           )}
         />
 
-        <div className="ol-auth-row">
-          <label>
-            <input type="checkbox" />
-            {copy.remember}
-          </label>
+        <div className="ol-auth-row justify-end">
           <span>
             {copy.registerPrompt}{" "}
             <Link href={authHref("/register", callbackUrl)}>{copy.register}</Link>

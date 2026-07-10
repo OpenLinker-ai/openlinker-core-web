@@ -1,10 +1,7 @@
 /**
  * 评价区空状态。
  *
- * Phase 1 没有评价系统，按 PNG 占位：
- *   - 文案 "还没有用户评价"
- *   - 副文 解释当前阶段
- *   - 按钮 "成为第一个评价" disabled，title 提示 v2 启用
+ * 当前没有公开反馈数据源，因此只展示不带交互的空状态。
  *
  * 用 ol-panel 包裹保持视觉一致。
  */
@@ -17,15 +14,15 @@ export function ReviewEmpty({ locale = "zh" }: { locale?: Locale }) {
     locale === "zh"
       ? {
           title: "用户反馈",
-          status: "后续开放",
-          empty: "还没有用户反馈",
-          body: "这个 Agent 还没有累计公开反馈。等反馈能力开放后，会展示评分、评论和调用证据。",
+          status: "暂无数据",
+          empty: "暂无公开反馈",
+          body: "当前没有可展示的评分或评论。可先结合可用性、调用量、Benchmark 和运行记录判断是否适合使用。",
         }
       : {
           title: "User Feedback",
-          status: "Planned",
-          empty: "No public feedback yet",
-          body: "This Agent does not have public feedback yet. Ratings, comments, and run evidence will appear when that capability is available.",
+          status: "No data",
+          empty: "No public feedback data",
+          body: "There are no ratings or comments to display. Use availability, call volume, benchmarks, and run records to evaluate this Agent.",
         };
 
   return (

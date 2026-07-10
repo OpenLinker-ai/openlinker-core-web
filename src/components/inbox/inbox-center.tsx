@@ -1,24 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { Icon, type IconName } from "@/components/ui/icon";
 import { useApi } from "@/hooks/use-api";
 import type { Locale } from "@/lib/i18n";
+import { availabilityStatusLabel } from "@/lib/i18n-labels";
 import { cn } from "@/lib/utils";
-
-type InboxType = "全部" | "运行" | "审核" | "Webhook" | "Agent";
 
 type NotificationItem = {
   id: string;
-  type: Exclude<InboxType, "全部">;
+  agentId: string;
   title: string;
   body: string;
   time: string;
   href: string;
   icon: IconName;
   unread: boolean;
+  recovered: boolean;
   source?: "availability_alert";
 };
 
@@ -40,8 +40,6 @@ export type AvailabilityAlert = {
   updated_at: string;
 };
 
-const FILTERS: InboxType[] = ["全部", "Agent", "运行", "审核", "Webhook"];
-
 export function InboxCenter({
   availabilityAlerts = [],
   locale = "zh",
@@ -53,45 +51,49 @@ export function InboxCenter({
   const [items, setItems] = useState<NotificationItem[]>(() =>
     availabilityAlerts.map((alert) => alertToNotification(alert, locale)),
   );
-  const [filter, setFilter] = useState<InboxType>("全部");
   const copy =
     locale === "zh"
       ? {
-          filterTitle: "通知筛选",
-          filterLabels: { "全部": "全部", Agent: "Agent", "运行": "运行", "审核": "审核", Webhook: "Webhook" } as Record<InboxType, string>,
+          scopeTitle: "告警范围",
+          scopeBody: "仅显示服务端可用性巡检产生的 Agent 异常与恢复记录。",
+          total: "全部告警",
           markAll: "全部已读",
-          stream: "通知流",
+          stream: "可用性告警",
           unread: (n: number) => `${n} 未读`,
-          empty: "暂无通知。Agent 可用性巡检发现异常时，会在这里出现站内告警。",
+          empty: "暂无可用性告警。巡检发现 Agent 异常或恢复后，记录会出现在这里。",
           new: "新",
           read: "已读",
-          today: "今日概览",
+          issue: "连接异常",
+          recovered: "已恢复",
+          overview: "告警概览",
+          affectedAgents: "涉及 Agent",
           shortcuts: "快捷入口",
           usage: "运行历史",
           hub: "Agent 管理",
-          notifications: "通知能力",
+          notifications: "通知设置",
         }
       : {
-          filterTitle: "Notification filters",
-          filterLabels: { "全部": "All", Agent: "Agent", "运行": "Runs", "审核": "Review", Webhook: "Webhook" } as Record<InboxType, string>,
+          scopeTitle: "Alert scope",
+          scopeBody: "Only Agent failures and recoveries reported by server-side availability probes appear here.",
+          total: "All alerts",
           markAll: "Mark all read",
-          stream: "Notification Stream",
+          stream: "Availability alerts",
           unread: (n: number) => `${n} unread`,
-          empty: "No notifications yet. Agent availability alerts will appear here when probes find issues.",
+          empty: "No availability alerts. A record will appear when a probe detects an Agent failure or recovery.",
           new: "New",
           read: "Read",
-          today: "Today",
+          issue: "Connection issue",
+          recovered: "Recovered",
+          overview: "Alert overview",
+          affectedAgents: "Affected Agents",
           shortcuts: "Shortcuts",
           usage: "Run history",
           hub: "Agent Console",
-          notifications: "Notification capabilities",
+          notifications: "Notification settings",
         };
 
   const unreadCount = items.filter((item) => item.unread).length;
-  const visible = useMemo(
-    () => items.filter((item) => filter === "全部" || item.type === filter),
-    [filter, items],
-  );
+  const affectedAgentCount = new Set(items.map((item) => item.agentId)).size;
 
   const markRead = async (id: string) => {
     setItems((current) =>
@@ -128,30 +130,19 @@ export function InboxCenter({
       <aside className="ol-panel ol-panel-pad h-fit">
         <div className="ol-kicker">inbox</div>
         <h2 className="mt-2 text-[18px] font-black text-[color:var(--ol-ink)]">
-          {copy.filterTitle}
+          {copy.scopeTitle}
         </h2>
-        <div className="mt-4 ol-filter-list">
-          {FILTERS.map((item) => {
-            const count =
-              item === "全部"
-                ? items.length
-                : items.filter((n) => n.type === item).length;
-            return (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setFilter(item)}
-                className={cn("ol-filter-item", filter === item && "active")}
-              >
-                {copy.filterLabels[item]}
-                <span>{count}</span>
-              </button>
-            );
-          })}
+        <p className="mt-3 text-[12.5px] leading-relaxed text-[color:var(--ol-muted)]">
+          {copy.scopeBody}
+        </p>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <Metric label={copy.total} value={String(items.length)} />
+          <Metric label={copy.read} value={String(items.length - unreadCount)} />
         </div>
         <button
           type="button"
           onClick={markAllRead}
+          disabled={unreadCount === 0}
           className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[13px] border border-[color:var(--ol-line)] bg-white text-[13px] font-black text-[color:var(--ol-ink)] hover:border-[color:var(--ol-primary)]/40"
         >
           <Icon name="check" size="sm" />
@@ -165,12 +156,12 @@ export function InboxCenter({
           <span className="ol-chip ol-chip-mint">{copy.unread(unreadCount)}</span>
         </div>
         <div className="grid gap-0">
-          {visible.length === 0 ? (
+          {items.length === 0 ? (
             <div className="p-10 text-center text-[13px] font-semibold text-[color:var(--ol-muted)]">
               {copy.empty}
             </div>
           ) : null}
-          {visible.map((item) => (
+          {items.map((item) => (
             <article
               key={item.id}
               className={cn(
@@ -183,7 +174,9 @@ export function InboxCenter({
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="ol-chip">{copy.filterLabels[item.type]}</span>
+                  <span className={cn("ol-chip", item.recovered ? "ol-chip-green" : "ol-chip-amber")}>
+                    {item.recovered ? copy.recovered : copy.issue}
+                  </span>
                   {item.unread ? <span className="ol-chip ol-chip-green">{copy.new}</span> : null}
                 </div>
                 <h3 className="mt-2 text-[15px] font-black text-[color:var(--ol-ink)]">
@@ -216,13 +209,12 @@ export function InboxCenter({
       <aside className="space-y-4">
         <div className="ol-panel ol-panel-pad">
           <h2 className="text-[16px] font-black text-[color:var(--ol-ink)]">
-            {copy.today}
+            {copy.overview}
           </h2>
           <div className="mt-4 grid grid-cols-2 gap-3">
-            <Metric label="Agent" value={countType(items, "Agent")} />
-            <Metric label={copy.filterLabels["运行"]} value={countType(items, "运行")} />
-            <Metric label={copy.filterLabels["审核"]} value={countType(items, "审核")} />
-            <Metric label="Webhook" value={countType(items, "Webhook")} />
+            <Metric label={copy.total} value={String(items.length)} />
+            <Metric label={copy.unread(unreadCount)} value={String(unreadCount)} />
+            <Metric label={copy.affectedAgents} value={String(affectedAgentCount)} />
           </div>
         </div>
         <div className="ol-panel ol-panel-pad">
@@ -230,13 +222,13 @@ export function InboxCenter({
             {copy.shortcuts}
           </h2>
           <div className="mt-4 grid gap-2">
-            <Link className="ol-filter-item active" href="/runs">
+            <Link className="ol-filter-item active" href="/run">
               {copy.usage} <span>→</span>
             </Link>
             <Link className="ol-filter-item" href="/hub">
               {copy.hub} <span>→</span>
             </Link>
-            <Link className="ol-filter-item" href="/settings">
+            <Link className="ol-filter-item" href="/settings?tab=notifications">
               {copy.notifications} <span>→</span>
             </Link>
           </div>
@@ -248,20 +240,51 @@ export function InboxCenter({
 
 function alertToNotification(alert: AvailabilityAlert, locale: Locale): NotificationItem {
   const isRecovered = alert.type === "availability_recovered";
-  const hints = alert.repair_hints?.length
+  const name = alert.agent_name || alert.agent_slug || "Agent";
+  const status = availabilityStatusLabel(alert.availability_status, locale);
+  const rawError = alert.last_error?.trim() ?? "";
+  const visibleError =
+    locale === "zh" || !/[\p{Script=Han}]/u.test(rawError) ? rawError : "";
+  const localizedHints = (alert.repair_hints ?? []).filter((hint) => {
+    const hasHan = /[\p{Script=Han}]/u.test(hint);
+    return locale === "zh" ? hasHan : !hasHan;
+  });
+  const title = isRecovered
     ? locale === "zh"
-      ? ` 修复建议：${alert.repair_hints.join("；")}`
-      : ` Repair hints: ${alert.repair_hints.join("; ")}`
-    : "";
+      ? `${name} 可用性已恢复`
+      : `${name} availability recovered`
+    : locale === "zh"
+      ? `${name} 可用性异常`
+      : `${name} availability issue`;
+  let body = isRecovered
+    ? locale === "zh"
+      ? `服务端巡检已通过，当前状态为${status}。`
+      : `The server-side probe passed. Current status: ${status}.`
+    : locale === "zh"
+      ? `服务端巡检已连续失败 ${alert.consecutive_failures} 次，当前状态为${status}。`
+      : `The server-side probe failed ${alert.consecutive_failures} consecutive ${alert.consecutive_failures === 1 ? "time" : "times"}. Current status: ${status}.`;
+  if (visibleError) {
+    body += locale === "zh" ? ` 最近错误：${visibleError}` : ` Latest error: ${visibleError}`;
+  }
+  if (localizedHints.length > 0) {
+    body += locale === "zh"
+      ? ` 修复建议：${localizedHints.join("；")}`
+      : ` Suggested checks: ${localizedHints.join("; ")}`;
+  } else if (!isRecovered) {
+    body += locale === "zh"
+      ? " 请进入 Agent 接入页检查连接配置。"
+      : " Open Agent setup to check the connection configuration.";
+  }
   return {
     id: alert.id,
-    type: "Agent",
-    title: alert.title,
-    body: `${alert.message}${alert.last_error ? locale === "zh" ? ` 错误：${alert.last_error}` : ` Error: ${alert.last_error}` : ""}${hints}`,
+    agentId: alert.agent_id,
+    title,
+    body,
     time: formatTime(alert.created_at, locale),
     href: `/hub/agents/${encodeURIComponent(alert.agent_id)}/onboarding`,
     icon: isRecovered ? "check" : "warn",
     unread: !alert.read_at,
+    recovered: isRecovered,
     source: "availability_alert",
   };
 }
@@ -274,10 +297,6 @@ function formatTime(value: string, locale: Locale) {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-function countType(items: NotificationItem[], type: Exclude<InboxType, "全部">) {
-  return String(items.filter((item) => item.type === type).length);
 }
 
 function Metric({ label, value }: { label: string; value: string }) {

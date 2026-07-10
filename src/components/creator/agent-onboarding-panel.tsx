@@ -17,6 +17,11 @@ import {
   dryRunResultLabel,
   runStatusLabel,
 } from "@/lib/i18n-labels";
+import {
+  agentOnboardingMessages,
+  runtimeDiagnosticMessages,
+  type RuntimeDiagnosticCode,
+} from "@/messages/agent";
 
 type JSONMap = Record<string, unknown>;
 
@@ -239,16 +244,16 @@ function formatDate(value: string | undefined, locale: Locale): string {
 }
 
 function statusLabel(agent: OnboardingAgent, locale: Locale): string {
-  if (agent.lifecycle_status === "disabled") return locale === "zh" ? "已下架" : "Unlisted";
+  if (agent.lifecycle_status === "disabled") return locale === "zh" ? "已停用" : "Disabled";
   const visibility =
     locale === "zh"
       ? { public: "已公开", unlisted: "链接可见", private: "私有" }[agent.visibility]
       : { public: "Public", unlisted: "Unlisted", private: "Private" }[agent.visibility];
   const certification = {
-    unreviewed: locale === "zh" ? "未认证" : "Unverified",
-    pending: locale === "zh" ? "认证中" : "Verification pending",
-    certified: locale === "zh" ? "已认证" : "Verified",
-    rejected: locale === "zh" ? "认证未通过" : "Verification rejected",
+    unreviewed: locale === "zh" ? "未提交实例认证" : "Not submitted for instance certification",
+    pending: locale === "zh" ? "实例认证中" : "Instance certification pending",
+    certified: locale === "zh" ? "实例已认证" : "Instance certified",
+    rejected: locale === "zh" ? "实例认证未通过" : "Instance certification rejected",
   }[agent.certification_status];
   return `${visibility} · ${certification}`;
 }
@@ -281,138 +286,7 @@ export function AgentOnboardingPanel({
   initialSkills,
   locale = "zh",
 }: Props) {
-  const copy =
-    locale === "zh"
-      ? {
-          defaultExampleTitle: "基础调用示例",
-          capabilitySaved: "能力声明已保存",
-          capabilitySaveFailed: "保存能力声明失败",
-          exampleInput: "示例 input",
-          exampleOutput: "示例 output",
-          exampleAdded: "示例已添加",
-          exampleAddFailed: "添加示例失败",
-          exampleDeleted: "示例已删除",
-          exampleDeleteFailed: "删除示例失败",
-          addExampleFirst: "请先添加至少 1 条示例后再执行 dry-run",
-          healthPass: "健康检查通过，Agent 已标记为可用",
-          healthFail: "健康检查失败",
-          healthRunFailed: "健康检查执行失败",
-          visibilitySaved: "可见性已更新",
-          visibilityFailed: "更新可见性失败",
-          certSubmitted: "认证申请已提交",
-          certFailed: "提交认证申请失败",
-          completion: "接入完成度",
-          endpoint: "接入方式",
-          capability: "能力声明",
-          examples: "示例",
-          dryRun: "Dry-run",
-          pendingSave: "待保存",
-          countItems: (count: number) => `${count} 条`,
-          summary: "摘要",
-          summaryPlaceholder: "一句话说明这个 Agent 最擅长处理什么输入和输出",
-          inputSchema: "输入 Schema",
-          outputSchema: "输出 Schema",
-          inputJSON: "输入 JSON",
-          expectedOutputJSON: "预期输出 JSON",
-          saving: "保存中...",
-          saveCapability: "保存能力声明",
-          examplesTitle: "调用示例",
-          delete: "删除",
-          exampleTitlePlaceholder: "示例标题",
-          adding: "添加中...",
-          addExample: "添加示例",
-          tokenPolling: "用绑定当前 Agent 的接入凭证建立 WebSocket；必要时可降级为轮询领取运行请求，不需要平台访问你的 IPv4 地址。",
-          visibility: "市场可见性",
-          visibilityOptions: {
-            public: "公开 - 出现在市场",
-            unlisted: "链接可见 - 不列入市场",
-            private: "私有 - 仅 Agent 所有者管理",
-          },
-          certification: "认证状态",
-          submitting: "提交中...",
-          requestCertification: "申请认证",
-          skills: "Skill 声明",
-          noSkills: "尚未声明 Skill，Benchmark 会先缺少测评对象。",
-          editSkills: "编辑 Skill",
-          backHub: "返回中心",
-          settings: "基础设置",
-          publicDetail: "公开详情",
-          playgroundUnavailable: "离线不可试用",
-          healthTitle: "健康检查 / Dry-run",
-          lastChecked: "最近检查",
-          failures: (count: number) => `连续失败 ${count} 次`,
-          dryRunPassed: "最近一次 dry-run 已通过。",
-          dryRunNotRun: "尚未执行健康检查。",
-          checking: "检查中...",
-          runHealth: "执行健康检查",
-          repair: "修复建议",
-          workbenchTitle: "Runtime Workbench",
-        }
-      : {
-          defaultExampleTitle: "Basic call example",
-          capabilitySaved: "Capability declaration saved",
-          capabilitySaveFailed: "Failed to save capability declaration",
-          exampleInput: "Example input",
-          exampleOutput: "Example output",
-          exampleAdded: "Example added",
-          exampleAddFailed: "Failed to add example",
-          exampleDeleted: "Example deleted",
-          exampleDeleteFailed: "Failed to delete example",
-          addExampleFirst: "Add at least one example before running dry-run",
-          healthPass: "Health check passed. Agent is marked available.",
-          healthFail: "Health check failed",
-          healthRunFailed: "Failed to run health check",
-          visibilitySaved: "Visibility updated",
-          visibilityFailed: "Failed to update visibility",
-          certSubmitted: "Verification request submitted",
-          certFailed: "Failed to submit verification request",
-          completion: "Onboarding completion",
-          endpoint: "Connection mode",
-          capability: "Capability declaration",
-          examples: "Examples",
-          dryRun: "Dry-run",
-          pendingSave: "Pending save",
-          countItems: (count: number) => `${count} items`,
-          summary: "Summary",
-          summaryPlaceholder: "One sentence describing what inputs and outputs this Agent handles best",
-          inputSchema: "Input schema",
-          outputSchema: "Output schema",
-          inputJSON: "Input JSON",
-          expectedOutputJSON: "Expected output JSON",
-          saving: "Saving...",
-          saveCapability: "Save capability declaration",
-          examplesTitle: "Call examples",
-          delete: "Delete",
-          exampleTitlePlaceholder: "Example title",
-          adding: "Adding...",
-          addExample: "Add example",
-          tokenPolling: "Use an access credential bound to this Agent to open WebSocket; fall back to polling claims only when needed. The platform does not need to reach your IPv4 address.",
-          visibility: "Market visibility",
-          visibilityOptions: {
-            public: "Public - listed in market",
-            unlisted: "Unlisted - link visible",
-            private: "Private - Agent owner only",
-          },
-          certification: "Verification status",
-          submitting: "Submitting...",
-          requestCertification: "Request verification",
-          skills: "Skill declaration",
-          noSkills: "No Skills declared yet, so Benchmark has nothing to test.",
-          editSkills: "Edit Skills",
-          backHub: "Back to Hub",
-          settings: "Settings",
-          publicDetail: "Public detail",
-          playgroundUnavailable: "Offline",
-          healthTitle: "Health check / Dry-run",
-          lastChecked: "Last checked",
-          failures: (count: number) => `${count} consecutive failures`,
-          dryRunPassed: "The latest dry-run passed.",
-          dryRunNotRun: "Health check has not run yet.",
-          checking: "Checking...",
-          runHealth: "Run health check",
-          repair: "Repair hints",
-          workbenchTitle: "Runtime Workbench",
-        };
+  const copy = agentOnboardingMessages[locale];
   const { fetch: apiFetch } = useApi();
   const [agentState, setAgentState] = useState(agent);
   const [onboarding, setOnboarding] = useState(initialOnboarding);
@@ -1055,7 +929,7 @@ function RuntimeWorkbenchPanel({
           {diagnostics.map((item) => (
             <div key={`${item.code}:${item.next_action}`} className="flex items-start gap-2 text-[12px] font-semibold leading-5 text-[color:var(--ol-muted)]">
               <span className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${diagnosticDot(item.severity)}`} />
-              <span>{item.message}</span>
+              <span>{localizedRuntimeDiagnostic(item.code, item.message, locale)}</span>
             </div>
           ))}
         </div>
@@ -1111,6 +985,11 @@ function diagnosticDot(severity: string): string {
   if (severity === "error") return "bg-red-500";
   if (severity === "warning") return "bg-[color:var(--ol-amber)]";
   return "bg-[color:var(--ol-blue)]";
+}
+
+function localizedRuntimeDiagnostic(code: string, fallback: string, locale: Locale): string {
+  const message = runtimeDiagnosticMessages[locale][code as RuntimeDiagnosticCode];
+  return message ?? (locale === "zh" ? fallback : "Review the Agent Node connection and recent runs.");
 }
 
 function Step({

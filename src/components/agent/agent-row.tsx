@@ -3,19 +3,18 @@
 /**
  * Agent 管理：单个 Agent 行展示。
  *
- * 一行内容：状态徽章 + 名称 + slug + 价格/调用/累计收入 + 操作按钮。
+ * 一行内容：状态徽章 + 名称 + slug + 外部参考价格/调用 + 操作按钮。
  *
  * 操作按钮规则：
  *   - pending / rejected：历史人工处理状态，显示状态原因。
- *   - approved：已公开，可"下架"（DELETE /api/v1/creator/agents/:id）
+ *   - approved：已通过接入审核；公开范围由 visibility 单独决定，可停用（DELETE /api/v1/creator/agents/:id）
  *   - rejected：可展开查看 rejection_reason
  *   - disabled：无操作
  *
- * 下架二次确认用 native confirm()（Phase 1 简化）。
+ * 下架前使用 native confirm() 二次确认。
  * 成功后 window.location.reload() 刷新 Server Component 父级数据。
  *
- * 金额展示：cents/100，价格保留 3 位小数（最低单位 $0.001/次），
- * 累计收入 2 位小数（金额一般较大）。
+ * 外部参考价格按 cents/100 展示并保留 3 位小数；它是可选兼容元数据，不触发 OpenLinker Core 扣费或结算。
  */
 
 import Link from "next/link";
@@ -75,28 +74,32 @@ export function AgentRow({
     locale === "zh"
       ? {
           confirmDisable: (name: string) =>
-            `确定下架"${name}"？下架后不可恢复，已发生的调用不影响。`,
-          disabled: "已下架",
-          disableFailed: "下架失败",
-          disableRetry: "下架失败，请稍后再试",
+            `确定停用“${name}”？停用后不可由所有者恢复，已有运行记录不受影响。`,
+          disabled: "已停用",
+          disableFailed: "停用失败",
+          disableRetry: "停用失败，请稍后再试",
           perCall: "次",
+          referencePrice: "外部参考价格",
+          noReferencePrice: "未提供",
+          noCharge: "可选兼容元数据，OpenLinker Core 不据此扣费",
           calls: "次调用",
-          total: "累计",
           collapseReason: "收起拒绝原因",
           viewReason: "查看拒绝原因",
-          disabling: "下架中...",
-          disable: "下架",
+          disabling: "停用中...",
+          disable: "停用",
           delivery: "投递设置",
         }
       : {
           confirmDisable: (name: string) =>
-            `Disable "${name}"? This cannot be restored, and previous calls are unaffected.`,
+            `Disable "${name}"? The owner cannot restore it; an instance administrator can reactivate it. Existing run records are unaffected.`,
           disabled: "Disabled",
           disableFailed: "Disable failed",
           disableRetry: "Disable failed. Please try again later.",
           perCall: "call",
+          referencePrice: "External reference price",
+          noReferencePrice: "Not provided",
+          noCharge: "Optional compatibility metadata; not used for OpenLinker Core billing",
           calls: "calls",
-          total: "total",
           collapseReason: "Hide rejection reason",
           viewReason: "View rejection reason",
           disabling: "Disabling...",
@@ -142,12 +145,13 @@ export function AgentRow({
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             <span>
-              ${(agent.price_per_call_cents / 100).toFixed(3)}/{copy.perCall}
+              {copy.referencePrice}{" "}
+              {agent.price_per_call_cents > 0
+                ? `$${(agent.price_per_call_cents / 100).toFixed(3)}/${copy.perCall}`
+                : copy.noReferencePrice}
             </span>
             <span>{agent.total_calls} {copy.calls}</span>
-            <span>
-              ${(agent.total_revenue_cents / 100).toFixed(2)} {copy.total}
-            </span>
+            <span>{copy.noCharge}</span>
           </div>
           {agent.certification_status === "rejected" && agent.rejection_reason ? (
             <button
@@ -198,7 +202,7 @@ function VisibilityBadge({
   locale: Locale;
 }) {
   if (lifecycle === "disabled") {
-    return <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-semibold text-gray-700">{locale === "zh" ? "已下架" : "Disabled"}</span>;
+    return <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-semibold text-gray-700">{locale === "zh" ? "已停用" : "Disabled"}</span>;
   }
   const map: Record<
     AgentResponse["visibility"],
@@ -235,10 +239,10 @@ function CertificationBadge({
   locale: Locale;
 }) {
   const labels = {
-    unreviewed: locale === "zh" ? "未认证" : "Unreviewed",
-    pending: locale === "zh" ? "认证中" : "In review",
-    certified: locale === "zh" ? "已认证" : "Certified",
-    rejected: locale === "zh" ? "认证未通过" : "Rejected",
+    unreviewed: locale === "zh" ? "未提交实例认证" : "Not instance-certified",
+    pending: locale === "zh" ? "实例认证中" : "Instance certification pending",
+    certified: locale === "zh" ? "实例已认证" : "Instance certified",
+    rejected: locale === "zh" ? "实例认证未通过" : "Instance certification rejected",
   };
   return <span className="rounded bg-yellow-50 px-1.5 py-0.5 text-xs font-semibold text-yellow-700">{labels[status]}</span>;
 }

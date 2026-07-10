@@ -37,7 +37,7 @@ export function AgentDeliveryHistoryCenter({
     locale === "zh"
       ? {
           title: "通知投递历史",
-          subtitle: "查看当前账号触发此 Agent 时产生的通知投递记录，包含 Webhook、Slack 和后续 Email 目标。",
+          subtitle: "查看投递到本账号 Webhook 或 Slack 目标的记录，按状态筛选并重试失败项。",
           backSettings: "返回通知投递设置",
           runDetail: "返回运行详情",
           retryQueued: "已加入重试队列",
@@ -52,7 +52,7 @@ export function AgentDeliveryHistoryCenter({
         }
       : {
           title: "Notification delivery history",
-          subtitle: "Review notification delivery records created when this account invokes the Agent, including Webhook, Slack, and future Email targets.",
+          subtitle: "Review records sent to this account's Webhook or Slack targets, filter by status, and retry failures.",
           backSettings: "Back to notification delivery settings",
           runDetail: "Back to run detail",
           retryQueued: "Added to retry queue",

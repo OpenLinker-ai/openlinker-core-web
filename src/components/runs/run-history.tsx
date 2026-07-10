@@ -3,14 +3,14 @@
  *
  * 视觉沿用原运行记录原型：
  *   - panel + panel-head（"最近运行" + 右"查看全部"链接）
- *   - 每行 .ol-item-row：38px dash-icon (按 agent_slug 配色) + 名称/状态 + 右 ir-side（价格/时间）
+ *   - 每行 .ol-item-row：38px dash-icon (按 agent_slug 配色) + 名称/状态 + 右 ir-side（费用记录/时间）
  *
  * 数据由父 page.tsx 从 GET /api/v1/runs?page=&size= 拿到后传入，
  * URL searchParams 是单一真相，翻页通过 Link 改 URL 触发 RSC 重渲染，
  * 不在客户端拉数据。
  *
- * 失败 run（status != "success"）显示「未扣费」而不是 "$0"，
- * 与当前免费阶段口径一致：失败时 cost_cents=0，需要明确告诉用户。
+ * cost_cents 是兼容外部系统的费用记录；OpenLinker Core 不据此扣费。
+ * 失败 run（status != "success"）不展示 "$0"，避免把兼容字段误解为 Core 账单。
  */
 
 import Link from "next/link";
@@ -93,13 +93,11 @@ function formatRelative(iso: string, locale: Locale): string {
 
 function formatCost(run: Run, locale: Locale): string {
   if (locale === "en") {
-    if (run.status !== "success") return "No fee";
-    if (run.cost_cents > 0) return `$${(run.cost_cents / 100).toFixed(2)}`;
-    return "Free run";
+    if (run.cost_cents > 0) return `External cost record $${(run.cost_cents / 100).toFixed(2)}`;
+    return "No external cost recorded";
   }
-  if (run.status !== "success") return "未产生费用";
-  if (run.cost_cents > 0) return `$${(run.cost_cents / 100).toFixed(2)}`;
-  return "免费运行";
+  if (run.cost_cents > 0) return `外部费用记录 $${(run.cost_cents / 100).toFixed(2)}`;
+  return "未记录外部费用";
 }
 
 export function RunHistory({
@@ -231,7 +229,7 @@ function RunItemRow({ run, locale }: { run: Run; locale: Locale }) {
           <Link
             href={`/run/${encodeURIComponent(run.id)}`}
             className="ol-mini-btn"
-            title={locale === "zh" ? "查看本次运行的状态、输出和费用信息" : "View status, output, and cost details for this run"}
+            title={locale === "zh" ? "查看本次运行的状态、输出和兼容费用记录" : "View status, output, and the external cost record for this run"}
           >
             {locale === "zh" ? "详情" : "Details"}
           </Link>

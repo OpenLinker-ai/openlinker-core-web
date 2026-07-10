@@ -1,17 +1,16 @@
 "use client";
 
 /**
- * 运行日志面板（中间列）。
+ * 请求状态面板（中间列）。
  *
  * 4 种状态：
  *   - idle    未运行：空状态文案
- *   - running 运行中：显示 spinner + "提交输入"步骤激活
+ *   - running 运行中：显示 spinner + 等待 Agent 响应
  *   - success 成功：2 步均完成，显示耗时
- *   - failed  失败：第 2 步红色，显示错误码与当前免费阶段口径
+ *   - failed  失败：第 2 步显示调用失败
  *
- * Phase 1 简化：
- *   - 后端没有 MCP 拆解，只有提交/响应两步
- *   - 不显示子调用成本（无数据）
+ * 这里只根据 runner 提供的状态和耗时展示请求 / 响应两步，
+ * 不推断 Agent 内部工具调用。
  *
  * 视觉对应原型 .trace-list / .trace-item / .trace-dot。
  */
@@ -40,34 +39,34 @@ function buildSteps({ status, durationMs, locale = "zh" }: Props): Step[] {
   const copy =
     locale === "zh"
       ? {
-          waiting: "等待中",
-          response: "收到响应",
-          responseDesc: "等待 Agent 返回结果...",
+          waiting: "等待响应",
+          response: "Agent 响应",
+          responseDesc: "等待 Agent 返回本次请求的结果。",
           running: "运行中…",
-          runningDesc: "正在调用 Agent，实时收集运行数据。",
+          runningDesc: "Agent 正在处理本次请求。",
           done: "完成",
-          successDesc: "Agent 已返回结构化结果，详见右侧调用结果。",
+          successDesc: "已收到 Agent 响应，完整输出见右侧结果。",
           failedRight: "失败",
           failedTitle: "调用失败",
-          failedDesc: "Agent 未能完成本次调用，当前免费阶段未产生费用。",
-          submit: "提交输入",
-          submitDesc: "输入已校验为合法 JSON，准备发送至运行网关。",
-          submitted: "已提交",
+          failedDesc: "本次请求未得到成功响应，错误详情见结果区域。",
+          submit: "请求已提交",
+          submitDesc: "请求已发送到运行入口；这里记录提交与响应状态。",
+          submitted: "已发送",
         }
       : {
-          waiting: "Waiting",
-          response: "Response received",
-          responseDesc: "Waiting for Agent result...",
+          waiting: "Waiting for response",
+          response: "Agent response",
+          responseDesc: "Waiting for the Agent to return a result for this request.",
           running: "Running…",
-          runningDesc: "Calling the Agent and collecting run data in real time.",
+          runningDesc: "The Agent is processing this request.",
           done: "Done",
-          successDesc: "The Agent returned structured output. See the result panel on the right.",
+          successDesc: "The Agent response has arrived. See the result panel for the full output.",
           failedRight: "Failed",
           failedTitle: "Run failed",
-          failedDesc: "The Agent did not complete this run. No fee was created in the current free phase.",
-          submit: "Submit input",
-          submitDesc: "Input was validated as JSON and is ready for the run gateway.",
-          submitted: "Submitted",
+          failedDesc: "This request did not receive a successful response. See the result panel for error details.",
+          submit: "Request submitted",
+          submitDesc: "The request was sent to the run entry point; this view records submission and response status.",
+          submitted: "Sent",
         };
   // 提交输入：只要点了运行就视为完成
   const submitState: Step["state"] =
@@ -119,12 +118,14 @@ export function RunTrace(props: Props) {
   const copy =
     locale === "zh"
       ? {
-          title: "运行日志",
-          live: "实时更新",
+          title: "请求与响应",
+          live: "等待响应",
+          summary: "状态摘要",
         }
       : {
-          title: "Run log",
-          live: "Live updates",
+          title: "Request and response",
+          live: "Waiting for response",
+          summary: "Status summary",
         };
 
   return (
@@ -147,7 +148,7 @@ export function RunTrace(props: Props) {
               className="h-2 w-2 animate-pulse rounded-full bg-[color:var(--ol-primary)]"
             />
           ) : null}
-          {copy.live}
+          {status === "running" ? copy.live : copy.summary}
         </span>
       </div>
 
@@ -166,12 +167,12 @@ function EmptyState({ locale }: { locale: Locale }) {
   const copy =
     locale === "zh"
       ? {
-          title: "点击运行查看每一步",
-          body: "Phase 1 仅显示提交 / 响应两步；MCP 拆解将在后续版本加入。",
+          title: "运行后查看请求状态",
+          body: "此面板展示请求提交与 Agent 响应；服务端保存的运行事件、输入和结果可在 Run 详情查看。",
         }
       : {
-          title: "Run to inspect each step",
-          body: "Phase 1 shows only submit / response steps. MCP breakdown will be added later.",
+          title: "Run to view request status",
+          body: "This panel shows request submission and the Agent response. Server-recorded events, input, and output are available in Run detail.",
         };
   return (
     <div className="flex flex-col items-center justify-center gap-2 rounded-[18px] border border-dashed border-[color:var(--ol-line)] bg-white px-6 py-14 text-center">

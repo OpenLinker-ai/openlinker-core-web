@@ -1,12 +1,12 @@
 /**
- * Agent 详情页右侧 action-card：开始使用 / API 示例 / 未来价格参考。
+ * Agent 详情页右侧 action-card：开始使用 / API 示例 / 外部参考价格元数据。
  *
  * 视觉对照原型 .action-card：
  *   - 头部 "开始使用" + 4 按钮
  *   - 「在线试用」只在 readiness.callable=true 时展示，走 TryButton（Client，处理登录态跳转）
  *   - 「获取 API」滚动到下方 API 示例锚点（用 anchor 简单实现）
  *   - 下方 API 示例区，复用 ApiSnippet（保留 3 tab）
- *   - 未来价格参考：黄色 info-card，根据 price_per_call_cents × 1000 估算，不代表当前扣费
+ *   - 外部参考价格：黄色 info-card，明确 price_per_call_cents 是可选兼容元数据
  *
  * Server Component（内嵌 client 子组件 TryButton / ApiSnippet）。
  */
@@ -37,14 +37,13 @@ export function ActionPanel({
   sampleInput,
   locale = "zh",
 }: ActionPanelProps) {
-  // 1,000 次/月未来价格参考（cents → USD）
-  const monthlyEstimate = ((pricePerCallCents * 1000) / 100).toFixed(2);
+  const registryPrice = formatRegistryPrice(pricePerCallCents, locale);
   const apiBaseUrl = getApiBaseUrl();
   const copy =
     locale === "zh"
       ? {
           start: "开始使用",
-          unavailableTitle: availabilityHint || "该 Agent 当前缺少可调用证据。",
+          unavailableTitle: availabilityHint || "该 Agent 当前暂不可试用。",
           unavailable: "暂不可试用",
           unavailableBody: availabilityHint || "需要最近一次健康检查或成功运行记录后才开放直接试用。",
           api: "获取 API",
@@ -52,21 +51,25 @@ export function ActionPanel({
           related: "关联入口",
           mcpApi: "MCP/API 接入",
           a2aChains: "A2A 调用链",
-          futurePrice: "展示价格参考",
-          priceBody: `当前免费；1,000 次/月展示价约 $${monthlyEstimate}`,
+          registryPrice: "外部参考价格（兼容元数据）",
+          priceBody: registryPrice
+            ? `Agent 资料提供的外部参考价格为 ${registryPrice}。这是可选兼容元数据，OpenLinker Core 不会据此扣费或结算。`
+            : "Agent 未提供外部参考价格。该字段为可选兼容元数据，OpenLinker Core 不会据此扣费或结算。",
         }
       : {
           start: "Start Using",
-          unavailableTitle: availabilityHint || "This Agent does not have callable evidence yet.",
+          unavailableTitle: availabilityHint || "This Agent is not available for a trial yet.",
           unavailable: "Not callable yet",
-          unavailableBody: availabilityHint || "Direct trial opens after a recent health check or successful run record.",
+          unavailableBody: availabilityHint || "A trial becomes available after a successful health check or run.",
           api: "Get API",
           apiExample: "API Example",
           related: "Related Entry Points",
           mcpApi: "MCP/API setup",
           a2aChains: "A2A call chains",
-          futurePrice: "Display price reference",
-          priceBody: `Current runs are free. Display price for 1,000 runs/month is about $${monthlyEstimate}.`,
+          registryPrice: "External reference price (compatibility metadata)",
+          priceBody: registryPrice
+            ? `The Agent profile provides an external reference price of ${registryPrice}. This is optional compatibility metadata and does not trigger charging or settlement in OpenLinker Core.`
+            : "The Agent does not provide an external reference price. This field is optional compatibility metadata and does not trigger charging or settlement in OpenLinker Core.",
         };
 
   return (
@@ -133,7 +136,7 @@ export function ActionPanel({
         </div>
       </div>
 
-        {/* 未来价格参考（黄色 info-card） */}
+      {/* 外部参考价格兼容元数据（黄色 info-card） */}
       <div
         className="min-w-0 overflow-hidden rounded-2xl border px-4 py-3"
         style={{
@@ -141,13 +144,20 @@ export function ActionPanel({
           borderColor: "rgba(200, 131, 13, 0.18)",
         }}
       >
-          <strong className="block text-[13px] font-black text-[color:var(--ol-amber)]">
-            {copy.futurePrice}
-          </strong>
-          <span className="mt-1 block break-words text-[12.5px] font-semibold text-[color:var(--ol-ink)]">
-            {copy.priceBody}
-          </span>
+        <strong className="block text-[13px] font-black text-[color:var(--ol-amber)]">
+          {copy.registryPrice}
+        </strong>
+        <span className="mt-1 block break-words text-[12.5px] font-semibold text-[color:var(--ol-ink)]">
+          {copy.priceBody}
+        </span>
       </div>
     </aside>
   );
+}
+
+function formatRegistryPrice(cents: number, locale: Locale): string | null {
+  if (!cents || cents <= 0) return null;
+  const dollars = cents / 100;
+  const amount = dollars < 0.01 ? dollars.toFixed(3) : dollars.toFixed(2);
+  return locale === "zh" ? `$${amount}/次` : `$${amount}/invocation`;
 }

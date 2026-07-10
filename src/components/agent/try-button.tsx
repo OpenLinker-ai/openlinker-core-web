@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Agent 详情页"在线试用"按钮。
+ * Agent 详情页“试用 Agent”按钮。
  *
  * 行为：
  * - 未登录：toast 提示并跳 /login，带 callbackUrl 让登录后回到 playground
@@ -20,8 +20,8 @@ export function TryButton({ slug, locale = "zh" }: { slug: string; locale?: Loca
   const { status } = useSession();
   const copy =
     locale === "zh"
-      ? { login: "请先登录后再试用", label: "在线试用" }
-      : { login: "Sign in before trying this Agent", label: "Try online" };
+      ? { login: "请先登录后再试用", label: "试用 Agent" }
+      : { login: "Sign in before trying this Agent", label: "Try Agent" };
 
   const handleClick = () => {
     if (status === "loading") return;

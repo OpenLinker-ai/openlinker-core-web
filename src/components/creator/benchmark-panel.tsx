@@ -140,7 +140,7 @@ export function BenchmarkPanel({
           collapse: "收起",
           details: "查看详情",
           unavailableHint: "Benchmark 运行暂不可用",
-          cannotRun: "暂不可运行",
+          cannotRun: "暂不可调用",
           running: "测评中…",
           run: "运行 Benchmark",
           rerun: "重新评测",

@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * 发布页右侧"定价方式" 4 tile（免费 / 买断 / 订阅 / 按调用）。
+ * 接入页右侧的外部参考价格字段说明。
  *
- * Phase 1：运行免费，按调用价格仅作为未来展示字段。
+ * price_usd 是可选兼容元数据，不触发 OpenLinker Core 扣费或结算。
  *
  * 视觉来自 prototype/openlinker-flow-17-publish.png 的 .pricing-grid。
  */
@@ -11,13 +11,13 @@
 import type { Locale } from "@/lib/i18n";
 
 interface PricingTilesProps {
-  /** 表单当前 price_usd（USD，小数）；非数字或 NaN 时显示 $0.00 */
+  /** 表单当前 price_usd（USD，小数）；非正数或无效值视为未提供。 */
   priceUsd: number;
   locale?: Locale;
 }
 
-function formatPrice(p: number): string {
-  if (!Number.isFinite(p) || p <= 0) return "$0.00";
+function formatPrice(p: number): string | null {
+  if (!Number.isFinite(p) || p <= 0) return null;
   if (p < 1) return `$${p.toFixed(2)}`;
   return `$${p.toFixed(2)}`;
 }
@@ -26,46 +26,30 @@ export function PricingTiles({ priceUsd, locale = "zh" }: PricingTilesProps) {
   const copy =
     locale === "zh"
       ? {
-          free: "免费",
-          current: "当前",
-          plannedTitle: "后续开放",
-          lifetime: "买断",
-          subscription: "订阅",
-          monthly: "$9/月",
-          reservedTitle: "后续计划启用",
-          previewPrice: "预留价格",
+          fieldRole: "字段用途",
+          compatibilityMetadata: "可选兼容元数据",
+          displayPrice: "外部参考价格",
+          notProvided: "未提供",
+          displayHint: "该字段用于兼容外部系统，不会触发 OpenLinker Core 扣费或结算。",
         }
       : {
-          free: "Free",
-          current: "Current",
-          plannedTitle: "Planned later",
-          lifetime: "Lifetime",
-          subscription: "Subscription",
-          monthly: "$9/mo",
-          reservedTitle: "Enabled in a later plan",
-          previewPrice: "Preview price",
+          fieldRole: "Field purpose",
+          compatibilityMetadata: "Optional compatibility metadata",
+          displayPrice: "External reference price",
+          notProvided: "Not provided",
+          displayHint: "This field supports compatibility with external systems and does not trigger charging or settlement in OpenLinker Core.",
         };
 
   return (
     <div className="ol-pricing-grid">
-      <div className="ol-pricing-tile active">
-        <strong>{copy.free}</strong>
-        {copy.current}
+      <div className="ol-pricing-tile active" title={copy.displayHint}>
+        <strong>{copy.fieldRole}</strong>
+        {copy.compatibilityMetadata}
       </div>
-      <div className="ol-pricing-tile" title={copy.plannedTitle}>
-        {copy.lifetime}
+      <div className="ol-pricing-tile" title={copy.displayHint}>
+        {copy.displayPrice}
         <br />
-        $29
-      </div>
-      <div className="ol-pricing-tile" title={copy.plannedTitle}>
-        {copy.subscription}
-        <br />
-        {copy.monthly}
-      </div>
-      <div className="ol-pricing-tile" title={copy.reservedTitle}>
-        {copy.previewPrice}
-        <br />
-        {formatPrice(priceUsd)}
+        {formatPrice(priceUsd) ?? copy.notProvided}
       </div>
     </div>
   );

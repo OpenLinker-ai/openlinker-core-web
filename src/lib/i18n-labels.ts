@@ -6,8 +6,8 @@ type LabelMap = Record<string, LocalizedLabel>;
 const UNKNOWN_LABEL: LocalizedLabel = { zh: "未知", en: "Unknown" };
 
 const AVAILABILITY_LABELS: LabelMap = {
-  unknown: { zh: "未验证", en: "Unverified" },
-  healthy: { zh: "可用", en: "Healthy" },
+  unknown: { zh: "状态未知", en: "Unknown" },
+  healthy: { zh: "近期正常", en: "Healthy" },
   degraded: { zh: "不稳定", en: "Degraded" },
   unreachable: { zh: "离线", en: "Offline" },
 };
@@ -21,16 +21,16 @@ const AVAILABILITY_SUMMARY: LabelMap = {
 
 const AVAILABILITY_HINTS: LabelMap = {
   unknown: {
-    zh: "Agent 还没有真实运行记录。",
-    en: "This Agent does not have real run evidence yet.",
+    zh: "还没有运行记录，暂时无法确认这个 Agent 是否可调用。",
+    en: "There is no run history yet, so this Agent's availability is still unknown.",
   },
   healthy: {
-    zh: "此 Agent 最近有成功运行记录。",
-    en: "This Agent has recent successful run evidence.",
+    zh: "这个 Agent 最近一次调用成功。",
+    en: "The most recent call to this Agent succeeded.",
   },
   degraded: {
-    zh: "最近一次运行失败。在恢复健康运行记录前，直接试用可能受限。",
-    en: "The latest run failed. Direct trials may be limited until a healthy run is recorded.",
+    zh: "最近一次运行失败，当前可能无法试用。你可以稍后重试。",
+    en: "The latest run failed, so the Agent may not be available for trial right now. Try again later.",
   },
   unreachable: {
     zh: "最近检查连续失败。Agent 恢复前会暂停直接试用。",
@@ -50,6 +50,29 @@ const RUN_STATUS_LABELS: LabelMap = {
   waiting: { zh: "待调用", en: "Waiting" },
   queued: { zh: "已入队", en: "Queued" },
   endpoint_response_received: { zh: "Endpoint 已响应", en: "Endpoint responded" },
+};
+
+const RUN_ERROR_MESSAGES: LabelMap = {
+  UNSUPPORTED_CONNECTION_MODE: {
+    zh: "该 Agent 的连接模式不受支持，请检查接入配置。",
+    en: "This Agent uses an unsupported connection mode. Check its connection settings.",
+  },
+  MCP_TOOL_MISSING: {
+    zh: "没有找到可调用的 MCP 工具，请检查 MCP Tool 名称。",
+    en: "No callable MCP tool was found. Check the MCP tool name.",
+  },
+  INVALID_RESPONSE: {
+    zh: "Agent 返回了无效的响应格式。",
+    en: "The Agent returned an invalid response format.",
+  },
+  INVALID_MCP_RESPONSE: {
+    zh: "MCP 服务返回了无效的响应格式。",
+    en: "The MCP service returned an invalid response format.",
+  },
+  TIMEOUT: {
+    zh: "等待 Agent 响应超时，请稍后重试或检查连接。",
+    en: "The Agent response timed out. Try again later or check the connection.",
+  },
 };
 
 const STREAM_STATE_LABELS: LabelMap = {
@@ -75,15 +98,15 @@ const VISIBILITY_LABELS: LabelMap = {
 };
 
 const LIFECYCLE_STATUS_LABELS: LabelMap = {
-  active: { zh: "启用", en: "Active" },
-  disabled: { zh: "已禁用", en: "Disabled" },
+  active: { zh: "已启用", en: "Active" },
+  disabled: { zh: "已停用", en: "Disabled" },
 };
 
 const CERTIFICATION_STATUS_LABELS: LabelMap = {
-  unreviewed: { zh: "未认证", en: "Unverified" },
-  pending: { zh: "认证中", en: "Verification pending" },
-  certified: { zh: "已认证", en: "Verified" },
-  rejected: { zh: "认证未通过", en: "Verification rejected" },
+  unreviewed: { zh: "未认证", en: "Not certified" },
+  pending: { zh: "认证中", en: "Certification pending" },
+  certified: { zh: "已认证", en: "Certified" },
+  rejected: { zh: "认证未通过", en: "Certification rejected" },
 };
 
 const TASK_STATUS_LABELS: LabelMap = {
@@ -113,7 +136,7 @@ const DELIVERY_STATUS_LABELS: LabelMap = {
 const DELIVERY_VISIBILITY_LABELS: LabelMap = {
   public: { zh: "公开交付", en: "Public delivery" },
   private: { zh: "私有交付", en: "Private delivery" },
-  owner_only: { zh: "仅 owner 可见", en: "Owner-only" },
+  owner_only: { zh: "仅 Agent 所有者可见", en: "Agent owner only" },
 };
 
 const BENCHMARK_STATUS_LABELS: LabelMap = {
@@ -133,8 +156,8 @@ const DRY_RUN_RESULT_LABELS: LabelMap = {
 const CONNECTION_MODE_LABELS: LabelMap = {
   direct_http: { zh: "HTTP 直连", en: "Direct HTTP" },
   mcp_server: { zh: "MCP Server", en: "MCP server" },
-  runtime_pull: { zh: "Agent Runtime Pull", en: "Agent Runtime pull" },
-  runtime_ws: { zh: "Agent Runtime WebSocket", en: "Agent Runtime WebSocket" },
+  runtime_pull: { zh: "Agent Node（长轮询）", en: "Agent Node (long polling)" },
+  runtime_ws: { zh: "Agent Node（WebSocket）", en: "Agent Node (WebSocket)" },
 };
 
 const TARGET_TYPE_LABELS: LabelMap = {
@@ -152,7 +175,7 @@ const DELIVERY_EVENT_LABELS: LabelMap = {
 const ARTIFACT_VISIBILITY_LABELS: LabelMap = {
   public: { zh: "公开", en: "Public" },
   private: { zh: "私有", en: "Private" },
-  owner_only: { zh: "仅 owner 可见", en: "Owner-only" },
+  owner_only: { zh: "仅 Agent 所有者可见", en: "Agent owner only" },
 };
 
 export function localizedBackendText(
@@ -209,6 +232,24 @@ export function availabilityStatusHint(
 
 export function runStatusLabel(status: string | null | undefined, locale: Locale): string {
   return labelFrom(RUN_STATUS_LABELS, status, locale);
+}
+
+export function runErrorMessage(
+  errorCode: string | null | undefined,
+  errorMessage: string | null | undefined,
+  locale: Locale,
+): string {
+  const code = errorCode?.trim().toUpperCase() ?? "";
+  const mapped = RUN_ERROR_MESSAGES[code]?.[locale];
+  if (mapped) return mapped;
+
+  const message = errorMessage?.trim();
+  if (message) return message;
+
+  if (code) {
+    return locale === "zh" ? `运行失败（${code}）` : `Run failed (${code})`;
+  }
+  return locale === "zh" ? "运行失败" : "Run failed";
 }
 
 export function streamStateLabel(state: string | null | undefined, locale: Locale): string {

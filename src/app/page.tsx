@@ -12,7 +12,7 @@
  * Server Component：通过 `auth()` 直接读 session，
  * 已登录时 GET /api/v1/dashboard 拿 core 概览数据；后端未就绪时 catch 兜底为 null。
  *
- * Core 版不展示商业产品侧的撮合入口。
+ * Core 版强调自托管 Registry 与运行控制面。
  */
 
 import { apiFetchAuthedWithFallback } from "@/lib/api";
@@ -46,27 +46,26 @@ export default async function Home() {
   const copy =
     locale === "zh"
       ? {
-          kicker: "OpenLinker Core",
+          kicker: "OpenLinker Core · 自托管控制面",
           title: (
             <>
-              开源 Agent Registry，
+              在自己的基础设施里，
               <br className="hidden sm:inline" />
-              连接、验证和调用 Agent
+              接入、发现和调用 Agent
             </>
           ),
-          lead: "Core 前端只保留 Agent Registry、接入、运行记录、A2A/MCP 和状态面。商业撮合、交易、钱包和商业化能力属于商业产品侧。",
+          lead: "统一管理 Agent 目录与四种连接模式，通过网页、API、MCP 或 A2A 发起调用，并回查每次运行的状态、事件和结果。",
         }
       : {
-          kicker: "OpenLinker Core",
+          kicker: "OpenLinker Core · Self-hosted control plane",
           title: (
             <>
-              Open-source Agent Registry
+              Connect, discover, and invoke Agents
               <br className="hidden sm:inline" />
-              {" "}
-              for connecting, verifying, and invoking Agents
+              on your own infrastructure
             </>
           ),
-          lead: "The core frontend only keeps Agent Registry, onboarding, run history, A2A/MCP, and status. Commercial matching, payments, wallets, and monetization surfaces belong to the commercial product.",
+          lead: "Manage the Agent catalog and all four connection modes, invoke through the web, API, MCP, or A2A, and inspect the status, events, and result of each run.",
         };
 
   let dashboard: DashboardData | null = null;

@@ -3,14 +3,7 @@
 /**
  * Playground 右侧结果面板。
  *
- * 4 个 panel + 一个底部快捷入口：
- *   1. 调用结果（绿色高亮，按状态切换）
- *   2. 免费期费用状态（cost / duration / 失败时说明未产生费用）
- *   3. 下一步（指向真实 Run trace / A2A 协作链）
- *   4. 父运行与协作链 / 开发者 API（A2A 结果显示入口，否则显示 Run ID）
- *   5. 底部入口：查看运行 Trace
- *
- * 发布口径：只展示当前真实可用的导航入口，不保留不可点击占位按钮。
+ * 依次展示调用结果、运行概览、Run 详情入口和 A2A 协作链。
  */
 
 import Link from "next/link";
@@ -19,6 +12,7 @@ import { toast } from "sonner";
 
 import { useApi } from "@/hooks/use-api";
 import type { Locale } from "@/lib/i18n";
+import { runErrorMessage } from "@/lib/i18n-labels";
 import { summarizeOutput } from "./output-summary";
 import type { RunResult, RunStatus } from "./types";
 
@@ -82,15 +76,13 @@ function CallResultBox({ status, result, locale = "zh" }: Props & { locale?: Loc
     locale === "zh"
       ? {
           title: "调用结果",
-          idle: "点击左侧「运行 Agent」开始本次调用，结果会在这里高亮显示。",
-          running: "正在等待响应，Run ID 已生成，可在运行 Trace 中查看实时事件。",
-          failed: "Agent 未能完成本次调用。",
+          idle: "点击左侧「调用 Agent」发起请求，结果会在这里显示。",
+          running: "正在等待响应。Run ID 已生成，可在运行详情中查看最新事件。",
         }
       : {
           title: "Run Result",
-          idle: "Click \"Run Agent\" on the left to start this call. The result is highlighted here.",
-          running: "Waiting for response. Run ID has been created, and real-time events are available in Trace.",
-          failed: "The Agent could not complete this run.",
+          idle: "Click \"Invoke Agent\" on the left to start this call. The result appears here.",
+          running: "Waiting for a response. The Run ID is ready, and the latest events are available in run details.",
         };
   const failed =
     result != null && (result.status === "failed" || result.status === "timeout" || result.status === "canceled");
@@ -174,7 +166,7 @@ function CallResultBox({ status, result, locale = "zh" }: Props & { locale?: Loc
             </p>
           ) : null}
           <p className="mt-1 text-[#a3382c]">
-            {result.error_message ?? copy.failed}
+            {runErrorMessage(result.error_code, result.error_message, locale)}
           </p>
         </div>
       ) : null}
@@ -183,29 +175,29 @@ function CallResultBox({ status, result, locale = "zh" }: Props & { locale?: Loc
 }
 
 /* ============================================================
-   2. 免费期费用状态
+   2. 运行概览
    ============================================================ */
 function CostBox({ status, result, locale = "zh" }: Props & { locale?: Locale }) {
   const copy =
     locale === "zh"
       ? {
-          title: "费用状态",
-          runningWithRun: "运行中，当前阶段不预留余额或产生费用。",
-          runningNoRun: "运行中，结果完成后展示耗时。",
-          idle: "尚未运行。当前阶段调用免费，运行结果会写入历史记录。",
-          noFee: "未产生费用",
+          title: "运行概览",
+          runningWithRun: "运行中；Run ID 已生成，状态与事件会写入运行记录。",
+          runningNoRun: "正在创建运行记录并等待 Agent 响应。",
+          idle: "尚未运行。提交后可按 Run ID 回查状态、事件与结果。",
+          failed: "运行未成功",
           duration: "耗时",
-          free: "当前免费",
+          completed: "运行完成",
           totalDuration: "总耗时",
         }
       : {
-          title: "Fee Status",
-          runningWithRun: "Running. No balance reserve or fee is created in the current phase.",
-          runningNoRun: "Running. Duration is shown after the result completes.",
-          idle: "Not run yet. Calls are free in the current phase, and results are written to history.",
-          noFee: "No fee",
+          title: "Run overview",
+          runningWithRun: "Running. A Run ID has been created, and status and events are being recorded.",
+          runningNoRun: "Creating the run record and waiting for the Agent response.",
+          idle: "No run yet. After submission, use the Run ID to inspect status, events, and results.",
+          failed: "Run did not complete",
           duration: "duration",
-          free: "Free now",
+          completed: "Run completed",
           totalDuration: "total duration",
         };
   const failed =
@@ -227,11 +219,11 @@ function CostBox({ status, result, locale = "zh" }: Props & { locale?: Locale })
         </span>
       ) : failed ? (
         <span className="mt-1.5 block text-[12px] leading-[1.5] text-[color:var(--ol-amber)]">
-          {copy.noFee} · {copy.duration} {result.duration_ms}ms
+          {copy.failed} · {copy.duration} {result.duration_ms}ms
         </span>
       ) : (
         <span className="mt-1.5 block text-[12px] leading-[1.5] text-[color:var(--ol-muted)]">
-          {copy.free} · {copy.totalDuration} {(result.duration_ms / 1000).toFixed(2)}s
+          {copy.completed} · {copy.totalDuration} {(result.duration_ms / 1000).toFixed(2)}s
         </span>
       )}
     </div>
@@ -246,11 +238,11 @@ function NextStepBox({ locale = "zh" }: { locale?: Locale }) {
     locale === "zh"
       ? {
           title: "下一步",
-          body: "运行完成后可进入 Run Trace 查看事件、消息和产物；如果发生 A2A 委派，协作链会在这里自动出现。",
+          body: "运行完成后可进入 Run 详情查看事件、消息和产物；如果发生 A2A 委派，这里会出现协作链入口。",
         }
       : {
           title: "Next Step",
-          body: "After the run finishes, open Run Trace to inspect events, messages, and artifacts. If A2A delegation happens, the handoff chain appears here automatically.",
+          body: "After the run finishes, open Run detail to inspect events, messages, and artifacts. If A2A delegation occurs, a handoff-chain link appears here.",
         };
 
   return (
@@ -283,26 +275,26 @@ function DeveloperApiBox({
       ? {
           delegationTitle: "父运行与协作链",
           apiTitle: "开发者 API",
-          delegated: "当前 Run 是 parent，已真实委派子 Agent 完成子调用。",
+          delegated: "该 Run 包含子 Agent 调用，可进入协作链查看父子关系。",
           copyDoneToast: "Run ID 已复制",
           copyFailToast: "复制失败，请手动选择",
           copied: "已复制",
           copy: "复制",
           parentRun: "查看父运行",
           collaboration: "查看协作链",
-          empty: "运行后这里会出现 Run ID，可通过 API 查询日志和结果。",
+          empty: "运行后这里会出现 Run ID，可通过 API 查询运行状态、事件和结果。",
         }
       : {
           delegationTitle: "Parent Run and Handoff Chain",
           apiTitle: "Developer API",
-          delegated: "This Run is the parent and has delegated work to a child Agent.",
+          delegated: "This Run includes child-Agent calls. Open the handoff chain to inspect parent-child relationships.",
           copyDoneToast: "Run ID copied",
           copyFailToast: "Copy failed. Select it manually.",
           copied: "Copied",
           copy: "Copy",
           parentRun: "View Parent Run",
           collaboration: "View Handoff Chain",
-          empty: "After running, the Run ID appears here and can be used to query logs and results through the API.",
+          empty: "After running, the Run ID appears here and can be used to query status, events, and results through the API.",
         };
 
   const handleCopy = async () => {
@@ -380,12 +372,12 @@ function BottomActions({
   const copy =
     locale === "zh"
       ? {
-          trace: "查看运行 Trace",
-          tracePending: "运行后查看 Trace",
+          trace: "查看 Run 详情",
+          tracePending: "运行后查看详情",
         }
       : {
-          trace: "View Run Trace",
-          tracePending: "Trace available after running",
+          trace: "View Run detail",
+          tracePending: "Run details available after running",
         };
   const baseBtn =
     "inline-flex h-[42px] w-full items-center justify-center gap-2 rounded-[13px] px-4 text-[13.5px] font-black border whitespace-nowrap transition-colors";

@@ -3,8 +3,8 @@ import { StatusDashboard } from "@/components/status/status-dashboard";
 import { getLocale } from "@/lib/i18n-server";
 
 export const metadata = {
-  title: "Platform Status",
-  description: "OpenLinker platform status",
+  title: "Instance Status",
+  description: "OpenLinker Core instance status",
 };
 
 export default async function StatusPage() {
@@ -13,13 +13,13 @@ export default async function StatusPage() {
     locale === "zh"
       ? {
           home: "首页",
-          current: "平台状态",
+          current: "实例状态",
           heading: "服务状态、事件记录和接入侧影响",
           lead: "把 API、Registry、运行链路和外部投递放在同一个视图里，方便定位调用失败或投递延迟。",
         }
       : {
           home: "Home",
-          current: "Platform Status",
+          current: "Instance Status",
           heading: "Service status, incidents, and integration impact",
           lead: "API, Registry, run chains, and external delivery are shown together so run failures or delivery delays are easier to diagnose.",
         };

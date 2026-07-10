@@ -32,15 +32,15 @@ export function MyAgentsCard({ agents }: { agents: AgentResponse[] }) {
     locale === "zh"
       ? {
           title: "我的 Agent",
-          add: "+ 发布新 Agent",
-          emptyPrefix: "还没有发布 Agent。",
-          emptyLink: "立即发布 →",
+          add: "+ 接入新 Agent",
+          emptyPrefix: "还没有接入 Agent。",
+          emptyLink: "立即接入 →",
         }
       : {
           title: "My Agents",
-          add: "+ Publish new Agent",
-          emptyPrefix: "No Agents published yet.",
-          emptyLink: "Publish now ->",
+          add: "+ Connect new Agent",
+          emptyPrefix: "No Agents connected yet.",
+          emptyLink: "Connect now ->",
         };
 
   return (

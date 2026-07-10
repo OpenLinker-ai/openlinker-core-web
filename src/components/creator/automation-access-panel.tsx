@@ -9,6 +9,7 @@ import { useClientLocale } from "@/hooks/use-client-locale";
 import { localizedErrorMessage } from "@/lib/api";
 import { inferApiBaseFromWebOrigin } from "@/lib/api-root";
 import type { Locale } from "@/lib/i18n";
+import { automationAccessMessages } from "@/messages/agent";
 
 interface BootstrapToken {
   id: string;
@@ -63,106 +64,7 @@ export function AutomationAccessPanel({
   section?: AutomationAccessSection;
 }) {
   const locale = useClientLocale();
-  const copy =
-    locale === "zh"
-      ? {
-          created: "Agent 接入凭证已生成，明文仅本次显示",
-          createFailed: "生成失败",
-          loadFailed: "读取 Agent 接入凭证失败",
-          approved: "审批已确认",
-          rejected: "审批已拒绝",
-          handleFailed: "处理失败",
-          sessionLoading: "登录状态加载中，请稍后再试",
-          sessionMissing: "登录状态不可用，请重新登录后再试",
-          copiedPrompt: "已复制接入启动包",
-          copiedToken: "已复制 Agent 接入凭证",
-          copyFailed: "复制失败，请手动选中",
-          title: "生成 Agent 接入凭证",
-          bodyPrefix: "只有当你要让本地脚本、CLI 或外部 Agent 在无人值守环境自己完成注册时才需要。手动发布仍走",
-          publish: "发布新 Agent",
-          bodySuffix: "Agent 接入凭证（Agent Token）默认 30 分钟内完成首次注册；注册成功后同一个凭证会绑定到该 Agent 的运行环境。",
-          creating: "生成中...",
-          create: "生成 Agent 接入凭证",
-          secretOnce: "Agent 接入凭证（Agent Token）明文仅显示一次。推荐直接复制启动包给 Agent；完整接入步骤请看 /skill/publish-agent。",
-          copiedPromptButton: "已复制启动包",
-          copyPromptButton: "复制给 Agent 的启动包",
-          copiedTokenButton: "已复制凭证",
-          copyTokenButton: "只复制 Agent 凭证",
-          preview: "查看将复制给 Agent 的启动包",
-          tokenBoundary: "此凭证只能用于",
-          tokenBoundarySuffix: "注册并运行 Agent；完整接入步骤请看",
-          generated: (n: number) => `已生成 ${n} 个 Agent 接入凭证记录。此凭证仅用于 Agent 注册与运行，不能用于模型调用、MCP/API 用户调用。`,
-          sortBy: "排序",
-          sortDir: "方向",
-          sortCreated: "创建时间",
-          sortLastUsed: "最近使用",
-          sortExpires: "过期时间",
-          sortName: "名称",
-          sortStatus: "状态",
-          sortDesc: "降序",
-          sortAsc: "升序",
-          loading: "加载中...",
-          pageSummary: (start: number, end: number, total: number) => `第 ${start}-${end} 条，共 ${total} 条`,
-          previous: "上一页",
-          next: "下一页",
-          approvals: "待处理审批",
-          noApprovals: "暂无待处理的高风险动作请求。",
-          revokeToken: "撤销",
-          revokingToken: "撤销中...",
-          tokenRevoked: "Agent 接入凭证已撤销",
-          tokenRevokeFailed: "撤销 Agent 接入凭证失败",
-          reject: "拒绝",
-          confirm: "确认",
-        }
-      : {
-          created: "Agent access credential created. Plaintext is shown only once.",
-          createFailed: "Failed to create invite",
-          loadFailed: "Failed to load Agent access credentials",
-          approved: "Approval confirmed",
-          rejected: "Approval rejected",
-          handleFailed: "Failed to process request",
-          sessionLoading: "Sign-in session is still loading. Try again in a moment.",
-          sessionMissing: "Sign-in session is unavailable. Sign in again and retry.",
-          copiedPrompt: "Startup packet copied",
-          copiedToken: "Agent access credential copied",
-          copyFailed: "Copy failed. Select it manually.",
-          title: "Create Agent access credential",
-          bodyPrefix: "Use this only when a local script, CLI, or external Agent needs to register itself unattended. Manual publishing still uses",
-          publish: "Publish new Agent",
-          bodySuffix: "The Agent access credential (Agent Token) defaults to 30 minutes for first registration. After registration, the same credential is bound to that Agent runtime.",
-          creating: "Creating...",
-          create: "Create Agent credential",
-          secretOnce: "The Agent access credential (Agent Token) plaintext is shown only once. Copy the startup packet to the Agent; see /skill/publish-agent for the full onboarding steps.",
-          copiedPromptButton: "Startup packet copied",
-          copyPromptButton: "Copy startup packet",
-          copiedTokenButton: "Credential copied",
-          copyTokenButton: "Copy Agent credential only",
-          preview: "Preview the startup packet",
-          tokenBoundary: "This credential can only call",
-          tokenBoundarySuffix: "to register and run an Agent. For the full onboarding steps, see",
-          generated: (n: number) => `${n} Agent access credential records generated. They are only for Agent registration and runtime, not model calls or MCP/API user calls.`,
-          sortBy: "Sort",
-          sortDir: "Direction",
-          sortCreated: "Created",
-          sortLastUsed: "Last used",
-          sortExpires: "Expires",
-          sortName: "Name",
-          sortStatus: "Status",
-          sortDesc: "Descending",
-          sortAsc: "Ascending",
-          loading: "Loading...",
-          pageSummary: (start: number, end: number, total: number) => `${start}-${end} of ${total}`,
-          previous: "Previous",
-          next: "Next",
-          approvals: "Pending approvals",
-          noApprovals: "No pending high-risk action requests.",
-          revokeToken: "Revoke",
-          revokingToken: "Revoking...",
-          tokenRevoked: "Agent access credential revoked",
-          tokenRevokeFailed: "Failed to revoke Agent access credential",
-          reject: "Reject",
-          confirm: "Confirm",
-        };
+  const copy = automationAccessMessages[locale];
   const { fetch: apiFetch, isAuthenticated, isLoading: sessionLoading } = useApi();
   const [tokens, setTokens] = useState<BootstrapToken[]>([]);
   const [tokenTotal, setTokenTotal] = useState(0);
@@ -530,14 +432,14 @@ function buildSelfRegistrationPrompt(token: string, locale: Locale): string {
       "Execution contract:",
       "1. Read OPENLINKER_DISCOVERY_URL, then OPENLINKER_SKILL_URL. Treat this startup packet as bootstrapping context, not the full documentation.",
       "2. Inspect the Skill registry and map your real capabilities to at most 5 existing skill_ids. Do not invent skill_ids.",
-      "3. Prefer direct_http when you have a reachable HTTPS endpoint. Use runtime_ws with OpenLinker Agent Node for local/private-network/NAT Agents that cannot accept inbound calls; use runtime_pull only when WebSocket cannot stay connected. Use mcp_server only to wrap an existing remote HTTP JSON-RPC / MCP tools/call endpoint as an Agent, not to publish a standalone MCP Server. Explicitly set visibility=private unless the human asked for public.",
+      "3. Prefer direct_http when you have a reachable HTTPS endpoint. Use runtime_ws with OpenLinker Agent Node for local/private-network/NAT Agents that cannot accept inbound calls; use runtime_pull only when WebSocket cannot stay connected. Use mcp_server only to wrap an existing remote HTTP JSON-RPC / MCP tools/call endpoint as an Agent, not to deploy a standalone MCP Server. Explicitly set visibility=private unless the human asked for public.",
       "4. Register yourself with POST /api/v1/agent-registration/agents using Authorization: Bearer OPENLINKER_AGENT_TOKEN.",
       "5. If using runtime_ws, start the Go OpenLinker Agent Node with OPENLINKER_AGENT_TOKEN so it opens /api/v1/agent-runtime/ws, handles run.assigned, exposes the localhost helper for events/A2A delegation, and sends run.result. If falling back to runtime_pull, start heartbeat plus GET /api/v1/agent-runtime/runs/claim?wait=25 and always POST result.",
       "6. If using direct_http or mcp_server, verify the endpoint/tool can receive a real OpenLinker run.",
-      "7. Continue until there is at least one online signal or self-test result, or clearly report what blocks it.",
+      "7. Continue until there is at least one callability signal or self-test result, or clearly report what blocks it.",
       "",
       "Final report format:",
-      "Return only this summary to the human: agent_id, slug, connection_mode, visibility, Agent Token prefix, declared skill_ids, online status, self-test run_id/status if available, next_action. Do not include any plaintext token.",
+      "Return only this summary to the human: agent_id, slug, connection_mode, visibility, Agent Token prefix, declared skill_ids, callability status, self-test run_id/status if available, next_action. Do not include any plaintext token.",
     ].join("\n");
   }
   return [
@@ -561,10 +463,10 @@ function buildSelfRegistrationPrompt(token: string, locale: Locale): string {
     "4. 用 Authorization: Bearer OPENLINKER_AGENT_TOKEN 调用 POST /api/v1/agent-registration/agents 完成自注册。",
     "5. 如果使用 runtime_ws，注册后用 OPENLINKER_AGENT_TOKEN 启动 Go OpenLinker Agent Node，让它打开 /api/v1/agent-runtime/ws、处理 run.assigned、通过 localhost helper 提供事件回传/A2A 委派，并发送 run.result。如果降级到 runtime_pull，启动 heartbeat 和 GET /api/v1/agent-runtime/runs/claim?wait=25，且领取后必须 POST result。",
     "6. 如果使用 direct_http 或 mcp_server，需要确认 endpoint/tool 能接收一次真实 OpenLinker run。",
-    "7. 持续到至少出现一个 online 信号或 self-test 结果；如果做不到，明确报告阻塞原因。",
+    "7. 持续到至少出现一个可调用信号或 self-test 结果；如果做不到，明确报告阻塞原因。",
     "",
     "最终回报格式：",
-    "只回报这些信息：agent_id、slug、connection_mode、visibility、Agent Token prefix、声明的 skill_ids、online 状态、self-test run_id/status（如有）、next_action。不要回报任何明文 token。",
+    "只回报这些信息：agent_id、slug、connection_mode、visibility、Agent Token prefix、声明的 skill_ids、可调用状态、self-test run_id/status（如有）、next_action。不要回报任何明文 token。",
   ].join("\n");
 }
 

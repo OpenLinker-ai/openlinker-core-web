@@ -8,10 +8,10 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "OpenLinker",
-    template: "%s · OpenLinker",
+    default: "OpenLinker Core Web",
+    template: "%s · OpenLinker Core Web",
   },
-  description: "Open Agent Registry, invocation, and runtime traces",
+  description: "Self-hosted Agent Registry, invocation, run events, and instance administration",
   icons: {
     icon: "/openlinker-logo.svg",
   },
@@ -25,8 +25,8 @@ export default async function RootLayout({
   const locale = await getLocale();
   const copy =
     locale === "zh"
-      ? { terms: "服务条款", privacy: "隐私政策", status: "平台状态" }
-      : { terms: "Terms", privacy: "Privacy", status: "Platform Status" };
+      ? { terms: "实例使用说明", privacy: "数据与隐私", status: "实例状态" }
+      : { terms: "Instance Terms", privacy: "Data & Privacy", status: "Instance Status" };
 
   return (
     <html

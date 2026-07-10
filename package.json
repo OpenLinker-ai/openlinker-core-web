@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "license": "Apache-2.0",
-  "description": "Open-source web UI for OpenLinker, an AI agent registry, agent marketplace, A2A/MCP playground, and self-hosted agent runtime gateway.",
+  "description": "Open-source self-hosted UI for the OpenLinker Agent Registry, A2A/MCP invocation, run records, and Agent runtime operations.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/OpenLinker-ai/openlinker-core-web.git"
@@ -16,7 +16,7 @@
     "openlinker",
     "ai-agents",
     "agent-registry",
-    "agent-marketplace",
+    "agent-orchestration",
     "a2a",
     "mcp",
     "runtime-gateway",

@@ -4,14 +4,10 @@
  * 设置页 · 账户资料 section。
  *
  * 视觉来自 prototype/openlinker-flow-23-settings.png：
- *   - h3 "账户资料" + sub
- *   - profile-row：64px 品牌色首字母大头像 + 名称 + meta + "更换头像"按钮
- *   - 显示名可编辑保存，其余资料展示。
+ *   - profile-row：64px 品牌色首字母头像 + 名称 + 登录邮箱
+ *   - 显示名可编辑保存，邮箱只读。
  *
- * Phase 1 简化：
- *   - 头像永远是首字母（无上传）
- *   - 个人简介 / 所在地区显示 "未填写"
- *   - 邮箱显示"已验证"hint（默认所有用户算已验证）
+ * 只展示 /api/v1/me 当前提供的真实账号字段，不生成用户名、个人简介或地区占位。
  */
 
 import { useRouter } from "next/navigation";
@@ -21,7 +17,6 @@ import { toast } from "sonner";
 import { useApi } from "@/hooks/use-api";
 import { localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
 
 interface Props {
   email: string;
@@ -34,7 +29,6 @@ interface FieldRowProps {
   value: string;
   hint?: string;
   action?: string;
-  muted?: boolean;
   editable?: boolean;
   onEdit?: () => void;
 }
@@ -44,7 +38,6 @@ function FieldRow({
   value,
   hint,
   action = "编辑",
-  muted,
   editable,
   onEdit,
 }: FieldRowProps) {
@@ -54,9 +47,7 @@ function FieldRow({
         {label}
       </label>
       <div className="text-[13px] font-semibold text-[color:var(--ol-ink)]">
-        <span className={cn(muted && "text-[color:var(--ol-subtle)] font-medium")}>
-          {value}
-        </span>
+        <span>{value}</span>
         {hint && (
           <span className="mt-0.5 block text-[12px] font-medium text-[color:var(--ol-muted)]">
             {hint}
@@ -80,15 +71,13 @@ export function AccountSection({ email, displayName, locale = "zh" }: Props) {
   const [saving, setSaving] = useState(false);
   const effectiveName = name || displayName;
   const initial = (effectiveName || email || "?").trim().charAt(0).toUpperCase();
-  // 用户名 / handle 用 email 前缀（@ 之前），保持原型形态
-  const handle = email.split("@")[0] || "user";
+  const fallbackName = email.split("@")[0] || "user";
   const copy =
     locale === "zh"
       ? {
           edit: "编辑",
           title: "账户资料",
-          body: "这些信息用于登录、通知和 Agent 所有者展示。",
-          profile: "个人资料",
+          body: "邮箱用于登录；显示名称会出现在 Agent 所有者信息中。",
           tooShort: "显示名称至少 2 个字符",
           saved: "账户资料已保存",
           failed: "保存失败，请稍后再试",
@@ -98,17 +87,12 @@ export function AccountSection({ email, displayName, locale = "zh" }: Props) {
           displayName: "显示名称",
           empty: "未填写",
           email: "邮箱",
-          emailHint: "用于登录；当前不支持自助换绑",
-          username: "用户名",
-          bio: "个人简介",
-          region: "所在地区",
-          regionHint: "用于后续计划与合规能力适配",
+          emailHint: "用于登录；当前页面不支持修改",
         }
       : {
           edit: "Edit",
           title: "Account Profile",
-          body: "These details are used for sign-in, notifications, and Agent-owner display.",
-          profile: "Profile",
+          body: "Your email is used for sign-in; your display name appears in Agent owner details.",
           tooShort: "Display name must be at least 2 characters",
           saved: "Account profile saved",
           failed: "Could not save. Try again later.",
@@ -118,13 +102,8 @@ export function AccountSection({ email, displayName, locale = "zh" }: Props) {
           displayName: "Display name",
           empty: "Not set",
           email: "Email",
-          emailHint: "Used for sign-in. Self-service email changes are not available yet.",
-          username: "Username",
-          bio: "Bio",
-          region: "Region",
-          regionHint: "Used for future plan and compliance fit.",
+          emailHint: "Used for sign-in; it cannot be changed on this page.",
         };
-  const joinedHint = "@" + handle + " · " + copy.profile;
 
   const saveDisplayName = async () => {
     const trimmed = name.trim();
@@ -160,7 +139,7 @@ export function AccountSection({ email, displayName, locale = "zh" }: Props) {
         </p>
       </header>
 
-      {/* profile-row：大头像 + 名 + meta + 更换头像 */}
+      {/* profile-row：首字母头像 + 显示名称 + 登录邮箱 */}
       <div className="grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3.5 rounded-2xl border border-[color:var(--ol-line)] bg-white p-3.5">
         <div
           className="ol-profile-avatar grid h-16 w-16 place-items-center rounded-full text-[26px] font-black text-white"
@@ -178,11 +157,11 @@ export function AccountSection({ email, displayName, locale = "zh" }: Props) {
             />
           ) : (
             <div className="truncate text-[16px] font-[850] text-[color:var(--ol-ink)]">
-              {effectiveName || handle}
+              {effectiveName || fallbackName}
             </div>
           )}
           <div className="mt-1 truncate text-[12px] text-[color:var(--ol-muted)]">
-            {joinedHint}
+            {email}
           </div>
         </div>
         <button
@@ -208,18 +187,6 @@ export function AccountSection({ email, displayName, locale = "zh" }: Props) {
           label={copy.email}
           value={email}
           hint={copy.emailHint}
-        />
-        <FieldRow
-          label={copy.username}
-          value={`@${handle}`}
-          hint={`openlinker.ai/u/${handle}`}
-        />
-        <FieldRow label={copy.bio} value={copy.empty} muted />
-        <FieldRow
-          label={copy.region}
-          value={copy.empty}
-          hint={copy.regionHint}
-          muted
         />
       </div>
     </section>

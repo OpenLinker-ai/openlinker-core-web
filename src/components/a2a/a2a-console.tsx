@@ -86,53 +86,53 @@ export function A2AConsole({
   const copy =
     locale === "zh"
       ? {
-          title: "Agent 调用树详情",
-          parentDetail: "根运行详情",
+          title: "Agent 协作详情",
+          parentDetail: "最初运行详情",
           selectedParent: "已选协作会话",
           source: "入口",
           boundTokens: "绑定凭证",
-          parentNoSkills: "入口 Agent 尚未声明 Skill",
-          parentExplainer: "该视图按 root_context_id / 根运行聚合。同一次任务里的 fan-out、串行委派和中间 Agent 再委派都会收在这棵调用树下。",
-          selectParent: "从上方协作会话选择一条记录，查看真实 Agent-to-Agent 调用树。",
-          placeholderSlug: "选择协作会话后绑定真实 run_id",
+          parentNoSkills: "发起协作的 Agent 尚未声明 Skill",
+          parentExplainer: "这里从最初运行开始，展示同一次任务中的并行、连续和多层 Agent 调用。",
+          selectParent: "从上方选择一条协作会话，查看 Agent 之间的调用关系。",
+          placeholderSlug: "选择一条协作会话",
           childCalls: "总调用",
           successRunning: "成功 / 运行中",
-          costField: "委派费用",
-          freeNow: "当前免费",
-          noDelegations: "该会话还没有 Agent 委派记录；当入口 Agent 调用子 Agent 后会自动出现。",
+          costField: "外部费用记录",
+          freeNow: "未记录外部费用",
+          noDelegations: "这条会话还没有子运行。Agent 调用另一个 Agent 后，记录会显示在这里。",
           missingReason: "未提供调用原因",
           callMethod: "调用方式",
           context: "协议上下文",
           targetNoSkills: "目标 Agent 尚未声明 Skill",
-          freeDelegation: "免费委派",
+          freeDelegation: "未记录外部费用",
           viewChildRun: "查看运行",
           relationships: "运行关系",
           chooseFirst: "先从协作会话目录选择一条记录。",
           related: "关联页面",
           creatorHub: ["Agent 管理", "查看自注册 Agent、能力声明和调用记录。"],
-          skills: ["Skill 注册表", "查看能力标签、声明 Skill 和推荐依据。"],
+          skills: ["Skill 注册表", "查看能力标签、声明 Skill 和匹配依据。"],
           connect: ["开发者中心", "查看 API/MCP、鉴权边界和外部工具调用说明。"],
         }
       : {
-          title: "Agent Call Tree Details",
-          parentDetail: "Root run detail",
+          title: "Agent collaboration details",
+          parentDetail: "Initial run details",
           selectedParent: "selected session",
           source: "Source",
           boundTokens: "Bound credentials",
-          parentNoSkills: "Entry Agent has not declared Skills",
-          parentExplainer: "This view is grouped by root_context_id / root run. Fan-out, serial delegation, and downstream delegation stay inside one call tree.",
-          selectParent: "Select a collaboration session above to inspect a real Agent-to-Agent call tree.",
-          placeholderSlug: "Select a session to bind a real run_id",
+          parentNoSkills: "The starting Agent has not declared Skills",
+          parentExplainer: "Starting from the first run, this view shows every parallel, sequential, and nested Agent call in the same task.",
+          selectParent: "Select a collaboration session above to inspect how the Agents called one another.",
+          placeholderSlug: "Select a collaboration session",
           childCalls: "Total calls",
           successRunning: "Success / Running",
-          costField: "Delegation cost",
-          freeNow: "Free now",
-          noDelegations: "This session has no Agent delegation records yet. They will appear after the Entry Agent invokes a Child Agent.",
+          costField: "External cost record",
+          freeNow: "No external cost recorded",
+          noDelegations: "This session has no child runs yet. Records will appear when one Agent invokes another.",
           missingReason: "No reason provided",
           callMethod: "Invocation method",
           context: "Protocol context",
           targetNoSkills: "Target Agent has not declared Skills",
-          freeDelegation: "Free delegation",
+          freeDelegation: "No external cost recorded",
           viewChildRun: "View run",
           relationships: "Run relationships",
           chooseFirst: "Select a session from the collaboration directory first.",
@@ -285,15 +285,13 @@ export function A2AConsole({
                       <p className="mt-1 text-[12.5px] font-bold leading-5 text-[color:var(--ol-muted)]">
                         {locale === "zh" ? (
                           <>
-                            入口 Agent 使用自己的 Agent 接入凭证（<code>ol_agent_*</code>）调用{" "}
-                            <code>/api/v1/agent-runtime/call-agent</code>，平台创建子运行并写入
-                            <code> run_delegations</code> 和 <code>run_events</code>。
+                            发起协作的 Agent 使用自己的 Agent 令牌请求调用另一个 Agent，
+                            OpenLinker 随后创建关联的子运行。
                           </>
                         ) : (
                           <>
-                            The Entry Agent calls <code>/api/v1/agent-runtime/call-agent</code> with
-                            its own Agent access credential (<code>ol_agent_*</code>); OpenLinker creates the child
-                            run and writes <code> run_delegations</code> plus <code>run_events</code>.
+                            The starting Agent uses its own Agent Token to request another Agent.
+                            OpenLinker then creates the linked child run.
                           </>
                         )}
                       </p>
@@ -398,17 +396,17 @@ function A2ACallGraph({
     locale === "zh"
       ? {
           childAgent: "子 Agent",
-          autoChild: "真实委派后自动生成子运行",
+          autoChild: "Agent 发起协作后生成子运行",
           title: "可拖拽调用树",
-          body: "关系图按真实委派层级展示 fan-out 与串行调用；拖拽只改变本页排布，不影响后端调用。",
+          body: "关系图展示并行、连续和多层 Agent 调用。拖动节点只会调整当前页面的排布。",
           dragHint: "拖动节点整理视图",
           emptyNode: "子 Agent 调用发生后会自动出现节点。",
         }
       : {
           childAgent: "Child Agent",
-          autoChild: "A child run is created after real delegation",
+          autoChild: "A child run appears after an Agent requests help",
           title: "Draggable call tree",
-          body: "The graph follows real delegation depth, showing fan-out and serial calls in one tree. Dragging only changes this view and does not affect backend calls.",
+          body: "The graph shows parallel, sequential, and nested Agent calls. Dragging a node only changes this page layout.",
           dragHint: "Drag nodes to organize the view",
           emptyNode: "Child Agent nodes appear after delegation.",
         };
@@ -665,36 +663,36 @@ function A2AFlowCard({ locale }: { locale: Locale }) {
   const copy =
     locale === "zh"
       ? {
-          title: "闭环逻辑",
+          title: "A2A 如何工作",
           steps: [
             {
-              title: "Agent 自注册",
-              desc: "Agent 所有者在 /hub 发起自注册；Agent 读取 /skill/publish-agent 后带 endpoint、tags、skill_ids 注册自己，平台用 Agent 接入凭证承载注册和运行用途。",
+              title: "接入 Agent",
+              desc: "Agent 提供方先把 Agent 接入 OpenLinker，并为它签发独立的 Agent 令牌。",
             },
             {
-              title: "Skill / MCP 关联",
-              desc: "Skill 描述 Agent 能力并参与任务推荐；MCP 是外部客户端入口，调用会记录为 source=mcp。",
+              title: "说明能力与入口",
+              desc: "Skill 用于描述 Agent 能力；MCP 为外部客户端提供调用入口。",
             },
             {
               title: "A2A 调用",
-              desc: "入口 Agent 从本次请求拿到 run_id，再用自身绑定用途调用 call-agent，平台自动创建子运行和调用树事件。",
+              desc: "Agent 在运行中请求另一个 Agent 后，OpenLinker 创建子运行，并把两次运行关联起来。",
             },
           ],
         }
       : {
-          title: "Loop logic",
+          title: "How A2A works",
           steps: [
             {
-              title: "Agent self-registration",
-              desc: "The Agent owner starts self-registration from /hub. The Agent reads /skill/publish-agent and registers itself with endpoint, tags, and skill_ids. OpenLinker uses Agent access credentials for registration and runtime.",
+              title: "Connect the Agent",
+              desc: "The Agent provider connects the Agent to OpenLinker and gives it a dedicated Agent Token.",
             },
             {
-              title: "Skill / MCP linkage",
-              desc: "Skills describe Agent capabilities and power task matching. MCP is the external client entry, and calls are recorded as source=mcp.",
+              title: "Describe capabilities and access",
+              desc: "Skills describe what the Agent can do, while MCP gives external clients a way to invoke it.",
             },
             {
               title: "A2A invocation",
-              desc: "The Entry Agent receives run_id in the current request, calls call-agent with its bound credential, and OpenLinker creates the child run plus call-tree events.",
+              desc: "When an Agent requests another Agent during a run, OpenLinker creates a child run and links the two records.",
             },
           ],
         };

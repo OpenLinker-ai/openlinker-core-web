@@ -22,7 +22,6 @@ import {
   buildQuery,
   formatDate,
   formatNumber,
-  formatUsd,
   getAdminContext,
   offsetForPage,
   pageFromParams,
@@ -73,6 +72,13 @@ export default async function AdminAgentsPage({
   if (!me?.is_admin) return <ForbiddenAdmin locale={locale} />;
 
   const copy = adminCopy(locale);
+  const certificationLabels = {
+    ...copy,
+    unreviewed: locale === "zh" ? "未提交实例认证" : "Not instance-certified",
+    pending: locale === "zh" ? "实例认证中" : "Instance certification pending",
+    certified: locale === "zh" ? "实例已认证" : "Instance certified",
+    rejected: locale === "zh" ? "实例认证未通过" : "Instance certification rejected",
+  };
   const { agents, error } = await loadAgents(params, page, locale);
   const returnTo = pageHref("/admin/agents", params, page);
 
@@ -99,7 +105,7 @@ export default async function AdminAgentsPage({
               name="certification_status"
               value={params.certification_status}
               options={["", "unreviewed", "pending", "certified", "rejected"]}
-              labels={copy}
+              labels={certificationLabels}
             />
             <button className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[color:var(--ol-primary)] px-3 text-[12px] font-black text-white">
               <Icon name="refresh" size="sm" />
@@ -161,7 +167,6 @@ export default async function AdminAgentsPage({
                       </td>
                       <td className="border-y border-[color:var(--ol-line)] px-3 py-3 text-[12px] text-[color:var(--ol-muted)]">
                         <div>{formatNumber(agent.total_calls)} {copy.runCount}</div>
-                        <div>{formatUsd(agent.total_revenue_cents)}</div>
                         <div>{adminConnectionModeLabel(agent.connection_mode, locale)}</div>
                         <div>
                           {copy.recommended}: {formatNumber(agent.recommended_task_count)}
@@ -185,7 +190,7 @@ export default async function AdminAgentsPage({
                               name="certification_status"
                               value={agent.certification_status}
                               options={["unreviewed", "pending", "certified", "rejected"]}
-                              labels={copy}
+                              labels={certificationLabels}
                             />
                             <input
                               name="rejection_reason"

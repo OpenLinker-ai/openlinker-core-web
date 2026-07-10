@@ -75,7 +75,7 @@ export default async function AdminOverviewPage({
       title: copy.agents,
       body:
         locale === "zh"
-          ? "分页审核 Agent，调整生命周期、可见性和认证状态。"
+          ? "分页审核 Agent，调整生命周期、可见性和实例认证状态。"
           : "Review agents by page and manage lifecycle, visibility, and certification state.",
       metric: formatNumber(summary?.total_agents ?? 0),
     },

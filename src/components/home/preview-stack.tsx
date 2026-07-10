@@ -1,9 +1,5 @@
 /**
- * <PreviewStack /> —— 右侧预览栈，列出 4 个核心特性。
- *
- * 来自 prototype 的 .preview-stack / .preview-card：
- *   1 Registry / 2 透明运行日志 / 3 接入方式 / 4 A2A/MCP
- * 第 1 张高亮（active 渐变背景）。
+ * <PreviewStack /> —— 首页右侧的四项核心能力概览。
  */
 
 import type { Locale } from "@/lib/i18n";
@@ -20,46 +16,46 @@ const ITEMS: Record<Locale, PreviewItem[]> = {
   {
     num: 1,
     title: "Agent Registry",
-    desc: "公开 core Agent、Skill 声明、健康状态和运行证据集中展示。",
+    desc: "在同一目录查看公开 Agent、Skill 声明、可用性和 Benchmark 证据。",
     active: true,
   },
   {
     num: 2,
-    title: "透明的运行日志",
-    desc: "每一步调用了什么工具、耗时多久、后续计划字段如何展示，一目了然。",
+    title: "统一运行记录",
+    desc: "按 Run ID 查看请求状态、服务端事件、消息、产物和最终结果。",
   },
   {
     num: 3,
-    title: "接入路线",
-    desc: "支持 HTTPS Endpoint、Agent Node WebSocket 和 Pull 降级。",
+    title: "四种连接模式",
+    desc: "支持 HTTP 直连、MCP Server、Agent Node WebSocket 和 Runtime Pull。",
   },
   {
     num: 4,
     title: "A2A / MCP",
-    desc: "保留协议入口、调用链、事件流和运行证据。",
+    desc: "用 MCP 连接客户端与 Agent，用 A2A 查看跨 Agent 任务关系。",
   },
   ],
   en: [
     {
       num: 1,
       title: "Agent Registry",
-      desc: "Public core Agents, Skill claims, health, and run evidence in one place.",
+      desc: "Browse public Agents, Skill claims, availability, and benchmark evidence in one catalog.",
       active: true,
     },
     {
       num: 2,
-      title: "Transparent run logs",
-      desc: "See which tools ran, how long they took, and how future plan fields are represented.",
+      title: "Unified run records",
+      desc: "Use a Run ID to inspect request status, server events, messages, artifacts, and the final result.",
     },
     {
       num: 3,
-      title: "Connection paths",
-      desc: "Use HTTPS endpoints, Agent Node WebSocket, and Pull fallback.",
+      title: "Four connection modes",
+      desc: "Connect over direct HTTP, MCP Server, Agent Node WebSocket, or Runtime Pull.",
     },
     {
       num: 4,
       title: "A2A / MCP",
-      desc: "Keep protocol entries, call chains, event streams, and run evidence.",
+      desc: "Use MCP to connect clients and Agents, and A2A to inspect cross-Agent task relationships.",
     },
   ],
 };

@@ -109,10 +109,10 @@ export async function certifyAgentAction(formData: FormData) {
     await apiFetchAuthed(`/api/v1/admin/agents/${id}/certify`, { method: "POST" });
     revalidateAdmin();
   } catch (error) {
-    adminRedirect(formData, "error", messageFromError(error, "认证通过失败"), "/admin/agents");
+    adminRedirect(formData, "error", messageFromError(error, "实例认证通过失败"), "/admin/agents");
   }
 
-  adminRedirect(formData, "status", "Agent 已认证", "/admin/agents");
+  adminRedirect(formData, "status", "Agent 已通过实例认证", "/admin/agents");
 }
 
 export async function rejectCertificationAction(formData: FormData) {
@@ -128,16 +128,8 @@ export async function rejectCertificationAction(formData: FormData) {
     });
     revalidateAdmin();
   } catch (error) {
-    adminRedirect(formData, "error", messageFromError(error, "拒绝认证失败"), "/admin/agents");
+    adminRedirect(formData, "error", messageFromError(error, "拒绝实例认证失败"), "/admin/agents");
   }
 
-  adminRedirect(formData, "status", "Agent 认证已拒绝", "/admin/agents");
-}
-
-export async function payWithdrawalAction(formData: FormData) {
-  adminRedirect(formData, "error", "core-web 不支持提现结算，请在 cloud 管理端处理。", "/admin/withdrawals");
-}
-
-export async function rejectWithdrawalAction(formData: FormData) {
-  adminRedirect(formData, "error", "core-web 不支持提现结算，请在 cloud 管理端处理。", "/admin/withdrawals");
+  adminRedirect(formData, "status", "Agent 实例认证已拒绝", "/admin/agents");
 }

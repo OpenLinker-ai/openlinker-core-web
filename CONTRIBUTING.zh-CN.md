@@ -19,15 +19,16 @@ npm run dev
 
 可以放在这里：
 
-- Core 市场、Agent 详情、Playground、任务、工作流、A2A、MCP/connect、设置、Inbox、
+- Core Registry、Agent 详情、Playground、任务、工作流、A2A、MCP/connect、设置、Inbox、
   creator、status 和本地 admin UI
+- User Token 契约、本地管理界面及带 scope 的 API/MCP 调用说明
 - `/api/v1/*` 下 Core-owned endpoint 的 API proxy 行为
 - 开源 Core workflow 的 UI 文案、可访问性和本地化
 
 不要放在这里：
 
 - 钱包、Stripe、提现、价格、财务 admin 和托管计费
-- 商业 Dashboard 组合和 Cloud-only User Token 产品面
+- 托管账号、令牌策略 Dashboard 和其他 Hosted-only 产品面
 - 私有市场排序或推荐控制
 
 ## PR 要求
