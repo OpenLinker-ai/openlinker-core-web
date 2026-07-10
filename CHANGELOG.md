@@ -7,6 +7,18 @@ API and UI route contracts are declared stable.
 
 ## Unreleased
 
+### Added
+
+- Added end-to-end User Token management backed by the Core API, including
+  listing, creation, one-time plaintext secret display, permission tightening,
+  expiry shortening, replacement, and revocation.
+- Added fine-grained Agent and Agent Token permission editing for User Tokens.
+
+### Changed
+
+- Completed English and Simplified Chinese copy for User Token management and
+  preserved unknown future grants during edits without widening access.
+
 ### Documentation
 
 - Split Chinese documentation into dedicated `*.zh-CN.md` files and kept the
