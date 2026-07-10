@@ -7,6 +7,10 @@ import { Icon } from "@/components/ui/icon";
 import { useApi } from "@/hooks/use-api";
 import { ApiError, localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
+import {
+  deliveryStatusLabel,
+  localizedBackendText,
+} from "@/lib/i18n-labels";
 import { cn } from "@/lib/utils";
 
 type TaskCallbackDelivery = {
@@ -45,6 +49,8 @@ export function TaskCallbackSection({ locale = "zh", runId, enabled }: Props) {
           nextRetry: "下次重试",
           delivered: "投递于",
           created: "创建于",
+          deliveryFailed: "回调投递失败，请检查目标地址与接收端状态。",
+          technicalDetails: "技术详情",
         }
       : {
           fetchFailed: "Failed to load task callback delivery records",
@@ -57,6 +63,8 @@ export function TaskCallbackSection({ locale = "zh", runId, enabled }: Props) {
           nextRetry: "Next retry",
           delivered: "Delivered",
           created: "Created",
+          deliveryFailed: "Callback delivery failed. Check the target URL and receiver status.",
+          technicalDetails: "Technical details",
         };
   const { fetch: apiFetch, isAuthenticated } = useApi();
   const [items, setItems] = useState<TaskCallbackDelivery[]>([]);
@@ -126,16 +134,22 @@ export function TaskCallbackSection({ locale = "zh", runId, enabled }: Props) {
           </div>
         ) : (
           <ul className="grid gap-2">
-            {items.map((item) => (
-              <li
+            {items.map((item) => {
+              const rawError = item.error_message?.trim() ?? "";
+              const localizedError = rawError
+                ? localizedBackendText(rawError, locale, copy.deliveryFailed)
+                : "";
+              const showRawError = Boolean(rawError && rawError !== localizedError);
+              return (
+                <li
                 key={item.id}
                 className="rounded-2xl border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] p-4"
-              >
+                >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className={cn("ol-chip", deliveryChipForStatus(item.status))}>
-                        {deliveryStatusLabel(item.status, locale)}
+                        {callbackDeliveryStatusLabel(item.status, locale)}
                       </span>
                       <span className="rounded-lg bg-white px-2 py-1 font-mono text-[11px] font-bold text-[color:var(--ol-muted)]">
                         {item.event_type}
@@ -144,9 +158,15 @@ export function TaskCallbackSection({ locale = "zh", runId, enabled }: Props) {
                     <div className="mt-2 truncate font-mono text-[12px] font-bold text-[color:var(--ol-ink)]">
                       {item.target_url}
                     </div>
-                    {item.error_message ? (
+                    {rawError ? (
                       <div className="mt-2 rounded-xl bg-white px-3 py-2 text-[12px] font-semibold text-[#7a1f1f]">
-                        {item.error_message}
+                        <div>{localizedError}</div>
+                        {showRawError ? (
+                          <details className="mt-1.5 text-[11px] font-normal text-[color:var(--ol-muted)]">
+                            <summary className="cursor-pointer font-bold">{copy.technicalDetails}</summary>
+                            <code className="mt-1 block whitespace-pre-wrap break-words font-mono text-[10.5px]">{rawError}</code>
+                          </details>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>
@@ -160,8 +180,9 @@ export function TaskCallbackSection({ locale = "zh", runId, enabled }: Props) {
                   {item.delivered_at ? <span>{copy.delivered} {formatTime(item.delivered_at, locale)}</span> : null}
                   {item.next_retry_at ? <span>{copy.nextRetry} {formatTime(item.next_retry_at, locale)}</span> : null}
                 </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
@@ -176,17 +197,9 @@ function deliveryChipForStatus(status: string): string {
   return "ol-chip-mint";
 }
 
-function deliveryStatusLabel(status: string, locale: Locale): string {
-  if (locale === "en") {
-    if (status === "success") return "Success";
-    if (status === "pending") return "Pending";
-    if (status === "failed") return "Failed";
-    return status;
-  }
-  if (status === "success") return "成功";
-  if (status === "pending") return "待投递";
-  if (status === "failed") return "失败";
-  return status;
+function callbackDeliveryStatusLabel(status: string, locale: Locale): string {
+  if (status === "pending") return locale === "zh" ? "待投递" : "Pending";
+  return deliveryStatusLabel(status, locale);
 }
 
 function formatTime(value: string | undefined, locale: Locale): string {

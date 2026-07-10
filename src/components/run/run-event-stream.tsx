@@ -408,7 +408,7 @@ function eventMeta(event: RunEvent, locale: Locale): {
       }
       if (status === "endpoint_response_received") {
         return {
-          title: isZh ? "Endpoint 已响应" : "Endpoint responded",
+          title: isZh ? "调用端点已响应" : "Endpoint responded",
           detail: endpointResponseDetail(event.payload, locale),
           icon: "refresh",
           tone: "bg-[color:var(--ol-soft)] text-[color:var(--ol-ink)]",
@@ -526,7 +526,7 @@ function connectionModeLabel(value: unknown, locale: Locale): string {
   const isZh = locale === "zh";
   if (mode === "direct_http") return isZh ? "HTTP 直连" : "direct HTTP";
   if (mode === "mcp_server") return isZh ? "MCP Server" : "MCP server";
-  if (mode === "runtime_pull") return isZh ? "Agent Runtime Pull" : "Agent Runtime pull";
+  if (mode === "runtime_pull") return isZh ? "Agent Node（长轮询）" : "Agent Runtime pull";
   if (mode === "runtime_ws") return isZh ? "Agent Runtime WebSocket" : "Agent Runtime WebSocket";
   return mode;
 }

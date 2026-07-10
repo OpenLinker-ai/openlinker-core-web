@@ -2,14 +2,19 @@ import type { Metadata } from "next";
 import { Topbar } from "@/components/layout/topbar";
 import { getLocale } from "@/lib/i18n-server";
 
-export const metadata: Metadata = {
-  title: "Data and Privacy",
-  description: "Data and privacy notes for a self-hosted OpenLinker Core instance",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return locale === "zh"
+    ? { title: "数据与隐私", description: "自托管 OpenLinker Core 实例的数据与隐私说明" }
+    : {
+        title: "Data and Privacy",
+        description: "Data and privacy notes for a self-hosted OpenLinker Core instance",
+      };
+}
 
 const COPY = {
   zh: {
-    kicker: "Data & Privacy",
+    kicker: "数据与隐私",
     heading: "本实例的数据与隐私说明",
     lead: "OpenLinker Core Web 是自托管软件。本页说明软件可能处理的数据范围；具体的处理目的、保存期限、访问权限和联系渠道由当前实例运营方确定。",
     sections: [

@@ -94,7 +94,7 @@ function SelfRegistrationEntry({ locale }: { locale: Locale }) {
       ? {
           kicker: "接入方式",
           title: "无人值守 Agent 可先生成接入凭证",
-          body: "如果你正在手动接入公网 Endpoint 或 MCP 工具，继续填写下方表单。若是本地脚本、CLI、内网服务或 Agent Node 需要自己完成首次注册，请生成限时 Agent 接入凭证；明文只显示一次，注册后同一个 Token 继续作为运行身份。",
+          body: "如果你正在手动接入公网调用端点或 MCP 工具，继续填写下方表单。若是本地脚本、CLI、内网服务或 Agent Node 需要自己完成首次注册，请生成限时 Agent 接入凭证；明文只显示一次，注册后同一个 Token 继续作为运行身份。",
           primary: "生成 Agent 接入凭证",
           secondary: "继续手动接入",
         }
@@ -146,7 +146,7 @@ function PublishHead({ activePill, locale }: { activePill: string | null; locale
       ? {
           kicker: "我的 / 接入 Agent",
           heading: "把 Agent 接入当前实例",
-          lead: "手动接入可配置公网 HTTPS、Agent Node WebSocket、Runtime Pull 或 MCP 工具包装；无人值守 Agent 可先生成接入凭证，让 Agent 自己完成注册。",
+          lead: "手动接入可配置公网 HTTPS、Agent Node WebSocket、Agent Node（长轮询）或 MCP 工具包装；无人值守 Agent 可先生成接入凭证，让 Agent 自己完成注册。",
           later: "创建后可继续",
           progressAria: "接入进度",
           pills: [

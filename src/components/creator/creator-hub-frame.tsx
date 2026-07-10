@@ -47,7 +47,7 @@ const NAV_ITEMS: ReadonlyArray<{
   {
     id: "skills",
     label: { zh: "Skill 声明", en: "Skill Claims" },
-    desc: { zh: "能力声明、Registry 筛选", en: "Capabilities, Registry filters" },
+    desc: { zh: "能力声明、Agent 目录筛选", en: "Capabilities, Registry filters" },
     href: "/hub/skills",
   },
 ];
@@ -73,7 +73,7 @@ export function CreatorHubFrame({
           kicker: coreCopy ? "自托管 Agent 管理" : "Agent 所有者工作台",
           heading: coreCopy ? "接入、验证并维护你的 Agent" : "管理你拥有的 Agent",
           lead: coreCopy
-            ? "在一个工作区管理 Agent 状态、连接方式、接入凭证、Skill、Benchmark、运行记录与跨节点同步。"
+            ? "在一个工作区管理 Agent 状态、连接方式、接入凭证、Skill、能力测评、运行记录与跨节点同步。"
             : "查看 Agent 状态，维护连接方式、接入凭证、跨节点同步、审批和 Skill 声明。",
           publish: "+ 接入 Agent",
         }
@@ -155,7 +155,7 @@ export function CreatorHubGuide({
             tokens: "查看接入凭证的状态，并撤销不再使用的凭证。",
             bridge: "选择 Registry Node，把允许公开的 Agent 条目同步到其他节点。",
             approvals: "集中确认需要人工审核的高风险动作。",
-            skills: "为 Agent 声明 Skill，便于 Registry 检索和能力校验。",
+            skills: "为 Agent 声明 Skill，便于 Agent 目录检索和能力校验。",
           } satisfies Record<CreatorHubSection, string>,
           bridge: "跨节点 Bridge",
           bridgeHref: "/hub/bridge",

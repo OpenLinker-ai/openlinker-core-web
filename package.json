@@ -32,6 +32,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "check:i18n": "node scripts/check-i18n-copy.mjs && node --test scripts/check-i18n-copy.test.mjs",
     "test:a2a-session": "node --test scripts/a2a-session-compat.test.mjs"
   },
   "dependencies": {

@@ -116,6 +116,7 @@ type ViewRun = {
   output: Record<string, unknown>;
   errorCode?: string;
   error?: string;
+  rawError?: string;
   parentRunId?: string;
   callerAgentId?: string;
   billingMode?: string;
@@ -138,6 +139,7 @@ function normalizeRun(run: RunDetailData, locale: Locale): ViewRun {
     output: run.output ?? {},
     errorCode: run.error_code,
     error: runErrorMessage(run.error_code, run.error_message, locale),
+    rawError: run.error_message?.trim() || undefined,
     parentRunId: run.parent_run_id,
     callerAgentId: run.caller_agent_id,
     billingMode: run.billing_mode,
@@ -333,6 +335,9 @@ export function RunDetail({
                           {
                             error_code: view.errorCode,
                             error: view.error ?? copy.unknownError,
+                            ...(view.rawError && view.rawError !== view.error
+                              ? { raw_error: view.rawError }
+                              : {}),
                           },
                           null,
                           2,
@@ -712,7 +717,13 @@ function buildReplayMessages(
       id: `${run.id}:error`,
       role: "error",
       content: run.error || fallback.error,
-      payload: { error: run.error, status: run.status },
+      payload: {
+        error: run.error,
+        ...(run.rawError && run.rawError !== run.error
+          ? { raw_error: run.rawError }
+          : {}),
+        status: run.status,
+      },
       synthetic: true,
     });
   }

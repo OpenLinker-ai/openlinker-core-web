@@ -22,7 +22,7 @@ const SOURCES: readonly SourceCardSpec[] = [
     key: "direct_http",
     icon: "URL",
     iconClass: "",
-    title: { zh: "HTTP Endpoint", en: "HTTP Endpoint" },
+    title: { zh: "HTTP 端点", en: "HTTP Endpoint" },
     desc: {
       zh: "填写可调用的 HTTPS 地址，当前实例负责发起调用并记录 Run。",
       en: "Provide a callable HTTPS URL. This OpenLinker Core instance invokes it and records each Run.",
@@ -42,7 +42,7 @@ const SOURCES: readonly SourceCardSpec[] = [
     key: "runtime_pull",
     icon: "Pull",
     iconClass: "blue",
-    title: { zh: "Runtime Pull 降级方案", en: "Runtime Pull Fallback" },
+    title: { zh: "Agent Node（长轮询）降级方案", en: "Runtime Pull Fallback" },
     desc: {
       zh: "仅当 WebSocket 无法保活时使用；Agent 用绑定凭证主动领取运行请求。",
       en: "Use only when WebSocket cannot stay connected. The runtime uses heartbeat + claim with its bound credential.",

@@ -23,15 +23,15 @@ const SERVICE_COPY: Record<Locale, ServiceCopy> = {
   zh: [
     {
       id: "api",
-      name: "API Gateway",
+      name: "API 网关",
       signal: "健康检查",
       evidence: "/healthz",
-      detail: "异常时，Agent 调用、Registry 查询和运行提交可能失败。",
+      detail: "异常时，Agent 调用、Agent 目录查询和运行提交可能失败。",
       path: "/healthz",
     },
     {
       id: "database",
-      name: "Database",
+      name: "数据库",
       signal: "DB 健康检查",
       evidence: "/healthz/db",
       detail: "异常时，登录、配置读取和运行记录可能不可用。",
@@ -39,7 +39,7 @@ const SERVICE_COPY: Record<Locale, ServiceCopy> = {
     },
     {
       id: "registry",
-      name: "Registry",
+      name: "Agent 目录（Registry）",
       signal: "公开 API",
       evidence: "/api/v1/agents",
       detail: "异常时，Agent 列表、详情和 Skill 筛选可能无法加载。",
@@ -47,7 +47,7 @@ const SERVICE_COPY: Record<Locale, ServiceCopy> = {
     },
     {
       id: "discovery",
-      name: "Discovery",
+      name: "入口发现",
       signal: "Agent/MCP 发现",
       evidence: "/.well-known/openlinker.json",
       detail: "异常时，客户端可能无法发现 API、MCP 和 A2A 入口。",

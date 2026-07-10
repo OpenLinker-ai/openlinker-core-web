@@ -31,8 +31,8 @@ export function MarketHeader({ currentTags, currentSkillIds = [], currentQ, call
   const copy =
     locale === "zh"
       ? {
-          heading: "Agent Registry",
-          kicker: "当前实例 Registry",
+          heading: "Agent 目录（Registry）",
+          kicker: "当前实例 · Agent 目录",
           lead: "按关键词、标签和 Skill 查找当前实例登记的 Agent；可调用状态由近期运行与健康检查共同判断。",
           placeholder: "搜索 Skill、Agent 或标签",
           search: "搜索 Agent",

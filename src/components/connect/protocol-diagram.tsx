@@ -8,7 +8,7 @@ import type { Locale } from "@/lib/i18n";
 const STEPS: Record<Locale, Array<{ n: string; title: string; detail: string }>> = {
   zh: [
     { n: "1", title: "接入", detail: "Agent 所有者选择连接模式，并声明能力和 Skill" },
-    { n: "2", title: "登记", detail: "保存到当前实例目录；只有公开 Agent 显示在 Registry" },
+    { n: "2", title: "登记", detail: "保存到当前实例；只有公开 Agent 显示在 Agent 目录（Registry）" },
     { n: "3", title: "调用", detail: "用户通过 Web，或在已配置 User Token 的部署中从 SDK / MCP 发起运行" },
     { n: "4", title: "执行", detail: "当前实例按连接模式调度 Agent，并记录输出与事件" },
     { n: "5", title: "投递", detail: "运行完成后，按需把结果发送到 Slack 或 Webhook" },
@@ -28,6 +28,7 @@ export function ProtocolDiagram({ locale = "zh" }: { locale?: Locale }) {
   const copy =
     locale === "zh"
       ? {
+          kicker: "接入流程",
           yourAgent: "你的 Agent",
           connectionModes: "4 种连接模式",
           directModes: "direct_http · mcp_server",
@@ -36,6 +37,7 @@ export function ProtocolDiagram({ locale = "zh" }: { locale?: Locale }) {
           skills: "声明的 Skill",
           currentInstance: "当前实例",
           running: "协调运行",
+          runtimeFlow: "运行调度 · 回调 · 投递",
           runtimeEntries: "统一运行 · 统一记录",
           entries: "凭证与投递边界",
           userToken: "User Token → API / MCP 调用",
@@ -43,6 +45,7 @@ export function ProtocolDiagram({ locale = "zh" }: { locale?: Locale }) {
           webhook: "Webhook → 结果投递",
         }
       : {
+          kicker: "protocol",
           yourAgent: "Your Agent",
           connectionModes: "4 connection modes",
           directModes: "direct_http · mcp_server",
@@ -51,6 +54,7 @@ export function ProtocolDiagram({ locale = "zh" }: { locale?: Locale }) {
           skills: "Declared Skills",
           currentInstance: "This instance",
           running: "Coordinating runs",
+          runtimeFlow: "runtime · callback · delivery",
           runtimeEntries: "One run model · one record",
           entries: "Credential and delivery boundary",
           userToken: "User Token → API / MCP calls",
@@ -76,7 +80,7 @@ export function ProtocolDiagram({ locale = "zh" }: { locale?: Locale }) {
       className="ol-panel ol-panel-pad"
       style={{ background: "linear-gradient(180deg, #ffffff, #f6fcfb)" }}
     >
-      <div className="ol-kicker">protocol</div>
+      <div className="ol-kicker">{copy.kicker}</div>
       <div className="mt-4 grid items-stretch gap-5 xl:grid-cols-[1fr_minmax(320px,1.5fr)_1fr]">
         <div className="ol-panel" style={{ padding: 18, boxShadow: "none", borderColor: "rgba(49,118,237,0.3)" }}>
           <div className="flex items-center gap-2.5">
@@ -156,7 +160,7 @@ export function ProtocolDiagram({ locale = "zh" }: { locale?: Locale }) {
               <span className="inline-block h-2 w-2 rounded-full bg-[color:var(--ol-primary)]" />
               <span className="font-bold">{copy.running}</span>
             </div>
-            <div className="font-mono text-[11px]">runtime · callback · delivery</div>
+            <div className="font-mono text-[11px]">{copy.runtimeFlow}</div>
             <div className="font-mono text-[11px]">{copy.runtimeEntries}</div>
           </div>
           <div className="mt-3">

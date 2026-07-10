@@ -11,10 +11,12 @@ import { apiFetchAuthed } from "@/lib/api";
 import { auth } from "@/lib/auth";
 import { getLocale } from "@/lib/i18n-server";
 
-export const metadata = {
-  title: "A2A Collaboration",
-  description: "OpenLinker multi-Agent collaboration entry",
-};
+export async function generateMetadata() {
+  const locale = await getLocale();
+  return locale === "zh"
+    ? { title: "A2A 协作", description: "OpenLinker 多 Agent 协作入口" }
+    : { title: "A2A Collaboration", description: "OpenLinker multi-Agent collaboration entry" };
+}
 
 export default async function A2APage({
   searchParams,

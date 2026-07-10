@@ -108,7 +108,7 @@ export default async function MarketPage({
             : callableOnly
               ? "仅显示可调用 · 近期状态优先"
               : "全部公开 Agent · 可调用优先",
-          failed: "Registry 数据暂时不可用，请稍后刷新。",
+          failed: "Agent 目录数据暂时不可用，请稍后刷新。",
           empty: callableOnly
             ? "当前实例没有匹配的可调用 Agent。可以调整筛选条件，或前往 Agent 管理接入一个 Agent。"
             : "当前实例没有匹配的公开 Agent。可以调整筛选条件，或接入 Agent 后将其设为公开。",

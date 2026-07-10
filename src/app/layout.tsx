@@ -6,16 +6,22 @@ import { getLocale } from "@/lib/i18n-server";
 import { Providers } from "./providers";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: {
-    default: "OpenLinker Core Web",
-    template: "%s · OpenLinker Core Web",
-  },
-  description: "Self-hosted Agent Registry, invocation, run events, and instance administration",
-  icons: {
-    icon: "/openlinker-logo.svg",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return {
+    title: {
+      default: "OpenLinker Core Web",
+      template: "%s · OpenLinker Core Web",
+    },
+    description:
+      locale === "zh"
+        ? "自托管 Agent 目录、调用、运行事件与实例管理"
+        : "Self-hosted Agent Registry, invocation, run events, and instance administration",
+    icons: {
+      icon: "/openlinker-logo.svg",
+    },
+  };
+}
 
 export default async function RootLayout({
   children,

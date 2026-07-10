@@ -555,7 +555,7 @@ function AgentItemRow({
           calls: "调用",
           month: "本月",
           records: "记录",
-          playgroundTitle: "在 Playground 中对这个 Agent 发起一次测试调用",
+          playgroundTitle: "在试用台中对这个 Agent 发起一次测试调用",
           playgroundUnavailable: "暂不可调用",
           skillTitle: "编辑该 Agent 声明的 skill（最多 5 个）",
           setup: "接入",
@@ -564,7 +564,7 @@ function AgentItemRow({
           settingsTitle: "编辑基础信息、连接方式和可见性",
           runHistory: "调用记录",
           runHistoryTitle: "查看这个 Agent 被用户、访问凭证或 MCP 触发的调用记录",
-          benchmarkTitle: "为已声明 Skill 运行 Benchmark；通过后详情页会显示 Benchmark 已验证",
+          benchmarkTitle: "为已声明 Skill 运行能力测评；通过后详情页会显示测评已通过",
           deliveryTitle: "管理通知投递目标与通知投递历史",
           delivery: "投递",
           progress: "查看进度",
@@ -649,7 +649,7 @@ function AgentItemRow({
                 title={copy.playgroundTitle}
               >
                 <PlayCircle className="size-3.5" aria-hidden="true" />
-                Playground
+                {locale === "zh" ? "试用台" : "Playground"}
               </Link>
             ) : (
               <span
@@ -699,7 +699,7 @@ function AgentItemRow({
               className="ol-mini-btn"
               title={copy.benchmarkTitle}
             >
-              Benchmark
+              {locale === "zh" ? "能力测评" : "Benchmark"}
             </Link>
             <Link
               href={`/hub/agents/${row.slug}/delivery`}

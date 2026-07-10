@@ -31,10 +31,18 @@ const EMPTY_DASHBOARD: DashboardData = {
   },
 };
 
-export const metadata = {
-  title: "Runs",
-  description: "Run history, events, and results for this OpenLinker Core instance",
-};
+export async function generateMetadata() {
+  const locale = await getLocale();
+  return locale === "zh"
+    ? {
+        title: "运行记录",
+        description: "当前 OpenLinker Core 实例的运行历史、事件和结果",
+      }
+    : {
+        title: "Runs",
+        description: "Run history, events, and results for this OpenLinker Core instance",
+      };
+}
 
 export default async function RunsPage({
   searchParams,
@@ -63,7 +71,7 @@ export default async function RunsPage({
           unavailable: "运行概览暂时不可用，列表仍会尽量加载。",
           runTitle: "最近运行",
           emptyText: "还没有运行记录。",
-          emptyAction: "打开 Registry ->",
+          emptyAction: "打开 Agent 目录 ->",
           connect: "接入 Agent",
           connectBody: "如果你是 Agent 所有者，可以接入 HTTP、MCP、Agent Node WebSocket 或 Pull 模式的 Agent。",
           connectAction: "接入新 Agent",

@@ -64,7 +64,7 @@ export function A2AConformancePanel({
         ? {
             title: "A2A 标准校验",
             badge: "HTTPS + JSON-RPC + SSE",
-            slug: "Agent slug",
+            slug: "Agent 标识（slug）",
             sample: "流式实测输入",
             light: "标准自检",
             stream: "流式实测",
@@ -74,7 +74,7 @@ export function A2AConformancePanel({
             fail: "失败",
             idle: "待测",
             running: "校验中",
-            ready: "选择一个公开 Agent slug 后运行标准自检。",
+            ready: "选择一个公开 Agent 标识后运行标准自检。",
           }
         : {
             title: "A2A Conformance",

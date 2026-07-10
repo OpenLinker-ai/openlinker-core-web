@@ -214,7 +214,7 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "category" | "label"
     },
     mcp: {
       category: "调用入口",
-      label: "MCP Client",
+      label: "MCP 客户端",
       title: "调用入口：OpenLinker MCP",
       blurb: "MCP 客户端可直接连接主站 /mcp；旧脚本仍可使用 /api/v1/mcp/* REST 兼容接口。",
       bestFor: "AI 客户端工具 · 跨 Agent 调用",
@@ -321,6 +321,10 @@ export function ConnectConsole({ locale = "zh" }: { locale?: Locale }) {
           agentAuthBody: "Agent Node 使用 Agent Token 完成注册并标识运行身份；direct_http 与 mcp_server 的目标端鉴权在 Agent 配置中单独设置。",
           rate: "速率",
           rateValue: "按服务端配置",
+          baseURL: "基础 URL",
+          authLabel: "鉴权",
+          scope: "权限范围",
+          timezone: "时区",
           userTokenSettings: "查看 User Token 状态",
           agentTokenAccess: "管理 Agent Token",
           status: "实例状态",
@@ -343,6 +347,10 @@ export function ConnectConsole({ locale = "zh" }: { locale?: Locale }) {
           agentAuthBody: "Agent Node uses an Agent Token for registration and runtime identity. Target authentication for direct_http and mcp_server is configured separately on the Agent.",
           rate: "Rate",
           rateValue: "Server configured",
+          baseURL: "Base URL",
+          authLabel: "Auth",
+          scope: "Scope",
+          timezone: "Timezone",
           userTokenSettings: "View User Token status",
           agentTokenAccess: "Manage Agent Tokens",
           status: "Instance status",
@@ -525,11 +533,11 @@ export function ConnectConsole({ locale = "zh" }: { locale?: Locale }) {
             <p className="mt-2 text-[12px] leading-relaxed text-[color:var(--ol-muted)]">{copy.tokenStatus}</p>
             <div className="mt-3 grid gap-2 text-[12px]">
               {[
-                { l: "Base URL", v: "/mcp · /api/v1" },
-                { l: "Auth", v: "Bearer ol_user_..." },
+                { l: copy.baseURL, v: "/mcp · /api/v1" },
+                { l: copy.authLabel, v: "Bearer ol_user_..." },
                 { l: copy.rate, v: copy.rateValue },
-                { l: "Scope", v: "agents:read · agents:run · runs:read · tasks:write" },
-                { l: "Timezone", v: "UTC · ISO8601" },
+                { l: copy.scope, v: "agents:read · agents:run · runs:read · tasks:write" },
+                { l: copy.timezone, v: "UTC · ISO8601" },
               ].map((it) => (
                 <div key={it.l} className="grid grid-cols-[68px_1fr] gap-2">
                   <span className="text-[11.5px] font-[800] text-[color:var(--ol-muted)]">{it.l}</span>

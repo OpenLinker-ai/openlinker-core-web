@@ -28,6 +28,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Check localized copy
+        run: npm run check:i18n
+
       - name: Type check
         run: npx tsc --noEmit
 

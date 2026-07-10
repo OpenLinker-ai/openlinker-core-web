@@ -18,6 +18,7 @@ import { localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
 import {
   benchmarkStatusLabel,
+  localizedBackendText,
   runStatusLabel,
 } from "@/lib/i18n-labels";
 import { cn } from "@/lib/utils";
@@ -100,7 +101,7 @@ const BENCHMARK_REASON_TEXT: Record<Locale, Record<string, string>> = {
   zh: {
     endpoint_runner_unavailable: "Agent 调用执行器未就绪，暂时不能主动运行测评。",
     llm_not_configured: "LLM 评分服务未配置，暂时不能主动运行测评。",
-    status_unavailable: "无法确认 Benchmark 运行状态，暂时只展示历史结果。",
+    status_unavailable: "无法确认能力测评运行状态，暂时只展示历史结果。",
   },
   en: {
     endpoint_runner_unavailable: "The Agent runner is not ready, so benchmarks cannot be started yet.",
@@ -129,20 +130,21 @@ export function BenchmarkPanel({
           detailFailed: "加载详情失败",
           emptyPrefix: "当前 Agent 还没有声明任何 Skill。请先在",
           emptyLink: "接入页的 Skill 声明",
-          emptySuffix: "添加 Skill 后再来跑 benchmark。",
-          unavailableTitle: "Benchmark 运行暂不可用",
+          emptySuffix: "添加 Skill 后再运行能力测评。",
+          unavailableTitle: "能力测评暂不可用",
           unavailableBody: "当前页面仍会展示历史测评结果，但暂不开放新测评，避免无效操作。",
           reason: "原因",
+          technicalReasons: "技术原因代码",
           declaredTitle: "已声明 Skill · 测评状态",
           count: (value: number) => `共 ${value} 个`,
           avg: "平均",
           passed: "通过",
           collapse: "收起",
           details: "查看详情",
-          unavailableHint: "Benchmark 运行暂不可用",
+          unavailableHint: "能力测评暂不可用",
           cannotRun: "暂不可调用",
           running: "测评中…",
-          run: "运行 Benchmark",
+          run: "运行能力测评",
           rerun: "重新评测",
           loading: "加载中…",
           noData: "暂无数据",
@@ -156,6 +158,7 @@ export function BenchmarkPanel({
           unavailableTitle: "Benchmark runtime unavailable",
           unavailableBody: "Existing benchmark results are still shown, but starting new benchmarks is temporarily unavailable to avoid failed attempts.",
           reason: "Reason",
+          technicalReasons: "Technical reason codes",
           declaredTitle: "Declared Skills · Benchmark status",
           count: (value: number) => `${value} total`,
           avg: "Avg",
@@ -177,6 +180,14 @@ export function BenchmarkPanel({
   const [expanded, setExpanded] = useState<string | null>(null);
   const [batch, setBatch] = useState<BatchDetail | null>(null);
   const [batchLoading, setBatchLoading] = useState(false);
+  const runtimeReasonCodes = runtimeStatus.reasons ?? [];
+  const runtimeReasonSummary = runtimeReasonCodes
+    .map(
+      (reason) =>
+        BENCHMARK_REASON_TEXT[locale][reason] ??
+        BENCHMARK_REASON_TEXT[locale].status_unavailable,
+    )
+    .join(locale === "zh" ? "；" : "; ");
 
   const scoreMap = useMemo(
     () => new Map(scores.map((s) => [s.skill_id, s])),
@@ -272,12 +283,22 @@ export function BenchmarkPanel({
           </div>
           <p className="mt-1 text-[12.5px] text-[color:var(--ol-muted)]">
             {copy.unavailableBody}
-            {(runtimeStatus.reasons ?? []).length > 0
-              ? ` ${copy.reason}: ${runtimeStatus.reasons
-                  .map((reason) => BENCHMARK_REASON_TEXT[locale][reason] ?? reason)
-                  .join(locale === "zh" ? "；" : "; ")}`
+            {runtimeReasonCodes.length > 0
+              ? ` ${copy.reason}: ${runtimeReasonSummary}`
               : null}
           </p>
+          {runtimeReasonCodes.length > 0 ? (
+            <details className="mt-2 text-[11.5px] text-[color:var(--ol-muted)]">
+              <summary className="cursor-pointer font-bold">{copy.technicalReasons}</summary>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {runtimeReasonCodes.map((reason) => (
+                  <code key={reason} className="rounded bg-white/70 px-1.5 py-0.5">
+                    {reason}
+                  </code>
+                ))}
+              </div>
+            </details>
+          ) : null}
         </div>
       ) : null}
 
@@ -370,8 +391,22 @@ export function BenchmarkPanel({
 function BatchView({ detail, locale }: { detail: BatchDetail; locale: Locale }) {
   const copy =
     locale === "zh"
-      ? { batch: "批次", avg: "平均", status: "状态", score: "分" }
-      : { batch: "Batch", avg: "Avg", status: "Status", score: "pts" };
+      ? {
+          batch: "批次",
+          avg: "平均",
+          status: "状态",
+          score: "分",
+          runFailed: "本次测评运行失败，请检查 Agent 可用性后重试。",
+          technicalDetails: "技术详情",
+        }
+      : {
+          batch: "Batch",
+          avg: "Avg",
+          status: "Status",
+          score: "pts",
+          runFailed: "This benchmark run failed. Check Agent availability and try again.",
+          technicalDetails: "Technical details",
+        };
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 text-[12px] text-[color:var(--ol-muted)]">
@@ -383,11 +418,17 @@ function BatchView({ detail, locale }: { detail: BatchDetail; locale: Locale }) 
         <span>· {copy.status} {benchmarkStatusLabel(detail.status, locale)}</span>
       </div>
       <div className="space-y-2">
-        {detail.items.map((item) => (
-          <div
+        {detail.items.map((item) => {
+          const rawError = item.error_message?.trim() ?? "";
+          const localizedError = rawError
+            ? localizedBackendText(rawError, locale, copy.runFailed)
+            : "";
+          const showRawError = Boolean(rawError && rawError !== localizedError);
+          return (
+            <div
             key={item.id}
             className="rounded-lg border border-[color:var(--ol-line)] bg-white p-3"
-          >
+            >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <b className="min-w-0 break-words text-[12.5px] font-black text-[color:var(--ol-ink)]">
                 {item.test_case_title}
@@ -403,13 +444,20 @@ function BatchView({ detail, locale }: { detail: BatchDetail; locale: Locale }) 
                 {item.judge_reasoning}
               </p>
             ) : null}
-            {item.error_message ? (
-              <p className="mt-1 text-[12px] text-[color:var(--ol-amber)]">
-                {item.error_message}
-              </p>
+            {rawError ? (
+              <div className="mt-1 text-[12px] text-[color:var(--ol-amber)]">
+                <p>{localizedError}</p>
+                {showRawError ? (
+                  <details className="mt-1 text-[11px] text-[color:var(--ol-muted)]">
+                    <summary className="cursor-pointer font-bold">{copy.technicalDetails}</summary>
+                    <code className="mt-1 block whitespace-pre-wrap break-words font-mono text-[10.5px]">{rawError}</code>
+                  </details>
+                ) : null}
+              </div>
             ) : null}
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

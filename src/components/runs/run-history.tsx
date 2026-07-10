@@ -108,7 +108,7 @@ export function RunHistory({
   title = "最近运行",
   emptyText = "还没有调用记录。",
   emptyHref = "/registry",
-  emptyActionLabel = "打开 Registry →",
+  emptyActionLabel = "打开 Agent 目录 →",
   locale = "zh",
 }: Props) {
   const totalPages = Math.max(1, Math.ceil(total / size));
@@ -126,7 +126,7 @@ export function RunHistory({
       : {
           title: title === "最近运行" ? "Recent Runs" : title,
           emptyText: emptyText === "还没有调用记录。" ? "No run records yet." : emptyText,
-          emptyActionLabel: emptyActionLabel === "打开 Registry →" ? "Open Registry ->" : emptyActionLabel,
+          emptyActionLabel: emptyActionLabel === "打开 Agent 目录 →" ? "Open Registry ->" : emptyActionLabel,
           total: `${total} total`,
           prev: "← Previous",
           next: "Next →",
@@ -236,7 +236,7 @@ function RunItemRow({ run, locale }: { run: Run; locale: Locale }) {
           <Link
             href={`/playground/${run.agent_slug}`}
             className="ol-mini-btn"
-            title={locale === "zh" ? "跳到 Playground 重新发起一次" : "Open Playground and run again"}
+            title={locale === "zh" ? "跳到试用台重新发起一次" : "Open Playground and run again"}
           >
             {locale === "zh" ? "再试用" : "Try again"}
           </Link>

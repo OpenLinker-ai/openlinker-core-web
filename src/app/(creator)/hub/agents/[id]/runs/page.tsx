@@ -39,19 +39,19 @@ export default async function AgentRunsPage({
           hub: "Agent 管理",
           current: "调用记录",
           kicker: "Agent 管理 / Agent 调用记录",
-          heading: `${"AGENT"} · 被调用记录`,
+          heading: "被调用记录",
           lead: "这里展示这个 Agent 被用户、访问凭证或 MCP 工具触发的运行记录。自注册 Agent 会绑定到生成 Agent 接入凭证的 Agent 所有者用户，因此也会出现在同一份列表里。",
           onboarding: "接入配置",
           back: "返回 Agent 管理",
           listTitle: "被调用记录",
           empty: "这个 Agent 还没有被调用记录。",
-          action: "去 Playground 测一次 →",
+          action: "去试用台测一次 →",
         }
       : {
           hub: "Agent Console",
           current: "Run Records",
           kicker: "Agent Console / Agent runs",
-          heading: `${"AGENT"} · Run records`,
+          heading: "Run records",
           lead: "This shows runs triggered by users, access credentials, or MCP tools. Self-registered Agents are bound to the Agent-owner user that generated their Agent access credential, so those runs appear here too.",
           onboarding: "Onboarding",
           back: "Back to Agent Console",
@@ -96,7 +96,7 @@ export default async function AgentRunsPage({
         <div className="ol-page-head">
           <div className="ol-page-title">
             <div className="ol-kicker">{copy.kicker}</div>
-            <h1>{copy.heading.replace("AGENT", agent.name)}</h1>
+            <h1>{agent.name} · {copy.heading}</h1>
             <p>{copy.lead}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">

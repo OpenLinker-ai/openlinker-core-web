@@ -124,7 +124,7 @@ export default async function AgentDetailPage({
     locale === "zh"
       ? {
           home: "首页",
-          market: "Registry",
+          market: "Agent 目录",
           noReferencePrice: "未提供外部参考价格 · 可选兼容元数据 · Core 不据此扣费",
           price: (price: string) => `外部参考价格 $${price} / 次 · 可选兼容元数据 · Core 不据此扣费`,
           unknownLabel: "未验证",
@@ -147,9 +147,9 @@ export default async function AgentDetailPage({
           unavailableKicker: "Agent 详情",
           unavailableTitle: "Agent 详情暂时不可用",
           unavailableLead:
-            "实例暂时无法读取该 Agent 的详情。请稍后重试，或返回 Registry 查看其他 Agent。",
+            "实例暂时无法读取该 Agent 的详情。请稍后重试，或返回 Agent 目录查看其他 Agent。",
           retryHint: "Agent 标识",
-          backToMarket: "回到 Registry",
+          backToMarket: "回到 Agent 目录",
         }
       : {
           home: "Home",
@@ -541,6 +541,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const locale = await getLocale();
   try {
     const agent = await fetchAgent(slug);
     return {
@@ -548,6 +549,6 @@ export async function generateMetadata({
       description: agent.description.slice(0, 160),
     };
   } catch {
-    return { title: "Agent Detail" };
+    return { title: locale === "zh" ? "Agent 详情" : "Agent Detail" };
   }
 }

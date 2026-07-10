@@ -11,10 +11,12 @@ import { apiFetchAuthed } from "@/lib/api";
 import { auth } from "@/lib/auth";
 import { getLocale } from "@/lib/i18n-server";
 
-export const metadata = {
-  title: "Inbox",
-  description: "OpenLinker inbox",
-};
+export async function generateMetadata() {
+  const locale = await getLocale();
+  return locale === "zh"
+    ? { title: "通知中心", description: "OpenLinker 通知中心" }
+    : { title: "Inbox", description: "OpenLinker inbox" };
+}
 
 export default async function InboxPage() {
   const session = await auth();
@@ -56,7 +58,7 @@ export default async function InboxPage() {
 
         <div className="ol-page-head">
           <div className="ol-page-title">
-            <div className="ol-kicker">inbox</div>
+            <div className="ol-kicker">{copy.current}</div>
             <h1>{copy.heading}</h1>
             <p>
               {copy.lead}

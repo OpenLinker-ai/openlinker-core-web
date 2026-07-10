@@ -38,6 +38,41 @@ type RegistryListing = {
   last_sync_at: string;
 };
 
+const ROUTING_MODE_LABELS: Record<string, Record<Locale, string>> = {
+  direct_endpoint: { zh: "直连端点", en: "Direct endpoint" },
+  pull_proxy: { zh: "拉取代理", en: "Pull proxy" },
+};
+
+const PAYLOAD_POLICY_LABELS: Record<string, Record<Locale, string>> = {
+  metadata_only: { zh: "仅元数据", en: "Metadata only" },
+  store_run_summary: { zh: "保存运行摘要", en: "Store run summary" },
+  store_full_payload: { zh: "保存完整载荷", en: "Store full payload" },
+};
+
+const SYNC_STATUS_LABELS: Record<string, Record<Locale, string>> = {
+  linked: { zh: "已链接", en: "Linked" },
+  paused: { zh: "已暂停", en: "Paused" },
+  error: { zh: "同步异常", en: "Sync error" },
+};
+
+const HEARTBEAT_STATUS_LABELS: Record<string, Record<Locale, string>> = {
+  unknown: { zh: "未知", en: "Unknown" },
+  healthy: { zh: "正常", en: "Healthy" },
+  stale: { zh: "信号过期", en: "Stale" },
+  revoked: { zh: "已撤销", en: "Revoked" },
+};
+
+function registryTechnicalLabel(
+  value: string,
+  locale: Locale,
+  labels: Record<string, Record<Locale, string>>,
+): string {
+  const raw = value.trim() || "unknown";
+  const label = labels[raw]?.[locale];
+  if (label) return label;
+  return locale === "zh" ? `未知（${raw}）` : fallbackEnumLabel(raw, locale);
+}
+
 export function RegistryBridgePanel({
   agents,
   initialNodes = [],
@@ -213,9 +248,15 @@ export function RegistryBridgePanel({
                     <strong className="text-[13px] font-black text-[color:var(--ol-ink)]">
                       {listing.agent_name}
                     </strong>
-                    <span className="ol-chip ol-chip-blue">{fallbackEnumLabel(listing.routing_mode, locale)}</span>
-                    <span className="ol-chip ol-chip-mint">{fallbackEnumLabel(listing.payload_policy, locale)}</span>
-                    <span className="ol-chip">{fallbackEnumLabel(listing.sync_status, locale)}</span>
+                    <span className="ol-chip ol-chip-blue">
+                      {registryTechnicalLabel(listing.routing_mode, locale, ROUTING_MODE_LABELS)}
+                    </span>
+                    <span className="ol-chip ol-chip-mint">
+                      {registryTechnicalLabel(listing.payload_policy, locale, PAYLOAD_POLICY_LABELS)}
+                    </span>
+                    <span className="ol-chip">
+                      {registryTechnicalLabel(listing.sync_status, locale, SYNC_STATUS_LABELS)}
+                    </span>
                   </div>
                   <div className="mt-2 grid gap-1 text-[12px] font-semibold text-[color:var(--ol-muted)]">
                     <span>Node: {listing.node_name}</span>
@@ -278,7 +319,7 @@ export function RegistryBridgePanel({
               <option value="">{copy.chooseNode}</option>
               {nodes.map((node) => (
                 <option key={node.id} value={node.id}>
-                  {node.node_name} · {fallbackEnumLabel(node.heartbeat_status, locale)}
+                  {node.node_name} · {registryTechnicalLabel(node.heartbeat_status, locale, HEARTBEAT_STATUS_LABELS)}
                 </option>
               ))}
             </select>

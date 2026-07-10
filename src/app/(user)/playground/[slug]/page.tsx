@@ -22,6 +22,10 @@ import { Topbar } from "@/components/layout/topbar";
 import { PlaygroundRunner } from "@/components/playground/runner";
 import { ApiError, apiFetch } from "@/lib/api";
 import { auth } from "@/lib/auth";
+import {
+  availabilityStatusHint,
+  availabilityStatusLabel,
+} from "@/lib/i18n-labels";
 import { getLocale } from "@/lib/i18n-server";
 
 interface AgentDetail {
@@ -72,12 +76,13 @@ export default async function PlaygroundPage({
     locale === "zh"
       ? {
           home: "首页",
-          market: "Registry",
+          market: "Agent 目录",
           myAgent: "我的 Agent",
+          playground: "试用台",
           kicker: "第 3 步 / 运行",
           heading: "发送输入，查看运行结果",
           lead: "输入任务描述或 JSON，继续多轮会话，并查看每次运行的状态、耗时和输出。调用记录会保存在当前实例中。",
-          unavailableTitle: "Playground 暂不可用",
+          unavailableTitle: "试用台暂不可用",
           unavailableLead: "该 Agent 暂不可调用，或还缺少可调用证据。请稍后重试，或在 Agent 管理中运行健康检查。",
           back: "返回",
         }
@@ -85,6 +90,7 @@ export default async function PlaygroundPage({
           home: "Home",
           market: "Registry",
           myAgent: "My Agent",
+          playground: "Playground",
           kicker: "Step 3 / Run",
           heading: "Send an input and inspect the result",
           lead: "Enter a task or JSON, continue a multi-turn conversation, and review the status, duration, and output of each run. Run records stay in this instance.",
@@ -98,6 +104,17 @@ export default async function PlaygroundPage({
   const collectionHref = isPrivateOwnerAgent ? "/hub/agents" : "/registry";
   const collectionLabel = isPrivateOwnerAgent ? copy.myAgent : copy.market;
   const callable = isPlaygroundAgentCallable(agent);
+  const availabilityStatus = agent.availability?.status ?? "unknown";
+  const availabilityLabel = availabilityStatusLabel(
+    availabilityStatus,
+    locale,
+    agent.availability?.label,
+  );
+  const availabilityHint = availabilityStatusHint(
+    availabilityStatus,
+    locale,
+    agent.availability?.hint,
+  );
 
   if (!callable) {
     return (
@@ -113,15 +130,15 @@ export default async function PlaygroundPage({
               {collectionLabel}
             </Link>
             <span className="text-[color:var(--ol-subtle)]">/</span>
-            <span className="text-[color:var(--ol-ink)]">Playground</span>
+            <span className="text-[color:var(--ol-ink)]">{copy.playground}</span>
           </nav>
           <section className="ol-panel ol-panel-pad mt-6 max-w-2xl">
-            <div className="ol-kicker">{agent.availability?.label ?? "offline"}</div>
+            <div className="ol-kicker">{availabilityLabel}</div>
             <h1 className="mt-2 text-[28px] font-black text-[color:var(--ol-ink)]">
               {copy.unavailableTitle}
             </h1>
             <p className="mt-2 text-[14px] leading-6 text-[color:var(--ol-muted)]">
-              {agent.availability?.hint ?? copy.unavailableLead}
+              {availabilityHint || copy.unavailableLead}
             </p>
             <Link href={collectionHref} className="ol-mini-btn ol-mini-btn-primary mt-5">
               {copy.back} {collectionLabel}
@@ -161,7 +178,7 @@ export default async function PlaygroundPage({
             </Link>
           )}
           <span className="text-[color:var(--ol-subtle)]">/</span>
-          <span className="text-[color:var(--ol-ink)]">Playground</span>
+          <span className="text-[color:var(--ol-ink)]">{copy.playground}</span>
         </nav>
 
         {/* page-head */}
@@ -197,7 +214,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  return { title: `Playground · ${slug}` };
+  const locale = await getLocale();
+  return { title: `${locale === "zh" ? "试用台" : "Playground"} · ${slug}` };
 }
 
 async function fetchPlaygroundAgent(slug: string, token?: string): Promise<AgentDetail> {

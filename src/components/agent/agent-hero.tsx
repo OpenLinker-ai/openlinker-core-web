@@ -102,6 +102,7 @@ export function AgentHero({
     locale === "zh"
       ? {
           certified: "实例已认证",
+          author: "作者：",
           calls: "调用",
           noRating: "暂无评分",
           rating: "评分",
@@ -112,12 +113,13 @@ export function AgentHero({
           hidden: "未公开展示",
           callable: "可调用",
           notCallable: "暂不可调用",
-          verified: "Benchmark 已验证",
-          notVerified: "暂无 Benchmark 验证",
+          verified: "能力测评已验证",
+          notVerified: "暂无能力测评验证",
           tags: (n: number) => `${n} 个标签`,
         }
       : {
           certified: "Instance certified",
+          author: "by ",
           calls: "Runs",
           noRating: "No rating",
           rating: "Rating",
@@ -162,7 +164,7 @@ export function AgentHero({
       </h1>
 
       <p className="mt-2 min-w-0 break-words text-[13px] font-extrabold text-[color:var(--ol-primary-dark)]">
-        by {creator.display_name}
+        {copy.author}{creator.display_name}
         {certified ? (
           <>
             {" · "}

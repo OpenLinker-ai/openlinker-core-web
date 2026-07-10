@@ -41,9 +41,9 @@ export function summarizeOutput(output: unknown, locale: Locale): OutputSummary 
   if (looksLikeEndpointEcho(output)) {
     const rows = endpointRows(output, locale);
     return {
-      title: isZh ? "Endpoint 响应" : "Endpoint response",
+      title: isZh ? "调用端点响应" : "Endpoint response",
       body: isZh
-        ? `Endpoint 返回了结构化 JSON（${Object.keys(output).length} 个顶层字段）。`
+        ? `调用端点返回了结构化 JSON（${Object.keys(output).length} 个顶层字段）。`
         : `Endpoint returned structured JSON with ${Object.keys(output).length} top-level fields.`,
       chatText: endpointChatText(output, locale),
       rows,
@@ -104,7 +104,7 @@ function endpointChatText(output: Record<string, unknown>, locale: Locale): stri
   const isZh = locale === "zh";
   const payload = firstDefined(output, ["json", "body", "data", "form", "args"]);
   const base = isZh
-    ? "Endpoint 返回了结构化 JSON。"
+    ? "调用端点返回了结构化 JSON。"
     : "Endpoint returned structured JSON.";
   if (payload === undefined) return base;
 

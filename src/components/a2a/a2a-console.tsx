@@ -107,10 +107,13 @@ export function A2AConsole({
           freeDelegation: "未记录外部费用",
           viewChildRun: "查看运行",
           relationships: "运行关系",
+          entryAgent: "入口 Agent",
+          call: "调用",
+          root: "根运行",
           chooseFirst: "先从协作会话目录选择一条记录。",
           related: "关联页面",
           creatorHub: ["Agent 管理", "查看自注册 Agent、能力声明和调用记录。"],
-          skills: ["Skill 注册表", "查看能力标签、声明 Skill 和匹配依据。"],
+          skills: ["Skill 目录", "查看能力标签、声明 Skill 和匹配依据。"],
           connect: ["开发者中心", "查看 API/MCP、鉴权边界和外部工具调用说明。"],
         }
       : {
@@ -135,6 +138,9 @@ export function A2AConsole({
           freeDelegation: "No external cost recorded",
           viewChildRun: "View run",
           relationships: "Run relationships",
+          entryAgent: "Entry Agent",
+          call: "call",
+          root: "Root",
           chooseFirst: "Select a session from the collaboration directory first.",
           related: "Related pages",
           creatorHub: ["Agent Console", "View self-registered Agents, Skill claims, and run history."],
@@ -150,7 +156,7 @@ export function A2AConsole({
   const totalCost = allChildren.reduce((sum, item) => sum + item.cost_cents, 0);
   const firstChild = children[0];
   const callerName =
-    activeParent?.caller_agent_name ?? firstChild?.caller_agent_name ?? "Entry Agent";
+    activeParent?.caller_agent_name ?? firstChild?.caller_agent_name ?? copy.entryAgent;
   const callerSlug = activeParent?.caller_agent_slug ?? firstChild?.caller_agent_slug ?? "";
   const callerSkills = activeParent?.caller_skills ?? firstChild?.caller_skills ?? [];
   const callerTags = activeParent?.caller_agent_tags ?? firstChild?.caller_agent_tags ?? [];
@@ -220,7 +226,7 @@ export function A2AConsole({
         ) : null}
         {!selectedRunId && !initialError ? (
           <A2ACallGraph
-            callerName="Entry Agent"
+            callerName={copy.entryAgent}
             callerSlug={copy.placeholderSlug}
             rootStatus="waiting"
             childRuns={[]}
@@ -263,7 +269,7 @@ export function A2AConsole({
                         </div>
                         <div className="min-w-0">
                           <p className="text-[11px] font-black uppercase text-[color:var(--ol-subtle)]">
-                            call {path}
+                            {copy.call} {path}
                           </p>
                           <h2 className="truncate text-[14px] font-black text-[color:var(--ol-ink)]">
                             {child.target_agent_name}
@@ -340,7 +346,7 @@ export function A2AConsole({
           <div className="mt-4 grid gap-2">
             {selectedRunId ? (
               <>
-                <RunLink label={`Root · ${callerName}`} id={selectedRunId} />
+                <RunLink label={`${copy.root} · ${callerName}`} id={selectedRunId} />
                 {childEntries.map(({ child, path }) => (
                   <RunLink key={child.child_run_id} label={`${path} · ${child.target_agent_name}`} id={child.child_run_id} />
                 ))}
@@ -401,6 +407,7 @@ function A2ACallGraph({
           body: "关系图展示并行、连续和多层 Agent 调用。拖动节点只会调整当前页面的排布。",
           dragHint: "拖动节点整理视图",
           emptyNode: "子 Agent 调用发生后会自动出现节点。",
+          rootRun: "根运行",
         }
       : {
           childAgent: "Child Agent",
@@ -409,6 +416,7 @@ function A2ACallGraph({
           body: "The graph shows parallel, sequential, and nested Agent calls. Dragging a node only changes this page layout.",
           dragHint: "Drag nodes to organize the view",
           emptyNode: "Child Agent nodes appear after delegation.",
+          rootRun: "Root run",
         };
   const graph = useMemo<{ nodes: GraphNode[]; edges: GraphEdge[]; width: number; height: number }>(() => {
     const parentID = selectedRunId ?? "placeholder-parent";
@@ -416,7 +424,7 @@ function A2ACallGraph({
       id: `parent-${parentID}`,
       runId: selectedRunId,
       label: callerName,
-      subtitle: callerSlug || "Root run",
+      subtitle: callerSlug || copy.rootRun,
       status: rootStatus,
       kind: "root",
       defaultPosition: { x: 32, y: 112 },
@@ -470,7 +478,7 @@ function A2ACallGraph({
       width: Math.max(680, 320 + Math.max(1, maxDepth) * 260),
       height: Math.max(300, 120 + Math.max(1, row) * 118),
     };
-  }, [callerName, callerSlug, childRuns, copy.autoChild, copy.childAgent, placeholder, rootStatus, selectedRunId]);
+  }, [callerName, callerSlug, childRuns, copy.autoChild, copy.childAgent, copy.rootRun, placeholder, rootStatus, selectedRunId]);
   const nodeById = useMemo(
     () => new Map(graph.nodes.map((node) => [node.id, node])),
     [graph.nodes],
@@ -617,8 +625,8 @@ function GraphNodeCard({
 }) {
   const copy =
     locale === "zh"
-      ? { title: "拖动节点整理调用树", viewRun: "查看运行", waiting: "等待运行", root: "根" }
-      : { title: "Drag node to organize the call tree", viewRun: "View run", waiting: "Waiting for run", root: "Root" };
+      ? { title: "拖动节点整理调用树", viewRun: "查看运行", waiting: "等待运行", root: "根", entry: "入口", target: "目标" }
+      : { title: "Drag node to organize the call tree", viewRun: "View run", waiting: "Waiting for run", root: "Root", entry: "entry", target: "target" };
   const chip = node.kind === "root" ? { tone: "ol-chip ol-chip-mint", label: copy.root } : statusChip(node.status, locale);
 
   return (
@@ -631,7 +639,7 @@ function GraphNodeCard({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[10.5px] font-black uppercase tracking-[0.05em] text-[color:var(--ol-subtle)]">
-            {node.kind === "root" ? "entry" : "target"}
+            {node.kind === "root" ? copy.entry : copy.target}
           </p>
           <h3 className="mt-1 truncate text-[13.5px] font-black text-[color:var(--ol-ink)]">
             {node.label}

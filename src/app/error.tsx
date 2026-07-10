@@ -23,9 +23,9 @@ export default function Error({
           current: "页面错误",
           kicker: "页面错误",
           title: "页面暂时无法加载",
-          lead: "实例可能暂时无法响应，或你的登录状态已经失效。请重试；如果仍然失败，可以回到 Registry 继续浏览。",
+          lead: "实例可能暂时无法响应，或你的登录状态已经失效。请重试；如果仍然失败，可以回到 Agent 目录继续浏览。",
           retry: "重试",
-          registry: "打开 Registry",
+          registry: "打开 Agent 目录",
         }
       : {
           signIn: "Sign in",

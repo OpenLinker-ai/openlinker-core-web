@@ -5,10 +5,12 @@ import { AuthSideHero } from "@/components/auth/auth-side-hero";
 import { Topbar } from "@/components/layout/topbar";
 import { getLocale } from "@/lib/i18n-server";
 
-export const metadata: Metadata = {
-  title: "Sign Up",
-  description: "Create an OpenLinker account",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return locale === "zh"
+    ? { title: "注册", description: "创建 OpenLinker 账号" }
+    : { title: "Sign Up", description: "Create an OpenLinker account" };
+}
 
 export const dynamic = "force-dynamic";
 

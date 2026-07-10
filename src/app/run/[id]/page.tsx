@@ -12,10 +12,12 @@ import { ApiError, apiFetchAuthed } from "@/lib/api";
 import { auth } from "@/lib/auth";
 import { getLocale } from "@/lib/i18n-server";
 
-export const metadata = {
-  title: "Run Detail",
-  description: "OpenLinker run detail",
-};
+export async function generateMetadata() {
+  const locale = await getLocale();
+  return locale === "zh"
+    ? { title: "运行详情", description: "OpenLinker 运行详情" }
+    : { title: "Run Detail", description: "OpenLinker run detail" };
+}
 
 export default async function RunDetailAliasPage({
   params,

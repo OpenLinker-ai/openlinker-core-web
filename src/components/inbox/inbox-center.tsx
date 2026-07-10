@@ -6,7 +6,11 @@ import { useState } from "react";
 import { Icon, type IconName } from "@/components/ui/icon";
 import { useApi } from "@/hooks/use-api";
 import type { Locale } from "@/lib/i18n";
-import { availabilityStatusLabel } from "@/lib/i18n-labels";
+import {
+  availabilityStatusLabel,
+  localizedBackendText,
+  localizedBackendTextList,
+} from "@/lib/i18n-labels";
 import { cn } from "@/lib/utils";
 
 type NotificationItem = {
@@ -54,6 +58,7 @@ export function InboxCenter({
   const copy =
     locale === "zh"
       ? {
+          kicker: "通知中心",
           scopeTitle: "告警范围",
           scopeBody: "仅显示服务端可用性巡检产生的 Agent 异常与恢复记录。",
           total: "全部告警",
@@ -73,6 +78,7 @@ export function InboxCenter({
           notifications: "通知设置",
         }
       : {
+          kicker: "Inbox",
           scopeTitle: "Alert scope",
           scopeBody: "Only Agent failures and recoveries reported by server-side availability probes appear here.",
           total: "All alerts",
@@ -128,7 +134,7 @@ export function InboxCenter({
   return (
     <div className="grid gap-6 xl:grid-cols-[240px_minmax(0,1fr)_310px]">
       <aside className="ol-panel ol-panel-pad h-fit">
-        <div className="ol-kicker">inbox</div>
+        <div className="ol-kicker">{copy.kicker}</div>
         <h2 className="mt-2 text-[18px] font-black text-[color:var(--ol-ink)]">
           {copy.scopeTitle}
         </h2>
@@ -242,13 +248,8 @@ function alertToNotification(alert: AvailabilityAlert, locale: Locale): Notifica
   const isRecovered = alert.type === "availability_recovered";
   const name = alert.agent_name || alert.agent_slug || "Agent";
   const status = availabilityStatusLabel(alert.availability_status, locale);
-  const rawError = alert.last_error?.trim() ?? "";
-  const visibleError =
-    locale === "zh" || !/[\p{Script=Han}]/u.test(rawError) ? rawError : "";
-  const localizedHints = (alert.repair_hints ?? []).filter((hint) => {
-    const hasHan = /[\p{Script=Han}]/u.test(hint);
-    return locale === "zh" ? hasHan : !hasHan;
-  });
+  const visibleError = localizedBackendText(alert.last_error, locale, "");
+  const localizedHints = localizedBackendTextList(alert.repair_hints ?? [], locale);
   const title = isRecovered
     ? locale === "zh"
       ? `${name} 可用性已恢复`

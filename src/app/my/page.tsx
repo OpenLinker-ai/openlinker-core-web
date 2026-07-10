@@ -47,10 +47,12 @@ const ZERO_DASHBOARD: DashboardData = {
   },
 };
 
-export const metadata = {
-  title: "My Workspace",
-  description: "OpenLinker personal workspace entry",
-};
+export async function generateMetadata() {
+  const locale = await getLocale();
+  return locale === "zh"
+    ? { title: "我的工作区", description: "OpenLinker 个人工作区入口" }
+    : { title: "My Workspace", description: "OpenLinker personal workspace entry" };
+}
 
 export default async function MyPage() {
   const session = await auth();

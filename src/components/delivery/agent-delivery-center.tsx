@@ -30,6 +30,7 @@ export function AgentDeliveryCenter({
   const copy =
     locale === "zh"
       ? {
+          kicker: "结果投递",
           title: "通知投递设置",
           subtitle: "配置 Webhook 或 Slack 投递目标，并选择运行完成、失败或取消时需要发送的通知。",
           back: "返回 Agent",
@@ -57,6 +58,7 @@ export function AgentDeliveryCenter({
           runDeliveryKicker: "运行投递",
         }
       : {
+          kicker: "Delivery",
           title: "Notification delivery settings",
           subtitle: "Configure Webhook or Slack targets and choose which completion, failure, or cancellation events should send a notification.",
           back: "Back to Agent",
@@ -89,7 +91,7 @@ export function AgentDeliveryCenter({
       <section>
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_auto]">
           <div>
-            <div className="ol-kicker">delivery</div>
+            <div className="ol-kicker">{copy.kicker}</div>
             <h1 className="mt-2 text-[30px] font-[900] leading-tight text-[color:var(--ol-ink)]">
               {agent.name} · {copy.title}
             </h1>

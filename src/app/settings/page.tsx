@@ -60,7 +60,7 @@ export default async function SettingsPage({
   const copy =
     locale === "zh"
       ? {
-          kicker: "settings",
+          kicker: "设置",
           heading: "账户、安全与通知",
           lead: "管理登录资料、密码、站内告警和运行投递/回调入口。Agent 自注册邀请在接入 Agent 流程和 Agent 管理的注册邀请页维护。",
         }

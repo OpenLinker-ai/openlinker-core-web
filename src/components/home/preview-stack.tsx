@@ -15,8 +15,8 @@ const ITEMS: Record<Locale, PreviewItem[]> = {
   zh: [
   {
     num: 1,
-    title: "Agent Registry",
-    desc: "在同一目录查看公开 Agent、Skill 声明、可用性和 Benchmark 证据。",
+    title: "Agent 目录（Registry）",
+    desc: "在同一目录查看公开 Agent、Skill 声明、可用性和能力测评证据。",
     active: true,
   },
   {
@@ -27,7 +27,7 @@ const ITEMS: Record<Locale, PreviewItem[]> = {
   {
     num: 3,
     title: "四种连接模式",
-    desc: "支持 HTTP 直连、MCP Server、Agent Node WebSocket 和 Runtime Pull。",
+    desc: "支持 HTTP 直连、MCP Server、Agent Node WebSocket 和 Agent Node（长轮询）。",
   },
   {
     num: 4,

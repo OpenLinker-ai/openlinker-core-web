@@ -72,7 +72,7 @@ export function SkillsDialog({
           saved: "已保存技能",
           saveFailed: "保存失败，请稍后重试",
           title: "技能",
-          desc: `选择该 Agent 对外声明的 Skill，最多 ${MAX_SKILLS_PER_AGENT} 个；保存后会影响 Registry 搜索和 Benchmark。`,
+          desc: `选择该 Agent 对外声明的 Skill，最多 ${MAX_SKILLS_PER_AGENT} 个；保存后会影响 Agent 目录搜索和能力测评。`,
           loading: "加载技能目录中...",
           cancel: "取消",
           saving: "保存中...",

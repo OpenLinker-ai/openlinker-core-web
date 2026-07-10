@@ -11,10 +11,18 @@ import { auth } from "@/lib/auth";
 import type { Locale } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n-server";
 
-export const metadata = {
-  title: "Developer Center",
-  description: "OpenLinker Agent connection, API/MCP invocation, A2A, and delivery docs",
-};
+export async function generateMetadata() {
+  const locale = await getLocale();
+  return locale === "zh"
+    ? {
+        title: "开发者中心",
+        description: "OpenLinker Agent 接入、API/MCP 调用、A2A 与结果投递说明",
+      }
+    : {
+        title: "Developer Center",
+        description: "OpenLinker Agent connection, API/MCP invocation, A2A, and delivery docs",
+      };
+}
 
 type ConnectTab = "overview" | "mcp" | "delivery";
 
@@ -65,6 +73,7 @@ export default async function ConnectPage({
       ? {
           home: "首页",
           current: "开发者中心",
+          kicker: "开发者中心",
           heading: "Agent 接入、调用与结果投递",
           lead: "这里把三类方向分开说明：Agent 如何接入当前实例，应用或 MCP 客户端如何调用 Agent，以及终态结果如何投递。完整的 Agent 管理仍在“Agent 管理”。",
           loginTitle: "登录后配置投递目标",
@@ -73,6 +82,7 @@ export default async function ConnectPage({
       : {
           home: "Home",
           current: "Developer Center",
+          kicker: "developer",
           heading: "Agent connection, invocation, and result delivery",
           lead: "This area separates three directions: how Agents connect to this instance, how apps or MCP clients invoke them, and how terminal results are delivered. Use Agent Console for full Agent management.",
           loginTitle: "Sign in to configure delivery targets",
@@ -98,7 +108,7 @@ export default async function ConnectPage({
       <main className="mx-auto max-w-7xl px-6 pb-16">
         <div className="ol-page-head">
           <div className="ol-page-title">
-            <div className="ol-kicker">developer</div>
+            <div className="ol-kicker">{copy.kicker}</div>
             <h1>{copy.heading}</h1>
             <p>
               {copy.lead}
@@ -150,8 +160,8 @@ function ConnectResources({ signedIn, locale }: { signedIn: boolean; locale: Loc
     locale === "zh"
       ? [
           { href: signedIn ? "/hub" : "/login?callbackUrl=/hub", title: "Agent 管理", desc: "接入、桥接和维护你拥有的 Agent。" },
-          { href: "/skills", title: "Skill 注册表", desc: "查看 Agent 声明、Benchmark 和运行证据共用的能力标签。" },
-          { href: "/status", title: "实例状态", desc: "检查当前实例的 API、Registry、外部投递和运行链路。" },
+          { href: "/skills", title: "Skill 目录", desc: "查看 Agent 声明、能力测评（Benchmark）和运行证据共用的能力标签。" },
+          { href: "/status", title: "实例状态", desc: "检查当前实例的 API、Agent 目录、外部投递和运行链路。" },
         ]
       : [
           { href: signedIn ? "/hub" : "/login?callbackUrl=/hub", title: "Agent Console", desc: "Connect, bridge, and maintain the Agents you own." },
@@ -181,7 +191,7 @@ function LoginRequiredPanel({
 }) {
   const copy =
     locale === "zh"
-      ? { kicker: "account required", login: "登录后配置", mcp: "先看 MCP/API 说明" }
+      ? { kicker: "需要登录", login: "登录后配置", mcp: "先看 MCP/API 说明" }
       : { kicker: "account required", login: "Sign in to configure", mcp: "Read MCP/API docs first" };
 
   return (

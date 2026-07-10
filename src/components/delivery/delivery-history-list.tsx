@@ -1,7 +1,11 @@
 "use client";
 
 import type { Locale } from "@/lib/i18n";
-import { targetTypeLabel } from "@/lib/i18n-labels";
+import {
+  deliveryStatusLabel,
+  localizedBackendText,
+  targetTypeLabel,
+} from "@/lib/i18n-labels";
 import { cn } from "@/lib/utils";
 
 import type { DeliveryItem } from "./types";
@@ -29,7 +33,9 @@ export function DeliveryHistoryList({
           retrying: "重试中…",
           retry: "重试",
           nextRetry: "下次重试：",
-          run: "Run",
+          run: "运行",
+          deliveryFailed: "投递失败，请检查目标配置与接收端状态。",
+          technicalDetails: "技术详情",
         }
       : {
           empty: "No delivery history yet",
@@ -38,6 +44,8 @@ export function DeliveryHistoryList({
           retry: "Retry",
           nextRetry: "Next retry:",
           run: "Run",
+          deliveryFailed: "Delivery failed. Check the target configuration and receiver status.",
+          technicalDetails: "Technical details",
         };
 
   if (items.length === 0) {
@@ -50,15 +58,21 @@ export function DeliveryHistoryList({
 
   return (
     <ul className="grid gap-2">
-      {items.map((delivery) => (
-        <li
+      {items.map((delivery) => {
+        const rawError = delivery.error_message?.trim() ?? "";
+        const localizedError = rawError
+          ? localizedBackendText(rawError, locale, copy.deliveryFailed)
+          : "";
+        const showRawError = Boolean(rawError && rawError !== localizedError);
+        return (
+          <li
           key={delivery.id}
           className="rounded-2xl border border-[color:var(--ol-line)] bg-white p-3"
-        >
+          >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <span className={cn("ol-chip", chipForStatus(delivery.status))}>
-                {statusLabel(delivery.status, locale)}
+                {deliveryStatusLabel(delivery.status, locale)}
               </span>
               <span className="ol-chip ol-chip-mint">
                 {targetTypeLabel(delivery.target_type, locale)}
@@ -89,9 +103,15 @@ export function DeliveryHistoryList({
           <div className="mt-1.5 truncate text-[11.5px] text-[color:var(--ol-muted)]">
             {delivery.target_url}
           </div>
-          {delivery.error_message ? (
+          {rawError ? (
             <div className="mt-1.5 rounded-md bg-[#fde7e7] px-2 py-1 text-[11.5px] text-[#7a1f1f]">
-              {delivery.error_message}
+              <div>{localizedError}</div>
+              {showRawError ? (
+                <details className="mt-1.5 text-[11px] text-[color:var(--ol-muted)]">
+                  <summary className="cursor-pointer font-bold">{copy.technicalDetails}</summary>
+                  <code className="mt-1 block whitespace-pre-wrap break-words font-mono text-[10.5px]">{rawError}</code>
+                </details>
+              ) : null}
             </div>
           ) : null}
           <div className="mt-1.5 text-[11px] text-[color:var(--ol-subtle)]">
@@ -100,8 +120,9 @@ export function DeliveryHistoryList({
               <span> · {copy.nextRetry} {formatTime(delivery.next_retry_at, locale)}</span>
             ) : null}
           </div>
-        </li>
-      ))}
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -110,13 +131,6 @@ function chipForStatus(status: string): string {
   if (status === "success") return "ol-chip-green";
   if (status === "failed") return "ol-chip-amber";
   return "ol-chip-mint";
-}
-
-function statusLabel(status: string, locale: Locale): string {
-  if (status === "success") return locale === "zh" ? "成功" : "Success";
-  if (status === "failed") return locale === "zh" ? "失败" : "Failed";
-  if (status === "pending") return locale === "zh" ? "待处理" : "Pending";
-  return status;
 }
 
 function formatTime(iso: string, locale: Locale): string {

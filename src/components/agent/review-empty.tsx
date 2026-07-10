@@ -16,7 +16,7 @@ export function ReviewEmpty({ locale = "zh" }: { locale?: Locale }) {
           title: "用户反馈",
           status: "暂无数据",
           empty: "暂无公开反馈",
-          body: "当前没有可展示的评分或评论。可先结合可用性、调用量、Benchmark 和运行记录判断是否适合使用。",
+          body: "当前没有可展示的评分或评论。可先结合可用性、调用量、能力测评和运行记录判断是否适合使用。",
         }
       : {
           title: "User Feedback",

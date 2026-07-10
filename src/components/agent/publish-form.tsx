@@ -74,9 +74,9 @@ function isAllowedEndpointURL(value: string): boolean {
 
 function connectionModeLabel(mode: AgentConnectionMode, locale: Locale): string {
   if (mode === "runtime_ws") return "Agent Node / WebSocket";
-  if (mode === "runtime_pull") return "Runtime Pull";
+  if (mode === "runtime_pull") return locale === "zh" ? "Agent Node（长轮询）" : "Runtime Pull";
   if (mode === "mcp_server") return locale === "zh" ? "已有 MCP 工具" : "Existing MCP tool";
-  return "HTTP Endpoint";
+  return locale === "zh" ? "HTTP 端点" : "HTTP Endpoint";
 }
 
 function isRuntimeConnectionMode(mode: AgentConnectionMode): boolean {
@@ -94,10 +94,10 @@ const VALIDATION_COPY = {
     validPrice: "请填写有效的外部参考价格",
     priceMin: "不能小于 $0",
     priceMax: "最多 $10,000",
-    tagRequired: "至少 1 个 tag",
-    tagMax: "最多 5 个 tag",
-    mcpEndpointRequired: "请填写 MCP endpoint URL",
-    endpointRequired: "请填写 endpoint URL",
+    tagRequired: "至少 1 个标签",
+    tagMax: "最多 5 个标签",
+    mcpEndpointRequired: "请填写 MCP 服务地址",
+    endpointRequired: "请填写调用端点 URL",
     httpsRequired: "必须使用 HTTPS；本地 loopback 调试需开启 NEXT_PUBLIC_ALLOW_LOCAL_HTTP_ENDPOINTS=true",
     mcpToolRequired: "请填写 MCP 工具名称",
   },
@@ -226,11 +226,11 @@ export function PublishForm({ creatorName, skills, locale = "zh" }: PublishFormP
           chooseSource: "选择接入方式",
           basicInfo: "基础信息",
           skillLabel: `技能（最多 ${MAX_SKILLS_PER_AGENT} 个，可选）`,
-          skillHint: "声明 Agent 能完成的任务，便于 Registry 检索和调用方判断能力；接入后仍可在 Agent 管理中修改。",
+          skillHint: "声明 Agent 能完成的任务，便于 Agent 目录检索和调用方判断能力；接入后仍可在 Agent 管理中修改。",
           previewTitle: "Agent 资料预览",
           previewSync: "随表单更新",
           visibilityTitle: "可见性与实例认证",
-          visibilityBody: "是否进入公开 Registry 由你决定；实例认证与 Benchmark 提供额外证据，不影响私有 Agent 使用。",
+          visibilityBody: "是否进入公开 Agent 目录由你决定；实例认证与能力测评提供额外证据，不影响私有 Agent 使用。",
           freeTitle: "外部参考价格（可选）",
           freeBody: "这是与外部系统对接时使用的兼容元数据，不会触发 OpenLinker Core 扣费或结算。每次调用仍会写入运行记录。",
           saving: "保存中...",
@@ -599,10 +599,10 @@ function EndpointSection({
           runtimeWSBody: (
             <>
               保存后在 Agent 管理生成绑定该 Agent 的接入凭证。你的 Agent Node 不需要公网入站地址，只要用该凭证建立{" "}
-              <code>/api/v1/agent-runtime/ws</code> 出站长连接，就能实时接收运行请求、回传事件和最终结果；不适合保持 WebSocket 时可选择 Runtime Pull。
+              <code>/api/v1/agent-runtime/ws</code> 出站长连接，就能实时接收运行请求、回传事件和最终结果；不适合保持 WebSocket 时可选择 Agent Node（长轮询）。
             </>
           ),
-          runtimePullTitle: "Runtime Pull：无需持续 WebSocket",
+          runtimePullTitle: "Agent Node（长轮询）：无需持续 WebSocket",
           runtimeBody: (
             <>
               保存后在 Agent 管理生成绑定该 Agent 的接入凭证。你的本地 Agent 不需要公网入站地址，只要定时请求{" "}
@@ -611,10 +611,10 @@ function EndpointSection({
               <code>/api/v1/agent-runtime/runs/&lt;id&gt;/result</code> 回传结果。
             </>
           ),
-          httpsOrLoopback: "Endpoint URL（HTTPS 或本地 loopback HTTP）",
-          httpsOnly: "Endpoint URL（必须 HTTPS）",
-          localHint: "本地调试允许 loopback HTTP；对外部署时请使用 HTTPS Endpoint。",
-          mcpEndpoint: "远程 HTTP JSON-RPC / MCP Endpoint URL",
+          httpsOrLoopback: "调用端点 URL（HTTPS 或本地回环 HTTP）",
+          httpsOnly: "调用端点 URL（必须 HTTPS）",
+          localHint: "本地调试允许回环 HTTP；对外部署时请使用 HTTPS 调用端点。",
+          mcpEndpoint: "远程 HTTP JSON-RPC / MCP 服务地址",
           mcpTool: "远程 MCP 工具名称",
           mcpHint: (
             <>
@@ -622,7 +622,7 @@ function EndpointSection({
             </>
           ),
           mcpAuth: "MCP 工具鉴权（可选）",
-          endpointAuth: "鉴权 Header（可选，当前实例调用 endpoint 时携带）",
+          endpointAuth: "鉴权 Header（可选，当前实例调用端点时携带）",
         }
       : {
           runtimeWSTitle: "Agent Node / WebSocket for local and private Agents",
@@ -784,7 +784,7 @@ function VisibilitySection({
     locale === "zh"
       ? {
           label: "可见性",
-          public: "公开 - 立即出现在 Registry",
+          public: "公开 - 立即出现在 Agent 目录",
           unlisted: "非公开列表 - 仅凭链接访问",
           private: "私有 - 仅 Agent 所有者可见",
         }

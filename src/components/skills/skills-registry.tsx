@@ -177,7 +177,7 @@ export function SkillsRegistry({ locale, skills }: { locale: Locale; skills: Ski
   };
 
   const importProposals = async () => {
-    const drafts = parseProposalImport(importText, filter);
+    const drafts = parseProposalImport(importText, filter, locale);
     if (drafts.length === 0) {
       toast.error(copy.importEmpty);
       return;
@@ -490,7 +490,7 @@ function normalizeProposalDraft(draft: ProposalDraft): ProposalDraft | null {
   };
 }
 
-function parseProposalImport(text: string, filter: FilterKey): ProposalDraft[] {
+function parseProposalImport(text: string, filter: FilterKey, locale: Locale): ProposalDraft[] {
   return text
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -509,7 +509,11 @@ function parseProposalImport(text: string, filter: FilterKey): ProposalDraft[] {
         proposed_skill_id: proposedSkillID,
         category: inferredCategory,
         name: rawName || fallbackName,
-        description: rawDescription || `Imported Skill proposal for ${proposedSkillID}`,
+        description:
+          rawDescription ||
+          (locale === "zh"
+            ? `从导入文本创建的 Skill 提案：${proposedSkillID}`
+            : `Imported Skill proposal for ${proposedSkillID}`),
       };
     })
     .filter((draft) => Boolean(normalizeProposalDraft(draft)));

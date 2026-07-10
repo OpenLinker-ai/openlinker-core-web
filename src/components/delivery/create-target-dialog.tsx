@@ -73,6 +73,7 @@ export function CreateTargetDialog({ locale = "zh", open, onOpenChange, onCreate
           cancel: "取消",
           creating: "创建中…",
           create: "创建",
+          secret: "签名密钥",
           saveSecret: "请立即复制并保存 secret",
           webhookSecret: "用于校验 OpenLinker 投递时的 HMAC-SHA256 签名。",
           slackSecret: "Slack incoming webhook URL 本身即是 secret，已存储；下方仅记录 OpenLinker 生成的备用 secret。",
@@ -98,6 +99,7 @@ export function CreateTargetDialog({ locale = "zh", open, onOpenChange, onCreate
           cancel: "Cancel",
           creating: "Creating…",
           create: "Create",
+          secret: "Secret",
           saveSecret: "Copy and save this secret now",
           webhookSecret: "Used to verify OpenLinker delivery with an HMAC-SHA256 signature.",
           slackSecret: "The Slack incoming webhook URL is itself a secret and has been stored; the value below is OpenLinker's backup secret.",
@@ -324,7 +326,7 @@ export function CreateTargetDialog({ locale = "zh", open, onOpenChange, onCreate
             </div>
 
             <div className="space-y-2">
-              <Label>Secret</Label>
+              <Label>{copy.secret}</Label>
               <div className="flex items-stretch gap-2">
                 <code className="block flex-1 overflow-x-auto rounded-md border border-[color:var(--ol-line)] bg-[#0f1c2c] px-3 py-2 font-mono text-[12.5px] leading-relaxed text-[#cfe6e2]">
                   {revealedSecret.target.secret}

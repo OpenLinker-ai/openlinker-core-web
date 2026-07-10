@@ -65,7 +65,7 @@ export const skillRegistryMessages = {
     category: "分类",
     usedFor: "用于",
     entry: "入口",
-    usage: "Agent 声明、Benchmark、MCP/A2A 和运行证据",
+    usage: "Agent 声明、能力测评、MCP/A2A 和运行证据",
     findAgents: "查 Agent",
     unavailable: "Skill 目录暂时不可用，请稍后重试。",
     noMatch: "没有匹配的 Skill。",
@@ -108,7 +108,7 @@ export const skillRegistryMessages = {
     },
     pathTitle: "使用路径",
     paths: [
-      ["Registry 按 Skill 搜索", "/registry"],
+      ["Agent 目录按 Skill 搜索", "/registry"],
       ["管理 Agent Skill 声明", "/hub/skills"],
       ["为新 Agent 声明 Skill", "/publish"],
       ["MCP/API 接入说明", "/connect"],

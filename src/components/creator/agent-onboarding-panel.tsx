@@ -15,6 +15,8 @@ import {
   availabilityStatusLabel,
   connectionModeLabel as localizedConnectionModeLabel,
   dryRunResultLabel,
+  localizedBackendText,
+  localizedBackendTextList,
   runStatusLabel,
 } from "@/lib/i18n-labels";
 import {
@@ -226,7 +228,7 @@ function connectionModeLabel(agent: OnboardingAgent, locale: Locale): string {
     return locale === "zh" ? "Agent Node / WebSocket · 出站长连接" : "Agent Node / WebSocket · outbound socket";
   }
   if (agent.connection_mode === "runtime_pull") {
-    return locale === "zh" ? "Runtime Pull · WebSocket 降级领取" : "Runtime Pull · fallback claim loop";
+    return locale === "zh" ? "Agent Node（长轮询）· WebSocket 降级领取" : "Runtime Pull · fallback claim loop";
   }
   return `HTTP · ${endpointHost(agent.endpoint_url)}`;
 }
@@ -321,6 +323,18 @@ export function AgentOnboardingPanel({
   const callable = agentState.lifecycle_status === "active" && isAvailabilityCallable(availability);
   const localizedAvailabilityLabel = availabilityStatusLabel(availability.status, locale, availability.label);
   const localizedAvailabilityHint = availabilityStatusHint(availability.status, locale, availability.hint);
+  const localizedRepairHints = localizedBackendTextList(
+    repairHints,
+    locale,
+    locale === "zh"
+      ? "请检查 Agent 的连接配置和运行日志，然后重新执行健康检查。"
+      : "Check the Agent connection settings and runtime logs, then run the health check again.",
+  );
+  const dryRunStatusText = onboarding.status.dry_run_error
+    ? localizedBackendText(onboarding.status.dry_run_error, locale, copy.healthFail)
+    : onboarding.status.dry_run_passed
+      ? copy.dryRunPassed
+      : copy.dryRunNotRun;
 
   const completedCount = useMemo(() => {
     const s = onboarding.status;
@@ -718,7 +732,7 @@ export function AgentOnboardingPanel({
             {callable ? (
               <Link href={`/playground/${agentState.slug}`} className="ol-mini-btn ol-mini-btn-primary gap-1.5">
                 <PlayCircle className="size-3.5" aria-hidden="true" />
-                Playground
+                {locale === "zh" ? "试用台" : "Playground"}
               </Link>
             ) : (
               <span
@@ -730,7 +744,7 @@ export function AgentOnboardingPanel({
               </span>
             )}
             <Link href={`/hub/agents/${agentState.slug}/benchmarks`} className="ol-mini-btn">
-              Benchmark
+              {locale === "zh" ? "能力测评" : "Benchmark"}
             </Link>
           </div>
         </div>
@@ -755,10 +769,7 @@ export function AgentOnboardingPanel({
             ) : null}
           </div>
           <p className="text-[13px] font-semibold leading-6 text-[color:var(--ol-muted)]">
-            {onboarding.status.dry_run_error ??
-              (onboarding.status.dry_run_passed
-                ? copy.dryRunPassed
-                : copy.dryRunNotRun)}
+            {dryRunStatusText}
           </p>
           {availability.status !== "healthy" ? (
             <div className="rounded-xl border border-[color:var(--ol-amber)]/25 bg-[color:var(--ol-amber-soft)] p-3 text-[12.5px] font-semibold leading-6 text-[#7a4b12]">
@@ -773,13 +784,13 @@ export function AgentOnboardingPanel({
           >
             {runningDryRun ? copy.checking : copy.runHealth}
           </button>
-          {repairHints.length > 0 ? (
+          {localizedRepairHints.length > 0 ? (
             <div className="rounded-xl border border-[color:var(--ol-line)] bg-white p-3">
               <strong className="text-[12px] font-black text-[color:var(--ol-ink)]">
                 {copy.repair}
               </strong>
               <ul className="mt-2 list-disc space-y-1 pl-5 text-[12.5px] font-semibold leading-6 text-[color:var(--ol-muted)]">
-                {repairHints.map((hint) => (
+                {localizedRepairHints.map((hint) => (
                   <li key={hint}>{hint}</li>
                 ))}
               </ul>
@@ -822,7 +833,7 @@ function RuntimeWorkbenchPanel({
   const copy =
     locale === "zh"
       ? {
-          loadFailed: "Workbench 暂时不可用",
+          loadFailed: "运行时工作台暂时不可用",
           callable: "可调用",
           notCallable: "未达可调用",
           activeTokens: "有效凭证",
@@ -989,7 +1000,14 @@ function diagnosticDot(severity: string): string {
 
 function localizedRuntimeDiagnostic(code: string, fallback: string, locale: Locale): string {
   const message = runtimeDiagnosticMessages[locale][code as RuntimeDiagnosticCode];
-  return message ?? (locale === "zh" ? fallback : "Review the Agent Node connection and recent runs.");
+  if (message) return message;
+  return localizedBackendText(
+    fallback,
+    locale,
+    locale === "zh"
+      ? "请检查 Agent Node 连接和近期运行状态。"
+      : "Review the Agent Node connection and recent runs.",
+  );
 }
 
 function Step({

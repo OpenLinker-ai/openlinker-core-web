@@ -108,7 +108,7 @@ export default async function AgentBenchmarksPage({
           <span className="sep">/</span>
           <span>Agent</span>
           <span className="sep">/</span>
-          <span className="current">Benchmark</span>
+          <span className="current">{copy.title}</span>
         </div>
 
         <div className="ol-page-head">

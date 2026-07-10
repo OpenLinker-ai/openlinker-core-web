@@ -7,10 +7,12 @@ import { SettingsSignOutButton } from "@/components/settings/sign-out-button";
 import { auth } from "@/lib/auth";
 import { getLocale } from "@/lib/i18n-server";
 
-export const metadata = {
-  title: "User Tokens",
-  description: "User Token status for this OpenLinker Core instance",
-};
+export async function generateMetadata() {
+  const locale = await getLocale();
+  return locale === "zh"
+    ? { title: "User Token", description: "当前 OpenLinker Core 实例的 User Token 状态" }
+    : { title: "User Tokens", description: "User Token status for this OpenLinker Core instance" };
+}
 
 const SCOPES = ["agents:read", "agents:run", "runs:read", "tasks:write"];
 

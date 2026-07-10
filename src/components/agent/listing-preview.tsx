@@ -48,11 +48,13 @@ export function ListingPreview({
     locale === "zh"
       ? {
           unnamed: "未命名 Agent",
-          placeholder: "在左侧填写描述后，将在这里看到 Listing 实时预览效果。",
+          placeholder: "在左侧填写描述后，这里会同步显示 Agent 目录卡片的预览效果。",
+          author: "作者：",
         }
       : {
           unnamed: "Untitled Agent",
           placeholder: "Fill in the description on the left to preview how the listing will look.",
+          author: "by ",
         };
   const displayName = name.trim() || copy.unnamed;
   const displayDesc =
@@ -72,7 +74,7 @@ export function ListingPreview({
         <div>
           <h3>{displayName}</h3>
           <div className="ol-pv-rate">
-            by {creatorName} · v0.1.0
+            {copy.author}{creatorName} · v0.1.0
           </div>
         </div>
       </div>

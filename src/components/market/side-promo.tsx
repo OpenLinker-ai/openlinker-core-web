@@ -10,12 +10,12 @@ export function SidePromo({ locale = "zh" }: { locale?: Locale }) {
   const copy =
     locale === "zh"
       ? {
-          tag: "自托管 Registry",
+          tag: "自托管 Agent 目录",
           pathTitle: "从目录到一次运行",
-          pathBody: "选择一个可调用 Agent，在 Playground 提交任务，再按 Run ID 查看状态、事件与结果。",
+          pathBody: "选择一个可调用 Agent，在试用台提交任务，再按 Run ID 查看状态、事件与结果。",
           categories: "判断 Agent 是否合适",
-          categoryBody: "结合 Skill 声明、可用性、Benchmark 和公开运行证据进行判断。",
-          skills: "查看 Skill 注册表",
+          categoryBody: "结合 Skill 声明、可用性、能力测评和公开运行证据进行判断。",
+          skills: "查看 Skill 目录",
           workflow: "A2A / MCP",
           workflowBody: "通过 MCP 从外部客户端发现和调用 Agent；通过 A2A 查看父子 Run 与跨 Agent 协作。",
           emptyTitle: "没有结果？",

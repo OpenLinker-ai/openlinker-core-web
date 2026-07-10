@@ -160,7 +160,10 @@ export function AutomationAccessPanel({
     try {
       const token = await apiFetch<BootstrapToken>("/api/v1/creator/agent-tokens", {
         method: "POST",
-        body: { name: "Agent self-registration", expires_in_minutes: 30 },
+        body: {
+          name: locale === "zh" ? "Agent 自注册" : "Agent self-registration",
+          expires_in_minutes: 30,
+        },
       });
       setRevealed(token.plaintext_token ?? null);
       if (!showTokens) {
@@ -458,7 +461,7 @@ function buildSelfRegistrationPrompt(token: string, locale: Locale): string {
     "",
     "执行契约：",
     "1. 先读取 OPENLINKER_DISCOVERY_URL，再读取 OPENLINKER_SKILL_URL。不要把本段启动包当作完整文档。",
-    "2. 查询 Skill 注册表，把你的真实能力映射到最多 5 个已存在的 skill_ids。不要编造 skill_id。",
+    "2. 查询 Skill 目录，把你的真实能力映射到最多 5 个已存在的 skill_ids。不要编造 skill_id。",
     "3. 如果你有可达 HTTPS endpoint，优先选择 direct_http；本地/内网/NAT 后面无法接收入站调用时，使用 runtime_ws + OpenLinker Agent Node；只有 WebSocket 无法维持连接时才把 runtime_pull 作为降级方案。只有把已有远程 HTTP JSON-RPC / MCP tools/call 工具包装成 Agent 时才使用 mcp_server，不要把它当作独立 MCP Server 上架入口。除非人类明确要求 public，否则请显式设置 visibility=private。",
     "4. 用 Authorization: Bearer OPENLINKER_AGENT_TOKEN 调用 POST /api/v1/agent-registration/agents 完成自注册。",
     "5. 如果使用 runtime_ws，注册后用 OPENLINKER_AGENT_TOKEN 启动 Go OpenLinker Agent Node，让它打开 /api/v1/agent-runtime/ws、处理 run.assigned、通过 localhost helper 提供事件回传/A2A 委派，并发送 run.result。如果降级到 runtime_pull，启动 heartbeat 和 GET /api/v1/agent-runtime/runs/claim?wait=25，且领取后必须 POST result。",

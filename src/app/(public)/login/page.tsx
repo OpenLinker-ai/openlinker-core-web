@@ -16,10 +16,12 @@ import { AuthInteractivePanel } from "@/components/auth/auth-interactive-panel";
 import { Topbar } from "@/components/layout/topbar";
 import { getLocale } from "@/lib/i18n-server";
 
-export const metadata: Metadata = {
-  title: "Sign In",
-  description: "Sign in to this OpenLinker Core instance",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return locale === "zh"
+    ? { title: "登录", description: "登录当前 OpenLinker Core 实例" }
+    : { title: "Sign In", description: "Sign in to this OpenLinker Core instance" };
+}
 
 export default async function LoginPage() {
   const locale = await getLocale();

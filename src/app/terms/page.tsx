@@ -2,14 +2,16 @@ import type { Metadata } from "next";
 import { Topbar } from "@/components/layout/topbar";
 import { getLocale } from "@/lib/i18n-server";
 
-export const metadata: Metadata = {
-  title: "Instance Terms",
-  description: "Usage terms for a self-hosted OpenLinker Core instance",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return locale === "zh"
+    ? { title: "实例使用说明", description: "自托管 OpenLinker Core 实例的使用说明" }
+    : { title: "Instance Terms", description: "Usage terms for a self-hosted OpenLinker Core instance" };
+}
 
 const COPY = {
   zh: {
-    kicker: "Instance Terms",
+    kicker: "实例使用说明",
     heading: "本实例使用说明",
     lead: "OpenLinker Core Web 是开源软件，不是由项目维护者统一运营的在线服务。当前实例的服务规则、账号政策和支持方式由实例运营方制定。",
     sections: [

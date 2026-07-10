@@ -49,7 +49,7 @@ const RUN_STATUS_LABELS: LabelMap = {
   pending: { zh: "待处理", en: "Pending" },
   waiting: { zh: "待调用", en: "Waiting" },
   queued: { zh: "已入队", en: "Queued" },
-  endpoint_response_received: { zh: "Endpoint 已响应", en: "Endpoint responded" },
+  endpoint_response_received: { zh: "调用端点已响应", en: "Endpoint responded" },
 };
 
 const RUN_ERROR_MESSAGES: LabelMap = {
@@ -163,7 +163,7 @@ const CONNECTION_MODE_LABELS: LabelMap = {
 const TARGET_TYPE_LABELS: LabelMap = {
   webhook: { zh: "Webhook", en: "Webhook" },
   slack: { zh: "Slack", en: "Slack" },
-  email: { zh: "Email", en: "Email" },
+  email: { zh: "邮件", en: "Email" },
 };
 
 const DELIVERY_EVENT_LABELS: LabelMap = {
@@ -178,6 +178,19 @@ const ARTIFACT_VISIBILITY_LABELS: LabelMap = {
   owner_only: { zh: "仅 Agent 所有者可见", en: "Agent owner only" },
 };
 
+const ALLOWED_BACKEND_TECH_TERMS =
+  /\b(?:Slack Incoming Webhook|User Token|Agent Token|Run ID|Agent Node|MCP Server|OpenLinker|JSON-RPC|WebSocket|Webhook|Agent|Skill|MCP|A2A|API|SDK|SSE|HTTPS|HTTP|JSON|Slack|URL|TLS|DNS|EOF)\b/giu;
+
+function hasUnexpectedLatinText(value: string): boolean {
+  const remainder = value
+    .replace(/(?:https?:\/\/|mailto:)[^\s)）]+/giu, " ")
+    .replace(/\b(?:ERR_[A-Z0-9_]+|E[A-Z][A-Z0-9]{2,}|[A-Z][A-Z0-9]*_[A-Z0-9_]+)\b/g, " ")
+    .replace(/\b[a-z][a-z0-9]*(?:[_:./][a-z0-9*{}-]+)+\b/giu, " ")
+    .replace(/\/[A-Za-z0-9_./:{}?&=+*-]+/g, " ")
+    .replace(ALLOWED_BACKEND_TECH_TERMS, " ");
+  return /[A-Za-z]{2,}/.test(remainder);
+}
+
 export function localizedBackendText(
   value: string | null | undefined,
   locale: Locale,
@@ -186,14 +199,28 @@ export function localizedBackendText(
   const text = value?.trim();
   if (!text) return fallback;
   const hasHan = /[\p{Script=Han}]/u.test(text);
-  if (locale === "zh") return hasHan ? text : fallback;
+  if (locale === "zh") return hasHan && !hasUnexpectedLatinText(text) ? text : fallback;
   return hasHan ? fallback : text;
+}
+
+export function localizedBackendTextList(
+  values: ReadonlyArray<string | null | undefined>,
+  locale: Locale,
+  fallback?: string,
+): string[] {
+  const localized = values
+    .map((value) => localizedBackendText(value, locale, ""))
+    .filter((value): value is string => Boolean(value));
+  if (localized.length > 0) return [...new Set(localized)];
+
+  const hasBackendText = values.some((value) => Boolean(value?.trim()));
+  return hasBackendText && fallback?.trim() ? [fallback.trim()] : [];
 }
 
 export function fallbackEnumLabel(value: string | null | undefined, locale: Locale): string {
   const text = value?.trim();
   if (!text) return UNKNOWN_LABEL[locale];
-  if (locale === "zh") return text;
+  if (locale === "zh") return UNKNOWN_LABEL.zh;
   return text
     .replace(/[_-]+/g, " ")
     .replace(/\s+/g, " ")
@@ -217,7 +244,8 @@ export function availabilityStatusLabel(
 }
 
 export function availabilityStatusSummary(status: string | null | undefined, locale: Locale): string {
-  return labelFrom(AVAILABILITY_SUMMARY, status || "unknown", locale);
+  const key = status?.trim() || "unknown";
+  return AVAILABILITY_SUMMARY[key]?.[locale] ?? AVAILABILITY_SUMMARY.unknown[locale];
 }
 
 export function availabilityStatusHint(
@@ -226,7 +254,7 @@ export function availabilityStatusHint(
   backendHint?: string,
 ): string {
   const key = status?.trim() || "unknown";
-  const fallback = AVAILABILITY_HINTS[key]?.[locale] ?? availabilityStatusSummary(key, locale);
+  const fallback = AVAILABILITY_HINTS[key]?.[locale] ?? AVAILABILITY_HINTS.unknown[locale];
   return localizedBackendText(backendHint, locale, fallback);
 }
 
@@ -243,13 +271,14 @@ export function runErrorMessage(
   const mapped = RUN_ERROR_MESSAGES[code]?.[locale];
   if (mapped) return mapped;
 
-  const message = errorMessage?.trim();
-  if (message) return message;
-
-  if (code) {
-    return locale === "zh" ? `运行失败（${code}）` : `Run failed (${code})`;
-  }
-  return locale === "zh" ? "运行失败" : "Run failed";
+  const fallback = code
+    ? locale === "zh"
+      ? `运行失败（${code}）`
+      : `Run failed (${code})`
+    : locale === "zh"
+      ? "运行失败"
+      : "Run failed";
+  return localizedBackendText(errorMessage, locale, fallback);
 }
 
 export function streamStateLabel(state: string | null | undefined, locale: Locale): string {
