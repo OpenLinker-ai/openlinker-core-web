@@ -29,7 +29,7 @@ export function Brand({ asLink = true, withSubtitle = true, locale = "zh", class
         </span>
         {withSubtitle && (
           <span className="mt-0.5 hidden text-[12px] text-[color:var(--ol-muted)] sm:block">
-            {locale === "zh" ? "开放 Agent 目录" : "Open Agent Registry"}
+            {locale === "zh" ? "Agent 注册与运行" : "Agent registration & runs"}
           </span>
         )}
       </span>

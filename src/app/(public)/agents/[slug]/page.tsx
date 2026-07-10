@@ -124,7 +124,7 @@ export default async function AgentDetailPage({
     locale === "zh"
       ? {
           home: "首页",
-          market: "Agent 目录",
+          market: "Agent 库",
           noReferencePrice: "未提供外部参考价格 · 可选兼容元数据 · Core 不据此扣费",
           price: (price: string) => `外部参考价格 $${price} / 次 · 可选兼容元数据 · Core 不据此扣费`,
           unknownLabel: "未验证",
@@ -147,9 +147,9 @@ export default async function AgentDetailPage({
           unavailableKicker: "Agent 详情",
           unavailableTitle: "Agent 详情暂时不可用",
           unavailableLead:
-            "实例暂时无法读取该 Agent 的详情。请稍后重试，或返回 Agent 目录查看其他 Agent。",
+            "实例暂时无法读取该 Agent 的详情。请稍后重试，或返回 Agent 库查看其他 Agent。",
           retryHint: "Agent 标识",
-          backToMarket: "回到 Agent 目录",
+          backToMarket: "回到 Agent 库",
         }
       : {
           home: "Home",

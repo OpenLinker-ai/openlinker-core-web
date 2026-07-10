@@ -10,9 +10,9 @@ export function SidePromo({ locale = "zh" }: { locale?: Locale }) {
   const copy =
     locale === "zh"
       ? {
-          tag: "自托管 Agent 目录",
-          pathTitle: "从目录到一次运行",
-          pathBody: "选择一个可调用 Agent，在试用台提交任务，再按 Run ID 查看状态、事件与结果。",
+          tag: "自托管 Agent 库",
+          pathTitle: "从发现到一次运行",
+          pathBody: "选择一个可调用 Agent，在试用台发起调用，再按 Run ID 查看状态、事件与结果。",
           categories: "判断 Agent 是否合适",
           categoryBody: "结合 Skill 声明、可用性、能力测评和公开运行证据进行判断。",
           skills: "查看 Skill 目录",
@@ -22,12 +22,12 @@ export function SidePromo({ locale = "zh" }: { locale?: Locale }) {
           emptyBody: "调整关键词或筛选条件，也可以前往 Agent 管理接入自己的 Agent。",
         }
       : {
-          tag: "Self-hosted Registry",
-          pathTitle: "From catalog to run",
-          pathBody: "Choose a callable Agent, submit a task in Playground, then inspect status, events, and results by Run ID.",
+          tag: "Self-hosted Agent Registry",
+          pathTitle: "From discovery to a run",
+          pathBody: "Choose a callable Agent, run it in Playground, then inspect status, events, and results by Run ID.",
           categories: "Evaluate an Agent",
           categoryBody: "Use Skill claims, availability, benchmarks, and public run evidence to decide whether an Agent fits.",
-          skills: "View Skill registry",
+          skills: "View Skill Directory",
           workflow: "A2A / MCP",
           workflowBody: "Use MCP to discover and invoke Agents from external clients, and A2A to inspect parent-child Runs and cross-Agent work.",
           emptyTitle: "No results?",
@@ -46,7 +46,7 @@ export function SidePromo({ locale = "zh" }: { locale?: Locale }) {
             className="ol-mini-btn mt-3"
             style={{ background: "#fff", color: "var(--ol-primary-dark)" }}
           >
-            {locale === "zh" ? "查看接入方式" : "View connection options"}
+            {locale === "zh" ? "查看调用方式" : "View invocation options"}
           </Link>
         </div>
 

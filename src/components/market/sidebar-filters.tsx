@@ -39,8 +39,8 @@ export function SidebarFilters({
   const pathname = usePathname();
   const copy =
     locale === "zh"
-      ? { callable: "可调用 Agent", all: "全部 Agent", tags: "按标签" }
-      : { callable: "Callable Agents", all: "All Agents", tags: "By tag" };
+      ? { callable: "可调用 Agent", all: "全部公开 Agent", tags: "按标签" }
+      : { callable: "Callable Agents", all: "All public Agents", tags: "By tag" };
 
   const pushWith = (nextTags: string[], callableOnly = currentCallableOnly) => {
     const sp = new URLSearchParams();

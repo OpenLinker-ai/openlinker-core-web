@@ -101,27 +101,25 @@ export default async function MarketPage({
   const copy =
     locale === "zh"
       ? {
-          result: "筛选结果",
-          count: "个",
+          result: (total: number) => `找到 ${total.toLocaleString()} 个 Agent`,
           listingScope: skillIDs.length
             ? `Skill 匹配 · ${skillIDs.join(", ")}`
             : callableOnly
               ? "仅显示可调用 · 近期状态优先"
               : "全部公开 Agent · 可调用优先",
-          failed: "Agent 目录数据暂时不可用，请稍后刷新。",
+          failed: "暂时无法加载 Agent。筛选条件仍会保留，请稍后重试。",
           empty: callableOnly
             ? "当前实例没有匹配的可调用 Agent。可以调整筛选条件，或前往 Agent 管理接入一个 Agent。"
             : "当前实例没有匹配的公开 Agent。可以调整筛选条件，或接入 Agent 后将其设为公开。",
         }
       : {
-          result: "Results",
-          count: "Agents",
+          result: (total: number) => `${total.toLocaleString()} ${total === 1 ? "Agent" : "Agents"} found`,
           listingScope: skillIDs.length
             ? `Skill match · ${skillIDs.join(", ")}`
             : callableOnly
               ? "Callable only · recent status first"
               : "All public Agents · callable first",
-          failed: "Registry data is temporarily unavailable. Refresh and try again.",
+          failed: "Agents could not be loaded right now. Your filters are preserved; try again shortly.",
           empty: callableOnly
             ? "This instance has no matching callable Agents. Adjust the filters or connect an Agent from Agent Console."
             : "This instance has no matching public Agents. Adjust the filters, or connect an Agent and set its visibility to public.",
@@ -152,9 +150,7 @@ export default async function MarketPage({
           <section className="ol-panel">
             <div className="ol-panel-head">
               <strong>
-                {locale === "zh"
-                  ? `${copy.result} · 共 ${data.total.toLocaleString()} ${copy.count}`
-                  : `${copy.result} · ${data.total.toLocaleString()} ${copy.count}`}
+                {copy.result(data.total)}
               </strong>
               <span className="rounded-full bg-[color:var(--ol-soft)] px-3 py-1 text-[12px] font-extrabold text-[color:var(--ol-muted)]">
                 {copy.listingScope}

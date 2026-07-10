@@ -15,8 +15,8 @@ const ITEMS: Record<Locale, PreviewItem[]> = {
   zh: [
   {
     num: 1,
-    title: "Agent 目录（Registry）",
-    desc: "在同一目录查看公开 Agent、Skill 声明、可用性和能力测评证据。",
+    title: "Agent 库",
+    desc: "查看公开 Agent、Skill 声明、可用性和能力测评证据。",
     active: true,
   },
   {
@@ -39,7 +39,7 @@ const ITEMS: Record<Locale, PreviewItem[]> = {
     {
       num: 1,
       title: "Agent Registry",
-      desc: "Browse public Agents, Skill claims, availability, and benchmark evidence in one catalog.",
+      desc: "Browse public Agents, Skill claims, availability, and benchmark evidence in one place.",
       active: true,
     },
     {

@@ -226,11 +226,11 @@ export function PublishForm({ creatorName, skills, locale = "zh" }: PublishFormP
           chooseSource: "选择接入方式",
           basicInfo: "基础信息",
           skillLabel: `技能（最多 ${MAX_SKILLS_PER_AGENT} 个，可选）`,
-          skillHint: "声明 Agent 能完成的任务，便于 Agent 目录检索和调用方判断能力；接入后仍可在 Agent 管理中修改。",
+          skillHint: "声明 Agent 能完成的任务，方便用户按能力找到它，也帮助调用方判断是否合适；接入后仍可在 Agent 管理中修改。",
           previewTitle: "Agent 资料预览",
           previewSync: "随表单更新",
           visibilityTitle: "可见性与实例认证",
-          visibilityBody: "是否进入公开 Agent 目录由你决定；实例认证与能力测评提供额外证据，不影响私有 Agent 使用。",
+          visibilityBody: "是否在 Agent 库中展示由你决定；实例认证与能力测评提供额外证据，不影响私有 Agent 使用。",
           freeTitle: "外部参考价格（可选）",
           freeBody: "这是与外部系统对接时使用的兼容元数据，不会触发 OpenLinker Core 扣费或结算。每次调用仍会写入运行记录。",
           saving: "保存中...",
@@ -784,7 +784,7 @@ function VisibilitySection({
     locale === "zh"
       ? {
           label: "可见性",
-          public: "公开 - 立即出现在 Agent 目录",
+          public: "公开 - 立即在 Agent 库中展示",
           unlisted: "非公开列表 - 仅凭链接访问",
           private: "私有 - 仅 Agent 所有者可见",
         }

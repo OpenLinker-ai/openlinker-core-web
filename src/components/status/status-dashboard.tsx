@@ -26,7 +26,7 @@ const SERVICE_COPY: Record<Locale, ServiceCopy> = {
       name: "API 网关",
       signal: "健康检查",
       evidence: "/healthz",
-      detail: "异常时，Agent 调用、Agent 目录查询和运行提交可能失败。",
+      detail: "异常时，Agent 调用、Agent 列表查询和运行提交可能失败。",
       path: "/healthz",
     },
     {
@@ -39,7 +39,7 @@ const SERVICE_COPY: Record<Locale, ServiceCopy> = {
     },
     {
       id: "registry",
-      name: "Agent 目录（Registry）",
+      name: "Agent 库",
       signal: "公开 API",
       evidence: "/api/v1/agents",
       detail: "异常时，Agent 列表、详情和 Skill 筛选可能无法加载。",

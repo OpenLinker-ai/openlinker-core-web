@@ -102,10 +102,10 @@ export const agentOnboardingMessages = {
     adding: "添加中...",
     addExample: "添加示例",
     tokenPolling: "用绑定当前 Agent 的接入凭证建立 WebSocket；必要时可降级为轮询领取运行请求，不需要当前实例访问你的 IPv4 地址。",
-    visibility: "Agent 目录可见性",
+    visibility: "Agent 库展示",
     visibilityOptions: {
-      public: "公开 - 出现在 Agent 目录",
-      unlisted: "链接可见 - 不列入 Agent 目录",
+      public: "公开 - 在 Agent 库中展示",
+      unlisted: "仅链接访问 - 不在 Agent 库中展示",
       private: "私有 - 仅 Agent 所有者管理",
     },
     certification: "实例认证状态",

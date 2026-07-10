@@ -21,7 +21,7 @@ interface NavItem {
 const ITEMS: NavItem[] = [
   { label: { zh: "首页", en: "Home" }, href: "/", match: (p) => p === "/" },
   {
-    label: { zh: "Agent 目录", en: "Registry" },
+    label: { zh: "Agent 库", en: "Registry" },
     href: "/registry",
     match: (p) => p.startsWith("/registry") || p.startsWith("/agents"),
   },

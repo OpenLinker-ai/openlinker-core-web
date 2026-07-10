@@ -12,8 +12,8 @@ export default async function NotFound() {
           current: "未找到",
           kicker: "页面未找到",
           heading: "找不到这个页面",
-          lead: "链接可能无效、已经过期，或对应资源已被移除。你可以回到 Agent 目录，或前往开发者中心查看接入方式。",
-          registry: "打开 Agent 目录",
+          lead: "链接可能无效、已经过期，或对应资源已被移除。你可以回到 Agent 库，或前往开发者中心查看接入方式。",
+          registry: "打开 Agent 库",
           connect: "查看开发者文档",
         }
       : {

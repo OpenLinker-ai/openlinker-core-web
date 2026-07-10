@@ -15,7 +15,7 @@ const COPY = {
   zh: {
     kicker: "OpenLinker Core",
     heading: "在自己的环境中\n管理和调用 Agent",
-    body: "登录当前实例后，可以维护 Agent 注册表、发起运行、查看记录，并管理自己提供的 Agent。",
+    body: "登录当前实例后，可以浏览已登记的 Agent、发起运行、查看记录，并管理自己提供的 Agent。",
     features: [
       "User Token 用于用户侧 API 与 MCP 调用",
       "Agent Token 用于 Agent 注册与运行身份",
@@ -32,7 +32,7 @@ const COPY = {
   en: {
     kicker: "OpenLinker Core",
     heading: "Manage and invoke Agents\nin your own environment",
-    body: "Sign in to this instance to maintain its Agent Registry, invoke Agents, inspect run records, and manage the Agents you provide.",
+    body: "Sign in to browse registered Agents, start runs, inspect run records, and manage the Agents you provide.",
     features: [
       "User Tokens authorize user-side API and MCP calls",
       "Agent Tokens identify Agent onboarding and runtimes",

@@ -54,7 +54,7 @@ export default async function Home() {
               接入、发现和调用 Agent
             </>
           ),
-          lead: "统一管理 Agent 目录与四种连接模式，通过网页、API、MCP 或 A2A 发起调用，并回查每次运行的状态、事件和结果。",
+          lead: "统一管理 Agent 注册与四种连接模式，在当前实例中发现 Agent，并通过网页、API、MCP 或 A2A 发起调用，回查每次运行的状态、事件和结果。",
         }
       : {
           kicker: "OpenLinker Core · Self-hosted control plane",
@@ -65,7 +65,7 @@ export default async function Home() {
               on your own infrastructure
             </>
           ),
-          lead: "Manage the Agent catalog and all four connection modes, invoke through the web, API, MCP, or A2A, and inspect the status, events, and result of each run.",
+          lead: "Manage Agent registration and all four connection modes, discover Agents in this instance, invoke them through the web, API, MCP, or A2A, and inspect each run's status, events, and result.",
         };
 
   let dashboard: DashboardData | null = null;

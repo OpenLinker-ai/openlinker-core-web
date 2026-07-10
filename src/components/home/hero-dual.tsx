@@ -46,10 +46,10 @@ export function HeroDual({ locale = "zh" }: { locale?: Locale }) {
   const primary =
     locale === "zh"
       ? {
-          tag: "当前实例 · Agent 目录",
-          title: "浏览 Agent 目录（Registry）",
-          desc: "查看当前实例登记的 Agent、Skill 声明、可调用状态和运行证据。",
-          cta: "→ 打开 Agent 目录",
+          tag: "当前实例 · Agent 库",
+          title: "浏览已登记的 Agent",
+          desc: "查看当前实例公开登记的 Agent、Skill 声明、可调用状态和运行证据。",
+          cta: "→ 打开 Agent 库",
           meta: "当前实例 · Agent · Skill · 运行证据",
         }
       : {

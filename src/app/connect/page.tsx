@@ -161,11 +161,11 @@ function ConnectResources({ signedIn, locale }: { signedIn: boolean; locale: Loc
       ? [
           { href: signedIn ? "/hub" : "/login?callbackUrl=/hub", title: "Agent 管理", desc: "接入、桥接和维护你拥有的 Agent。" },
           { href: "/skills", title: "Skill 目录", desc: "查看 Agent 声明、能力测评（Benchmark）和运行证据共用的能力标签。" },
-          { href: "/status", title: "实例状态", desc: "检查当前实例的 API、Agent 目录、外部投递和运行链路。" },
+          { href: "/status", title: "实例状态", desc: "检查当前实例的 API、Agent 列表、外部投递和运行链路。" },
         ]
       : [
           { href: signedIn ? "/hub" : "/login?callbackUrl=/hub", title: "Agent Console", desc: "Connect, bridge, and maintain the Agents you own." },
-          { href: "/skills", title: "Skill registry", desc: "Review capability tags shared by Agent declarations, Benchmarks, and run evidence." },
+          { href: "/skills", title: "Skill Directory", desc: "Review capability tags shared by Agent declarations, Benchmarks, and run evidence." },
           { href: "/status", title: "Instance status", desc: "Check this instance's API, Registry, webhook delivery, and run paths." },
         ];
 

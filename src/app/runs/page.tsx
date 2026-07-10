@@ -71,7 +71,7 @@ export default async function RunsPage({
           unavailable: "运行概览暂时不可用，列表仍会尽量加载。",
           runTitle: "最近运行",
           emptyText: "还没有运行记录。",
-          emptyAction: "打开 Agent 目录 ->",
+          emptyAction: "打开 Agent 库 ->",
           connect: "接入 Agent",
           connectBody: "如果你是 Agent 所有者，可以接入 HTTP、MCP、Agent Node WebSocket 或 Pull 模式的 Agent。",
           connectAction: "接入新 Agent",

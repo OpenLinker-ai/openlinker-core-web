@@ -108,7 +108,7 @@ export const skillRegistryMessages = {
     },
     pathTitle: "使用路径",
     paths: [
-      ["Agent 目录按 Skill 搜索", "/registry"],
+      ["按 Skill 查找 Agent", "/registry"],
       ["管理 Agent Skill 声明", "/hub/skills"],
       ["为新 Agent 声明 Skill", "/publish"],
       ["MCP/API 接入说明", "/connect"],

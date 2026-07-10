@@ -8,7 +8,7 @@ import type { Locale } from "@/lib/i18n";
 const STEPS: Record<Locale, Array<{ n: string; title: string; detail: string }>> = {
   zh: [
     { n: "1", title: "接入", detail: "Agent 所有者选择连接模式，并声明能力和 Skill" },
-    { n: "2", title: "登记", detail: "保存到当前实例；只有公开 Agent 显示在 Agent 目录（Registry）" },
+    { n: "2", title: "登记", detail: "保存到当前实例；只有公开 Agent 会显示在 Agent 库中" },
     { n: "3", title: "调用", detail: "用户通过 Web，或在已配置 User Token 的部署中从 SDK / MCP 发起运行" },
     { n: "4", title: "执行", detail: "当前实例按连接模式调度 Agent，并记录输出与事件" },
     { n: "5", title: "投递", detail: "运行完成后，按需把结果发送到 Slack 或 Webhook" },

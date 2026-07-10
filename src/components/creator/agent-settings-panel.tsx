@@ -174,7 +174,7 @@ export function AgentSettingsPanel({ agent, locale }: Props) {
     locale === "zh"
       ? {
           basics: "基础信息",
-          basicsDesc: "这些字段由所有者维护，会影响 Agent 目录（Registry）的展示、匹配和调用入口。",
+          basicsDesc: "这些字段由所有者维护，会影响 Agent 库中的展示、匹配和调用入口。",
           name: "Agent 名称",
           description: "描述",
           tags: "标签",
@@ -191,9 +191,9 @@ export function AgentSettingsPanel({ agent, locale }: Props) {
           authPlaceholder: "留空表示保留当前密钥",
           clearAuth: "清除已有鉴权 Header",
           publish: "可见性",
-          visibility: "Agent 目录可见性",
-          public: "公开：出现在 Agent 目录，可被搜索和直连访问",
-          unlisted: "链接可见：不进入 Agent 目录，但直链和 Agent Card 可访问",
+          visibility: "Agent 库展示",
+          public: "公开：在 Agent 库中展示，可被搜索和直连访问",
+          unlisted: "仅链接访问：不在 Agent 库中展示，但直链和 Agent Card 可访问",
           private: "私有：仅作者和授权流程可见",
           platform: "实例状态",
           slug: "固定 Agent 标识（slug）",

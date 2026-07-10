@@ -60,7 +60,7 @@ export function AuthDashboard({ userName, dashboard, locale = "zh" }: AuthDashbo
           agentCount: (count: number) => `共 ${count.toLocaleString()} 个 Agent`,
           cards: [
             { href: "/my", icon: "chart" as IconName, title: "我的工作台", desc: "查看运行、Agent 管理和账户入口。" },
-            { href: "/registry", icon: "target" as IconName, title: "Agent 目录", desc: "浏览公开 Agent、Skill 和调用入口。" },
+            { href: "/registry", icon: "target" as IconName, title: "Agent 库", desc: "浏览公开 Agent、Skill 和调用入口。" },
             {
               href: isCreator ? "/hub" : "/publish",
               icon: (isCreator ? "bot" : "edit") as IconName,

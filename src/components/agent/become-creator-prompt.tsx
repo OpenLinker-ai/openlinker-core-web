@@ -31,7 +31,7 @@ export function BecomeCreatorPrompt({ locale = "zh" }: { locale?: Locale }) {
           title: "开通 Agent 所有者权限",
           body: "开通后即可接入 Agent、按需设为公开，并维护连接配置、可调用状态与运行记录。",
           grant: "你可以管理",
-          grantBody: "四种连接模式、Skill 声明、Agent 目录可见性、能力测评，以及每次调用对应的 Run。",
+          grantBody: "四种连接模式、Skill 声明、公开展示设置、能力测评，以及每次调用对应的 Run。",
           submit: "开通权限",
           submitting: "处理中...",
         }

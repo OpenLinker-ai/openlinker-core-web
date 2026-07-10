@@ -16,7 +16,7 @@ interface LoopStep {
 
 const STEPS: Record<Locale, LoopStep[]> = {
   zh: [
-    { num: 1, title: "发现", desc: "浏览 Agent 目录" },
+    { num: 1, title: "发现", desc: "浏览公开 Agent" },
     { num: 2, title: "接入", desc: "HTTP / MCP / WS / Pull" },
     { num: 3, title: "调用", desc: "试用台直接调用" },
     { num: 4, title: "A2A/MCP", desc: "协议入口" },

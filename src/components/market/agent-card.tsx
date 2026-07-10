@@ -1,14 +1,14 @@
 /**
- * Registry 列表项（横排卡片）。
+ * Agent 库列表项。
  *
  * 视觉来自 prototype/openlinker-flow-07-market.png 的 .agent-card：
- *   - 3 列布局：app-icon (48px) / agent-copy / meta (170px)
+ *   - 宽容器为图标 / 文案 / meta 三列，窄容器把 meta 移到第二行
  *   - active 卡（仅父组件传 active 时）淡绿渐变背景
  *   - tag 用 .ol-chip / .ol-chip-green / .ol-chip-blue / .ol-chip-amber 区分
  *   - price_per_call_cents 只作外部系统兼容元数据，不参与 Core 结算
  *   - 评分接口暂无，仅显示真实调用次数 total_calls
  *
- * "试用" 只给 readiness.callable=true 的 Agent 展示。
+ * "调用" 只给 readiness.callable=true 的 Agent 展示。
  */
 import Link from "next/link";
 
@@ -87,23 +87,26 @@ export function AgentCard({ agent, active = false, locale = "zh" }: AgentCardPro
   const copy =
     locale === "zh"
       ? {
-          referencePrice: (price: string) => `外部参考价格 ${price}`,
-          noReferencePrice: "未提供外部参考价格",
-          referenceHint: "可选兼容元数据 · Core 不据此扣费",
-          calls: "次调用",
-          detail: "详情",
-          try: "试用",
+          referencePrice: (price: string) => `参考价 ${price}`,
+          noReferencePrice: "未标注参考价",
+          referenceHint: "可选兼容元数据，Core 不据此扣费",
+          callUnit: { one: "次调用", other: "次调用" },
+          detail: "查看详情",
+          try: "调用",
           waiting: "暂不可调用",
         }
       : {
-          referencePrice: (price: string) => `External reference price ${price}`,
-          noReferencePrice: "No external reference price",
-          referenceHint: "Optional compatibility metadata · not used for Core billing",
-          calls: "calls",
-          detail: "Details",
-          try: "Try",
-          waiting: "Not callable yet",
+          referencePrice: (price: string) => `Reference price ${price}`,
+          noReferencePrice: "No reference price",
+          referenceHint: "Optional compatibility metadata; Core does not use it for billing",
+          callUnit: { one: "call", other: "calls" },
+          detail: "View details",
+          try: "Run",
+          waiting: "Not callable",
         };
+  const referencePriceLabel = referencePrice
+    ? copy.referencePrice(referencePrice)
+    : copy.noReferencePrice;
 
   return (
     <article className={`ol-agent-card${active ? " active" : ""}`}>
@@ -124,16 +127,24 @@ export function AgentCard({ agent, active = false, locale = "zh" }: AgentCardPro
         {(agent.skills?.length ?? 0) > 0 ? (
           <div className="ol-agent-tags">
             {agent.skills?.slice(0, 3).map((skill) => (
-              <span key={skill.id} className="ol-chip ol-chip-mint" title={skill.description}>
-                {skill.name}
+              <span
+                key={skill.id}
+                className="ol-chip ol-chip-mint ol-agent-tag"
+                title={skill.description ? `${skill.name} — ${skill.description}` : skill.name}
+              >
+                <span className="ol-agent-tag-label">{skill.name}</span>
               </span>
             ))}
           </div>
         ) : agent.tags.length > 0 ? (
           <div className="ol-agent-tags">
             {agent.tags.slice(0, 3).map((tag, i) => (
-              <span key={tag} className={`ol-chip ${tagColor(tag, i)}`}>
-                {tag}
+              <span
+                key={tag}
+                className={`ol-chip ol-agent-tag ${tagColor(tag, i)}`}
+                title={tag}
+              >
+                <span className="ol-agent-tag-label">{tag}</span>
               </span>
             ))}
           </div>
@@ -141,11 +152,15 @@ export function AgentCard({ agent, active = false, locale = "zh" }: AgentCardPro
       </div>
 
       <div className="ol-agent-meta">
-        <div className="ol-price">
-          {referencePrice ? copy.referencePrice(referencePrice) : copy.noReferencePrice}
+        <div
+          className="ol-price"
+          title={copy.referenceHint}
+          aria-label={`${referencePriceLabel}. ${copy.referenceHint}`}
+        >
+          {referencePriceLabel}
         </div>
         <div className="ol-meta-sub">
-          {copy.referenceHint} · {formatCalls(agent.total_calls)} {copy.calls}
+          {formatCalls(agent.total_calls)} {copy.callUnit[agent.total_calls === 1 ? "one" : "other"]}
         </div>
         <span
           className={`ol-chip ${availabilityChipClass(availabilityStatus)}`}

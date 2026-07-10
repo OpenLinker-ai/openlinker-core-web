@@ -48,7 +48,7 @@ export function ListingPreview({
     locale === "zh"
       ? {
           unnamed: "未命名 Agent",
-          placeholder: "在左侧填写描述后，这里会同步显示 Agent 目录卡片的预览效果。",
+          placeholder: "在左侧填写描述后，这里会同步显示 Agent 卡片的预览效果。",
           author: "作者：",
         }
       : {

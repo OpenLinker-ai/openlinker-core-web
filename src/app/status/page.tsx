@@ -17,7 +17,7 @@ export default async function StatusPage() {
           home: "首页",
           current: "实例状态",
           heading: "服务状态、事件记录和接入侧影响",
-          lead: "把 API、Agent 目录、运行链路和外部投递放在同一个视图里，方便定位调用失败或投递延迟。",
+          lead: "把 API、Agent 列表、运行链路和外部投递放在同一个视图里，方便定位调用失败或投递延迟。",
         }
       : {
           home: "Home",

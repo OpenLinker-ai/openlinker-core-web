@@ -76,7 +76,7 @@ export default async function PlaygroundPage({
     locale === "zh"
       ? {
           home: "首页",
-          market: "Agent 目录",
+          market: "Agent 库",
           myAgent: "我的 Agent",
           playground: "试用台",
           kicker: "第 3 步 / 运行",

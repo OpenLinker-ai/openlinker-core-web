@@ -22,7 +22,7 @@ export function SkillPlaceholder({ locale, agents, agentSkills }: Props) {
           summary: (skills: number, agents: number) => `${skills} 个 Skill · ${agents} 个公开 Agent`,
           agentCount: (n: number) => `${n} 个 Agent`,
           joiner: "、",
-          empty: "公开 Agent 后，用每行的 Skill 按钮声明能力。声明后会影响 Agent 目录搜索排序，也会显示在公开详情页。",
+          empty: "公开 Agent 后，用每行的 Skill 按钮声明能力。声明后会影响 Agent 搜索排序，也会显示在公开详情页。",
         }
       : {
           title: "Declared Skills",

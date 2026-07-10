@@ -33,7 +33,8 @@
     "start": "next start",
     "lint": "eslint",
     "check:i18n": "node scripts/check-i18n-copy.mjs && node --test scripts/check-i18n-copy.test.mjs",
-    "test:a2a-session": "node --test scripts/a2a-session-compat.test.mjs"
+    "test:a2a-session": "node --test scripts/a2a-session-compat.test.mjs",
+    "test:agent-library-card": "node --test scripts/agent-library-card-contract.test.mjs"
   },
   "dependencies": {
     "@auth/core": "^0.41.2",

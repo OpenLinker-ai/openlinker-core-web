@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description:
       locale === "zh"
-        ? "自托管 Agent 目录、调用、运行事件与实例管理"
+        ? "自托管 Agent 注册、发现、调用、运行事件与实例管理"
         : "Self-hosted Agent Registry, invocation, run events, and instance administration",
     icons: {
       icon: "/openlinker-logo.svg",
