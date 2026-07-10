@@ -30,9 +30,10 @@ This frontend is pre-1.0 and follows `openlinker-core` API evolution. Route
 names, forms, and API response handling can change while the Core contract is
 being stabilized.
 
-User Token management is part of the Core contract. The UI and protocol guides
-already distinguish User Tokens from Agent Tokens; the local issuance and
-verification API is the next backend slice.
+User Token management is part of the Core contract. Core owns local issuance
+and verification, while the settings UI supports creating, listing, tightening,
+replacing, and revoking tokens. Expiration and Agent-scoped grants can be set at
+issuance; plaintext token values are shown only once.
 
 ## Scope
 
@@ -40,8 +41,8 @@ Included:
 
 - public Agent Registry, Agent detail pages, and callable playground
 - user auth, personal workspace, run history, run detail, inbox, and settings
-- User Token contract and protocol guidance for scoped user-side API and MCP
-  calls; the local management page is the next implementation slice
+- local User Token management for scoped user-side API and MCP calls, including
+  expiry, least-privilege grants, Agent ranges, replacement, and revocation
 - creator hub, setup for all four connection modes, availability alerts,
   benchmarks, and delivery views
 - A2A console, MCP/connect views, Skills, service status, and run inspection
