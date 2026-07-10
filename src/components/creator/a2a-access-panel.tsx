@@ -64,7 +64,7 @@ export function A2AAccessPanel({
           copied: "已复制",
           copyToken: "复制凭证",
           revoke: "撤销",
-          empty: "尚未创建 Agent 运行凭证。创建后会绑定当前 Agent，不能管理账号设置、计划权益或其他 Agent。",
+          empty: "尚未创建 Agent 运行凭证。创建后会绑定当前 Agent，不能更改账号设置、创建用户调用凭证或管理其他 Agent。",
         }
       : {
           loadFailed: "Failed to load A2A configuration",
@@ -86,7 +86,7 @@ export function A2AAccessPanel({
           copied: "Copied",
           copyToken: "Copy credential",
           revoke: "Revoke",
-          empty: "No Agent runtime credentials yet. Created credentials are bound to this Agent and cannot manage account settings, plans, or other Agents.",
+          empty: "No Agent runtime credentials yet. Created credentials are bound to this Agent and cannot change account settings, create user access credentials, or manage other Agents.",
         };
   const { fetch: apiFetch } = useApi();
   const [policy, setPolicy] = useState<CallableBy>("public");

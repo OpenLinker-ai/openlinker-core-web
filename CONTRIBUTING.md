@@ -20,15 +20,16 @@ Run a compatible `openlinker-core` API locally or point `CORE_API_URL` /
 
 Allowed here:
 
-- Core market, Agent detail, Playground, task, workflow, A2A, MCP/connect,
+- Core Registry, Agent detail, Playground, task, workflow, A2A, MCP/connect,
   settings, inbox, creator, status, and local admin UI
+- User Token contract, local management UI, and scoped API/MCP guidance
 - API proxy behavior for Core-owned endpoints under `/api/v1/*`
 - UI copy, accessibility, and localization for open-source Core workflows
 
 Out of scope:
 
 - wallet, Stripe, withdrawals, pricing, finance admin, and hosted billing
-- commercial dashboard composition and cloud-only user-token product surfaces
+- managed account/token-policy dashboards and other Hosted-only product surfaces
 - private marketplace ranking or recommendation controls
 
 ## Pull Request Expectations

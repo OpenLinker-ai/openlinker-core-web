@@ -44,16 +44,17 @@ export function ApiSnippet({
           copied: "已复制到剪贴板",
           copyFailed: "复制失败，请手动选中代码",
           copyCode: "复制代码",
+          responseComment: "响应会返回 {\"run_id\":\"...\",\"status\":\"running\"}",
           hint: (
             <>
-              提示：YOUR_TOKEN 是访问令牌，可在{" "}
+              提示：YOUR_TOKEN 是 User Token。前往{" "}
               <Link
-                href="/connect"
+                href="/settings/user-tokens"
                 className="font-bold text-[color:var(--ol-primary-dark)] underline-offset-2 hover:underline"
               >
-                开发者中心
+                User Token 设置
               </Link>{" "}
-              查看创建说明，异步调用返回 run_id 后可用 SSE 追踪进度。
+              查看本地签发的当前实现状态；已有 Token 的部署可按以下示例调用，返回 run_id 后用 SSE 追踪进度。
             </>
           ),
         }
@@ -61,16 +62,17 @@ export function ApiSnippet({
           copied: "Copied to clipboard",
           copyFailed: "Copy failed. Select the code manually.",
           copyCode: "Copy code",
+          responseComment: "The response includes {\"run_id\":\"...\",\"status\":\"running\"}",
           hint: (
             <>
-              Tip: YOUR_TOKEN is an access token. See{" "}
+              Tip: YOUR_TOKEN is a User Token. Open{" "}
               <Link
-                href="/connect"
+                href="/settings/user-tokens"
                 className="font-bold text-[color:var(--ol-primary-dark)] underline-offset-2 hover:underline"
               >
-                Developer Center
+                User Token settings
               </Link>{" "}
-              for setup instructions. After the async call returns a run_id, use SSE to track progress.
+              for the current local-issuance status. Deployments with an existing token can use the examples below and track the returned run_id over SSE.
             </>
           ),
         };
@@ -84,7 +86,7 @@ export function ApiSnippet({
   const requestBodyStringLiteral = JSON.stringify(requestBodyJSON);
 
   const snippets: Record<Tab, string> = {
-    curl: `OPENLINKER_USER_TOKEN=your_access_token
+    curl: `OPENLINKER_USER_TOKEN=your_user_token
 AUTH_HEADER="Authorization: Bearer $OPENLINKER_USER_TOKEN"
 
 curl -X POST ${apiURL}/api/v1/runs \\
@@ -92,7 +94,7 @@ curl -X POST ${apiURL}/api/v1/runs \\
   -H "Content-Type: application/json" \\
   -d '${requestBodyJSON}'
 
-# 响应会返回 {"run_id":"...","status":"running"}
+# ${copy.responseComment}
 curl -N ${apiURL}/api/v1/runs/RUN_ID/stream \\
   -H "$AUTH_HEADER" \\
   -H "Accept: text/event-stream"`,

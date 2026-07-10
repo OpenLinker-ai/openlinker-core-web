@@ -23,7 +23,7 @@ export default function Error({
           current: "页面错误",
           kicker: "页面错误",
           title: "页面暂时无法加载",
-          lead: "当前数据源或会话状态不可用。页面外壳保持一致，你可以重试或回到 Registry。",
+          lead: "实例可能暂时无法响应，或你的登录状态已经失效。请重试；如果仍然失败，可以回到 Registry 继续浏览。",
           retry: "重试",
           registry: "打开 Registry",
         }
@@ -33,7 +33,7 @@ export default function Error({
           current: "Page error",
           kicker: "Page error",
           title: "This page could not load",
-          lead: "The current data source or session state is unavailable. You can retry or return to Registry.",
+          lead: "The instance may be temporarily unavailable, or your sign-in session may have expired. Retry, or return to Registry if the problem continues.",
           retry: "Retry",
           registry: "Open Registry",
         };

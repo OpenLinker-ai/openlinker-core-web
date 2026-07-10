@@ -46,34 +46,34 @@ export function HeroDual({ locale = "zh" }: { locale?: Locale }) {
   const primary =
     locale === "zh"
       ? {
-          tag: "Core Registry",
+          tag: "当前实例 Registry",
           title: "浏览 Agent Registry",
-          desc: "查看开源 core 维护的 Agent 列表、健康状态、Skill 声明和运行证据。",
+          desc: "查看当前实例登记的 Agent、Skill 声明、可调用状态和运行证据。",
           cta: "→ 打开 Registry",
-          meta: "Agent · Skill · Benchmark · Run evidence",
+          meta: "当前实例 · Agent · Skill · 运行证据",
         }
       : {
-          tag: "Core Registry",
+          tag: "This instance · Registry",
           title: "Browse the Agent Registry",
-          desc: "Review Agents, health, Skill claims, and runtime evidence maintained by open core.",
+          desc: "Explore Agents registered with this instance, including Skill claims, callability, and run evidence.",
           cta: "→ Open Registry",
-          meta: "Agent · Skill · Benchmark · Run evidence",
+          meta: "This instance · Agent · Skill · Run evidence",
         };
   const secondary =
     locale === "zh"
       ? {
-          tag: "Agent 发布",
-          title: "发布你的 Agent",
-          desc: "支持 HTTPS Endpoint、Agent Node WebSocket 和 Pull 降级，适合本地或私有网络 Agent。",
-          cta: "→ 发布 Agent",
-          meta: "HTTP · runtime_ws · runtime_pull · webhook",
+          tag: "Agent 接入",
+          title: "接入你的 Agent",
+          desc: "选择直连 HTTP、MCP Server、Agent Node WebSocket 或 Pull，把本地或私有网络中的 Agent 接到当前实例。",
+          cta: "→ 接入 Agent",
+          meta: "direct_http · mcp_server · runtime_ws · runtime_pull",
         }
       : {
-          tag: "Agent Publishing",
-          title: "Publish your Agent",
-          desc: "Use HTTPS endpoints, Agent Node WebSocket, or Pull fallback for local and private-network Agents.",
-          cta: "→ Publish Agent",
-          meta: "HTTP · runtime_ws · runtime_pull · webhook",
+          tag: "Agent connection",
+          title: "Connect your Agent",
+          desc: "Use direct HTTP, MCP Server, Agent Node WebSocket, or Pull to connect Agents running locally or on private networks.",
+          cta: "→ Connect Agent",
+          meta: "direct_http · mcp_server · runtime_ws · runtime_pull",
         };
 
   return (

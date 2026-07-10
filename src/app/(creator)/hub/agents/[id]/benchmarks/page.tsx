@@ -47,14 +47,14 @@ export default async function AgentBenchmarksPage({
           hub: "Agent 管理",
           kicker: "能力测评",
           title: "能力测评",
-          lead: "平台对每个 Skill 跑一组测试用例 + LLM 评分。平均分 ≥ 75 → verified；如果运行能力未就绪，这里只展示历史结果。",
+          lead: "系统会按每个 Skill 运行测试用例，并用 LLM 评估输出。平均分达到 75 分时，测评状态显示为“已通过”；Agent 暂不可运行时，这里只显示历史结果。",
           back: "返回接入",
         }
       : {
           hub: "Agent Console",
           kicker: "Capability benchmark",
           title: "Capability Benchmark",
-          lead: "The platform runs test cases and LLM judging for each Skill. Average score >= 75 becomes verified. If runtime capability is not ready, only historical results are shown.",
+          lead: "The system runs test cases for each Skill and uses an LLM to assess the output. An average score of 75 or higher is shown as verified; when the Agent is unavailable, this page shows historical results only.",
           back: "Back to onboarding",
         };
 

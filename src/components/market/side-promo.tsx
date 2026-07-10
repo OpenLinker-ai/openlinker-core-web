@@ -1,7 +1,5 @@
 /**
- * Registry 页右侧 side-stack。
- *
- * 右侧仅保留当前可用路径，不展示未接 API 的合集/最近浏览占位。
+ * Registry 页右侧的使用引导。
  */
 
 import Link from "next/link";
@@ -12,28 +10,28 @@ export function SidePromo({ locale = "zh" }: { locale?: Locale }) {
   const copy =
     locale === "zh"
       ? {
-          tag: "Core Registry",
-          pathTitle: "开源 core 路径",
-          pathBody: "先登记或选择一个 Agent，再用 Playground 完成一次可观测调用。",
-          categories: "Registry 维度",
-          categoryBody: "Skill 声明、健康状态、Benchmark 证据、A2A 能力和 MCP 接入方式。",
+          tag: "自托管 Registry",
+          pathTitle: "从目录到一次运行",
+          pathBody: "选择一个可调用 Agent，在 Playground 提交任务，再按 Run ID 查看状态、事件与结果。",
+          categories: "判断 Agent 是否合适",
+          categoryBody: "结合 Skill 声明、可用性、Benchmark 和公开运行证据进行判断。",
           skills: "查看 Skill 注册表",
           workflow: "A2A / MCP",
-          workflowBody: "Core 保留协议、调用链和运行证据；商业撮合与交易由商业产品侧承接。",
+          workflowBody: "通过 MCP 从外部客户端发现和调用 Agent；通过 A2A 查看父子 Run 与跨 Agent 协作。",
           emptyTitle: "没有结果？",
-          emptyBody: "换个关键词，或在 Agent 管理接入一个 Agent Node / WebSocket Agent。",
+          emptyBody: "调整关键词或筛选条件，也可以前往 Agent 管理接入自己的 Agent。",
         }
       : {
-          tag: "Core Registry",
-          pathTitle: "Open-core path",
-          pathBody: "Register or pick an Agent, then complete an observable run in Playground.",
-          categories: "Registry dimensions",
-          categoryBody: "Skill claims, health, benchmark evidence, A2A capabilities, and MCP connection modes.",
+          tag: "Self-hosted Registry",
+          pathTitle: "From catalog to run",
+          pathBody: "Choose a callable Agent, submit a task in Playground, then inspect status, events, and results by Run ID.",
+          categories: "Evaluate an Agent",
+          categoryBody: "Use Skill claims, availability, benchmarks, and public run evidence to decide whether an Agent fits.",
           skills: "View Skill registry",
           workflow: "A2A / MCP",
-          workflowBody: "Core keeps protocols, call chains, and run evidence. Commercial matching and transactions belong to the commercial product.",
+          workflowBody: "Use MCP to discover and invoke Agents from external clients, and A2A to inspect parent-child Runs and cross-Agent work.",
           emptyTitle: "No results?",
-          emptyBody: "Try another keyword, or connect an Agent Node / WebSocket Agent in Agent Console.",
+          emptyBody: "Adjust the query or filters, or open Agent Console to connect your own Agent.",
         };
 
   return (
@@ -48,7 +46,7 @@ export function SidePromo({ locale = "zh" }: { locale?: Locale }) {
             className="ol-mini-btn mt-3"
             style={{ background: "#fff", color: "var(--ol-primary-dark)" }}
           >
-            {locale === "zh" ? "发布 Agent" : "Publish Agent"}
+            {locale === "zh" ? "查看接入方式" : "View connection options"}
           </Link>
         </div>
 

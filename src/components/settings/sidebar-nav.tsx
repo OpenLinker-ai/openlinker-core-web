@@ -29,6 +29,7 @@ const NAV_ITEMS: ReadonlyArray<NavItem> = [
   { key: "account", label: { zh: "账户", en: "Account" }, icon: "info", href: "/settings?tab=account" },
   { key: "security", label: { zh: "安全", en: "Security" }, icon: "lock", href: "/settings?tab=security" },
   { key: "notifications", label: { zh: "通知能力", en: "Notifications" }, icon: "bell", href: "/settings?tab=notifications" },
+  { key: "user-tokens", label: { zh: "User Token", en: "User Tokens" }, icon: "key", href: "/settings/user-tokens" },
 ];
 
 interface Props {
@@ -38,11 +39,6 @@ interface Props {
 }
 
 export function SettingsSidebarNav({ active = "account", locale = "zh" }: Props) {
-  const help =
-    locale === "zh"
-      ? { title: "需要帮助？", body: "查看文档 · 联系客服 · 提交反馈" }
-      : { title: "Need help?", body: "Read docs · Contact support · Send feedback" };
-
   return (
     <aside className="ol-panel p-4 self-start">
       <nav className="grid gap-1">
@@ -81,11 +77,6 @@ export function SettingsSidebarNav({ active = "account", locale = "zh" }: Props)
           );
         })}
       </nav>
-
-      <div className="mt-4 rounded-xl border border-dashed border-[color:var(--ol-line)] p-3 text-[12px] leading-[1.55] text-[color:var(--ol-muted)]">
-        <b className="mb-1 block text-[color:var(--ol-ink)]">{help.title}</b>
-        {help.body}
-      </div>
     </aside>
   );
 }

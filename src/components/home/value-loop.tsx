@@ -16,18 +16,18 @@ interface LoopStep {
 
 const STEPS: Record<Locale, LoopStep[]> = {
   zh: [
-  { num: 1, title: "发现", desc: "浏览 Registry" },
-  { num: 2, title: "接入", desc: "HTTP / MCP / Pull" },
-  { num: 3, title: "调用", desc: "Playground 直接跑" },
-  { num: 4, title: "A2A/MCP", desc: "协议入口" },
-  { num: 5, title: "追踪", desc: "结果、日志和免费期" },
+    { num: 1, title: "发现", desc: "浏览 Registry" },
+    { num: 2, title: "接入", desc: "HTTP / MCP / WS / Pull" },
+    { num: 3, title: "调用", desc: "Playground 直接调用" },
+    { num: 4, title: "A2A/MCP", desc: "协议入口" },
+    { num: 5, title: "追踪", desc: "查看结果与日志" },
   ],
   en: [
     { num: 1, title: "Discover", desc: "Browse Registry" },
-    { num: 2, title: "Connect", desc: "HTTP / MCP / Pull" },
-    { num: 3, title: "Run", desc: "Use Playground" },
+    { num: 2, title: "Connect", desc: "HTTP / MCP / WS / Pull" },
+    { num: 3, title: "Invoke", desc: "Try it in Playground" },
     { num: 4, title: "A2A/MCP", desc: "Protocol entries" },
-    { num: 5, title: "Trace", desc: "Results, logs, free access" },
+    { num: 5, title: "Trace", desc: "Review results and logs" },
   ],
 };
 

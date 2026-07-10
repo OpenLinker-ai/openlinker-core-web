@@ -92,7 +92,7 @@ export default async function MarketPage({
   try {
     data = await apiFetch<MarketResponse>(`/api/v1/agents?${params}`);
   } catch {
-    // 后端尚未上线 / 临时不可用 时降级为空数据，避免整个 RSC tree 抛错
+    // 接口临时不可用时降级为空数据，避免整个 RSC tree 抛错。
     loadFailed = true;
     data = { items: [], total: 0, page, size: PAGE_SIZE };
   }
@@ -101,17 +101,17 @@ export default async function MarketPage({
   const copy =
     locale === "zh"
       ? {
-          result: "推荐结果",
+          result: "筛选结果",
           count: "个",
           listingScope: skillIDs.length
             ? `Skill 匹配 · ${skillIDs.join(", ")}`
             : callableOnly
-              ? "仅展示可调用 · 健康状态优先"
-              : "全部公开上架 · 可调用优先排序",
-          failed: "暂时无法连接 Registry 数据，请检查后端服务或稍后刷新。",
+              ? "仅显示可调用 · 近期状态优先"
+              : "全部公开 Agent · 可调用优先",
+          failed: "Registry 数据暂时不可用，请稍后刷新。",
           empty: callableOnly
-            ? "当前没有匹配的可调用 Agent。可以换一个关键词，或去 Agent 管理接入一个 Agent Node / WebSocket Agent。"
-            : "当前没有匹配的公开 Agent。可以换一个关键词，或去 Agent 管理公开一个 Agent。",
+            ? "当前实例没有匹配的可调用 Agent。可以调整筛选条件，或前往 Agent 管理接入一个 Agent。"
+            : "当前实例没有匹配的公开 Agent。可以调整筛选条件，或接入 Agent 后将其设为公开。",
         }
       : {
           result: "Results",
@@ -119,12 +119,12 @@ export default async function MarketPage({
           listingScope: skillIDs.length
             ? `Skill match · ${skillIDs.join(", ")}`
             : callableOnly
-              ? "Callable only · healthy status first"
-              : "All public listings · callable first",
-          failed: "Registry data is unavailable. Check the backend service or refresh later.",
+              ? "Callable only · recent status first"
+              : "All public Agents · callable first",
+          failed: "Registry data is temporarily unavailable. Refresh and try again.",
           empty: callableOnly
-            ? "No matching callable Agents yet. Try another keyword or connect an Agent Node / WebSocket Agent in Agent Console."
-            : "No matching public Agents yet. Try another keyword or publish an Agent from Agent Console.",
+            ? "This instance has no matching callable Agents. Adjust the filters or connect an Agent from Agent Console."
+            : "This instance has no matching public Agents. Adjust the filters, or connect an Agent and set its visibility to public.",
         };
 
   return (

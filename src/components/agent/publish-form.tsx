@@ -1,18 +1,17 @@
 "use client";
 
 /**
- * Agent 所有者发布 Agent 表单（按 prototype/openlinker-flow-17-publish.png 视觉精修）。
+ * Agent 发布与接入表单。
  *
  * 布局：ol-publish-layout 2 列
  *   左主区：
- *     - panel "选择来源" → <SourceCards /> 装饰
- *     - panel "基础信息"（包含 slug/name/description/tags/endpoint/auth/price）
+ *     - 连接模式选择
+ *     - 基础信息、连接配置、Skill 与可见性
  *   右侧栏：
- *     - panel "Listing 实时预览" → <ListingPreview /> 用 useWatch 实时刷新
- *     - info-card "定价方式" → <PricingTiles /> 用 form.price 计算
- *     - info-card "公开与认证" 占位文案
- *     - info-card.highlight "佣金"：平台抽成 25%，剩余 75%
- *     - 提交按钮：触发左侧 form 的 submit
+ *     - Agent 资料预览
+ *     - 外部参考价格字段说明
+ *     - 可见性与验证说明
+ *     - 提交按钮
  *
  * 业务保留：
  *   - RHF + Zod schema（slug / name / description / endpoint_url /
@@ -21,8 +20,7 @@
  *   - ApiError.code 分流：CONFLICT / FORBIDDEN / VALIDATION_FAILED / 其他
  *   - 提交后 toast + router.push("/hub")
  *
- * 子表单 sub-component（BasicInfoSection / EndpointSection / PricingSection）
- * 通过 control 共享 form context，避免一个组件函数太长。
+ * BasicInfoSection / EndpointSection / PricingSection 共用同一个表单上下文。
  */
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -76,7 +74,7 @@ function isAllowedEndpointURL(value: string): boolean {
 
 function connectionModeLabel(mode: AgentConnectionMode, locale: Locale): string {
   if (mode === "runtime_ws") return "Agent Node / WebSocket";
-  if (mode === "runtime_pull") return locale === "zh" ? "Runtime Pull 降级" : "Runtime Pull fallback";
+  if (mode === "runtime_pull") return "Runtime Pull";
   if (mode === "mcp_server") return locale === "zh" ? "已有 MCP 工具" : "Existing MCP tool";
   return "HTTP Endpoint";
 }
@@ -93,7 +91,7 @@ const VALIDATION_COPY = {
     min10: "至少 10 字符",
     max500: "最多 500 字符",
     max120: "最多 120 字符",
-    validPrice: "请填写有效价格",
+    validPrice: "请填写有效的外部参考价格",
     priceMin: "不能小于 $0",
     priceMax: "最多 $10,000",
     tagRequired: "至少 1 个 tag",
@@ -110,7 +108,7 @@ const VALIDATION_COPY = {
     min10: "Use at least 10 characters",
     max500: "Use at most 500 characters",
     max120: "Use at most 120 characters",
-    validPrice: "Enter a valid price",
+    validPrice: "Enter a valid external reference price",
     priceMin: "Must be at least $0",
     priceMax: "Must be at most $10,000",
     tagRequired: "Add at least 1 tag",
@@ -222,37 +220,37 @@ export function PublishForm({ creatorName, skills, locale = "zh" }: PublishFormP
     locale === "zh"
       ? {
           slugTaken: "此 slug 已被使用",
-          skillBindWarningPrefix: "Agent 已提交，但技能绑定失败：",
-          skillBindWarning: "Agent 已提交，但技能绑定失败，请到 Agent 管理重试。",
+          skillBindWarningPrefix: "Agent 已保存，但技能绑定失败：",
+          skillBindWarning: "Agent 已保存，但技能绑定失败，请到 Agent 管理重试。",
           saved: "基础信息已保存，继续补充能力声明",
           chooseSource: "选择接入方式",
           basicInfo: "基础信息",
           skillLabel: `技能（最多 ${MAX_SKILLS_PER_AGENT} 个，可选）`,
-          skillHint: "声明 Agent 具备的能力，便于买方按 Skill 检索；公开后可在 Agent 管理调整。",
-          previewTitle: "Listing 实时预览",
-          previewSync: "右侧同步",
-          visibilityTitle: "公开与认证",
-          visibilityBody: "由你选择是否公开；认证与 Benchmark 只影响推荐标识，不阻塞公开使用。",
-          freeTitle: "当前免费阶段",
-          freeBody: "价格仅作为后续计划预览字段；当前调用免费，不涉及计划通道操作。",
+          skillHint: "声明 Agent 能完成的任务，便于 Registry 检索和调用方判断能力；接入后仍可在 Agent 管理中修改。",
+          previewTitle: "Agent 资料预览",
+          previewSync: "随表单更新",
+          visibilityTitle: "可见性与实例认证",
+          visibilityBody: "是否进入公开 Registry 由你决定；实例认证与 Benchmark 提供额外证据，不影响私有 Agent 使用。",
+          freeTitle: "外部参考价格（可选）",
+          freeBody: "这是与外部系统对接时使用的兼容元数据，不会触发 OpenLinker Core 扣费或结算。每次调用仍会写入运行记录。",
           saving: "保存中...",
           save: "保存并继续接入",
         }
       : {
           slugTaken: "This slug is already taken",
-          skillBindWarningPrefix: "Agent submitted, but Skill binding failed: ",
-          skillBindWarning: "Agent submitted, but Skill binding failed. Retry from Agent Console.",
+          skillBindWarningPrefix: "Agent saved, but Skill binding failed: ",
+          skillBindWarning: "Agent saved, but Skill binding failed. Retry from Agent Console.",
           saved: "Basics saved. Continue with capability claims.",
           chooseSource: "Choose connection mode",
           basicInfo: "Basics",
           skillLabel: `Skills (up to ${MAX_SKILLS_PER_AGENT}, optional)`,
-          skillHint: "Declare what the Agent can do so buyers can find it by Skill. You can adjust this later in Agent Console.",
-          previewTitle: "Live listing preview",
-          previewSync: "Synced from the form",
-          visibilityTitle: "Visibility and certification",
-          visibilityBody: "You choose whether to list it. Certification and Benchmark only affect recommendation badges and do not block listing.",
-          freeTitle: "Current free phase",
-          freeBody: "Price is only a later-plan preview field. Current calls are free and do not use plan-related channels.",
+          skillHint: "Declare the tasks this Agent can handle so Registry search and callers can evaluate it. Skills remain editable in Agent Console.",
+          previewTitle: "Agent profile preview",
+          previewSync: "Updates with the form",
+          visibilityTitle: "Visibility and instance certification",
+          visibilityBody: "You decide whether the Agent enters the public Registry. Instance certification and Benchmarks add evidence without affecting private Agent use.",
+          freeTitle: "External reference price (optional)",
+          freeBody: "This compatibility metadata is available for external integrations. It does not trigger charging or settlement in OpenLinker Core, and every invocation still creates a run record.",
           saving: "Saving...",
           save: "Save and continue setup",
         };
@@ -456,7 +454,7 @@ export function PublishForm({ creatorName, skills, locale = "zh" }: PublishFormP
         </form>
       </section>
 
-      {/* 右侧栏：实时预览 + 定价 + 公开状态 + 佣金 + 提交按钮 */}
+      {/* 右侧栏：资料预览 + 外部参考价格说明 + 可见性说明 + 提交按钮 */}
       <aside className="ol-panel ol-panel-pad flex flex-col gap-3.5">
         <div
           className="ol-panel-head"
@@ -597,14 +595,14 @@ function EndpointSection({
   const copy =
     locale === "zh"
       ? {
-          runtimeWSTitle: "Agent Node / WebSocket：内网 Agent 默认选择",
+          runtimeWSTitle: "Agent Node / WebSocket：本地与内网 Agent",
           runtimeWSBody: (
             <>
               保存后在 Agent 管理生成绑定该 Agent 的接入凭证。你的 Agent Node 不需要公网入站地址，只要用该凭证建立{" "}
-              <code>/api/v1/agent-runtime/ws</code> 出站长连接，就能实时接收运行请求、回传事件和最终结果；WebSocket 无法保活时可用 Runtime Pull 降级。
+              <code>/api/v1/agent-runtime/ws</code> 出站长连接，就能实时接收运行请求、回传事件和最终结果；不适合保持 WebSocket 时可选择 Runtime Pull。
             </>
           ),
-          runtimePullTitle: "Runtime Pull：仅作为 WebSocket 降级",
+          runtimePullTitle: "Runtime Pull：无需持续 WebSocket",
           runtimeBody: (
             <>
               保存后在 Agent 管理生成绑定该 Agent 的接入凭证。你的本地 Agent 不需要公网入站地址，只要定时请求{" "}
@@ -615,26 +613,26 @@ function EndpointSection({
           ),
           httpsOrLoopback: "Endpoint URL（HTTPS 或本地 loopback HTTP）",
           httpsOnly: "Endpoint URL（必须 HTTPS）",
-          localHint: "本地调试模式已开启；生产发布请改为 HTTPS endpoint。",
+          localHint: "本地调试允许 loopback HTTP；对外部署时请使用 HTTPS Endpoint。",
           mcpEndpoint: "远程 HTTP JSON-RPC / MCP Endpoint URL",
           mcpTool: "远程 MCP 工具名称",
           mcpHint: (
             <>
-              这里只是把已有远程 HTTP JSON-RPC / MCP 工具包装成 Agent；真正的 MCP Server 上架入口应在 MCP 中心。平台会发送 <code>tools/call</code>，把用户输入作为 arguments。
+              将现有远程 HTTP JSON-RPC / MCP 工具作为一个可发现 Agent 接入。OpenLinker 会发送 <code>tools/call</code>，并把用户输入作为 arguments。
             </>
           ),
           mcpAuth: "MCP 工具鉴权（可选）",
-          endpointAuth: "鉴权 Header（可选，平台调用 endpoint 时携带）",
+          endpointAuth: "鉴权 Header（可选，当前实例调用 endpoint 时携带）",
         }
       : {
-          runtimeWSTitle: "Agent Node / WebSocket: default for private Agents",
+          runtimeWSTitle: "Agent Node / WebSocket for local and private Agents",
           runtimeWSBody: (
             <>
               After saving, Agent Console generates an access credential bound to this Agent. Agent Node does not need a public inbound URL. It opens an outbound{" "}
-              <code>/api/v1/agent-runtime/ws</code> connection with that credential to receive run requests in real time, stream events, and send final results. Use Runtime Pull only when WebSocket cannot stay connected.
+              <code>/api/v1/agent-runtime/ws</code> connection with that credential to receive run requests in real time, stream events, and send final results. Choose Runtime Pull when maintaining a WebSocket is not suitable.
             </>
           ),
-          runtimePullTitle: "Runtime Pull: WebSocket fallback only",
+          runtimePullTitle: "Runtime Pull without a persistent WebSocket",
           runtimeBody: (
             <>
               After saving, Agent Console generates an access credential bound to this Agent. Your local Agent does not need a public inbound URL. It periodically calls{" "}
@@ -645,12 +643,12 @@ function EndpointSection({
           ),
           httpsOrLoopback: "Endpoint URL (HTTPS or local loopback HTTP)",
           httpsOnly: "Endpoint URL (HTTPS required)",
-          localHint: "Local debugging mode is enabled. Use an HTTPS endpoint for production listing.",
+          localHint: "Local debugging allows loopback HTTP. Use an HTTPS endpoint for external deployments.",
           mcpEndpoint: "Remote HTTP JSON-RPC / MCP endpoint URL",
           mcpTool: "Remote MCP tool name",
           mcpHint: (
             <>
-              This wraps an existing remote HTTP JSON-RPC / MCP tool as an Agent; MCP Server listing belongs in the MCP center. OpenLinker sends <code>tools/call</code> and passes user input as arguments.
+              Connect an existing remote HTTP JSON-RPC / MCP tool as a discoverable Agent. OpenLinker sends <code>tools/call</code> and passes user input as arguments.
             </>
           ),
           mcpAuth: "MCP tool auth (optional)",
@@ -748,12 +746,12 @@ function PricingSection({
   const copy =
     locale === "zh"
       ? {
-          label: "后续单次调用展示价格（USD，可选）",
-          hint: "当前阶段运行免费，此价格仅用于 Registry 展示和后续计划参考。",
+          label: "外部参考价格（USD，可选）",
+          hint: "这是可选兼容元数据，不会触发 OpenLinker Core 扣费或结算。",
         }
       : {
-          label: "Later display price per call (USD, optional)",
-          hint: "Runs are free in the current phase. This price is only Registry display and planning metadata.",
+          label: "External reference price (USD, optional)",
+          hint: "This is optional compatibility metadata and does not trigger charging or settlement in OpenLinker Core.",
         };
   return (
     <Field
@@ -839,7 +837,7 @@ function LivePreview({
 function LivePricing({ control, locale }: { control: Control<FormValues>; locale: Locale }) {
   const priceUsd = useWatch({ control, name: "price_usd" });
   const safe = typeof priceUsd === "number" ? priceUsd : 0;
-  const title = locale === "zh" ? "计划方式" : "Plan options";
+  const title = locale === "zh" ? "外部参考价格" : "External reference price";
   return (
     <div className="ol-info-card">
       <strong>{title}</strong>

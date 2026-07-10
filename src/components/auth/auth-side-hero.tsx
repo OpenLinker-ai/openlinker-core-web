@@ -6,44 +6,44 @@
  *   - 4 行特性列表（圆形勾 ✓）
  *   - 底部 4 数据 grid（auth-stats），半透明卡 + backdrop-blur
  *
- * Phase 1 数据为产品规则，不展示未接真实接口的规模数字。
+ * 只展示已经落地的自托管能力与已确认的 Core 契约，不使用商业产品或规划中的规模数字。
  */
 
 import type { Locale } from "@/lib/i18n";
 
 const COPY = {
   zh: {
-    kicker: "OpenLinker 生态",
-    heading: "把可用 Agent\n接到你的业务系统里",
-    body: "登录后可以试用 Agent、查看运行历史，也可以开通 Agent 所有者权限发布自己的 Agent。",
+    kicker: "OpenLinker Core",
+    heading: "在自己的环境中\n管理和调用 Agent",
+    body: "登录当前实例后，可以维护 Agent 注册表、发起运行、查看记录，并管理自己提供的 Agent。",
     features: [
-      "当前运行免费，后续权益能力逐步开放",
-      "内网账号邮箱密码登录",
-      "Agent 所有者发布 HTTPS Endpoint",
-      "运行结果、展示价格和耗时可追踪",
+      "User Token 用于用户侧 API 与 MCP 调用",
+      "Agent Token 用于 Agent 注册与运行身份",
+      "支持 HTTP、MCP Server、WebSocket 与 Pull 接入",
+      "Web、SDK、MCP 与 A2A 共用运行记录",
     ],
     stats: [
-      { value: "免费", label: "当前运行" },
-      { value: "HTTPS", label: "接入方式" },
-      { value: "Scope", label: "API 权限" },
-      { value: "确认", label: "高风险动作" },
+      { value: "自托管", label: "部署方式" },
+      { value: "4 种", label: "连接模式" },
+      { value: "MCP / A2A", label: "协议入口" },
+      { value: "可追踪", label: "运行记录" },
     ],
   },
   en: {
-    kicker: "OpenLinker ecosystem",
-    heading: "Connect callable Agents\nto business systems",
-    body: "After signing in, you can try Agents, inspect run history, or enable Agent owner access and publish your own Agent.",
+    kicker: "OpenLinker Core",
+    heading: "Manage and invoke Agents\nin your own environment",
+    body: "Sign in to this instance to maintain its Agent Registry, invoke Agents, inspect run records, and manage the Agents you provide.",
     features: [
-      "Current runs are free; later access capabilities will open gradually",
-      "Intranet account email/password sign-in",
-      "Agent owners publish HTTPS endpoints",
-      "Run results, display price, and duration are traceable",
+      "User Tokens authorize user-side API and MCP calls",
+      "Agent Tokens identify Agent onboarding and runtimes",
+      "Connect through HTTP, MCP Server, WebSocket, or Pull",
+      "Web, SDK, MCP, and A2A share the same run records",
     ],
     stats: [
-      { value: "Free", label: "Current runs" },
-      { value: "HTTPS", label: "Connection" },
-      { value: "Scope", label: "API access" },
-      { value: "Review", label: "High-risk actions" },
+      { value: "Self-hosted", label: "Deployment" },
+      { value: "4 modes", label: "Connections" },
+      { value: "MCP / A2A", label: "Protocols" },
+      { value: "Traceable", label: "Run records" },
     ],
   },
 };

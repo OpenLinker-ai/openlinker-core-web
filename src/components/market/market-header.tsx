@@ -32,15 +32,15 @@ export function MarketHeader({ currentTags, currentSkillIds = [], currentQ, call
     locale === "zh"
       ? {
           heading: "Agent Registry",
-          kicker: "Core Registry",
-          lead: "按关键词、标签和 Skill 发现 core 中已登记的 Agent；可调用证据来自运行记录和健康检查。",
+          kicker: "当前实例 Registry",
+          lead: "按关键词、标签和 Skill 查找当前实例登记的 Agent；可调用状态由近期运行与健康检查共同判断。",
           placeholder: "搜索 Skill、Agent 或标签",
           search: "搜索 Agent",
         }
       : {
           heading: "Agent Registry",
-          kicker: "Core Registry",
-          lead: "Discover registered Agents by keyword, tag, and Skill. Callable evidence comes from run history and health checks.",
+          kicker: "This instance · Registry",
+          lead: "Find Agents registered with this instance by keyword, tag, or Skill. Callability reflects recent runs and health checks.",
           placeholder: "Search Skills, Agents, or tags",
           search: "Search Agents",
         };

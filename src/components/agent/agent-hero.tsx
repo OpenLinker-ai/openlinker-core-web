@@ -2,8 +2,7 @@
  * Agent 详情页左侧 hero 卡。
  *
  * 视觉对照原型 .hero-agent：
- *   - 大尺寸 app-icon（首字母 + 配色），由 slug 派生（与 Registry 页可共用，
- *     Phase 1 暂用本地 helper，避免新建 lib 文件）
+ *   - 大尺寸 app-icon（首字母 + 配色），由 slug 派生
  *   - 名称 / 所有者行 / 简介
  *   - 3 列 score：真实 total_calls / 暂无评分 / 真实可用性标签
  *   - 发布行使用 created_at，不展示伪版本号
@@ -41,7 +40,7 @@ const SKILL_BADGE_BY_STATUS: Record<NonNullable<NonNullable<AgentHeroProps["skil
   chipClass: string;
   label: Record<Locale, string>;
 }> = {
-  verified: { chipClass: "ol-chip-green", label: { zh: "已验证", en: "Verified" } },
+  verified: { chipClass: "ol-chip-green", label: { zh: "测评通过", en: "Benchmark passed" } },
   pending: { chipClass: "ol-chip-blue", label: { zh: "测评中", en: "Testing" } },
   failed: { chipClass: "ol-chip-amber", label: { zh: "未通过", en: "Failed" } },
   not_run: { chipClass: "ol-chip-mint", label: { zh: "", en: "" } },
@@ -102,35 +101,35 @@ export function AgentHero({
   const copy =
     locale === "zh"
       ? {
-          certified: "已认证",
+          certified: "实例已认证",
           calls: "调用",
           noRating: "暂无评分",
           rating: "评分",
           availability: "可用性",
-          published: "公开发布于",
+          published: "接入于",
           visible: "公开可见",
           unlisted: "直链可发现",
           hidden: "未公开展示",
           callable: "可调用",
           notCallable: "暂不可调用",
-          verified: "已验证",
-          notVerified: "暂无验证",
+          verified: "Benchmark 已验证",
+          notVerified: "暂无 Benchmark 验证",
           tags: (n: number) => `${n} 个标签`,
         }
       : {
-          certified: "Certified",
+          certified: "Instance certified",
           calls: "Runs",
           noRating: "No rating",
           rating: "Rating",
           availability: "Availability",
-          published: "Listed on",
+          published: "Added",
           visible: "Publicly listed",
           unlisted: "Unlisted link",
           hidden: "Not listed",
           callable: "Callable",
           notCallable: "Not callable",
-          verified: "Verified",
-          notVerified: "No verification",
+          verified: "Benchmark verified",
+          notVerified: "No Benchmark verification",
           tags: (n: number) => `${n} tags`,
         };
   const color = pickColor(slug);

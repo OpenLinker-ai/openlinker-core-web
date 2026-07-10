@@ -1,12 +1,12 @@
 /**
- * 市场列表项（横排卡片）。
+ * Registry 列表项（横排卡片）。
  *
  * 视觉来自 prototype/openlinker-flow-07-market.png 的 .agent-card：
  *   - 3 列布局：app-icon (48px) / agent-copy / meta (170px)
  *   - active 卡（仅父组件传 active 时）淡绿渐变背景
  *   - tag 用 .ol-chip / .ol-chip-green / .ol-chip-blue / .ol-chip-amber 区分
- *   - 价格按 cents：0 = 免费 / 显示 $x.yyy/次
- *   - 评分接口暂无 → 仅显示调用次数 total_calls，按 prompt 要求不杜撰
+ *   - price_per_call_cents 只作外部系统兼容元数据，不参与 Core 结算
+ *   - 评分接口暂无，仅显示真实调用次数 total_calls
  *
  * "试用" 只给 readiness.callable=true 的 Agent 展示。
  */
@@ -51,14 +51,12 @@ interface AgentCardProps {
   locale?: Locale;
 }
 
-/** 把 cents → 展示文案。0 视为免费。*/
-function formatPrice(cents: number, locale: Locale): { text: string; free: boolean } {
-  if (!cents || cents <= 0) return { text: locale === "zh" ? "免费" : "Free", free: true };
+/** 把 cents 转成参考价格；0 表示未设置。 */
+function formatReferencePrice(cents: number, locale: Locale): string | null {
+  if (!cents || cents <= 0) return null;
   const dollars = cents / 100;
-  const suffix = locale === "zh" ? "/次" : "/run";
-  if (dollars < 0.01) return { text: `$${dollars.toFixed(3)}${suffix}`, free: false };
-  if (dollars < 1) return { text: `$${dollars.toFixed(2)}${suffix}`, free: false };
-  return { text: `$${dollars.toFixed(2)}${suffix}`, free: false };
+  const amount = dollars < 0.01 ? dollars.toFixed(3) : dollars.toFixed(2);
+  return locale === "zh" ? `$${amount}/次` : `$${amount}/call`;
 }
 
 /** 把 total_calls → 缩写（1.2k / 31k / 1.2M），用于 meta 行。*/
@@ -81,15 +79,31 @@ function tagColor(tag: string, idx: number): string {
 
 export function AgentCard({ agent, active = false, locale = "zh" }: AgentCardProps) {
   const avatar = avatarFromSlug(agent.slug);
-  const price = formatPrice(agent.price_per_call_cents, locale);
+  const referencePrice = formatReferencePrice(agent.price_per_call_cents, locale);
   const availabilityStatus = agent.availability?.status ?? "unknown";
   const availabilityLabel = availabilityStatusLabel(availabilityStatus, locale, agent.availability?.label);
   const availabilityHint = availabilityStatusHint(availabilityStatus, locale, agent.availability?.hint);
   const callable = agent.readiness?.callable ?? availabilityStatus === "healthy";
   const copy =
     locale === "zh"
-      ? { calls: "次调用", detail: "详情", try: "试用", waiting: "暂不可试用" }
-      : { calls: "calls", detail: "Details", try: "Try", waiting: "Not ready yet" };
+      ? {
+          referencePrice: (price: string) => `外部参考价格 ${price}`,
+          noReferencePrice: "未提供外部参考价格",
+          referenceHint: "可选兼容元数据 · Core 不据此扣费",
+          calls: "次调用",
+          detail: "详情",
+          try: "试用",
+          waiting: "暂不可调用",
+        }
+      : {
+          referencePrice: (price: string) => `External reference price ${price}`,
+          noReferencePrice: "No external reference price",
+          referenceHint: "Optional compatibility metadata · not used for Core billing",
+          calls: "calls",
+          detail: "Details",
+          try: "Try",
+          waiting: "Not callable yet",
+        };
 
   return (
     <article className={`ol-agent-card${active ? " active" : ""}`}>
@@ -127,11 +141,11 @@ export function AgentCard({ agent, active = false, locale = "zh" }: AgentCardPro
       </div>
 
       <div className="ol-agent-meta">
-        <div className={`ol-price${price.free ? " free" : ""}`}>
-          {price.text}
+        <div className="ol-price">
+          {referencePrice ? copy.referencePrice(referencePrice) : copy.noReferencePrice}
         </div>
         <div className="ol-meta-sub">
-          {formatCalls(agent.total_calls)} {copy.calls}
+          {copy.referenceHint} · {formatCalls(agent.total_calls)} {copy.calls}
         </div>
         <span
           className={`ol-chip ${availabilityChipClass(availabilityStatus)}`}

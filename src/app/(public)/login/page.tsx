@@ -18,7 +18,7 @@ import { getLocale } from "@/lib/i18n-server";
 
 export const metadata: Metadata = {
   title: "Sign In",
-  description: "Sign in to OpenLinker",
+  description: "Sign in to this OpenLinker Core instance",
 };
 
 export default async function LoginPage() {
@@ -27,13 +27,13 @@ export default async function LoginPage() {
     locale === "zh"
       ? {
           kicker: "欢迎回来",
-          heading: "登录 OpenLinker",
-          lead: "连接你的 Agent，开始一次 5 分钟的多 Agent 调用。",
+          heading: "登录当前实例",
+          lead: "调用 Agent、查看运行记录，或继续管理已经接入的 Agent。",
         }
       : {
           kicker: "Welcome back",
-          heading: "Sign in to OpenLinker",
-          lead: "Connect your Agents and start a five-minute multi-Agent run.",
+          heading: "Sign in to this instance",
+          lead: "Invoke Agents, inspect run records, or continue managing the Agents you have connected.",
         };
 
   return (

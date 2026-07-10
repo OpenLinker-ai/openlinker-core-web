@@ -8,6 +8,8 @@ import { API_BASE_URL } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
 import {
   coverageStatusLabel,
+  localizedBackendText,
+  runErrorMessage,
   runStatusLabel,
   streamStateLabel as localizedStreamStateLabel,
 } from "@/lib/i18n-labels";
@@ -125,7 +127,7 @@ export function RunEventStream({
   return (
     <div className="ol-panel min-w-0 max-w-full overflow-hidden">
       <div className="ol-panel-head">
-        <strong>{locale === "zh" ? "运行 Trace" : "Run Trace"} · {visibleEvents.length}</strong>
+        <strong>{locale === "zh" ? "运行事件" : "Run events"} · {visibleEvents.length}</strong>
         <span className="text-[12.5px] font-black text-[color:var(--ol-muted)]">
           {stateLabel(effectiveState, visibleEvents.length, locale)}
         </span>
@@ -244,7 +246,8 @@ function EventStep({
   onToggle: () => void;
 }) {
   const meta = eventMeta(event, locale);
-  const hasPayload = Object.keys(event.payload || {}).length > 0;
+  const displayPayload = event.payload;
+  const hasPayload = Object.keys(displayPayload).length > 0;
   const time = formatTime(event.created_at, locale);
   return (
     <div
@@ -275,9 +278,6 @@ function EventStep({
             <span className="rounded-full bg-[color:var(--ol-soft)] px-2 py-0.5 text-[11px] font-[900] text-[color:var(--ol-subtle)]">
               #{event.sequence}
             </span>
-            <code className="min-w-0 max-w-full break-all font-mono text-[11px] text-[color:var(--ol-subtle)]">
-              {event.event_type}
-            </code>
           </div>
           <p className="mt-1 break-words text-[12.5px] leading-relaxed text-[color:var(--ol-muted)] [overflow-wrap:anywhere]">
             {meta.detail}
@@ -295,11 +295,15 @@ function EventStep({
       </button>
       {open && hasPayload ? (
         <div className="min-w-0 px-4 pb-4">
+          <div className="flex flex-wrap items-center gap-2 text-[11.5px] text-[color:var(--ol-muted)]">
+            <span>{locale === "zh" ? "事件类型" : "Event type"}</span>
+            <code className="break-all font-mono">{event.event_type}</code>
+          </div>
           <div className="ol-kicker" style={{ color: "var(--ol-muted)", letterSpacing: 0 }}>
-            payload
+            {locale === "zh" ? "原始数据" : "Raw data"}
           </div>
           <pre className="mt-2 max-h-[260px] max-w-full overflow-auto whitespace-pre-wrap break-words rounded-[12px] bg-[#102033] p-3 text-[11.5px] leading-relaxed text-white [overflow-wrap:anywhere]">
-            <code>{JSON.stringify(event.payload, null, 2)}</code>
+            <code>{JSON.stringify(displayPayload, null, 2)}</code>
           </pre>
         </div>
       ) : null}
@@ -332,7 +336,7 @@ function eventMeta(event: RunEvent, locale: Locale): {
     case "run.created":
       return {
         title: isZh ? "创建运行" : "Run created",
-        detail: isZh ? "已校验预算并生成 run_id。" : "Budget was checked and run_id was generated.",
+        detail: isZh ? "调用请求已记录，正在准备执行。" : "The invocation request was recorded and is being prepared.",
         icon: "check",
         tone: "bg-[color:var(--ol-mint)] text-[color:var(--ol-primary-dark)]",
       };
@@ -345,14 +349,14 @@ function eventMeta(event: RunEvent, locale: Locale): {
       };
     case "run.dispatch.pending":
       return {
-        title: isZh ? "等待 Runtime" : "Dispatch queued",
+        title: isZh ? "等待 Agent Node" : "Waiting for Agent Node",
         detail: dispatchDetail(event.payload, locale, "pending"),
         icon: "refresh",
         tone: "bg-[#EAF1FF] text-[#2952A3]",
       };
     case "run.dispatch.waiting_runtime":
       return {
-        title: isZh ? "Runtime 未在线" : "Runtime offline",
+        title: isZh ? "Agent Node 未连接" : "Agent Node disconnected",
         detail: dispatchDetail(event.payload, locale, "waiting"),
         icon: "warn",
         tone: "bg-[#FFF4D8] text-[#9A6200]",
@@ -393,7 +397,11 @@ function eventMeta(event: RunEvent, locale: Locale): {
       if (typeof event.payload.message === "string" && event.payload.message.trim()) {
         return {
           title: isZh ? "状态更新" : "Status changed",
-          detail: event.payload.message,
+          detail: localizedBackendText(
+            event.payload.message,
+            locale,
+            isZh ? "Agent 更新了运行状态。" : "The Agent updated the run status.",
+          ),
           icon: "refresh",
           tone: "bg-[color:var(--ol-soft)] text-[color:var(--ol-ink)]",
         };
@@ -422,20 +430,28 @@ function eventMeta(event: RunEvent, locale: Locale): {
     case "run.failed":
       return {
         title: isZh ? "运行失败" : "Run failed",
-        detail: String(event.payload.error_message ?? event.payload.error_code ?? (isZh ? "调用失败" : "Invocation failed")),
+        detail: runErrorMessage(
+          stringPayload(event.payload, "error_code"),
+          stringPayload(event.payload, "error_message"),
+          locale,
+        ),
         icon: "warn",
         tone: "bg-[#FFF4D8] text-[#9A6200]",
       };
     case "run.canceled":
       return {
         title: isZh ? "运行已取消" : "Run canceled",
-        detail: String(event.payload.error_message ?? (isZh ? "调用已取消" : "Invocation canceled")),
+        detail: localizedBackendText(
+          stringPayload(event.payload, "error_message"),
+          locale,
+          isZh ? "调用已取消" : "Invocation canceled",
+        ),
         icon: "warn",
         tone: "bg-[color:var(--ol-soft)] text-[color:var(--ol-ink)]",
       };
     default:
       return {
-        title: event.event_type,
+        title: isZh ? "运行事件" : "Run event",
         detail: status ? (isZh ? `状态 ${runStatusLabel(status, locale)}` : `Status ${runStatusLabel(status, locale)}`) : isZh ? "收到运行事件。" : "Run event received.",
         icon: "check",
         tone: "bg-[color:var(--ol-soft)] text-[color:var(--ol-ink)]",
@@ -443,20 +459,10 @@ function eventMeta(event: RunEvent, locale: Locale): {
   }
 }
 
-function startedDetail(payload: Record<string, unknown>, locale: Locale): string {
-  const isZh = locale === "zh";
-  const mode = connectionModeLabel(payload.connection_mode, locale);
-  const endpointHost = stringPayload(payload, "endpoint_host");
-  const tool = stringPayload(payload, "mcp_tool_name");
-  let target = "";
-  if (tool) {
-    target = isZh ? `，工具 ${tool}` : ` via tool ${tool}`;
-  } else if (endpointHost) {
-    target = isZh ? `，目标 ${endpointHost}` : ` to ${endpointHost}`;
-  }
-  return isZh
-    ? `连接模式：${mode}${target}。平台已转发 input 和 metadata。`
-    : `Connection mode: ${mode}${target}. OpenLinker forwarded input and metadata.`;
+function startedDetail(_payload: Record<string, unknown>, locale: Locale): string {
+  return locale === "zh"
+    ? "请求已发送给目标 Agent，正在等待响应。"
+    : "The request was sent to the target Agent and is awaiting a response.";
 }
 
 function dispatchDetail(
@@ -465,60 +471,23 @@ function dispatchDetail(
   state: "pending" | "waiting" | "claimed",
 ): string {
   const isZh = locale === "zh";
-  const rawMode = typeof payload.connection_mode === "string" ? payload.connection_mode : "";
-  const mode = typeof payload.connection_mode === "string"
-    ? connectionModeLabel(payload.connection_mode, locale)
-    : "Agent Runtime";
   if (state === "waiting") {
-    if (rawMode === "runtime_ws") {
-      return isZh
-        ? `连接模式：${mode}。当前没有在线 WebSocket Runtime，启动 Agent Node 后会继续处理。`
-        : `Connection mode: ${mode}. No WebSocket Runtime is online yet; start Agent Node to continue.`;
-    }
     return isZh
-      ? `连接模式：${mode}。当前没有在线 Runtime，启动 worker 后会继续处理。`
-      : `Connection mode: ${mode}. No Runtime is online yet; start a worker to continue.`;
+      ? "Agent Node 当前未连接。请确认 Agent Node 已启动并能访问这个实例。"
+      : "Agent Node is not connected. Confirm that it is running and can reach this instance.";
   }
   if (state === "claimed") {
-    if (rawMode === "runtime_ws") {
-      return isZh
-        ? `连接模式：${mode}。任务已通过 WebSocket 分配给在线 Runtime，正在处理。`
-        : `Connection mode: ${mode}. The run was assigned over WebSocket and is being processed.`;
-    }
-    if (rawMode === "runtime_pull") {
-      return isZh
-        ? `连接模式：${mode}。Agent Runtime 已领取任务并开始处理。`
-        : `Connection mode: ${mode}. The Agent Runtime claimed the run and started processing.`;
-    }
     return isZh
-      ? `连接模式：${mode}。Agent Runtime 已接手任务并开始处理。`
-      : `Connection mode: ${mode}. The Agent Runtime accepted the run and started processing.`;
-  }
-  if (rawMode === "runtime_ws") {
-    return isZh
-      ? `连接模式：${mode}。运行已进入 Runtime 队列，等待在线 WebSocket Runtime 接手。`
-      : `Connection mode: ${mode}. The run is queued for an online WebSocket Runtime.`;
-  }
-  if (rawMode === "runtime_pull") {
-    return isZh
-      ? `连接模式：${mode}。运行已进入 Runtime 队列，等待 Agent Runtime 领取。`
-      : `Connection mode: ${mode}. The run is queued for the Agent Runtime to claim.`;
+      ? "Agent Node 已接收这次运行，正在处理。"
+      : "Agent Node received this run and is processing it.";
   }
   return isZh
-    ? `连接模式：${mode}。运行已进入 Runtime 队列，等待 Agent Runtime 接手。`
-    : `Connection mode: ${mode}. The run is queued for the Agent Runtime.`;
+    ? "这次运行正在等待 Agent Node 接收。"
+    : "This run is waiting for Agent Node to receive it.";
 }
 
-function dispatchClaimedTitle(payload: Record<string, unknown>, locale: Locale): string {
-  const mode = typeof payload.connection_mode === "string" ? payload.connection_mode : "";
-  const isZh = locale === "zh";
-  if (mode === "runtime_ws") {
-    return isZh ? "WebSocket 已分配" : "WebSocket assigned";
-  }
-  if (mode === "runtime_pull") {
-    return isZh ? "Runtime 已领取" : "Runtime claimed";
-  }
-  return isZh ? "Runtime 已接手" : "Runtime accepted";
+function dispatchClaimedTitle(_payload: Record<string, unknown>, locale: Locale): string {
+  return locale === "zh" ? "Agent Node 已接收" : "Agent Node received run";
 }
 
 function messageDeltaTitle(payload: Record<string, unknown>, locale: Locale): string {

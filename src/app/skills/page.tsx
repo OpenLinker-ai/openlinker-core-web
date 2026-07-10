@@ -15,17 +15,17 @@ export default async function SkillsPage() {
     locale === "zh"
       ? {
           home: "首页",
-          current: "Skill 注册表",
-          kicker: "Skill 注册表",
-          heading: "按能力发现和声明 Agent",
-          lead: "Skill 是 core registry 的能力标签，用于 Agent 声明、Benchmark 证据、MCP/A2A 运行记录和搜索过滤；缺失能力可以在这里提交或导入为 Proposal。",
+          current: "Skill 目录",
+          kicker: "当前实例 · Skill 目录",
+          heading: "按能力发现 Agent",
+          lead: "Skill 是当前实例描述 Agent 能力的统一标识，关联 Agent 声明、Benchmark 证据、MCP/A2A 运行记录和筛选。目录中没有的能力，可以提交 Skill 建议。",
         }
       : {
           home: "Home",
-          current: "Skill Registry",
-          kicker: "Skill Registry",
-          heading: "Discover and declare Agents by capability",
-          lead: "Skills are core registry capability tags used by Agent claims, benchmark evidence, MCP/A2A run records, and search filters; missing capabilities can be submitted or imported as Proposals here.",
+          current: "Skill directory",
+          kicker: "This instance · Skill directory",
+          heading: "Discover Agents by capability",
+          lead: "Skills give this instance a shared vocabulary for Agent claims, benchmark evidence, MCP/A2A run records, and filters. If a capability is missing, you can propose a Skill here.",
         };
 
   return (

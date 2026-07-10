@@ -10,8 +10,10 @@ import type { Locale } from "@/lib/i18n";
 import {
   artifactVisibilityLabel,
   coverageStatusLabel,
+  runErrorMessage,
   runStatusLabel,
 } from "@/lib/i18n-labels";
+import { runDetailMessages } from "@/messages/run";
 
 export type RunDetailData = {
   run_id: string;
@@ -112,6 +114,7 @@ type ViewRun = {
   costCents: number;
   durationMs: number;
   output: Record<string, unknown>;
+  errorCode?: string;
   error?: string;
   parentRunId?: string;
   callerAgentId?: string;
@@ -121,7 +124,7 @@ type ViewRun = {
   nextAction?: RunNextAction;
 };
 
-function normalizeRun(run: RunDetailData): ViewRun {
+function normalizeRun(run: RunDetailData, locale: Locale): ViewRun {
   return {
     id: run.run_id,
     agentId: run.agent_id,
@@ -133,7 +136,8 @@ function normalizeRun(run: RunDetailData): ViewRun {
     costCents: run.cost_cents,
     durationMs: run.duration_ms,
     output: run.output ?? {},
-    error: run.error_message || run.error_code,
+    errorCode: run.error_code,
+    error: runErrorMessage(run.error_code, run.error_message, locale),
     parentRunId: run.parent_run_id,
     callerAgentId: run.caller_agent_id,
     billingMode: run.billing_mode,
@@ -151,8 +155,8 @@ function fmtMs(ms: number): string {
 
 function fmtPriceField(cents: number, locale: Locale): string {
   return cents > 0
-    ? `$${(cents / 100).toFixed(2)}`
-    : locale === "zh" ? "免费运行" : "Free run";
+    ? locale === "zh" ? `外部费用记录 $${(cents / 100).toFixed(2)}` : `External cost recorded: $${(cents / 100).toFixed(2)}`
+    : locale === "zh" ? "未记录外部费用" : "No external cost recorded";
 }
 
 function statusChip(status: string, locale: Locale): { tone: string; label: string } {
@@ -174,108 +178,7 @@ export function RunDetail({
   artifacts?: RunArtifactData[];
   messages?: RunMessageData[];
 }) {
-  const copy =
-    locale === "zh"
-      ? {
-          loadFailed: "无法加载此运行详情，请返回运行历史后重试。",
-          copied: "已复制",
-          kicker: "运行详情",
-          copyId: "复制 ID",
-          rerun: "再跑一次",
-          back: "返回历史",
-          chain: "查看协作链",
-          workflow: "工作流实验画布",
-          cost: "费用状态",
-          freeDelegation: "免费委派",
-          duration: "耗时",
-          status: "状态",
-          delivery: "投递",
-          outputDelivered: "已输出",
-          outputFailed: "失败",
-          output: "输出结果",
-          error: "错误信息",
-          structured: "结构化输出",
-          errorDetail: "错误详情",
-          artifacts: "运行产物",
-          delegatedNote: "该子运行的结果返回给父运行，不单独触发通知投递或费用记录。",
-          meta: "元信息",
-          returnParent: "返回父运行",
-          deliveryStatus: "交付状态",
-          inbox: "站内通知",
-          withParent: "随父运行",
-          queued: "已入队",
-          externalDelivery: "通知投递设置",
-          deliveryNoSeparate: "随父运行",
-          deliveryReview: "查看设置",
-          deliverySettings: "通知投递设置",
-          noDelivery: "不投递",
-          costRecord: "费用记录",
-          delegatedRun: "委派运行",
-          recorded: "已记录",
-          manageDelivery: "打开通知投递设置",
-          evidence: "证据摘要",
-          coverage: "覆盖状态",
-          matchedSkills: "命中 Skill",
-          missingItems: "缺失项",
-          usedMCP: "使用 MCP",
-          artifactCount: "产物",
-          messageCount: "消息",
-          artifactsUnit: "个产物",
-          messagesUnit: "条消息",
-          unknownError: "未知错误",
-          privateEvidence: "仅 owner 可见",
-          publicExample: "含可公开展示的示例结果",
-        }
-      : {
-          loadFailed: "Unable to load this run detail. Return to run history and try again.",
-          copied: "Copied",
-          kicker: "Run detail",
-          copyId: "Copy ID",
-          rerun: "Run again",
-          back: "Back to history",
-          chain: "View chain",
-          workflow: "Workflow canvas",
-          cost: "Cost status",
-          freeDelegation: "Free delegation",
-          duration: "Duration",
-          status: "Status",
-          delivery: "Delivery",
-          outputDelivered: "Output ready",
-          outputFailed: "Failed",
-          output: "Output",
-          error: "Error",
-          structured: "Structured output",
-          errorDetail: "Error details",
-          artifacts: "Run artifacts",
-          delegatedNote: "This child run returns its result to the parent run and does not trigger separate notification delivery or cost records.",
-          meta: "Metadata",
-          returnParent: "Return to parent run",
-          deliveryStatus: "Delivery status",
-          inbox: "In-app notification",
-          withParent: "With parent run",
-          queued: "Queued",
-          externalDelivery: "Notification delivery settings",
-          deliveryNoSeparate: "With parent run",
-          deliveryReview: "Review settings",
-          deliverySettings: "Notification delivery settings",
-          noDelivery: "Not delivered",
-          costRecord: "Cost record",
-          delegatedRun: "Delegated run",
-          recorded: "Recorded",
-          manageDelivery: "Open notification delivery settings",
-          evidence: "Evidence summary",
-          coverage: "Coverage",
-          matchedSkills: "Matched Skills",
-          missingItems: "Missing items",
-          usedMCP: "MCP used",
-          artifactCount: "Artifacts",
-          messageCount: "Messages",
-          artifactsUnit: "artifacts",
-          messagesUnit: "messages",
-          unknownError: "unknown error",
-          privateEvidence: "Owner-only",
-          publicExample: "Contains a shareable example result",
-        };
+  const copy = runDetailMessages[locale];
   const [copied, setCopied] = useState(false);
   if (!run) {
     return (
@@ -284,7 +187,7 @@ export function RunDetail({
       </div>
     );
   }
-  const view = normalizeRun(run);
+  const view = normalizeRun(run, locale);
   const success = view.status === "success";
   const delegated = view.billingMode === "free_delegation";
   const chip = statusChip(view.status, locale);
@@ -336,13 +239,13 @@ export function RunDetail({
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
-              href={view.agentSlug ? `/playground/${encodeURIComponent(view.agentSlug)}` : "/market"}
+              href={view.agentSlug ? `/playground/${encodeURIComponent(view.agentSlug)}` : "/registry"}
               className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12.5px] font-[900] text-[color:var(--ol-ink)] hover:border-[color:var(--ol-primary)]/40"
             >
               {copy.rerun}
             </Link>
             <Link
-              href="/usage"
+              href="/runs"
               className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12.5px] font-[900] text-[color:var(--ol-ink)] hover:border-[color:var(--ol-primary)]/40"
             >
               {copy.back}
@@ -352,12 +255,6 @@ export function RunDetail({
               className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12.5px] font-[900] text-[color:var(--ol-ink)] hover:border-[color:var(--ol-primary)]/40"
             >
               {copy.chain}
-            </Link>
-            <Link
-              href="/workflow"
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12.5px] font-[900] text-[color:var(--ol-ink)] hover:border-[color:var(--ol-primary)]/40"
-            >
-              {copy.workflow}
             </Link>
           </div>
         </div>
@@ -432,7 +329,14 @@ export function RunDetail({
                   <code>
                     {success
                       ? JSON.stringify(view.output, null, 2)
-                      : JSON.stringify({ error: view.error ?? copy.unknownError }, null, 2)}
+                      : JSON.stringify(
+                          {
+                            error_code: view.errorCode,
+                            error: view.error ?? copy.unknownError,
+                          },
+                          null,
+                          2,
+                        )}
                   </code>
                 </pre>
               </div>
@@ -541,7 +445,7 @@ export function RunDetail({
               />
               <DeliveryRow
                 label={copy.costRecord}
-                value={delegated ? copy.delegatedRun : copy.recorded}
+                value={delegated ? copy.freeDelegation : fmtPriceField(view.costCents, locale)}
                 tone={delegated ? "mint" : "green"}
               />
             </div>
@@ -567,7 +471,7 @@ function RequirementEvidencePanel({ locale, evidence }: { locale: Locale; eviden
     locale === "zh"
       ? {
           title: "任务要求证据",
-          empty: "这次运行没有绑定任务 ID。从任务详情或带 MCP `metadata.task_id` 启动时，这里会展示 Skill/MCP 覆盖情况。",
+          empty: "这次运行没有绑定任务 ID。调用方提供 `metadata.task_id` 时，这里会展示 Skill 与 MCP 要求的匹配情况。",
           requiredSkill: "要求 Skill",
           noDeclared: "未声明",
           matchedSkill: "命中 Skill",
@@ -577,11 +481,11 @@ function RequirementEvidencePanel({ locale, evidence }: { locale: Locale; eviden
           requiredMCP: "要求 MCP",
           usedMCP: "本次使用 MCP",
           noMCPRun: "未通过 MCP 工具运行",
-          viewTask: "查看关联任务",
+          viewTask: "关联任务",
         }
       : {
           title: "Requirement evidence",
-          empty: "This run is not linked to a task ID. Runs started from task detail or with MCP `metadata.task_id` show Skill/MCP coverage evidence here.",
+          empty: "This run is not linked to a task ID. When a caller supplies `metadata.task_id`, this panel shows how the run matched the Skill and MCP requirements.",
           requiredSkill: "Required Skills",
           noDeclared: "None declared",
           matchedSkill: "Matched Skills",
@@ -591,7 +495,7 @@ function RequirementEvidencePanel({ locale, evidence }: { locale: Locale; eviden
           requiredMCP: "Required MCP",
           usedMCP: "MCP used in this run",
           noMCPRun: "Not run through MCP tools",
-          viewTask: "View linked task",
+          viewTask: "Linked task",
         };
   if (!evidence) {
     return (
@@ -618,12 +522,9 @@ function RequirementEvidencePanel({ locale, evidence }: { locale: Locale; eviden
         <EvidenceGroup title={copy.missingSkill} items={evidence.missing_skill_ids} empty={copy.noMissing} tone="amber" />
         <EvidenceGroup title={copy.requiredMCP} items={evidence.required_mcp_tools} empty={copy.noDeclared} />
         <EvidenceGroup title={copy.usedMCP} items={evidence.used_mcp_tools} empty={copy.noMCPRun} tone="blue" />
-        <Link
-          href={`/tasks/${encodeURIComponent(evidence.task_id)}`}
-          className="text-[12px] font-black text-[color:var(--ol-primary-dark)] hover:underline"
-        >
-          {copy.viewTask}
-        </Link>
+        <div className="text-[12px] font-black text-[color:var(--ol-muted)]">
+          {copy.viewTask}: <code>{evidence.task_id}</code>
+        </div>
       </div>
     </div>
   );
@@ -714,7 +615,7 @@ function RunMessagesPanel({
           outputFallback: "Final output",
           errorFallback: "Run error",
           structured: "Structured content",
-          synthetic: "Detail fallback",
+          synthetic: "Added from run details",
           messagesUnit: "messages",
         };
   const replayMessages = buildReplayMessages(run, messages, locale, {
@@ -838,7 +739,7 @@ function messageRoleLabel(role: string, locale: Locale): string {
   if (role === "user") return locale === "zh" ? "用户" : "User";
   if (role === "agent") return "Agent";
   if (role === "tool") return "Tool";
-  if (role === "platform") return locale === "zh" ? "平台" : "Platform";
+  if (role === "platform") return locale === "zh" ? "系统" : "System";
   if (role === "result") return locale === "zh" ? "结果" : "Result";
   if (role === "error") return locale === "zh" ? "错误" : "Error";
   return role;
@@ -960,10 +861,10 @@ function NextActionPanel({ locale, action }: { locale: Locale; action?: RunNextA
     locale === "zh"
       ? {
           fallbackLabel: "查看结果并决定下一步",
-          fallbackHint: "运行详情会根据状态、Agent 输出和投递设置给出下一步动作。当前可先查看输出或返回任务闭环。",
+          fallbackHint: "运行详情会根据状态、Agent 输出和投递设置给出下一步动作。你也可以先查看输出，或返回任务调整需求。",
           title: "下一步建议",
           agent: "Agent 建议",
-          platform: "平台建议",
+          platform: "系统建议",
           open: "打开下一步",
         }
       : {
@@ -971,7 +872,7 @@ function NextActionPanel({ locale, action }: { locale: Locale; action?: RunNextA
           fallbackHint: "Run detail suggests a next step based on status, Agent output, and delivery settings. You can review output or return to the task loop first.",
           title: "Suggested next step",
           agent: "Agent suggestion",
-          platform: "Platform suggestion",
+          platform: "System suggestion",
           open: "Open next step",
         };
   const label = action?.label ?? copy.fallbackLabel;

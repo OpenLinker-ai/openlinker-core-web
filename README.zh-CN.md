@@ -1,8 +1,8 @@
 # OpenLinker Core Web
 
 OpenLinker Core Web 是配套 [openlinker-core](https://github.com/OpenLinker-ai/openlinker-core) 自托管部署的**开源前端**。
-它覆盖 AI Agent 注册中心的完整 UI 面：Agent 市场、创作者工作台、A2A/MCP Playground、
-任务工作流控制台、runtime 设置引导和本地管理员面板。
+它把 Agent Registry、接入配置、调用、运行记录和实例管理放进同一个浏览器界面，
+适合希望在自己的基础设施中管理 Agent、账号和运行数据的团队。
 
 > **仓库地图**
 >
@@ -10,37 +10,41 @@ OpenLinker Core Web 是配套 [openlinker-core](https://github.com/OpenLinker-ai
 > |----|----|----|
 > | `openlinker-core` | 后端 API 服务 | ✅ 开源 |
 > | `openlinker-core-web` ← **本仓库** | Core 的自托管前端 | ✅ 开源 |
-> | 商业化托管前端 | openlinker.ai 专属功能 | ❌ 不开源 |
+> | 托管产品前端 | openlinker.ai 托管服务 | ❌ 不开源 |
 >
-> 商业化托管前端（不在本仓库）包含 openlinker.ai 专属功能：钉包、定价、商业计费、
-> 云端用户 Token 产品面板和市场排序 UI。这些功能有意从 Core Web 中剔除。
+> 本仓库以 `openlinker-core` API 为产品边界。部署方可以自行决定域名、访问方式、
+> 数据保留和运维策略；openlinker.ai 的托管账号、商业计费和市场运营界面在独立产品中实现。
 
 English documentation: [README.md](./README.md)
 
-本仓库只调用 Core 拥有的 API。商业钱包、计费、提现和托管市场产品能力不属于本仓库。
+Core Web 只调用 Core 提供的 API，不依赖 openlinker.ai 托管账号或商业服务即可运行。
 
 ## 状态
 
 本前端目前是 pre-1.0，并跟随 `openlinker-core` API 演进。Core 契约稳定前，路由、
 表单和 API 响应处理仍可能变化。
 
+User Token 管理属于 Core 的正式契约。当前 UI 与协议说明已经区分 User Token 和 Agent Token；
+本地签发与验证 API 是下一项后端实现工作。
+
 ## 范围
 
 包含：
 
-- 公开 Agent 市场、Agent 详情页和可调用 Playground
+- 公开 Agent Registry、Agent 详情页和可调用 Playground
 - 用户认证、个人工作区、run 历史、run 详情、Inbox 和设置
-- Creator Hub、Agent onboarding、审批、runtime 设置和交付视图
-- A2A console、MCP/connect、skills、workflows、status 和 tasks
+- 用于用户侧 API 与 MCP 调用的 User Token 契约和协议说明；本地管理页将在下一实现切片补齐
+- Creator Hub、四种连接模式的接入引导、可用性告警、Benchmark 和交付视图
+- A2A console、MCP/connect、Skills、服务状态和运行详情
 - 由 `openlinker-core` 支持的本地 admin 页面
 - `/api/v1/*` 到 Core API 的代理
 
-不包含：
+与 Core API 边界分离：
 
 - 钱包、扣费、提现、Stripe 和价格页面
-- 商业 User Token 产品 Dashboard
+- openlinker.ai 托管账号、令牌策略和商业访问 Dashboard
 - 财务管理和托管市场排序控制
-- Cloud-only 客户账户功能
+- Core 契约之外的 Hosted 托管账户功能
 
 ## 开源架构图
 
@@ -103,6 +107,9 @@ NEXTAUTH_URL=http://localhost:3000
 `NEXT_PUBLIC_API_URL` 通常指向前端自身，让浏览器请求走本地 Next.js `/api/v1/*`
 代理。Server Components 使用 `CORE_API_URL` 或 `API_URL` 直接访问 Core。
 
+`AUTH_SECRET` 或 `NEXTAUTH_SECRET` 用于签名前端会话。生产环境应使用独立随机值，
+不要复用 Core 的 `JWT_SECRET`；如果两个前端变量同时设置，请保持它们的值一致。
+
 ## 常用命令
 
 ```bash
@@ -133,7 +140,8 @@ docker build -f openlinker-core-web/Dockerfile.server -t openlinker-core-web .
 
 - 不要把商业产品流程放进本仓库。
 - 优先复用现有组件和布局模式。
-- 已经接入 i18n 的页面需要保持本地化。
+- 跨页面复用或数量较多的功能文案放进 `src/messages/` 类型化领域模块；少量单组件文案可以留在组件附近。协议字段、代码示例和用户数据不进入翻译表。
+- Core 文案以当前实例为语境。协议状态可以与 Hosted Web 保持一致，市场、计费和托管服务文案不能强行共用。
 - 公开 Issue 前删除 token、私有 URL、客户数据和 `.env.local`。
 
 ## 安全
@@ -143,8 +151,8 @@ docker build -f openlinker-core-web/Dockerfile.server -t openlinker-core-web .
 
 ## 贡献
 
-提交 PR 前请阅读 [CONTRIBUTING.zh-CN.md](./CONTRIBUTING.zh-CN.md)。这个仓库只面向
-开源 Core UI，不应加入钱包、扣费、提现或商业 Dashboard 页面。
+提交 PR 前请阅读 [CONTRIBUTING.zh-CN.md](./CONTRIBUTING.zh-CN.md)。新增页面和流程应由
+`openlinker-core` 的公开 API 支持，并保持自托管部署可独立运行。
 
 ## 支持和发布
 

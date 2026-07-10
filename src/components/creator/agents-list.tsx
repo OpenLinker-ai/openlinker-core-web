@@ -14,7 +14,7 @@
  *
  * 字段约束：visibility 决定公开范围，certification_status 仅表达认证进度。
  *
- * Phase 1 不展示真实收入金额。次数：toLocaleString() 千分位。
+ * Core 不提供收入结算，因此不展示收入金额。次数使用本地化千分位。
  */
 
 import Link from "next/link";
@@ -91,10 +91,10 @@ const VISIBILITY_LABEL: Record<string, Record<Locale, string>> = {
   private: { zh: "私有", en: "Private" },
 };
 const CERTIFICATION_LABEL: Record<string, Record<Locale, string>> = {
-  unreviewed: { zh: "未认证", en: "Unverified" },
-  pending: { zh: "认证中", en: "Verification pending" },
-  certified: { zh: "已认证", en: "Verified" },
-  rejected: { zh: "认证未通过", en: "Verification rejected" },
+  unreviewed: { zh: "未提交实例认证", en: "Not instance-certified" },
+  pending: { zh: "实例认证中", en: "Instance certification pending" },
+  certified: { zh: "实例已认证", en: "Instance certified" },
+  rejected: { zh: "实例认证未通过", en: "Instance certification rejected" },
 };
 
 function isAgentCallable(agent: {
@@ -109,11 +109,11 @@ function availabilityLabel(
   callable: boolean,
   locale: Locale,
 ) {
-  if (callable) return locale === "zh" ? "在线" : "Online";
+  if (callable) return locale === "zh" ? "可调用" : "Callable";
   if (availability?.status === "degraded" || availability?.status === "unreachable") {
     return availabilityStatusLabel(availability.status, locale, availability.label);
   }
-  return locale === "zh" ? "未在线" : "Not online";
+  return locale === "zh" ? "暂不可调用" : "Not callable";
 }
 
 type AgentListRow = {
@@ -149,14 +149,14 @@ export function AgentsList({ locale, agentPage, controls }: Props) {
     locale === "zh"
       ? {
           title: "我的 Agent",
-          noneYet: "还没发布",
-          empty: "还没有发布 Agent。",
-          publish: "立即发布 →",
+          noneYet: "尚未接入",
+          empty: "还没有接入 Agent。",
+          publish: "接入 Agent →",
           searchLabel: "搜索 Agent",
           searchPlaceholder: "搜索名称、slug、标签、端点或状态",
           filterStatus: "状态",
           filterVisibility: "可见性",
-          filterCertification: "认证",
+          filterCertification: "实例认证",
           sortBy: "排序",
           pageSize: "每页",
           clear: "清除",
@@ -169,11 +169,11 @@ export function AgentsList({ locale, agentPage, controls }: Props) {
           next: "下一页",
           statusOptions: {
             all: "全部状态",
-            online: "在线可调用",
-            offline: "离线/不可用",
+            online: "可调用",
+            offline: "暂不可调用",
             degraded: "不稳定",
-            disabled: "已下架",
-            review: "认证中",
+            disabled: "已停用",
+            review: "实例认证中",
           } satisfies Record<StatusFilter, string>,
           visibilityOptions: {
             all: "全部可见性",
@@ -182,11 +182,11 @@ export function AgentsList({ locale, agentPage, controls }: Props) {
             private: "私有",
           } satisfies Record<VisibilityFilter, string>,
           certificationOptions: {
-            all: "全部认证",
-            unreviewed: "未认证",
-            pending: "认证中",
-            certified: "已认证",
-            rejected: "认证未通过",
+            all: "全部实例认证状态",
+            unreviewed: "未提交实例认证",
+            pending: "实例认证中",
+            certified: "实例已认证",
+            rejected: "实例认证未通过",
           } satisfies Record<CertificationFilter, string>,
           sortOptions: {
             calls_this_month: "本月调用",
@@ -195,8 +195,8 @@ export function AgentsList({ locale, agentPage, controls }: Props) {
             created_at: "最新接入",
           } satisfies Record<SortKey, string>,
           summary: (counts: AgentCounts) =>
-            `总数 ${counts.total} · 在线 ${counts.online} · 公开 ${counts.public} · 链接 ${counts.unlisted} · 私有 ${counts.private}${
-              counts.pending > 0 ? ` · 认证中 ${counts.pending}` : ""
+            `总数 ${counts.total} · 可调用 ${counts.online} · 公开 ${counts.public} · 链接 ${counts.unlisted} · 私有 ${counts.private}${
+              counts.pending > 0 ? ` · 实例认证中 ${counts.pending}` : ""
             }`,
         }
       : {
@@ -208,7 +208,7 @@ export function AgentsList({ locale, agentPage, controls }: Props) {
           searchPlaceholder: "Search name, slug, tags, endpoint, or status",
           filterStatus: "Status",
           filterVisibility: "Visibility",
-          filterCertification: "Verification",
+          filterCertification: "Instance certification",
           sortBy: "Sort",
           pageSize: "Per page",
           clear: "Clear",
@@ -221,11 +221,11 @@ export function AgentsList({ locale, agentPage, controls }: Props) {
           next: "Next page",
           statusOptions: {
             all: "All status",
-            online: "Online callable",
-            offline: "Offline/unavailable",
+            online: "Callable",
+            offline: "Not callable",
             degraded: "Degraded",
             disabled: "Disabled",
-            review: "In review",
+            review: "Instance certification pending",
           } satisfies Record<StatusFilter, string>,
           visibilityOptions: {
             all: "All visibility",
@@ -234,11 +234,11 @@ export function AgentsList({ locale, agentPage, controls }: Props) {
             private: "Private",
           } satisfies Record<VisibilityFilter, string>,
           certificationOptions: {
-            all: "All verification",
-            unreviewed: "Unverified",
-            pending: "In review",
-            certified: "Verified",
-            rejected: "Rejected",
+            all: "All instance certification",
+            unreviewed: "Not instance-certified",
+            pending: "Instance certification pending",
+            certified: "Instance certified",
+            rejected: "Instance certification rejected",
           } satisfies Record<CertificationFilter, string>,
           sortOptions: {
             calls_this_month: "Calls this month",
@@ -247,8 +247,8 @@ export function AgentsList({ locale, agentPage, controls }: Props) {
             created_at: "Newest",
           } satisfies Record<SortKey, string>,
           summary: (counts: AgentCounts) =>
-            `Total ${counts.total} · Online ${counts.online} · Public ${counts.public} · Unlisted ${counts.unlisted} · Private ${counts.private}${
-              counts.pending > 0 ? ` · Pending ${counts.pending}` : ""
+            `Total ${counts.total} · Callable ${counts.online} · Public ${counts.public} · Unlisted ${counts.unlisted} · Private ${counts.private}${
+              counts.pending > 0 ? ` · Instance certification pending ${counts.pending}` : ""
             }`,
         };
 
@@ -551,13 +551,12 @@ function AgentItemRow({
     locale === "zh"
       ? {
           totalCalls: "累计调用",
-          disabled: "已下架",
+          disabled: "已停用",
           calls: "调用",
           month: "本月",
           records: "记录",
-          freeAccess: "免费期",
-          playgroundTitle: "打开这个 Agent 的 Playground，直接发起一次测试调用",
-          playgroundUnavailable: "离线不可试用",
+          playgroundTitle: "在 Playground 中对这个 Agent 发起一次测试调用",
+          playgroundUnavailable: "暂不可调用",
           skillTitle: "编辑该 Agent 声明的 skill（最多 5 个）",
           setup: "接入",
           setupTitle: "维护能力声明、示例和 dry-run 状态",
@@ -565,29 +564,28 @@ function AgentItemRow({
           settingsTitle: "编辑基础信息、连接方式和可见性",
           runHistory: "调用记录",
           runHistoryTitle: "查看这个 Agent 被用户、访问凭证或 MCP 触发的调用记录",
-          benchmarkTitle: "为已声明 Skill 运行测评，通过后详情页会显示已验证徽章",
+          benchmarkTitle: "为已声明 Skill 运行 Benchmark；通过后详情页会显示 Benchmark 已验证",
           deliveryTitle: "管理通知投递目标与通知投递历史",
           delivery: "投递",
           progress: "查看进度",
           progressLabel: (name: string) => `查看 ${name} 进度`,
         }
       : {
-          totalCalls: "total calls",
+          totalCalls: "total invocations",
           disabled: "Disabled",
-          calls: "calls",
+          calls: "invocations",
           month: "this month",
           records: "records",
-          freeAccess: "free access",
-          playgroundTitle: "Open this Agent in Playground and run a test call",
-          playgroundUnavailable: "Offline",
+          playgroundTitle: "Open this Agent in Playground and invoke it once for testing",
+          playgroundUnavailable: "Not callable",
           skillTitle: "Edit this Agent's declared Skills, up to 5",
           setup: "Setup",
           setupTitle: "Maintain capability claims, examples, and dry-run status",
           settings: "Settings",
           settingsTitle: "Edit basic information, connection, and visibility",
           runHistory: "Run history",
-          runHistoryTitle: "View calls triggered by users, access credentials, or MCP",
-          benchmarkTitle: "Run benchmarks for declared Skills; passed ones show a Verified badge on the detail page",
+          runHistoryTitle: "View invocations triggered by users, access credentials, or MCP",
+          benchmarkTitle: "Run Benchmarks for declared Skills; passed ones show a Benchmark verified badge on the detail page",
           deliveryTitle: "Manage notification delivery targets and delivery history",
           delivery: "Delivery",
           progress: "View progress",
@@ -601,7 +599,7 @@ function AgentItemRow({
   const availabilityText = availabilityLabel(row.availability, callable, locale);
   const [skillsOpen, setSkillsOpen] = useState(false);
 
-  // 待处理行：黄色高亮（按 prompt 要求的样式 token）
+  // 待处理行使用黄色高亮，与其他状态拉开视觉层级。
   const yellowStyle: React.CSSProperties = isPending
     ? {
         borderColor: "rgba(200, 131, 13, 0.3)",
@@ -640,7 +638,7 @@ function AgentItemRow({
             <div>
               <b>{formatCalls(row.callsThisMonth)} {copy.calls}</b>
               <span className="ml-1 text-[12px] font-bold text-[color:var(--ol-muted)]">
-                {isListed ? copy.month : copy.records} · {copy.freeAccess}
+                {isListed ? copy.month : copy.records}
               </span>
             </div>
           <div className="flex max-w-full flex-wrap items-center justify-end gap-1.5">

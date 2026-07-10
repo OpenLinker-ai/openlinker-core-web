@@ -25,14 +25,14 @@ export default async function InboxPage() {
       ? {
           my: "我的",
           current: "通知中心",
-          heading: "审核、运行、权益和投递事件",
-          lead: "所有需要你回看的站内事件集中在这里，可以按类型筛选、标记已读并跳到对应详情。",
+          heading: "Agent 可用性告警",
+          lead: "这里仅显示你所管理 Agent 的可用性告警。异常与恢复记录来自服务端巡检，可标记已读并进入对应 Agent 检查连接。",
         }
       : {
           my: "My",
           current: "Inbox",
-          heading: "Review, run, plan, and delivery events",
-          lead: "Review in-app events here, filter by type, mark them as read, and jump to the related detail page.",
+          heading: "Agent availability alerts",
+          lead: "This inbox only shows availability alerts for Agents you manage. Probe failures and recoveries can be marked as read and opened in the related Agent setup.",
         };
   const availabilityAlerts = await apiFetchAuthed<{
     items: AvailabilityAlert[];

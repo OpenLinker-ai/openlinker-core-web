@@ -1,16 +1,15 @@
 /**
  * <AuthDashboard /> —— 已登录用户首页概览。
  *
- * PNG 没画"已登录态"，但保留原 page.tsx 的业务逻辑：
- *   - 4 张 stat 卡（本月调用 / core 运行 / 工作台状态 / Agent 权益）
+ * 首页登录态包括：
+ *   - 4 张 stat 卡（本月调用 / 部署模式 / 凭证边界 / Agent 调用）
  *   - 跳转入口（工作台 / Registry / Agent 管理 / 开发者中心）
  *
  * 视觉风格统一为原型 hero-card 风格的小卡：
  *   - stat 卡：白底 + 边框 + ol-shadow
  *   - 跳转卡：mint 渐变 + 图标 + 描述
  *
- * 后端未就绪兜底：dashboard 为 null 时仍显示跳转入口，
- * stat 区域显示占位"待数据"。
+ * dashboard 为 null 时仍显示跳转入口，统计区域使用空值占位。
  */
 
 import Link from "next/link";
@@ -49,24 +48,24 @@ export function AuthDashboard({ userName, dashboard, locale = "zh" }: AuthDashbo
           loading: "概览数据加载中…",
           callsMonth: "本月调用",
           total: "累计",
-          current: "Core 运行",
-          free: "本地可用",
-          noCharge: "运行、事件与 A2A/MCP 由 core 提供",
-          planStatus: "工作台",
-          notEnabled: "已拆分",
-          noWallet: "不包含钱包和支付入口",
-          settlement: "Agent 权益",
-          called: "被调",
-          noShare: "core 调用记录",
-          noAgent: "还未发布 Agent",
+          deployment: "部署模式",
+          selfHosted: "自托管",
+          coreScope: "数据、凭证和运行由当前实例管理",
+          authBoundary: "凭证边界",
+          separateTokens: "用户 / Agent",
+          tokenScope: "User Token 用于调用；Agent Token 用于注册和运行",
+          agentCalls: "Agent 本月被调用",
+          agentStatus: "Agent 状态",
+          noAgent: "尚未接入",
+          agentCount: (count: number) => `共 ${count.toLocaleString()} 个 Agent`,
           cards: [
             { href: "/my", icon: "chart" as IconName, title: "我的工作台", desc: "查看运行、Agent 管理和账户入口。" },
             { href: "/registry", icon: "target" as IconName, title: "Registry", desc: "浏览公开 Agent、Skill 和调用入口。" },
             {
               href: isCreator ? "/hub" : "/publish",
               icon: (isCreator ? "bot" : "edit") as IconName,
-              title: isCreator ? "Agent 管理 / 我的 Agent" : "开通 Agent 管理",
-              desc: isCreator ? "管理已发布 Agent、注册邀请、Skill 和调用记录。" : "发布 Agent，注册后出现在我的 Agent。",
+              title: isCreator ? "Agent 管理 / 我的 Agent" : "接入 Agent",
+              desc: isCreator ? "管理已接入 Agent、注册邀请、Skill 和调用记录。" : "把 Agent 接入当前实例，并在我的 Agent 中继续配置。",
             },
             { href: "/connect", icon: "key" as IconName, title: "开发者中心", desc: "查看 API/MCP、鉴权边界和外部工具调用方式。" },
           ],
@@ -77,24 +76,24 @@ export function AuthDashboard({ userName, dashboard, locale = "zh" }: AuthDashbo
           loading: "Loading overview…",
           callsMonth: "Calls this month",
           total: "Total",
-          current: "Core runs",
-          free: "Available",
-          noCharge: "Runs, events, and A2A/MCP are served by core",
-          planStatus: "Workspace",
-          notEnabled: "Split",
-          noWallet: "Wallet and payments are not included",
-          settlement: "Agent access",
-          called: "Called",
-          noShare: "core run records",
-          noAgent: "No Agent published",
+          deployment: "Deployment",
+          selfHosted: "Self-hosted",
+          coreScope: "This instance manages its data, credentials, and runs",
+          authBoundary: "Credential boundary",
+          separateTokens: "User / Agent",
+          tokenScope: "User Tokens authorize calls; Agent Tokens identify onboarding and runtimes",
+          agentCalls: "Agent calls this month",
+          agentStatus: "Agent status",
+          noAgent: "None connected",
+          agentCount: (count: number) => `${count.toLocaleString()} Agents total`,
           cards: [
             { href: "/my", icon: "chart" as IconName, title: "My Workspace", desc: "Review runs, Agent Console, and account entry points." },
             { href: "/registry", icon: "target" as IconName, title: "Registry", desc: "Browse public Agents, Skills, and run entry points." },
             {
               href: isCreator ? "/hub" : "/publish",
               icon: (isCreator ? "bot" : "edit") as IconName,
-              title: isCreator ? "Agent Console / My Agents" : "Enable Agent Console",
-              desc: isCreator ? "Manage published Agents, registration invites, Skills, and runs." : "Publish an Agent and it will appear under My Agents.",
+              title: isCreator ? "Agent Console / My Agents" : "Connect an Agent",
+              desc: isCreator ? "Manage connected Agents, registration invites, Skills, and runs." : "Connect an Agent to this instance, then continue setup under My Agents.",
             },
             { href: "/connect", icon: "key" as IconName, title: "Developer Center", desc: "Review API/MCP docs, auth boundaries, and external tool calls." },
           ],
@@ -127,22 +126,22 @@ export function AuthDashboard({ userName, dashboard, locale = "zh" }: AuthDashbo
           }
         />
         <StatCard
-          label={copy.current}
-          value={dashboard ? copy.free : "—"}
-          hint={copy.noCharge}
+          label={copy.deployment}
+          value={dashboard ? copy.selfHosted : "—"}
+          hint={copy.coreScope}
         />
         <StatCard
-          label={copy.planStatus}
-          value={dashboard ? copy.notEnabled : "—"}
-          hint={copy.noWallet}
+          label={copy.authBoundary}
+          value={dashboard ? copy.separateTokens : "—"}
+          hint={copy.tokenScope}
         />
         <StatCard
-          label={copy.settlement}
-          value={copy.notEnabled}
+          label={dashboard?.creator ? copy.agentCalls : copy.agentStatus}
+          value={dashboard?.creator ? fmtNum(dashboard.creator.this_month_calls_received) : dashboard ? copy.noAgent : "—"}
           hint={
             dashboard?.creator
-              ? `${copy.called} ${fmtNum(dashboard.creator.this_month_calls_received)} · ${copy.noShare}`
-              : copy.noAgent
+              ? copy.agentCount(dashboard.creator.total_agents)
+              : undefined
           }
         />
       </div>

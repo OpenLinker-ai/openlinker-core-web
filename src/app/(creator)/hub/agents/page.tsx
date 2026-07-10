@@ -166,13 +166,13 @@ function CoreHubOverview({
       ? {
           total: "Agent 总数",
           public: "公开 Agent",
-          pending: "待认证",
+          pending: "实例认证中",
           calls: "本月被调",
         }
       : {
           total: "Total Agents",
           public: "Public Agents",
-          pending: "Pending review",
+          pending: "Instance certification pending",
           calls: "Calls this month",
         };
 

@@ -3,14 +3,13 @@
 /**
  * 非 Agent 所有者用户进入 /publish 时的引导卡。
  *
- * 一键开通（无需审核）：
+ * 开通 Agent 所有者权限：
  *   - POST /api/v1/me/become-creator
  *   - 成功后 reload 页面，让 server component 重取 me，渲染发布表单
  *
  * 错误：toast.error，不阻塞用户重试。
  *
- * 视觉：用 ol-panel 包，配 ol-kicker + 浅绿渐变 highlight info-card 列条款，
- * 与 publish 页其他原型 panel 保持一致。
+ * 使用发布页已有的 panel 与按钮样式。
  */
 
 import { useState } from "react";
@@ -26,24 +25,24 @@ export function BecomeCreatorPrompt({ locale = "zh" }: { locale?: Locale }) {
   const copy =
     locale === "zh"
       ? {
-          success: "已开通 Agent 所有者权限，正在刷新进入发布表单...",
+          success: "Agent 所有者权限已开通，正在打开接入表单...",
           failed: "操作失败，请稍后再试",
-          kicker: "第 0 步 / 开通 Agent 管理",
+          kicker: "开始管理 Agent",
           title: "开通 Agent 所有者权限",
-          body: "一键开通，无需审核。开通后即可发布 Agent、记录调用，并查看后续权益能力预览。",
-          grant: "开通后你将获得",
-          grantBody: "当前运行免费；你可以声明展示价格，认证与 Benchmark 用于建立可信度。",
+          body: "开通后即可接入 Agent、按需设为公开，并维护连接配置、可调用状态与运行记录。",
+          grant: "你可以管理",
+          grantBody: "四种连接模式、Skill 声明、Registry 可见性、Benchmark，以及每次调用对应的 Run。",
           submit: "开通权限",
           submitting: "处理中...",
         }
       : {
-          success: "Agent owner access enabled. Refreshing the publish form...",
+          success: "Agent owner access enabled. Opening the connection form...",
           failed: "Action failed. Try again later.",
-          kicker: "Step 0 / Enable Agent Console",
+          kicker: "Start managing Agents",
           title: "Enable Agent owner access",
-          body: "Enable Agent owner access in one click. After that, you can publish Agents, record calls, and preview later owner capabilities.",
-          grant: "After enabling Agent owner access",
-          grantBody: "Current runs are free. You can declare display pricing, while certification and benchmarks help build trust.",
+          body: "After enabling access, you can connect Agents, make them public when needed, maintain connection settings, and inspect callability and run records.",
+          grant: "What you can manage",
+          grantBody: "Four connection modes, Skill claims, Registry visibility, benchmarks, and the Run created for each call.",
           submit: "Enable access",
           submitting: "Working...",
         };

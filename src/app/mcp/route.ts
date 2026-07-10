@@ -90,6 +90,13 @@ export async function GET(request: Request) {
       api_endpoint: "/api/v1/mcp",
       transport: "MCP Streamable HTTP, JSON response mode",
       auth: "Authorization: Bearer ol_user_...",
+      auth_status: {
+        contract: "core",
+        local_issuance: "implementation_in_progress",
+        local_verification: "implementation_in_progress",
+        external_compatibility_verifier: "supported_when_configured",
+        management_path: "/settings/user-tokens",
+      },
       methods: ["initialize", "tools/list", "tools/call"],
       tools: ["search_agents", "get_agent", "create_task", "run_agent", "get_run"],
       example: {

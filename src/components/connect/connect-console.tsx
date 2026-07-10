@@ -6,9 +6,10 @@ import { useMemo, useRef, useState } from "react";
 import { Icon, type IconName } from "@/components/ui/icon";
 import type { Locale } from "@/lib/i18n";
 
-type Mode = "endpoint" | "runtime_ws" | "sdk" | "webhook" | "mcp";
+type Mode = "endpoint" | "mcp_server" | "runtime_ws" | "sdk" | "mcp";
 
 interface ModeSpec {
+  category: string;
   label: string;
   title: string;
   blurb: string;
@@ -21,13 +22,16 @@ interface ModeSpec {
 
 const MODES: Record<Mode, ModeSpec> = {
   endpoint: {
-    label: "Endpoint",
-    title: "HTTPS Endpoint 接入",
-    blurb: "声明一个公开 HTTPS endpoint，平台调用时 POST 输入并等返回。",
+    category: "Agent connection",
+    label: "direct_http",
+    title: "Agent 接入：direct_http",
+    blurb: "声明一个公开 HTTPS endpoint，当前实例调用时 POST 输入并等待返回。",
     bestFor: "Agent 所有者接入 · 最简方案",
     icon: "zap",
     accent: "var(--ol-primary)",
     code: [
+      "# 保存 Agent 时选择 connection_mode=direct_http，并填写 endpoint_url",
+      "# 运行时当前实例会向该 endpoint 发送：",
       "POST https://your-agent.example/run",
       "Content-Type: application/json",
       "X-OpenLinker-Run-Id: run_123",
@@ -41,10 +45,29 @@ const MODES: Record<Mode, ModeSpec> = {
     ].join("\n"),
     bullets: ["返回 output JSON 即终态", "失败调用只记录状态", "可配置预共享 Header 鉴权"],
   },
+  mcp_server: {
+    category: "Agent connection",
+    label: "MCP Server",
+    title: "Agent 接入：mcp_server",
+    blurb: "把已有远程 MCP tools/call 工具包装成 Agent；这和客户端调用 OpenLinker 的 /mcp 入口是两个方向。",
+    bestFor: "已有远程 MCP 工具",
+    icon: "target",
+    accent: "var(--ol-amber)",
+    code: [
+      "{",
+      "  \"connection_mode\": \"mcp_server\",",
+      "  \"endpoint_url\": \"https://your-mcp.example/mcp\",",
+      "  \"mcp_tool_name\": \"analyze_document\",",
+      "  \"visibility\": \"private\"",
+      "}",
+    ].join("\n"),
+    bullets: ["目标是远程 HTTP MCP Server", "必须填写 mcp_tool_name", "不是 OpenLinker /mcp 客户端配置"],
+  },
   runtime_ws: {
+    category: "Agent connection",
     label: "Agent Node",
-    title: "内网 / NAT Agent 长连接接入",
-    blurb: "Agent 注册后不暴露入站端口，由 OpenLinker Agent Node 主动建立 runtime_ws 长连接并回传结果。",
+    title: "Agent Node：runtime_ws / runtime_pull",
+    blurb: "Agent Node 首选 runtime_ws 出站长连接；WebSocket 无法稳定维持时再使用 runtime_pull。",
     bestFor: "本地 Agent · 企业内网",
     icon: "bot",
     accent: "var(--ol-blue)",
@@ -66,12 +89,13 @@ const MODES: Record<Mode, ModeSpec> = {
       "# 3. 后端只实现业务接口；node 负责 run.assigned、run.event、run.result 和 localhost helper A2A。",
       "#    WebSocket 无法维持时，再降级到 runtime_pull heartbeat + claim。",
     ].join("\n"),
-    bullets: ["平台不访问你的私网 IPv4", "runtime_ws 可实时派发任务", "Agent Node 提供 localhost helper"],
+    bullets: ["当前实例不访问你的私网 IPv4", "runtime_ws 实时接收调用", "runtime_pull 用于长连接降级"],
   },
   sdk: {
+    category: "Invocation",
     label: "SDK",
     title: "从应用侧调用 Agent",
-    blurb: "用访问令牌触发 Run；可订阅 SSE 实时事件流；run_id 持久可查。",
+    blurb: "用 User Token 触发 Run；可订阅 SSE 实时事件流；run_id 持久可查。",
     bestFor: "生产应用 · 嵌入式集成",
     icon: "bot",
     accent: "var(--ol-blue)",
@@ -104,9 +128,10 @@ const MODES: Record<Mode, ModeSpec> = {
     bullets: ["返回 run_id + running", "SSE 事件流可订阅", "GET /runs/{id} 查终态"],
   },
   mcp: {
-    label: "MCP",
-    title: "OpenLinker 作为 MCP 服务端",
-    blurb: "MCP 客户端可直接连接主站 /mcp；旧脚本仍可走 /api/v1/mcp/* REST fallback。",
+    category: "Invocation",
+    label: "MCP Client",
+    title: "调用入口：OpenLinker MCP",
+    blurb: "MCP 客户端可直接连接主站 /mcp；旧脚本仍可使用 /api/v1/mcp/* REST 兼容接口。",
     bestFor: "AI 客户端工具 · 跨 Agent 调用",
     icon: "target",
     accent: "var(--ol-green)",
@@ -144,149 +169,125 @@ const MODES: Record<Mode, ModeSpec> = {
     ].join("\n"),
     bullets: [
       "主站 /mcp 就是 MCP 服务端入口；API 等价入口为 /api/v1/mcp",
-      "仅接受访问令牌（ol_user_...），不使用网页登录会话",
+      "仅接受 User Token（ol_user_...），不使用网页登录会话",
       "工具：search_agents / get_agent / create_task / run_agent / get_run",
       "调用写入 runs.source='mcp'",
     ],
   },
-  webhook: {
-    label: "Webhook",
-    title: "接收投递事件",
-    blurb: "运行到达终态后，平台向投递目标 POST 签名事件，X-OpenLinker-Signature 带 HMAC-SHA256。",
-    bestFor: "Agent 所有者异步对账 · 自建管线",
-    icon: "bell",
-    accent: "var(--ol-amber)",
-    code: [
-      "{",
-      "  \"event\": \"run.completed\",",
-      "  \"run_id\": \"run_123\",",
-      "  \"agent_slug\": \"finance-modeler\",",
-      "  \"status\": \"success\",",
-      "  \"output\": { \"summary\": \"...\" }",
-      "}",
-    ].join("\n"),
-    bullets: ["1m / 5m / 30m 退避重试", "X-OpenLinker-Signature 校验", "通知投递历史在 Agent 管理可查"],
-  },
 };
-
-const EVENTS = [
-  { event: "run.created", desc: "创建运行，校验预算并生成 run_id" },
-  { event: "run.started", desc: "调用端点已触发" },
-  { event: "run.message.delta", desc: "Agent 流式返回消息片段" },
-  { event: "run.artifact.delta", desc: "Agent 推送中间产物" },
-  { event: "run.completed", desc: "终态成功，包含输出与用量" },
-  { event: "run.failed", desc: "失败 / 超时 / 取消" },
-];
 
 const SDKS = ["TypeScript", "Python", "Go", "cURL"];
 
-const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "label" | "title" | "blurb" | "bestFor" | "bullets">>> = {
+const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "category" | "label" | "title" | "blurb" | "bestFor" | "bullets">>> = {
   zh: {
     endpoint: {
-      label: "Endpoint",
-      title: "HTTPS Endpoint 接入",
-      blurb: "声明一个公网 HTTPS 调用端点，平台调用时 POST 输入并等待返回。",
+      category: "Agent 接入",
+      label: "direct_http",
+      title: "Agent 接入：direct_http",
+      blurb: "声明一个公网 HTTPS 调用端点，当前实例调用时 POST 输入并等待返回。",
       bestFor: "Agent 所有者接入 · 最简方案",
-      bullets: ["返回 output JSON 即终态", "失败调用保持免费期口径", "可配置预共享 Header 鉴权"],
+      bullets: ["返回 output JSON 即终态", "失败调用保留错误状态", "可配置预共享 Header 鉴权"],
+    },
+    mcp_server: {
+      category: "Agent 接入",
+      label: "MCP Server",
+      title: "Agent 接入：mcp_server",
+      blurb: "把已有远程 MCP tools/call 工具包装成 Agent；这和客户端调用 OpenLinker 的 /mcp 入口是两个方向。",
+      bestFor: "已有远程 MCP 工具",
+      bullets: ["目标是远程 HTTP MCP Server", "必须填写 mcp_tool_name", "不是 OpenLinker /mcp 客户端配置"],
     },
     runtime_ws: {
+      category: "Agent 接入",
       label: "Agent Node",
-      title: "内网 / NAT Agent 长连接接入",
-      blurb: "Agent 注册后不暴露入站端口，由 OpenLinker Agent Node 主动建立 runtime_ws 长连接并回传结果。",
+      title: "Agent Node：runtime_ws / runtime_pull",
+      blurb: "Agent Node 首选 runtime_ws 出站长连接；WebSocket 无法稳定维持时再使用 runtime_pull。",
       bestFor: "本地 Agent · 企业内网",
-      bullets: ["平台不访问你的私网 IPv4", "runtime_ws 可实时派发任务", "Agent Node 提供 localhost helper"],
+      bullets: ["当前实例不访问你的私网 IPv4", "runtime_ws 实时接收调用", "runtime_pull 用于长连接降级"],
     },
     sdk: {
+      category: "调用入口",
       label: "SDK",
       title: "从应用侧调用 Agent",
-      blurb: "用访问令牌触发运行；可订阅 SSE 实时事件流；run_id 持久可查。",
+      blurb: "用 User Token 触发运行；可订阅 SSE 实时事件流；run_id 持久可查。",
       bestFor: "生产应用 · 嵌入式集成",
       bullets: ["返回 run_id + running", "SSE 事件流可订阅", "GET /runs/{id} 查终态"],
     },
     mcp: {
-      label: "MCP",
-      title: "OpenLinker 作为 MCP 服务端",
-      blurb: "MCP 客户端可直接连接主站 /mcp；旧脚本仍可走 /api/v1/mcp/* REST fallback。",
+      category: "调用入口",
+      label: "MCP Client",
+      title: "调用入口：OpenLinker MCP",
+      blurb: "MCP 客户端可直接连接主站 /mcp；旧脚本仍可使用 /api/v1/mcp/* REST 兼容接口。",
       bestFor: "AI 客户端工具 · 跨 Agent 调用",
       bullets: [
         "主站 /mcp 就是 MCP 服务端入口；API 等价入口为 /api/v1/mcp",
-        "仅接受访问令牌（ol_user_...），不使用网页登录会话",
+        "仅接受 User Token（ol_user_...），不使用网页登录会话",
         "工具：search_agents / get_agent / create_task / run_agent / get_run",
         "调用写入 runs.source='mcp'",
       ],
     },
-    webhook: {
-      label: "Webhook",
-      title: "接收投递事件",
-      blurb: "运行到达终态后，平台向投递目标 POST 签名事件，X-OpenLinker-Signature 带 HMAC-SHA256。",
-      bestFor: "Agent 所有者异步对账 · 自建管线",
-      bullets: ["1m / 5m / 30m 退避重试", "X-OpenLinker-Signature 校验", "通知投递历史在 Agent 管理可查"],
-    },
   },
   en: {
     endpoint: {
-      label: "Endpoint",
-      title: "HTTPS Endpoint",
+      category: "Agent connection",
+      label: "direct_http",
+      title: "Agent connection: direct_http",
       blurb: "Declare a public HTTPS endpoint. OpenLinker POSTs input and waits for the response.",
       bestFor: "Agent owner setup · simplest path",
-      bullets: ["Return output JSON as the final state", "Failed runs stay in the free-phase path", "Optional pre-shared header auth"],
+      bullets: ["Return output JSON as the final state", "Failed invocations retain their error state", "Optional pre-shared header auth"],
+    },
+    mcp_server: {
+      category: "Agent connection",
+      label: "MCP Server",
+      title: "Agent connection: mcp_server",
+      blurb: "Wrap an existing remote MCP tools/call tool as an Agent. This is the opposite direction from clients calling OpenLinker's /mcp endpoint.",
+      bestFor: "Existing remote MCP tools",
+      bullets: ["Target a remote HTTP MCP Server", "mcp_tool_name is required", "Not an OpenLinker /mcp client configuration"],
     },
     runtime_ws: {
+      category: "Agent connection",
       label: "Agent Node",
-      title: "Private-network Agents stay connected",
-      blurb: "After registration, OpenLinker Agent Node keeps inbound ports closed and opens an outbound runtime_ws connection.",
+      title: "Agent Node: runtime_ws / runtime_pull",
+      blurb: "Agent Node prefers an outbound runtime_ws connection and falls back to runtime_pull only when WebSocket cannot stay connected.",
       bestFor: "Local Agents · private networks",
-      bullets: ["OpenLinker does not reach into your private IPv4 network", "runtime_ws assigns work in real time", "Agent Node exposes a localhost helper"],
+      bullets: ["OpenLinker does not reach into your private IPv4 network", "runtime_ws receives calls in real time", "runtime_pull is the connection fallback"],
     },
     sdk: {
+      category: "Invocation",
       label: "SDK",
-      title: "Call Agents from your app",
-      blurb: "Use an access token to start a Run, subscribe to SSE, and look up the persistent run_id.",
+      title: "Invoke Agents from your app",
+      blurb: "Use a User Token to start a Run, subscribe to SSE, and look up the persistent run_id.",
       bestFor: "Production apps · embedded integration",
       bullets: ["Returns run_id + running", "SSE event stream is subscribable", "GET /runs/{id} reads the final state"],
     },
     mcp: {
-      label: "MCP",
-      title: "OpenLinker as an MCP server",
-      blurb: "MCP clients can connect to /mcp directly; older scripts can still use /api/v1/mcp/* REST fallback.",
-      bestFor: "AI clients · cross-Agent calls",
+      category: "Invocation",
+      label: "MCP Client",
+      title: "Invocation: OpenLinker MCP",
+      blurb: "MCP clients can connect to /mcp directly; older scripts can keep using the /api/v1/mcp/* REST compatibility endpoints.",
+      bestFor: "AI clients · cross-Agent invocation",
       bullets: [
         "The main /mcp route is the MCP server entry; /api/v1/mcp is equivalent",
-        "Access tokens only (ol_user_...); browser sessions are not used",
+        "User Tokens only (ol_user_...); browser sessions are not used",
         "Tools: search_agents / get_agent / create_task / run_agent / get_run",
-        "Calls write runs.source='mcp'",
+        "Invocations are recorded as runs.source='mcp'",
       ],
-    },
-    webhook: {
-      label: "Webhook",
-      title: "Receive delivery events",
-      blurb: "When a run reaches a terminal state, OpenLinker POSTs an HMAC-SHA256 signed event to the delivery target.",
-      bestFor: "Async Agent-owner reconciliation · custom pipeline",
-      bullets: ["1m / 5m / 30m retry backoff", "Verify X-OpenLinker-Signature", "Notification delivery history is visible in Agent Console"],
     },
   },
 };
 
-const EVENT_COPY: Record<Locale, Array<{ event: string; desc: string }>> = {
-  zh: EVENTS,
-  en: [
-    { event: "run.created", desc: "Create a run, validate the request, and generate run_id" },
-    { event: "run.started", desc: "Invocation endpoint is called" },
-    { event: "run.message.delta", desc: "Agent streams message fragments" },
-    { event: "run.artifact.delta", desc: "Agent pushes intermediate artifacts" },
-    { event: "run.completed", desc: "Successful final state with output / usage" },
-    { event: "run.failed", desc: "Failed / timed out / canceled" },
-  ],
-};
-
 function codeForLocale(mode: Mode, code: string, locale: Locale) {
   if (locale === "zh") return code;
+  if (mode === "endpoint") {
+    return code
+      .replace("# 保存 Agent 时选择 connection_mode=direct_http，并填写 endpoint_url", "# Save the Agent with connection_mode=direct_http and an endpoint_url")
+      .replace("# 运行时当前实例会向该 endpoint 发送：", "# At runtime, this instance sends:");
+  }
   if (mode === "mcp") {
     return code
       .replace("# MCP endpoint（二选一）", "# MCP endpoint (choose one)")
       .replace("# 1. 初始化 MCP 会话（JSON response mode，不要求 SSE）", "# 1. Initialize an MCP session (JSON response mode; SSE is optional)")
       .replace("# 2. MCP tools/list：发现 OpenLinker 暴露的工具", "# 2. MCP tools/list: discover OpenLinker tools")
-      .replace("# 3. MCP tools/call：搜索并调用 Agent", "# 3. MCP tools/call: search and run Agents")
+      .replace("# 3. MCP tools/call：搜索并调用 Agent", "# 3. MCP tools/call: search and invoke Agents")
       .replace("\"query\":\"翻译\"", "\"query\":\"translate\"");
   }
   if (mode === "runtime_ws") {
@@ -300,53 +301,52 @@ function codeForLocale(mode: Mode, code: string, locale: Locale) {
 }
 
 export function ConnectConsole({ locale = "zh" }: { locale?: Locale }) {
-  const [mode, setMode] = useState<Mode>("mcp");
+  const [mode, setMode] = useState<Mode>("endpoint");
   const [copied, setCopied] = useState(false);
   const detailRef = useRef<HTMLElement>(null);
   const active = { ...MODES[mode], ...MODE_COPY[locale][mode], code: codeForLocale(mode, MODES[mode].code, locale) };
-  const events = EVENT_COPY[locale];
   const copy =
     locale === "zh"
       ? {
-          title: "五种接入方式",
+          title: "按用途选择入口",
           hint: "点击卡片查看代码",
           bestFor: "适合：",
           copied: "已复制",
           copy: "复制",
           checklist: "检查项",
           simpleCurl: "最简 cURL",
-          webhookEvents: "投递事件",
-          configureDelivery: "配置投递目标 →",
-          eventBody: "运行事件可通过 SSE 读取；配置投递目标后，终态事件会 POST 到你的 Webhook URL，body 带 HMAC 签名。",
-          signature: "签名：",
-          auth: "Auth 信息",
+          auth: "User Token 调用",
+          tokenStatus: "User Token 已纳入 Core 正式契约，本地签发、scope 校验与撤销正在实现；已配置外部兼容验证器的部署可继续使用现有 ol_user_* Token。",
+          agentAuth: "Agent 接入凭据",
+          agentAuthBody: "Agent Node 使用 Agent Token 完成注册并标识运行身份；direct_http 与 mcp_server 的目标端鉴权在 Agent 配置中单独设置。",
           rate: "速率",
           rateValue: "按服务端配置",
-          createToken: "创建 Agent 自注册邀请",
-          status: "平台状态",
-          statusBody: "服务状态由公开探针实时检测；开发者文档不预设健康结论。",
+          userTokenSettings: "查看 User Token 状态",
+          agentTokenAccess: "管理 Agent Token",
+          status: "实例状态",
+          statusBody: "当前实例的服务状态由探针实时检测；开发者文档不预设健康结论。",
           viewStatus: "查看全部状态",
           languages: "支持的语言",
           sdkDocs: "查看 SDK 文档",
         }
       : {
-          title: "Five integration modes",
+          title: "Choose a path by purpose",
           hint: "Click a card to view code",
           bestFor: "Best for: ",
           copied: "Copied",
           copy: "Copy",
           checklist: "Checklist",
           simpleCurl: "Minimal cURL",
-          webhookEvents: "Delivery events",
-          configureDelivery: "Configure delivery targets →",
-          eventBody: "Run events are available over SSE. After you configure a delivery target, terminal events are POSTed to your Webhook URL with an HMAC signature.",
-          signature: "Signature:",
-          auth: "Auth Info",
+          auth: "User Token calls",
+          tokenStatus: "User Tokens are part of the defined Core contract. Local issuance, scope validation, and revocation are in progress; deployments with the external compatibility verifier can keep using existing ol_user_* tokens.",
+          agentAuth: "Agent connection credentials",
+          agentAuthBody: "Agent Node uses an Agent Token for registration and runtime identity. Target authentication for direct_http and mcp_server is configured separately on the Agent.",
           rate: "Rate",
           rateValue: "Server configured",
-          createToken: "Create Agent registration invite",
-          status: "Platform Status",
-          statusBody: "Service status is checked by public probes in real time; the docs do not assume health.",
+          userTokenSettings: "View User Token status",
+          agentTokenAccess: "Manage Agent Tokens",
+          status: "Instance status",
+          statusBody: "This instance is checked by probes in real time; the docs do not assume health.",
           viewStatus: "View all status",
           languages: "Supported languages",
           sdkDocs: "View SDK docs",
@@ -368,6 +368,7 @@ export function ConnectConsole({ locale = "zh" }: { locale?: Locale }) {
   );
 
   const localizedCurl = locale === "zh" ? curl : curl.replace("query\":\"hello", "query\":\"hello");
+  const isInvocation = mode === "sdk" || mode === "mcp";
 
   const copyToClipboard = async (text: string) => {
     if (navigator.clipboard?.writeText) {
@@ -449,6 +450,9 @@ export function ConnectConsole({ locale = "zh" }: { locale?: Locale }) {
                     <Icon name={m.icon} size="md" />
                   </span>
                   <div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.08em] text-[color:var(--ol-subtle)]">
+                      {mCopy.category}
+                    </div>
                     <div className="text-[14px] font-[900] text-[color:var(--ol-ink)]">{mCopy.label}</div>
                     <p className="mt-1.5 text-[12px] leading-snug text-[color:var(--ol-muted)]">
                       {mCopy.blurb}
@@ -502,77 +506,60 @@ export function ConnectConsole({ locale = "zh" }: { locale?: Locale }) {
               </div>
             </aside>
           </div>
-          <div className="border-t border-[color:var(--ol-line)] bg-white/70 p-5">
-            <div className="text-[13px] font-[900] text-[color:var(--ol-ink)]">{copy.simpleCurl}</div>
-            <pre className="mt-3 overflow-x-auto rounded-[14px] border border-[color:var(--ol-line)] bg-white p-4 text-[12.5px] leading-relaxed text-[color:var(--ol-ink)]">
-              <code>{localizedCurl}</code>
-            </pre>
-          </div>
+          {mode === "sdk" ? (
+            <div className="border-t border-[color:var(--ol-line)] bg-white/70 p-5">
+              <div className="text-[13px] font-[900] text-[color:var(--ol-ink)]">{copy.simpleCurl}</div>
+              <pre className="mt-3 overflow-x-auto rounded-[14px] border border-[color:var(--ol-line)] bg-white p-4 text-[12.5px] leading-relaxed text-[color:var(--ol-ink)]">
+                <code>{localizedCurl}</code>
+              </pre>
+            </div>
+          ) : null}
         </section>
 
-        <section className="ol-panel overflow-hidden">
-          <div className="ol-panel-head">
-            <strong>{copy.webhookEvents}</strong>
-            <Link
-              href="/connect?tab=delivery"
-              className="text-[11.5px] font-[800] text-[color:var(--ol-primary-dark)] hover:underline"
-            >
-              {copy.configureDelivery}
-            </Link>
-          </div>
-          <div className="p-5">
-            <p className="text-[12.5px] leading-[1.55] text-[color:var(--ol-muted)]">
-              {copy.eventBody}
-            </p>
-            <div className="mt-3 grid gap-1.5">
-              {events.map((e) => (
-                <div
-                  key={e.event}
-                  className="grid grid-cols-[180px_60px_minmax(0,1fr)] items-center gap-3 rounded-[10px] border border-[color:var(--ol-line)] bg-white px-3 py-2"
-                >
-                  <code className="truncate font-mono text-[12.5px] font-[900] text-[color:var(--ol-ink)]">
-                    {e.event}
-                  </code>
-                  <span className="ol-chip ol-chip-mint">POST</span>
-                  <span className="truncate text-[12.5px] text-[color:var(--ol-muted)]">{e.desc}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-3 rounded-[10px] bg-[color:var(--ol-soft)] p-3 font-mono text-[11.5px] text-[color:var(--ol-muted)]">
-              <b className="text-[color:var(--ol-ink)]">{copy.signature}</b>
-              X-OpenLinker-Signature: sha256={"{hmac_sha256(secret, body)}"}
-            </div>
-          </div>
-        </section>
       </div>
 
       <aside className="grid content-start gap-3.5 lg:sticky lg:top-24">
-        <div className="ol-panel ol-panel-pad">
-          <strong className="text-[14px] font-[900] text-[color:var(--ol-ink)]">{copy.auth}</strong>
-          <div className="mt-3 grid gap-2 text-[12px]">
-            {[
-              { l: "Base URL", v: "/mcp · /api/v1" },
-              { l: "Auth", v: "Bearer ol_user_..." },
-              { l: copy.rate, v: copy.rateValue },
-              { l: "Scope", v: "runs · agents · mcp" },
-              { l: "Timezone", v: "UTC · ISO8601" },
-            ].map((it) => (
-              <div key={it.l} className="grid grid-cols-[68px_1fr] gap-2">
-                <span className="text-[11.5px] font-[800] text-[color:var(--ol-muted)]">{it.l}</span>
-                <span className="truncate font-mono text-[11.5px] font-[900] text-[color:var(--ol-ink)]">
-                  {it.v}
-                </span>
-              </div>
-            ))}
+        {isInvocation ? (
+          <div className="ol-panel ol-panel-pad">
+            <strong className="text-[14px] font-[900] text-[color:var(--ol-ink)]">{copy.auth}</strong>
+            <p className="mt-2 text-[12px] leading-relaxed text-[color:var(--ol-muted)]">{copy.tokenStatus}</p>
+            <div className="mt-3 grid gap-2 text-[12px]">
+              {[
+                { l: "Base URL", v: "/mcp · /api/v1" },
+                { l: "Auth", v: "Bearer ol_user_..." },
+                { l: copy.rate, v: copy.rateValue },
+                { l: "Scope", v: "agents:read · agents:run · runs:read · tasks:write" },
+                { l: "Timezone", v: "UTC · ISO8601" },
+              ].map((it) => (
+                <div key={it.l} className="grid grid-cols-[68px_1fr] gap-2">
+                  <span className="text-[11.5px] font-[800] text-[color:var(--ol-muted)]">{it.l}</span>
+                  <span className="break-words font-mono text-[11.5px] font-[900] text-[color:var(--ol-ink)]">
+                    {it.v}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <Link
+              href="/settings/user-tokens"
+              className="ol-mini-btn mt-3 inline-flex w-full items-center justify-center gap-1.5 bg-[color:var(--ol-soft)] text-[color:var(--ol-ink)] hover:bg-[color:var(--ol-line)]"
+            >
+              <Icon name="key" size="sm" />
+              {copy.userTokenSettings}
+            </Link>
           </div>
-          <Link
-            href="/hub/access"
-            className="ol-mini-btn mt-3 inline-flex w-full items-center justify-center gap-1.5 bg-[color:var(--ol-soft)] text-[color:var(--ol-ink)] hover:bg-[color:var(--ol-line)]"
-          >
-            <Icon name="key" size="sm" />
-            {copy.createToken}
-          </Link>
-        </div>
+        ) : (
+          <div className="ol-panel ol-panel-pad">
+            <strong className="text-[14px] font-[900] text-[color:var(--ol-ink)]">{copy.agentAuth}</strong>
+            <p className="mt-2 text-[12px] leading-relaxed text-[color:var(--ol-muted)]">{copy.agentAuthBody}</p>
+            <Link
+              href="/hub/access"
+              className="ol-mini-btn mt-3 inline-flex w-full items-center justify-center gap-1.5 bg-[color:var(--ol-soft)] text-[color:var(--ol-ink)] hover:bg-[color:var(--ol-line)]"
+            >
+              <Icon name="bot" size="sm" />
+              {copy.agentTokenAccess}
+            </Link>
+          </div>
+        )}
 
         <div className="ol-panel ol-panel-pad">
           <strong className="text-[14px] font-[900] text-[color:var(--ol-ink)]">{copy.status}</strong>

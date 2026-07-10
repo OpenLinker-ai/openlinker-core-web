@@ -9,6 +9,7 @@ import { Icon } from "@/components/ui/icon";
 import { useApi } from "@/hooks/use-api";
 import { localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
+import { runErrorMessage } from "@/lib/i18n-labels";
 import { summarizeOutputText } from "./output-summary";
 import { ResultPanel } from "./result-panel";
 import { RunTrace } from "./run-trace";
@@ -83,27 +84,27 @@ export function PlaygroundRunner({
       locale === "zh"
         ? {
             authLoading: "正在读取登录状态，请稍候",
-            loginRequired: "请先登录后再运行 Agent",
+            loginRequired: "请先登录后再调用 Agent",
             invalidJson: "JSON 输入格式不正确",
             emptyInput: "请输入要发送给 Agent 的内容",
-            runStarted: "已启动运行，正在实时监听 Trace",
+            runStarted: "运行已启动，正在接收最新状态",
             success: (ms: number) => `调用成功 · 耗时 ${ms}ms`,
             canceled: "调用已取消",
             failed: "调用失败",
-            unknown: "未知错误",
             retry: "调用失败，请稍后再试",
-            threadTitle: "多轮调试",
-            threadLead: "每次发送都会保留输入、Agent 回复和对应 Run Trace。",
+            threadTitle: "会话记录",
+            threadLead: "每次发送都会保留输入、Agent 回复和对应的运行记录。",
             turnCount: (count: number) => `${count} 轮`,
             inputTitle: "继续对话",
             composeTitle: "浏览 Registry 选择其它 Agent",
             compose: "Registry",
-            price: (price: string) => `未来展示价 $${price}`,
-            free: "当前免费",
+            price: (price: string) => `外部参考价格 $${price} · 可选兼容元数据`,
+            noReferencePrice: "未提供外部参考价格 · 可选兼容元数据",
+            free: "OpenLinker Core 不据此扣费",
             placeholder: "输入问题，或粘贴 JSON input",
             running: "运行中…",
             syncing: "登录状态同步中…",
-            run: "发送并运行",
+            run: "发送并调用",
             emptyTitle: "还没有会话",
             emptyBody: "发送第一条消息后，这里会出现你的输入、Agent 回复和调用状态。",
             user: "你",
@@ -123,24 +124,24 @@ export function PlaygroundRunner({
             loginRequired: "Sign in before running an Agent",
             invalidJson: "JSON input is not valid",
             emptyInput: "Enter a message for the Agent",
-            runStarted: "Run started. Listening to Trace in real time.",
+            runStarted: "Run started. Receiving the latest status.",
             success: (ms: number) => `Run succeeded · ${ms}ms`,
             canceled: "Run canceled",
             failed: "Run failed",
-            unknown: "Unknown error",
             retry: "Run failed. Try again later.",
-            threadTitle: "Multi-turn Debugging",
-            threadLead: "Each send keeps the input, Agent response, and linked Run Trace together.",
+            threadTitle: "Conversation history",
+            threadLead: "Each send keeps the input, Agent response, and linked run record together.",
             turnCount: (count: number) => `${count} turns`,
             inputTitle: "Continue",
             composeTitle: "Browse Registry to choose another Agent",
             compose: "Registry",
-            price: (price: string) => `Future display price $${price}`,
-            free: "Free now",
+            price: (price: string) => `External reference price $${price} · optional compatibility metadata`,
+            noReferencePrice: "No external reference price provided · optional compatibility metadata",
+            free: "Not used for OpenLinker Core billing",
             placeholder: "Enter a message, or paste JSON input",
             running: "Running…",
             syncing: "Syncing sign-in state…",
-            run: "Send and run",
+            run: "Send and invoke",
             emptyTitle: "No conversation yet",
             emptyBody: "After the first message, your input, the Agent response, and run status appear here.",
             user: "You",
@@ -183,7 +184,9 @@ export function PlaygroundRunner({
   );
   const pollingTurnId = runningTurn?.id;
   const pollingRunId = runningTurn?.result?.run_id;
-  const priceUSD = (agent.price_per_call_cents / 100).toFixed(3);
+  const priceUSD = agent.price_per_call_cents > 0
+    ? (agent.price_per_call_cents / 100).toFixed(3)
+    : null;
 
   const handleRun = useCallback(async () => {
     if (authLoading) {
@@ -262,13 +265,7 @@ export function PlaygroundRunner({
         toast.success(copy.success(runData.duration_ms));
       } else {
         const verb = runData.status === "canceled" ? copy.canceled : copy.failed;
-        toast.error(
-          `${verb}: ${localizedErrorMessage(
-            new Error(String(runData.error_message ?? runData.error_code ?? "")),
-            locale,
-            copy.unknown,
-          )}`,
-        );
+        toast.error(`${verb}: ${runErrorMessage(runData.error_code, runData.error_message, locale)}`);
       }
     } catch (error) {
       const message = errorMessage(error, locale, copy.retry);
@@ -338,13 +335,7 @@ export function PlaygroundRunner({
         }
 
         const verb = latest.status === "canceled" ? copy.canceled : copy.failed;
-        toast.error(
-          `${verb}: ${localizedErrorMessage(
-            new Error(String(latest.error_message ?? latest.error_code ?? "")),
-            locale,
-            copy.unknown,
-          )}`,
-        );
+        toast.error(`${verb}: ${runErrorMessage(latest.error_code, latest.error_message, locale)}`);
       } catch {
         if (stopped) return;
         timer = setTimeout(poll, pollDelayMs);
@@ -450,7 +441,7 @@ export function PlaygroundRunner({
                 {copy.free}
               </span>
               <span className="text-[color:var(--ol-subtle)]">
-                {copy.price(priceUSD)}
+                {priceUSD ? copy.price(priceUSD) : copy.noReferencePrice}
               </span>
             </div>
 
@@ -872,11 +863,7 @@ function assistantTextForTurn(
   if (turn.status === "running") return pendingText;
   if (turn.result?.status === "success") return summarizeRunOutput(turn.result, locale);
   if (turn.result) {
-    return (
-      turn.result.error_message ??
-      turn.result.error_code ??
-      (locale === "zh" ? "Agent 未能完成本次调用。" : "The Agent could not complete this run.")
-    );
+    return runErrorMessage(turn.result.error_code, turn.result.error_message, locale);
   }
   if (turn.errorMessage) return turn.errorMessage;
   return pendingText;

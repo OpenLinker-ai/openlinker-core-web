@@ -7,18 +7,18 @@ import type { Locale } from "@/lib/i18n";
 
 const STEPS: Record<Locale, Array<{ n: string; title: string; detail: string }>> = {
   zh: [
-    { n: "1", title: "注册", detail: "Agent 所有者声明调用端点、能力和 Skill" },
-    { n: "2", title: "登记", detail: "保存后进入 /registry；验证走健康检查和 Benchmark" },
-    { n: "3", title: "调用", detail: "用户通过 Web、SDK 或 MCP 触发运行" },
-    { n: "4", title: "回写结果", detail: "端点返回输出 JSON" },
-    { n: "5", title: "投递", detail: "按投递目标推送到 Slack 或 Webhook" },
+    { n: "1", title: "接入", detail: "Agent 所有者选择连接模式，并声明能力和 Skill" },
+    { n: "2", title: "登记", detail: "保存到当前实例目录；只有公开 Agent 显示在 Registry" },
+    { n: "3", title: "调用", detail: "用户通过 Web，或在已配置 User Token 的部署中从 SDK / MCP 发起运行" },
+    { n: "4", title: "执行", detail: "当前实例按连接模式调度 Agent，并记录输出与事件" },
+    { n: "5", title: "投递", detail: "运行完成后，按需把结果发送到 Slack 或 Webhook" },
   ],
   en: [
-    { n: "1", title: "Register", detail: "Agent owner declares endpoint, capabilities, and Skills" },
-    { n: "2", title: "List", detail: "Saved Agents enter /registry; verification uses health and Benchmark evidence" },
-    { n: "3", title: "Run", detail: "Users trigger runs through Web, SDK, or MCP" },
-    { n: "4", title: "Return result", detail: "Endpoint returns output JSON" },
-    { n: "5", title: "Deliver", detail: "Delivery targets send to Slack or Webhook" },
+    { n: "1", title: "Connect", detail: "The Agent owner selects a connection mode and declares capabilities and Skills" },
+    { n: "2", title: "Register", detail: "Save to this instance; only public Agents appear in the Registry" },
+    { n: "3", title: "Invoke", detail: "Use the Web UI, or a User Token from SDK or MCP clients when the deployment supports it" },
+    { n: "4", title: "Execute", detail: "This instance dispatches by connection mode and records output and events" },
+    { n: "5", title: "Deliver", detail: "After the run, optionally send results to Slack or a Webhook" },
   ],
 };
 
@@ -29,19 +29,33 @@ export function ProtocolDiagram({ locale = "zh" }: { locale?: Locale }) {
     locale === "zh"
       ? {
           yourAgent: "你的 Agent",
+          connectionModes: "4 种连接模式",
+          directModes: "direct_http · mcp_server",
+          runtimeModes: "runtime_ws · runtime_pull",
           waiting: "已注册 · 等待调用",
           skills: "声明的 Skill",
-          running: "运行中",
-          runtimeEntries: "SSE / cURL / MCP 三类入口",
-          entries: "入口",
+          currentInstance: "当前实例",
+          running: "协调运行",
+          runtimeEntries: "统一运行 · 统一记录",
+          entries: "凭证与投递边界",
+          userToken: "User Token → API / MCP 调用",
+          agentToken: "Agent Token → Agent 注册 / 运行身份",
+          webhook: "Webhook → 结果投递",
         }
       : {
           yourAgent: "Your Agent",
+          connectionModes: "4 connection modes",
+          directModes: "direct_http · mcp_server",
+          runtimeModes: "runtime_ws · runtime_pull",
           waiting: "Registered · waiting for runs",
           skills: "Declared Skills",
-          running: "Running",
-          runtimeEntries: "SSE / cURL / MCP entry points",
-          entries: "Entry points",
+          currentInstance: "This instance",
+          running: "Coordinating runs",
+          runtimeEntries: "One run model · one record",
+          entries: "Credential and delivery boundary",
+          userToken: "User Token → API / MCP calls",
+          agentToken: "Agent Token → Agent onboarding / runtime identity",
+          webhook: "Webhook → result delivery",
         };
 
   useEffect(() => {
@@ -71,7 +85,7 @@ export function ProtocolDiagram({ locale = "zh" }: { locale?: Locale }) {
             </span>
             <div>
               <div className="text-[15px] font-[900] text-[color:var(--ol-ink)]">{copy.yourAgent}</div>
-              <div className="text-[12px] font-bold text-[color:var(--ol-muted)]">my-agent.example/run</div>
+              <div className="text-[12px] font-bold text-[color:var(--ol-muted)]">{copy.connectionModes}</div>
             </div>
           </div>
           <div className="mt-3 grid gap-1.5 text-[11.5px] text-[color:var(--ol-muted)]">
@@ -79,8 +93,8 @@ export function ProtocolDiagram({ locale = "zh" }: { locale?: Locale }) {
               <span className="inline-block h-2 w-2 rounded-full bg-[color:var(--ol-green)]" />
               <span className="font-bold">{copy.waiting}</span>
             </div>
-            <div className="font-mono text-[11px]">endpoint: HTTPS POST</div>
-            <div className="font-mono text-[11px]">auth: pre-shared header</div>
+            <div className="font-mono text-[11px]">{copy.directModes}</div>
+            <div className="font-mono text-[11px]">{copy.runtimeModes}</div>
           </div>
           <div className="mt-3">
             <div className="ol-kicker" style={{ fontSize: 10 }}>{copy.skills}</div>
@@ -133,7 +147,7 @@ export function ProtocolDiagram({ locale = "zh" }: { locale?: Locale }) {
               <Icon name="zap" size="lg" />
             </span>
             <div>
-              <div className="text-[15px] font-[900] text-[color:var(--ol-ink)]">OpenLinker</div>
+              <div className="text-[15px] font-[900] text-[color:var(--ol-ink)]">{copy.currentInstance}</div>
               <div className="text-[12px] font-bold text-[color:var(--ol-muted)]">/api/v1</div>
             </div>
           </div>
@@ -148,9 +162,9 @@ export function ProtocolDiagram({ locale = "zh" }: { locale?: Locale }) {
           <div className="mt-3">
             <div className="ol-kicker" style={{ fontSize: 10 }}>{copy.entries}</div>
             <div className="mt-1.5 grid gap-1 font-mono text-[11px] text-[color:var(--ol-ink)]">
-              <span>POST /runs</span>
-              <span>POST /mcp/run_agent</span>
-              <span>POST /runs/:id/deliver</span>
+              <span>{copy.userToken}</span>
+              <span>{copy.agentToken}</span>
+              <span>{copy.webhook}</span>
             </div>
           </div>
         </div>

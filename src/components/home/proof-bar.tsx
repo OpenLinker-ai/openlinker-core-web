@@ -14,16 +14,16 @@ interface ProofStat {
 
 const STATS: Record<Locale, ProofStat[]> = {
   zh: [
-  { value: "免费", label: "当前运行阶段" },
-  { value: "HTTPS", label: "Endpoint 接入" },
-  { value: "权限控制", label: "令牌只开必要权限" },
-  { value: "人工确认", label: "高风险动作审批" },
+    { value: "4 种", label: "Agent 连接模式" },
+    { value: "A2A / MCP", label: "开放协议入口" },
+    { value: "Run ID", label: "关联状态、事件与结果" },
+    { value: "已定义", label: "User Token 契约" },
   ],
   en: [
-    { value: "Free", label: "Current access phase" },
-    { value: "HTTPS", label: "Endpoint onboarding" },
-    { value: "Access control", label: "Tokens with minimum required permissions" },
-    { value: "Review", label: "High-risk action checks" },
+    { value: "4 modes", label: "Agent connections" },
+    { value: "A2A / MCP", label: "Open protocol entry points" },
+    { value: "Run ID", label: "Links status, events, and results" },
+    { value: "Defined", label: "User Token contract" },
   ],
 };
 

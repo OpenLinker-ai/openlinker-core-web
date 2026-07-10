@@ -3,70 +3,70 @@ import { Topbar } from "@/components/layout/topbar";
 import { getLocale } from "@/lib/i18n-server";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy",
-  description: "OpenLinker privacy policy",
+  title: "Data and Privacy",
+  description: "Data and privacy notes for a self-hosted OpenLinker Core instance",
 };
 
 const COPY = {
   zh: {
-    kicker: "Privacy Policy",
-    heading: "OpenLinker 隐私政策",
-    lead: "生效日期：2026-05-30。本政策说明 OpenLinker 在账号注册、Agent 发布、运行调用、MCP 调用和 A2A 协作中如何收集、使用和保护信息。",
+    kicker: "Data & Privacy",
+    heading: "本实例的数据与隐私说明",
+    lead: "OpenLinker Core Web 是自托管软件。本页说明软件可能处理的数据范围；具体的处理目的、保存期限、访问权限和联系渠道由当前实例运营方确定。",
     sections: [
       {
-        title: "我们收集的信息",
-        body: "我们会处理账号邮箱、显示名称、登录会话、Agent 所有者 / Agent 配置、Skill 声明、运行输入输出、运行事件、调用历史、访问令牌元数据和必要的安全日志。访问令牌明文仅在创建时展示一次，服务端只保存不可逆哈希和前缀。",
+        title: "谁负责本实例的数据",
+        body: "部署并运营本实例的组织或个人决定账号如何开通、哪些日志会被记录、数据保留多久以及谁可以访问。OpenLinker 开源项目维护者默认不会接收你的实例账号、Agent 配置或运行数据。",
       },
       {
-        title: "我们如何使用信息",
-        body: "信息用于提供账号登录、Agent 发现与调用、MCP 工具调用、A2A 调用链展示、运行记录、问题排查、安全风控和服务改进。我们不会出售个人信息。",
+        title: "Core 可能处理的数据",
+        body: "为提供登录、Agent 管理和运行能力，实例可能处理账号邮箱、显示名称、登录会话、Agent 与 Skill 配置、运行输入输出、运行事件、调用历史和安全日志。实例启用本地 User Token 后，还会处理 Token 前缀、scope 和使用元数据；按既定契约，明文只在创建时返回一次，服务端保存哈希。",
       },
       {
-        title: "Agent 与第三方服务",
-        body: "当你调用第三方或服务提供方提供的 Agent 时，OpenLinker 会把必要的运行输入、metadata 和 run_id 转发给对应 Agent。请不要提交不必要的敏感信息；Agent 所有者和服务提供方也应遵守其自身对用户数据的保密和安全义务。",
+        title: "数据如何流向 Agent",
+        body: "浏览器会把操作发送到本实例配置的 Core API。发起调用时，Core 会把完成任务所需的输入、metadata 和 run_id 发送给目标 Agent；该 Agent 可能由本实例运营方、你的团队或第三方运行。提交数据前，请确认目标 Agent 及其数据处理规则。",
       },
       {
-        title: "Cookie 与会话",
-        body: "我们使用必要 Cookie 维持登录会话、防止未授权访问并保障站点运行。当前版本不使用广告追踪 Cookie。",
+        title: "Cookie、令牌与敏感信息",
+        body: "Core Web 使用必要 Cookie 维持登录会话。User Token、Agent 接入凭证和回调密钥应按密钥管理，不要写入公开 Issue、截图或运行输入。实例运营方可以在部署层增加自己的分析、代理或安全组件，这些组件应另行说明。",
       },
       {
-        title: "数据保留与删除",
-        body: "账号、Agent 和运行记录会在提供服务所需期间保留。你可以联系我们请求导出、删除或更正与账号相关的数据；法律、安全、审计或争议处理要求保留的记录除外。",
+        title: "保留、更正与删除",
+        body: "账号、Agent、运行记录和日志的保存周期由实例运营方配置并执行。如需查询、更正、导出或删除数据，请联系当前实例运营方；开源项目维护者无法直接访问或处理独立部署中的数据。",
       },
       {
-        title: "联系我们",
-        body: "隐私问题请联系 privacy@openlinker.ai。安全问题请提供可复现信息和影响范围，方便我们尽快处理。",
+        title: "运营方责任与联系渠道",
+        body: "实例运营方负责配置 TLS、访问控制、备份、日志和保留策略，并根据适用要求提供隐私联系渠道。账号、数据或实例使用问题请联系该运营方；开源软件安全问题请按仓库 SECURITY 文档报告。",
       },
     ],
   },
   en: {
-    kicker: "Privacy Policy",
-    heading: "OpenLinker Privacy Policy",
-    lead: "Effective date: 2026-05-30. This policy explains how OpenLinker collects, uses, and protects information during account registration, Agent publishing, run invocation, MCP calls, and A2A collaboration.",
+    kicker: "Data & Privacy",
+    heading: "Data and Privacy for This Instance",
+    lead: "OpenLinker Core Web is self-hosted software. This page describes the data the software may handle; the operator of this instance determines the purpose, retention period, access rules, and contact channel.",
     sections: [
       {
-        title: "Information We Collect",
-        body: "We process account email, display name, login sessions, Agent owner / Agent configuration, Skill declarations, run inputs and outputs, run events, call history, access-token metadata, and necessary security logs. Plain access tokens are shown only once at creation; the server stores only irreversible hashes and prefixes.",
+        title: "Who Is Responsible for Instance Data",
+        body: "The organization or person deploying this instance decides how accounts are created, which logs are recorded, how long data is retained, and who can access it. The OpenLinker open-source maintainers do not receive your instance accounts, Agent configuration, or run data by default.",
       },
       {
-        title: "How We Use Information",
-        body: "Information is used for sign-in, Agent discovery and invocation, MCP tool calls, A2A trace display, run records, troubleshooting, security controls, and service improvement. We do not sell personal information.",
+        title: "Data Core May Process",
+        body: "To provide sign-in, Agent management, and runs, an instance may process account email, display name, login sessions, Agent and Skill configuration, run inputs and outputs, run events, call history, and security logs. After local User Tokens are enabled, it also processes token prefixes, scopes, and usage metadata; under the defined contract, plaintext is returned only at creation and the server stores a hash.",
       },
       {
-        title: "Agents and Third-Party Services",
-        body: "When you invoke an Agent provided by a third party or service provider, OpenLinker forwards the necessary run input, metadata, and run_id to that Agent. Do not submit unnecessary sensitive information; Agent owners and service providers must also honor their own confidentiality and security obligations.",
+        title: "How Data Reaches an Agent",
+        body: "The browser sends actions to the Core API configured for this instance. When you start a run, Core sends the input, metadata, and run_id required for the task to the target Agent. That Agent may be operated by the instance operator, your team, or a third party. Review the target Agent and its data practices before submitting data.",
       },
       {
-        title: "Cookies and Sessions",
-        body: "We use necessary cookies to maintain login sessions, prevent unauthorized access, and keep the site running. The current version does not use advertising tracking cookies.",
+        title: "Cookies, Tokens, and Sensitive Data",
+        body: "Core Web uses a necessary cookie to maintain the sign-in session. Treat User Tokens, Agent onboarding credentials, and callback secrets as credentials; do not put them in public issues, screenshots, or run inputs. An operator may add analytics, proxy, or security components at deployment time and should document those separately.",
       },
       {
-        title: "Data Retention and Deletion",
-        body: "Accounts, Agents, and run records are retained while needed to provide the service. You may contact us to request export, deletion, or correction of account-related data, except records retained for legal, security, audit, or dispute purposes.",
+        title: "Retention, Correction, and Deletion",
+        body: "The instance operator configures and enforces retention for accounts, Agents, run records, and logs. Contact that operator to request access, correction, export, or deletion. The open-source maintainers cannot directly access or act on data held in an independent deployment.",
       },
       {
-        title: "Contact",
-        body: "For privacy questions, contact privacy@openlinker.ai. For security issues, include reproducible details and impact scope so we can respond efficiently.",
+        title: "Operator Responsibilities and Contact",
+        body: "The instance operator is responsible for TLS, access controls, backups, logging, retention, and a privacy contact appropriate for the deployment. Contact the operator for account, data, or instance questions. Report open-source software vulnerabilities through the repository SECURITY document.",
       },
     ],
   },

@@ -24,8 +24,8 @@ const SOURCES: readonly SourceCardSpec[] = [
     iconClass: "",
     title: { zh: "HTTP Endpoint", en: "HTTP Endpoint" },
     desc: {
-      zh: "填写可调用的 HTTPS 地址，平台负责调用与记录；当前运行免费。",
-      en: "Provide a callable HTTPS URL. OpenLinker handles invocation and run history. Current runs are free.",
+      zh: "填写可调用的 HTTPS 地址，当前实例负责发起调用并记录 Run。",
+      en: "Provide a callable HTTPS URL. This OpenLinker Core instance invokes it and records each Run.",
     },
   },
   {
@@ -54,7 +54,7 @@ const SOURCES: readonly SourceCardSpec[] = [
     iconClass: "amber",
     title: { zh: "已有 MCP 工具（高级）", en: "Existing MCP tool (advanced)" },
     desc: {
-      zh: "用于把已有远程 HTTP JSON-RPC / MCP 工具包装成 Agent，不是发布独立 MCP Server 的入口。",
+      zh: "用于把已有远程 HTTP JSON-RPC / MCP 工具包装成 Agent，不是独立部署 MCP Server 的入口。",
       en: "Not the MCP Server listing flow. Use only to wrap a remote HTTP JSON-RPC / MCP tool as an Agent.",
     },
   },

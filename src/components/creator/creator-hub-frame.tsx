@@ -47,7 +47,7 @@ const NAV_ITEMS: ReadonlyArray<{
   {
     id: "skills",
     label: { zh: "Skill 声明", en: "Skill Claims" },
-    desc: { zh: "能力标签、市场匹配", en: "Capabilities, matching" },
+    desc: { zh: "能力声明、Registry 筛选", en: "Capabilities, Registry filters" },
     href: "/hub/skills",
   },
 ];
@@ -70,22 +70,22 @@ export function CreatorHubFrame({
       ? {
           mine: "我的",
           creator: "Agent 管理",
-          kicker: coreCopy ? "Core 供给" : "Agent 所有者工作台 · 我管理的能力",
-          heading: coreCopy ? "Agent 管理 · Agent、接入凭证与 Skill" : "Agent 管理 · Agent、接入凭证、Bridge、审批与 Skill",
+          kicker: coreCopy ? "自托管 Agent 管理" : "Agent 所有者工作台",
+          heading: coreCopy ? "接入、验证并维护你的 Agent" : "管理你拥有的 Agent",
           lead: coreCopy
-            ? "管理开源 core 需要的 Agent 供给能力：发布、认证、运行记录、注册邀请、跨节点 Bridge 和 Skill 声明。"
-            : "管理你拥有的 Agent：发布状态、可见性、接入凭证、跨节点 Bridge、审批和 Skill 声明。",
-          publish: "+ 发布 Agent",
+            ? "在一个工作区管理 Agent 状态、连接方式、接入凭证、Skill、Benchmark、运行记录与跨节点同步。"
+            : "查看 Agent 状态，维护连接方式、接入凭证、跨节点同步、审批和 Skill 声明。",
+          publish: "+ 接入 Agent",
         }
       : {
           mine: "My",
           creator: "Agent Console",
-          kicker: coreCopy ? "core supply" : "Agent owner workspace · What I manage",
-          heading: coreCopy ? "Agent Console · Agents, Credentials, and Skills" : "Agent Console · Agents, Credentials, Bridge, Approvals, and Skills",
+          kicker: coreCopy ? "Self-hosted Agent Console" : "Agent owner workspace",
+          heading: coreCopy ? "Connect, verify, and maintain your Agents" : "Manage the Agents you own",
           lead: coreCopy
-            ? "Manage the Agent supply capabilities required by open-source core: publishing, verification, runs, registration invites, cross-node Bridge, and Skill claims."
-            : "Manage the Agents you own: publishing state, visibility, credentials, cross-node Bridge, approvals, and Skill claims.",
-          publish: "+ Publish Agent",
+            ? "Manage Agent status, connection modes, onboarding credentials, Skills, benchmarks, run records, and cross-node sync in one workspace."
+            : "Review Agent status and maintain connection modes, credentials, cross-node sync, approvals, and Skill claims.",
+          publish: "+ Connect Agent",
         };
 
   return (
@@ -145,33 +145,33 @@ export function CreatorHubGuide({
   const content =
     locale === "zh"
       ? {
-          title: coreCopy ? "Core 前端边界" : "功能边界",
+          title: coreCopy ? "从接入到运行" : "Agent 管理指南",
           body: coreCopy
-            ? "core-web 只维护开源 core 可以独立运行的供给、发布与运行能力。"
-            : "Agent 管理负责所有者自己的 Agent 供给、接入凭证、跨节点 Bridge 和审批。不同页面只加载自己的数据。",
+            ? "这里集中管理自托管实例中的 Agent、接入凭证、开放协议配置和运行记录。"
+            : "这里集中管理你拥有的 Agent、接入凭证、跨节点同步和审批。",
           guide: {
-            agents: "Agent 列表会加载统计和筛选数据，适合处理大量供给项。",
-            access: "注册邀请页只创建一次性 Agent 接入凭证，不再预加载凭证列表或审批列表。",
-            tokens: "Agent 接入凭证页只读取凭证列表，支持分页、排序和撤销。",
-            bridge: "跨节点 Bridge 页只读取 Registry Node 与 Listing，用于把可公开同步的 Agent 供给到其他节点。",
-            approvals: "审批页只读取待处理高风险动作，空列表也会快速返回。",
-            skills: "Skill 声明页才加载 Agent 详情和能力标签。",
+            agents: "查看每个 Agent 的状态、连接方式、调用统计和管理入口。",
+            access: "生成限时接入凭证；明文仅显示一次，注册后同一个 Agent Token 继续作为运行身份。",
+            tokens: "查看接入凭证的状态，并撤销不再使用的凭证。",
+            bridge: "选择 Registry Node，把允许公开的 Agent 条目同步到其他节点。",
+            approvals: "集中确认需要人工审核的高风险动作。",
+            skills: "为 Agent 声明 Skill，便于 Registry 检索和能力校验。",
           } satisfies Record<CreatorHubSection, string>,
           bridge: "跨节点 Bridge",
           bridgeHref: "/hub/bridge",
         }
       : {
-          title: coreCopy ? "Core frontend boundary" : "Section boundary",
+          title: coreCopy ? "From connection to runs" : "Agent Console guide",
           body: coreCopy
-            ? "core-web only maintains supply, publishing, and run capabilities that open-source core can operate independently."
-            : "Agent Console owns the Agent owner's supply, credentials, cross-node Bridge, and approvals. Each page loads only its own data.",
+            ? "Manage Agents, onboarding credentials, open-protocol settings, and run records for this self-hosted instance."
+            : "Manage the Agents you own, their credentials, cross-node sync, and approvals.",
           guide: {
-            agents: "The Agent list loads stats and filters for larger supply sets.",
-            access: "The registration invite page only creates one-time Agent access credentials; it does not preload credential or approval lists.",
-            tokens: "Agent Credentials only reads the credential list, with pagination, sorting, and revoke actions.",
-            bridge: "Cross-node Bridge only reads Registry Nodes and Listings to supply bridgeable Agents to other nodes.",
-            approvals: "Approvals only reads pending high-risk actions, so an empty list returns quickly.",
-            skills: "Skill claims is the only page that loads Agent details and capability tags.",
+            agents: "Review each Agent's status, connection mode, call metrics, and management entry points.",
+            access: "Create a time-limited credential whose plaintext is shown once; the same Agent Token becomes the runtime identity after registration.",
+            tokens: "Review credential status and revoke credentials that are no longer needed.",
+            bridge: "Choose a Registry Node and sync Agent records that are allowed to be public.",
+            approvals: "Review high-risk actions that require a person to approve them.",
+            skills: "Declare Agent Skills for Registry search and capability checks.",
           } satisfies Record<CreatorHubSection, string>,
           bridge: "Cross-node Bridge",
           bridgeHref: "/hub/bridge",

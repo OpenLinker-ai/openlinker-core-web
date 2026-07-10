@@ -33,7 +33,7 @@ const EMPTY_DASHBOARD: DashboardData = {
 
 export const metadata = {
   title: "Runs",
-  description: "OpenLinker Core run history",
+  description: "Run history, events, and results for this OpenLinker Core instance",
 };
 
 export default async function RunsPage({
@@ -53,40 +53,38 @@ export default async function RunsPage({
       ? {
           my: "我的",
           current: "运行记录",
-          kicker: "core runs",
-          heading: "运行记录 · 调用与事件",
-          lead: "这里展示 core 自己维护的运行历史。钱包、充值、计费和商业版 User Token 不属于 core-web。",
+          kicker: "运行中心",
+          heading: "每次 Agent 调用，都有记录可查",
+          lead: "集中查看由网页、API、MCP、A2A 和工作流发起的运行。通过 Run ID 进入详情，核对状态、事件和最终结果。",
           callsMonth: "本月调用",
           callsTotal: "累计调用",
-          agents: "Registry",
-          mode: "前端模式",
-          coreOnly: "Core only",
+          mode: "记录来源",
+          coreOnly: "当前 Core 实例",
           unavailable: "运行概览暂时不可用，列表仍会尽量加载。",
           runTitle: "最近运行",
           emptyText: "还没有运行记录。",
           emptyAction: "打开 Registry ->",
-          connect: "发布 Agent",
-          connectBody: "如果你是 Agent 所有者，可以发布 HTTP Endpoint、Agent Node WebSocket 或 Pull 降级 Agent。",
-          connectAction: "发布新 Agent",
+          connect: "接入 Agent",
+          connectBody: "如果你是 Agent 所有者，可以接入 HTTP、MCP、Agent Node WebSocket 或 Pull 模式的 Agent。",
+          connectAction: "接入新 Agent",
         }
       : {
           my: "My",
           current: "Runs",
-          kicker: "core runs",
-          heading: "Runs · Calls and events",
-          lead: "This page shows run history maintained by core. Wallets, charges, billing, and commercial User Tokens are not part of core-web.",
+          kicker: "Run center",
+          heading: "A record for every Agent call",
+          lead: "Review runs started from the web, API, MCP, A2A, and workflows. Open a Run ID to inspect its status, events, and final result.",
           callsMonth: "Calls this month",
           callsTotal: "Total calls",
-          agents: "Registry",
-          mode: "Frontend mode",
-          coreOnly: "Core only",
+          mode: "Record source",
+          coreOnly: "This Core instance",
           unavailable: "Run overview is temporarily unavailable; the list will still try to load.",
           runTitle: "Recent Runs",
           emptyText: "No run records yet.",
           emptyAction: "Open Registry ->",
-          connect: "Publish Agent",
-          connectBody: "Agent owners can publish HTTP Endpoint, Agent Node WebSocket, or Pull fallback Agents.",
-          connectAction: "Publish new Agent",
+          connect: "Connect an Agent",
+          connectBody: "Agent owners can connect Agents over HTTP, MCP, Agent Node WebSocket, or Pull mode.",
+          connectAction: "Connect a new Agent",
         };
 
   const [dashboard, runs] = await Promise.all([

@@ -13,7 +13,7 @@ import { getLocale } from "@/lib/i18n-server";
 
 export const metadata = {
   title: "Developer Center",
-  description: "OpenLinker API, MCP, A2A, and delivery docs",
+  description: "OpenLinker Agent connection, API/MCP invocation, A2A, and delivery docs",
 };
 
 type ConnectTab = "overview" | "mcp" | "delivery";
@@ -32,8 +32,8 @@ const CONNECT_TABS: ReadonlyArray<{
   },
   {
     id: "mcp",
-    label: { zh: "MCP / API 调用", en: "MCP / API Calls" },
-    desc: { zh: "令牌、run_agent、get_run", en: "Tokens, run_agent, get_run" },
+    label: { zh: "接入与调用", en: "Connection & calls" },
+    desc: { zh: "Agent 连接、User Token、SDK、MCP", en: "Agent connection, User Tokens, SDK, MCP" },
     href: "/connect?tab=mcp",
   },
   {
@@ -65,16 +65,16 @@ export default async function ConnectPage({
       ? {
           home: "首页",
           current: "开发者中心",
-          heading: "面向调用方的 API、MCP 与 A2A 集成文档",
-          lead: "这里说明如何调用 OpenLinker、接入 MCP/API 客户端、配置投递目标和理解 A2A 调用链。发布或桥接自己的 Agent 请走“Agent 管理”。",
+          heading: "Agent 接入、调用与结果投递",
+          lead: "这里把三类方向分开说明：Agent 如何接入当前实例，应用或 MCP 客户端如何调用 Agent，以及终态结果如何投递。完整的 Agent 管理仍在“Agent 管理”。",
           loginTitle: "登录后配置投递目标",
           loginDesc: "Webhook 和 Slack 投递目标属于账号配置。你可以先阅读接入方式，登录后再添加、删除或设为默认目标。",
         }
       : {
           home: "Home",
           current: "Developer Center",
-          heading: "API, MCP, and A2A integration docs for callers",
-          lead: "Use this area to call OpenLinker, connect MCP/API clients, configure delivery targets, and understand A2A call chains. To publish or bridge your own Agent, use Agent Console.",
+          heading: "Agent connection, invocation, and result delivery",
+          lead: "This area separates three directions: how Agents connect to this instance, how apps or MCP clients invoke them, and how terminal results are delivered. Use Agent Console for full Agent management.",
           loginTitle: "Sign in to configure delivery targets",
           loginDesc: "Webhook and Slack delivery targets are account settings. You can read the docs first, then sign in to add, delete, or set a default target.",
         };
@@ -149,14 +149,14 @@ function ConnectResources({ signedIn, locale }: { signedIn: boolean; locale: Loc
   const resources =
     locale === "zh"
       ? [
-          { href: signedIn ? "/hub" : "/login?callbackUrl=/hub", title: "Agent 管理", desc: "发布、桥接和维护你拥有的 Agent。" },
+          { href: signedIn ? "/hub" : "/login?callbackUrl=/hub", title: "Agent 管理", desc: "接入、桥接和维护你拥有的 Agent。" },
           { href: "/skills", title: "Skill 注册表", desc: "查看 Agent 声明、Benchmark 和运行证据共用的能力标签。" },
-          { href: "/status", title: "平台状态", desc: "检查 API、Registry、外部投递和运行链路的状态说明。" },
+          { href: "/status", title: "实例状态", desc: "检查当前实例的 API、Registry、外部投递和运行链路。" },
         ]
       : [
-          { href: signedIn ? "/hub" : "/login?callbackUrl=/hub", title: "Agent Console", desc: "Publish, bridge, and maintain the Agents you own." },
+          { href: signedIn ? "/hub" : "/login?callbackUrl=/hub", title: "Agent Console", desc: "Connect, bridge, and maintain the Agents you own." },
           { href: "/skills", title: "Skill registry", desc: "Review capability tags shared by Agent declarations, Benchmarks, and run evidence." },
-          { href: "/status", title: "Platform status", desc: "Check API, Registry, webhook delivery, and run path status." },
+          { href: "/status", title: "Instance status", desc: "Check this instance's API, Registry, webhook delivery, and run paths." },
         ];
 
   return (

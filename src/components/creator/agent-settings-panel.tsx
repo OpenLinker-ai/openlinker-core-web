@@ -105,7 +105,9 @@ function statusLabel(agent: EditableAgent, locale: Locale): string {
   if (agent.lifecycle_status === "disabled") {
     return lifecycleStatusLabel(agent.lifecycle_status, locale);
   }
-  return `${visibilityLabel(agent.visibility, locale)} · ${certificationStatusLabel(agent.certification_status, locale)}`;
+  const certification = certificationStatusLabel(agent.certification_status, locale);
+  const scopedCertification = locale === "zh" ? `实例认证：${certification}` : `Instance certification: ${certification}`;
+  return `${visibilityLabel(agent.visibility, locale)} · ${scopedCertification}`;
 }
 
 function isEditableAgentCallable(agent: EditableAgent): boolean {
@@ -124,7 +126,7 @@ function validateForm(form: FormState, locale: Locale): string | null {
       ? {
           name: "名称需要 3 到 80 个字符",
           desc: "描述不能超过 500 个字符",
-          price: "价格必须是 0 到 1000000 之间的整数分",
+          price: "外部参考价格必须是 0 到 1000000 之间的整数分",
           tags: "标签需要 1 到 5 个，每个 2 到 30 个字符",
           endpoint: "direct_http / mcp_server 需要填写 endpoint URL",
           mcpTool: "mcp_server 需要填写 MCP tool name",
@@ -133,7 +135,7 @@ function validateForm(form: FormState, locale: Locale): string | null {
       : {
           name: "Name must be 3 to 80 characters",
           desc: "Description must be 500 characters or fewer",
-          price: "Price must be an integer between 0 and 1000000 cents",
+          price: "External reference price must be an integer between 0 and 1000000 cents",
           tags: "Use 1 to 5 tags, each 2 to 30 characters",
           endpoint: "direct_http / mcp_server requires an endpoint URL",
           mcpTool: "mcp_server requires an MCP tool name",
@@ -172,83 +174,87 @@ export function AgentSettingsPanel({ agent, locale }: Props) {
     locale === "zh"
       ? {
           basics: "基础信息",
-          basicsDesc: "这些字段由作者维护，会影响市场展示、匹配和调用入口。",
+          basicsDesc: "这些字段由所有者维护，会影响 Registry 展示、匹配和调用入口。",
           name: "Agent 名称",
           description: "描述",
           tags: "标签",
           tagsHint: "逗号或换行分隔，最多 5 个。",
-          price: "价格（分/次）",
+          price: "外部参考价格（分/次，可选）",
+          priceHint: "兼容外部目录的可选资料字段；OpenLinker Core 不会据此扣费。",
           connection: "调用连接",
           connectionDesc: "修改 endpoint 或连接模式后，建议回到接入配置运行 dry-run。",
           mode: "连接模式",
           endpoint: "Endpoint URL",
-          endpointRuntimeHint: "runtime_ws / runtime_pull 使用平台生成的运行时地址，保存时会按 slug 自动归一化。",
+          endpointRuntimeHint: "runtime_ws / runtime_pull 使用当前实例生成的运行时地址，保存时会按 slug 自动归一化。",
           mcpTool: "MCP tool name",
           authHeader: "Endpoint 鉴权 Header",
           authPlaceholder: "留空表示保留当前密钥",
           clearAuth: "清除已有鉴权 Header",
-          publish: "发布与可见性",
-          visibility: "市场可见性",
-          public: "公开：出现在市场列表，可被搜索和直连访问",
-          unlisted: "链接可见：不进市场列表，但直链和 Agent Card 可访问",
+          publish: "可见性",
+          visibility: "Registry 可见性",
+          public: "公开：出现在 Registry 列表，可被搜索和直连访问",
+          unlisted: "链接可见：不进 Registry 列表，但直链和 Agent Card 可访问",
           private: "私有：仅作者和授权流程可见",
-          platform: "平台状态",
+          platform: "实例状态",
           slug: "固定 slug",
           slugHint: "slug 是 A2A、Agent Card 和外部链接的稳定标识，不能在设置里修改。",
           lifecycle: "生命周期",
-          certification: "认证状态",
-          disabledHint: "已下架 Agent 当前不可由所有者编辑，需要平台恢复 active 后才能保存。",
-          certifiedHint: "认证状态由平台评审控制；核心能力变化后应重新测评或复审。",
+          certification: "实例认证状态",
+          disabledHint: "已停用的 Agent 当前不可由所有者编辑，需要实例管理员恢复启用后才能保存。",
+          certifiedHint: "实例认证由当前实例管理员维护；核心能力变化后应重新测评或复审。",
           save: "保存修改",
           saving: "保存中...",
           saved: "已保存",
           failed: "保存失败，请稍后再试",
           onboarding: "接入配置",
-          publicPage: "公开页",
+          publicPage: "Agent 详情",
           playground: "Playground",
-          playgroundUnavailable: "离线不可试用",
+          playgroundUnavailable: "暂不可调用",
           calls: "累计调用",
-          revenue: "累计收入",
+          pricingStatus: "外部参考价格",
+          notBilled: "可选元数据",
         }
       : {
           basics: "Basic information",
-          basicsDesc: "Owner-managed fields used for marketplace display, matching, and invocation.",
+          basicsDesc: "Owner-managed fields used for Registry display, matching, and invocation.",
           name: "Agent name",
           description: "Description",
           tags: "Tags",
           tagsHint: "Separate with commas or line breaks, up to 5.",
-          price: "Price (cents/call)",
+          price: "External reference price (cents/invocation, optional)",
+          priceHint: "Optional compatibility metadata for external directories. OpenLinker Core does not use it for billing.",
           connection: "Invocation connection",
           connectionDesc: "After changing endpoint or connection mode, run a dry-run from onboarding.",
           mode: "Connection mode",
           endpoint: "Endpoint URL",
-          endpointRuntimeHint: "runtime_ws / runtime_pull use platform-generated runtime URLs normalized from the slug on save.",
+          endpointRuntimeHint: "runtime_ws / runtime_pull use instance-generated runtime URLs normalized from the slug on save.",
           mcpTool: "MCP tool name",
           authHeader: "Endpoint auth header",
           authPlaceholder: "Leave blank to keep the current secret",
           clearAuth: "Clear existing auth header",
-          publish: "Publishing and visibility",
-          visibility: "Marketplace visibility",
-          public: "Public: listed in the marketplace and searchable",
+          publish: "Visibility",
+          visibility: "Registry visibility",
+          public: "Public: listed in the Registry and searchable",
           unlisted: "Unlisted: hidden from listing but available by direct link and Agent Card",
           private: "Private: visible only to the owner and authorized flows",
-          platform: "Platform state",
+          platform: "Instance state",
           slug: "Fixed slug",
           slugHint: "Slug is the stable identifier for A2A, Agent Card, and external links. It is not editable here.",
           lifecycle: "Lifecycle",
-          certification: "Certification",
-          disabledHint: "Disabled Agents cannot be edited by the owner until the platform restores them to active.",
-          certifiedHint: "Certification is platform-controlled; major capability changes should be re-tested or reviewed.",
+          certification: "Instance certification",
+          disabledHint: "Disabled Agents cannot be edited by the owner until an instance administrator restores them to active.",
+          certifiedHint: "Instance certification is maintained by this instance's operator; major capability changes should be re-tested or reviewed.",
           save: "Save changes",
           saving: "Saving...",
           saved: "Saved",
           failed: "Save failed. Please try again later.",
           onboarding: "Onboarding",
-          publicPage: "Public page",
+          publicPage: "Agent detail",
           playground: "Playground",
-          playgroundUnavailable: "Offline",
-          calls: "total calls",
-          revenue: "total revenue",
+          playgroundUnavailable: "Not callable",
+          calls: "total invocations",
+          pricingStatus: "External reference price",
+          notBilled: "Optional metadata",
         };
 
   const disabled = agentState.lifecycle_status === "disabled";
@@ -341,6 +347,7 @@ export function AgentSettingsPanel({ agent, locale }: Props) {
                   value={form.pricePerCallCents}
                   onChange={(event) => updateForm("pricePerCallCents", event.target.value)}
                 />
+                <p className="ol-publish-field-hint">{copy.priceHint}</p>
               </label>
             </div>
 
@@ -552,10 +559,8 @@ export function AgentSettingsPanel({ agent, locale }: Props) {
               {copy.calls}
             </div>
             <div className="rounded-xl bg-[color:var(--ol-soft)] p-3">
-              <strong className="block text-[18px] text-[color:var(--ol-ink)]">
-                ${(agentState.total_revenue_cents / 100).toFixed(2)}
-              </strong>
-              {copy.revenue}
+              <strong className="block text-[18px] text-[color:var(--ol-ink)]">{copy.notBilled}</strong>
+              {copy.pricingStatus}
             </div>
           </div>
         </div>
