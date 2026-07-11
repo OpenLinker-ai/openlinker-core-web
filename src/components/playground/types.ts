@@ -13,4 +13,5 @@ export interface RunResult {
   error_message?: string;
   cost_cents: number;
   duration_ms: number;
+  replayed: boolean;
 }

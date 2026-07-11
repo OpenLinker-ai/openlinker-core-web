@@ -10,6 +10,10 @@ import { useApi } from "@/hooks/use-api";
 import { localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
 import { runErrorMessage } from "@/lib/i18n-labels";
+import {
+  acquireRunCreationIntent,
+  completeRunCreationIntent,
+} from "@/lib/run-idempotency";
 import { summarizeOutputText } from "./output-summary";
 import { ResultPanel } from "./result-panel";
 import { RunTrace } from "./run-trace";
@@ -170,6 +174,7 @@ export function PlaygroundRunner({
   const [turns, setTurns] = useState<PlaygroundTurn[]>([]);
   const [activeTurnId, setActiveTurnId] = useState("");
   const autoRunStarted = useRef(false);
+  const creationInFlight = useRef(false);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -213,37 +218,61 @@ export function PlaygroundRunner({
     const previousTurns = turns;
     const history = conversationHistoryFromTurns(previousTurns, locale);
     const runInput = withConversationHistory(parsedInput, history);
-    const turnId = localID("turn");
-    const now = new Date().toISOString();
-    const turn: PlaygroundTurn = {
-      id: turnId,
-      sequence: previousTurns.length + 1,
-      inputText: inputTextForDisplay(parsedInput),
-      inputPayload: parsedInput,
-      runInput,
-      status: "running",
-      result: null,
-      createdAt: now,
+    if (creationInFlight.current) return;
+    creationInFlight.current = true;
+
+    const requestMetadata = {
+      source: "playground",
+      client: "multi_turn_runner",
     };
-
-    setTurns((items) => [...items, turn]);
-    setActiveTurnId(turnId);
-    setInput("");
-    requestAnimationFrame(() => inputRef.current?.focus());
-
+    let turnId = localID("turn");
     try {
+      const intent = await acquireRunCreationIntent(agent.id, {
+        agent_id: agent.id,
+        input: runInput,
+        metadata: requestMetadata,
+      });
+      turnId = intent.intentId;
+      const now = new Date().toISOString();
+      const existingTurn = previousTurns.find((item) => item.id === turnId);
+      const turn: PlaygroundTurn = {
+        id: turnId,
+        sequence: existingTurn?.sequence ?? previousTurns.length + 1,
+        inputText: inputTextForDisplay(parsedInput),
+        inputPayload: parsedInput,
+        runInput,
+        status: "running",
+        result: null,
+        createdAt: now,
+      };
+
+      setTurns((items) =>
+        items.some((item) => item.id === turnId)
+          ? items.map((item) => (item.id === turnId ? turn : item))
+          : [...items, turn],
+      );
+      setActiveTurnId(turnId);
+      setInput("");
+      requestAnimationFrame(() => inputRef.current?.focus());
+
       const runData = await apiFetch<RunResult>("/api/v1/runs", {
         method: "POST",
+        headers: {
+          "Idempotency-Key": intent.idempotencyKey,
+          Prefer: "wait=0",
+        },
         body: {
           agent_id: agent.id,
           input: runInput,
           metadata: {
-            source: "playground",
-            client: "multi_turn_runner",
-            turn_id: turnId,
+            ...requestMetadata,
+            intent_id: turnId,
           },
         },
       });
+      if (runData.run_id) {
+        completeRunCreationIntent(agent.id, intent.intentId);
+      }
       const nextStatus = runStatusFromResult(runData);
       setTurns((items) =>
         items.map((item) =>
@@ -281,7 +310,10 @@ export function PlaygroundRunner({
             : item,
         ),
       );
+      setInput((current) => current || input);
       toast.error(message);
+    } finally {
+      creationInFlight.current = false;
     }
   }, [
     agent.id,
@@ -830,6 +862,7 @@ function conversationHistoryFromTurns(
   locale: Locale,
 ): ConversationHistoryItem[] {
   return turns
+    .filter((turn) => turn.result?.run_id || turn.status !== "failed")
     .flatMap((turn): ConversationHistoryItem[] => {
       const assistant = assistantTextForTurn(turn, locale, "");
       const messages: ConversationHistoryItem[] = [
