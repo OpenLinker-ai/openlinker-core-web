@@ -24,6 +24,20 @@ type RunEvent = {
   created_at: string;
 };
 
+type RunStreamGap = {
+  requested_after_sequence: number;
+  effective_after_sequence: number;
+  retained_through_sequence: number;
+  earliest_available_sequence: number | null;
+  latest_available_sequence: number | null;
+  terminal: boolean;
+  stream_complete: boolean;
+};
+
+type RunStreamMessage =
+  | { kind: "event"; event: RunEvent }
+  | { kind: "gap"; gap: RunStreamGap };
+
 type StreamState = "idle" | "connecting" | "open" | "reconnecting" | "closed" | "error";
 
 const reconnectDelayMs = 1200;
@@ -41,6 +55,7 @@ export function RunEventStream({
 }) {
   const { token } = useApi();
   const [events, setEvents] = useState<RunEvent[]>([]);
+  const [streamGap, setStreamGap] = useState<{ runId: string; gap: RunStreamGap } | null>(null);
   const [state, setState] = useState<StreamState>(enabled ? "connecting" : "idle");
   const [openSeq, setOpenSeq] = useState<number>(-1);
   const lastSequenceRef = useRef(0);
@@ -82,8 +97,23 @@ export function RunEventStream({
         signal: activeController.signal,
         onOpen: () => {
           if (stopped) return;
-          if (afterSequence === 0) setEvents([]);
+          if (afterSequence === 0) {
+            setEvents([]);
+            setStreamGap(null);
+          }
           setState("open");
+        },
+        onGap: (gap) => {
+          if (stopped) return;
+          lastSequenceRef.current = advanceStreamCursor(
+            lastSequenceRef.current,
+            gap.effective_after_sequence,
+          );
+          setStreamGap((current) => ({
+            runId,
+            gap: mergeStreamGap(current?.runId === runId ? current.gap : null, gap),
+          }));
+          if (gap.terminal && gap.stream_complete) terminalRef.current = true;
         },
         onEvent: (event) => {
           if (stopped) return;
@@ -122,6 +152,7 @@ export function RunEventStream({
     if (enabled) return events.filter((event) => event.run_id === runId);
     return demoEvents(runId, fallbackStatus);
   }, [enabled, events, fallbackStatus, runId]);
+  const visibleGap = enabled && streamGap?.runId === runId ? streamGap.gap : null;
   const effectiveState: StreamState = !enabled ? "idle" : token ? state : "connecting";
 
   return (
@@ -133,6 +164,7 @@ export function RunEventStream({
         </span>
       </div>
       <div className="grid min-w-0 max-w-full gap-2 overflow-hidden p-4">
+        {visibleGap ? <StreamGapNotice gap={visibleGap} locale={locale} /> : null}
         {visibleEvents.length > 0 ? (
           visibleEvents.map((event) => (
             <EventStep
@@ -143,7 +175,7 @@ export function RunEventStream({
               onToggle={() => setOpenSeq(openSeq === event.sequence ? -1 : event.sequence)}
             />
           ))
-        ) : (
+        ) : visibleGap ? null : (
           <TracePlaceholder locale={locale} state={effectiveState} />
         )}
       </div>
@@ -157,6 +189,7 @@ async function readRunEventStream({
   afterSequence,
   signal,
   onOpen,
+  onGap,
   onEvent,
   onClose,
   onError,
@@ -166,6 +199,7 @@ async function readRunEventStream({
   afterSequence: number;
   signal: AbortSignal;
   onOpen: () => void;
+  onGap: (gap: RunStreamGap) => void;
   onEvent: (event: RunEvent) => void;
   onClose: () => void;
   onError: () => void;
@@ -197,11 +231,11 @@ async function readRunEventStream({
       buffer += decoder.decode(value, { stream: true });
       const parsed = parseSSEBuffer(buffer);
       buffer = parsed.remainder;
-      parsed.events.forEach(onEvent);
+      dispatchStreamMessages(parsed.messages, onEvent, onGap);
     }
 
     const tail = parseSSEBuffer(buffer + "\n\n");
-    tail.events.forEach(onEvent);
+    dispatchStreamMessages(tail.messages, onEvent, onGap);
     onClose();
   } catch {
     if (!signal.aborted) onError();
@@ -209,29 +243,180 @@ async function readRunEventStream({
 }
 
 function parseSSEBuffer(buffer: string): {
-  events: RunEvent[];
+  messages: RunStreamMessage[];
   remainder: string;
 } {
-  const events: RunEvent[] = [];
+  const messages: RunStreamMessage[] = [];
   let rest = buffer;
   for (;;) {
     const boundary = rest.indexOf("\n\n");
     if (boundary < 0) break;
     const block = rest.slice(0, boundary);
     rest = rest.slice(boundary + 2);
-    const data = block
-      .split("\n")
+    const lines = block.split("\n");
+    const eventName = lines
+      .find((line) => line.startsWith("event:"))
+      ?.slice(6)
+      .trimStart();
+    const data = lines
       .filter((line) => line.startsWith("data:"))
       .map((line) => line.slice(5).trimStart())
       .join("\n");
     if (!data) continue;
     try {
-      events.push(JSON.parse(data) as RunEvent);
+      const value: unknown = JSON.parse(data);
+      if (eventName === "run.stream.gap") {
+        const gap = parseRunStreamGap(value);
+        if (gap) messages.push({ kind: "gap", gap });
+        continue;
+      }
+      const event = parseRunEvent(value);
+      if (event) messages.push({ kind: "event", event });
     } catch {
       // Ignore malformed event chunks; the next poll / reconnect can recover.
     }
   }
-  return { events, remainder: rest };
+  return { messages, remainder: rest };
+}
+
+function dispatchStreamMessages(
+  messages: RunStreamMessage[],
+  onEvent: (event: RunEvent) => void,
+  onGap: (gap: RunStreamGap) => void,
+) {
+  messages.forEach((message) => {
+    if (message.kind === "gap") onGap(message.gap);
+    else onEvent(message.event);
+  });
+}
+
+function parseRunEvent(value: unknown): RunEvent | null {
+  if (!isRecord(value) || !isRecord(value.payload)) return null;
+  const sequence = parseSequence(value.sequence, 1);
+  if (
+    sequence === null ||
+    typeof value.event_id !== "string" ||
+    typeof value.run_id !== "string" ||
+    typeof value.event_type !== "string" ||
+    typeof value.created_at !== "string"
+  ) {
+    return null;
+  }
+  return {
+    event_id: value.event_id,
+    run_id: value.run_id,
+    ...(typeof value.parent_run_id === "string" ? { parent_run_id: value.parent_run_id } : {}),
+    sequence,
+    event_type: value.event_type,
+    payload: value.payload,
+    created_at: value.created_at,
+  };
+}
+
+function parseRunStreamGap(value: unknown): RunStreamGap | null {
+  if (!isRecord(value)) return null;
+  const requested = parseSequence(value.requested_after_sequence, 0);
+  const effective = parseSequence(value.effective_after_sequence, 0);
+  const retained = parseSequence(value.retained_through_sequence, 0);
+  const earliest = parseNullableSequence(value.earliest_available_sequence);
+  const latest = parseNullableSequence(value.latest_available_sequence);
+  if (
+    requested === null ||
+    effective === null ||
+    retained === null ||
+    earliest === undefined ||
+    latest === undefined ||
+    typeof value.terminal !== "boolean" ||
+    typeof value.stream_complete !== "boolean"
+  ) {
+    return null;
+  }
+  return {
+    requested_after_sequence: requested,
+    effective_after_sequence: effective,
+    retained_through_sequence: retained,
+    earliest_available_sequence: earliest,
+    latest_available_sequence: latest,
+    terminal: value.terminal,
+    stream_complete: value.stream_complete,
+  };
+}
+
+function parseSequence(value: unknown, minimum: number): number | null {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= minimum
+    ? value
+    : null;
+}
+
+function parseNullableSequence(value: unknown): number | null | undefined {
+  if (value === null) return null;
+  const sequence = parseSequence(value, 0);
+  return sequence === null ? undefined : sequence;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function advanceStreamCursor(current: number, candidate: number): number {
+  return Math.max(current, candidate);
+}
+
+function mergeStreamGap(current: RunStreamGap | null, incoming: RunStreamGap): RunStreamGap {
+  if (!current || incoming.effective_after_sequence >= current.effective_after_sequence) {
+    return incoming;
+  }
+  return {
+    ...current,
+    terminal: current.terminal || incoming.terminal,
+    stream_complete: current.stream_complete || incoming.stream_complete,
+  };
+}
+
+function StreamGapNotice({ gap, locale }: { gap: RunStreamGap; locale: Locale }) {
+  const isZh = locale === "zh";
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="grid min-w-0 grid-cols-[28px_minmax(0,1fr)] gap-3 rounded-[14px] border border-[color:var(--ol-line)] bg-[#FFF4D8] p-3.5"
+    >
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/75 text-[#9A6200]">
+        <Icon name="warn" size="sm" />
+      </span>
+      <div className="min-w-0">
+        <strong className="text-[13px] font-[900] text-[color:var(--ol-ink)]">
+          {isZh ? "运行轨迹不完整" : "Incomplete run history"}
+        </strong>
+        <p className="mt-1 text-[12.5px] leading-relaxed text-[color:var(--ol-muted)]">
+          {isZh
+            ? "较早事件已清理，当前轨迹不是完整历史。"
+            : "Earlier events have been cleared, so this trace is not the complete history."}
+        </p>
+        <p className="mt-1 font-mono text-[11.5px] font-bold leading-relaxed text-[#7A570E]">
+          {streamGapRangeLabel(gap, locale)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function streamGapRangeLabel(gap: RunStreamGap, locale: Locale): string {
+  const retained = `#${gap.retained_through_sequence}`;
+  if (gap.earliest_available_sequence !== null && gap.latest_available_sequence !== null) {
+    const available = `#${gap.earliest_available_sequence}–#${gap.latest_available_sequence}`;
+    return locale === "zh"
+      ? `已清理至 ${retained}；当前可查看 ${available}。`
+      : `Cleared through ${retained}; available events: ${available}.`;
+  }
+  if (gap.terminal && gap.stream_complete) {
+    return locale === "zh"
+      ? `运行已结束；已清理至 ${retained}，当前没有可展示的历史事件。`
+      : `The run has ended; events through ${retained} were cleared, with no retained events left to show.`;
+  }
+  return locale === "zh"
+    ? `已清理至 ${retained}。`
+    : `Events through ${retained} were cleared.`;
 }
 
 function EventStep({
