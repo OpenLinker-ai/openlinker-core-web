@@ -100,32 +100,30 @@ const MODES: Record<Mode, ModeSpec> = {
     icon: "bot",
     accent: "var(--ol-blue)",
     code: [
-      "const res = await fetch(`${OPENLINKER_API}/api/v1/runs`, {",
-      "  method: \"POST\",",
-      "  headers: {",
-      "    \"Authorization\": `Bearer ${OPENLINKER_USER_TOKEN}`,",
-      "    \"Content-Type\": \"application/json\"",
-      "  },",
-      "  body: JSON.stringify({",
-      "    agent_id: \"agent_uuid\",",
-      "    input: { query: \"检查供应商报价\" }",
-      "  })",
+      "import { OpenLinkerClient } from \"@openlinker/sdk\";",
+      "",
+      "const openlinker = new OpenLinkerClient({",
+      "  baseUrl: process.env.OPENLINKER_API!,",
+      "  userToken: process.env.OPENLINKER_USER_TOKEN,",
       "});",
       "",
-      "const run = await res.json();",
-      "console.log(run.run_id, run.status);",
+      "// 每次新的运行意图生成一次 key；同一意图的网络重试复用整个 request。",
+      "const request = {",
+      "  agentId: \"agent_uuid\",",
+      "  input: { query: \"检查供应商报价\" },",
+      "  idempotencyKey: crypto.randomUUID(),",
+      "};",
       "",
-      "const events = await fetch(",
-      "  `${OPENLINKER_API}/api/v1/runs/${run.run_id}/stream`,",
-      "  {",
-      "    headers: {",
-      "      \"Authorization\": `Bearer ${OPENLINKER_USER_TOKEN}`,",
-      "      \"Accept\": \"text/event-stream\"",
-      "    }",
-      "  }",
-      ");",
+      "const run = await openlinker.startAgentRun(request);",
+      "console.log(run.run_id, run.status, run.replayed);",
+      "",
+      "await openlinker.streamRunEvents(run.run_id, {",
+      "  onEvent(event) {",
+      "    console.log(event.event, event.data);",
+      "  },",
+      "});",
     ].join("\n"),
-    bullets: ["返回 run_id + running", "SSE 事件流可订阅", "GET /runs/{id} 查终态"],
+    bullets: ["每次新意图使用新 key，重试复用", "SSE 事件流可订阅", "GET /runs/{id} 查终态"],
   },
   mcp: {
     category: "Invocation",
@@ -161,22 +159,27 @@ const MODES: Record<Mode, ModeSpec> = {
       "  -H \"Content-Type: application/json\" \\",
       "  -d '{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"search_agents\",\"arguments\":{\"query\":\"翻译\",\"limit\":5}}}'",
       "",
+      "# 每次新的运行意图生成一次 key；同一意图重试时复用。",
+      "OPENLINKER_RUN_KEY=\"${OPENLINKER_RUN_KEY:-$(uuidgen)}\"",
       "curl -X POST $OPENLINKER_MCP_URL \\",
       "  -H \"Authorization: Bearer $OPENLINKER_USER_TOKEN\" \\",
       "  -H \"Accept: application/json, text/event-stream\" \\",
       "  -H \"Content-Type: application/json\" \\",
-      "  -d '{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"tools/call\",\"params\":{\"name\":\"run_agent\",\"arguments\":{\"agent_id\":\"agent_uuid\",\"input\":{\"text\":\"hi\"}}}}'",
+      "  -d @- <<JSON",
+      "{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"tools/call\",\"params\":{\"name\":\"run_agent\",\"arguments\":{\"agent_id\":\"agent_uuid\",\"input\":{\"text\":\"hi\"},\"idempotency_key\":\"$OPENLINKER_RUN_KEY\"}}}",
+      "JSON",
     ].join("\n"),
     bullets: [
       "主站 /mcp 就是 MCP 服务端入口；API 等价入口为 /api/v1/mcp",
       "仅接受 User Token（ol_user_...），不使用网页登录会话",
       "工具：search_agents / get_agent / create_task / run_agent / get_run",
+      "run_agent 的新意图必须使用新 idempotency_key，重试复用",
       "调用写入 runs.source='mcp'",
     ],
   },
 };
 
-const SDKS = ["TypeScript", "Python", "Go", "cURL"];
+const SDKS = ["TypeScript", "Go", "cURL"];
 
 const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "category" | "label" | "title" | "blurb" | "bestFor" | "bullets">>> = {
   zh: {
@@ -210,7 +213,7 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "category" | "label"
       title: "从应用侧调用 Agent",
       blurb: "用 User Token 触发运行；可订阅 SSE 实时事件流；run_id 持久可查。",
       bestFor: "生产应用 · 嵌入式集成",
-      bullets: ["返回 run_id + running", "SSE 事件流可订阅", "GET /runs/{id} 查终态"],
+      bullets: ["每次新意图使用新 key，重试复用", "SSE 事件流可订阅", "GET /runs/{id} 查终态"],
     },
     mcp: {
       category: "调用入口",
@@ -222,6 +225,7 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "category" | "label"
         "主站 /mcp 就是 MCP 服务端入口；API 等价入口为 /api/v1/mcp",
         "仅接受 User Token（ol_user_...），不使用网页登录会话",
         "工具：search_agents / get_agent / create_task / run_agent / get_run",
+        "run_agent 的新意图必须使用新 idempotency_key，重试复用",
         "调用写入 runs.source='mcp'",
       ],
     },
@@ -257,7 +261,7 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "category" | "label"
       title: "Invoke Agents from your app",
       blurb: "Use a User Token to start a Run, subscribe to SSE, and look up the persistent run_id.",
       bestFor: "Production apps · embedded integration",
-      bullets: ["Returns run_id + running", "SSE event stream is subscribable", "GET /runs/{id} reads the final state"],
+      bullets: ["Use a new key per run intent and reuse it for retries", "SSE event stream is subscribable", "GET /runs/{id} reads the final state"],
     },
     mcp: {
       category: "Invocation",
@@ -269,6 +273,7 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "category" | "label"
         "The main /mcp route is the MCP server entry; /api/v1/mcp is equivalent",
         "User Tokens only (ol_user_...); browser sessions are not used",
         "Tools: search_agents / get_agent / create_task / run_agent / get_run",
+        "Each new run_agent intent needs a new idempotency_key; retries reuse it",
         "Invocations are recorded as runs.source='mcp'",
       ],
     },
@@ -288,7 +293,13 @@ function codeForLocale(mode: Mode, code: string, locale: Locale) {
       .replace("# 1. 初始化 MCP 会话（JSON response mode，不要求 SSE）", "# 1. Initialize an MCP session (JSON response mode; SSE is optional)")
       .replace("# 2. MCP tools/list：发现 OpenLinker 暴露的工具", "# 2. MCP tools/list: discover OpenLinker tools")
       .replace("# 3. MCP tools/call：搜索并调用 Agent", "# 3. MCP tools/call: search and invoke Agents")
+      .replace("# 每次新的运行意图生成一次 key；同一意图重试时复用。", "# Generate one key per new run intent and reuse it for retries of that intent.")
       .replace("\"query\":\"翻译\"", "\"query\":\"translate\"");
+  }
+  if (mode === "sdk") {
+    return code
+      .replace("// 每次新的运行意图生成一次 key；同一意图的网络重试复用整个 request。", "// Generate one key per new run intent; reuse this request for network retries.")
+      .replace("检查供应商报价", "Review the supplier quote");
   }
   if (mode === "runtime_ws") {
     return code
@@ -365,6 +376,7 @@ export function ConnectConsole({ locale = "zh" }: { locale?: Locale }) {
       [
         "curl -X POST $OPENLINKER_API/api/v1/runs \\",
         "  -H \"Authorization: Bearer $OPENLINKER_USER_TOKEN\" \\",
+        "  -H \"Idempotency-Key: $OPENLINKER_RUN_KEY\" \\",
         "  -H \"Content-Type: application/json\" \\",
         "  -d '{\"agent_id\":\"agent_uuid\",\"input\":{\"query\":\"hello\"}}'",
         "",
@@ -375,7 +387,9 @@ export function ConnectConsole({ locale = "zh" }: { locale?: Locale }) {
     [],
   );
 
-  const localizedCurl = locale === "zh" ? curl : curl.replace("query\":\"hello", "query\":\"hello");
+  const localizedCurl = locale === "zh"
+    ? `# 新运行意图生成一次；同一意图的网络重试不要更换。\nOPENLINKER_RUN_KEY=\"\${OPENLINKER_RUN_KEY:-$(uuidgen)}\"\n\n${curl}`
+    : `# Generate once for a new run intent; do not replace it for network retries of that intent.\nOPENLINKER_RUN_KEY=\"\${OPENLINKER_RUN_KEY:-$(uuidgen)}\"\n\n${curl}`;
   const isInvocation = mode === "sdk" || mode === "mcp";
 
   const copyToClipboard = async (text: string) => {

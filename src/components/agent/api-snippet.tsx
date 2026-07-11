@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * API 调用示例片段：cURL / Python / Node.js 三 tab 切换 + 一键复制。
+ * API 调用示例片段：cURL / TypeScript SDK / Go SDK 三 tab 切换 + 一键复制。
  *
  * agentID 直接拼到 snippet 里。endpoint_url 不在这里展示——通过统一网关
  * /api/v1/runs 异步启动，鉴权 token 也在网关层处理。
@@ -17,13 +17,9 @@ import { toast } from "sonner";
 import { getApiBaseUrl } from "@/lib/api-root";
 import type { Locale } from "@/lib/i18n";
 
-type Tab = "curl" | "python" | "node";
+type Tab = "curl" | "typescript" | "go";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "curl", label: "cURL" },
-  { id: "python", label: "Python" },
-  { id: "node", label: "Node.js" },
-];
+const TABS: Tab[] = ["curl", "typescript", "go"];
 
 export function ApiSnippet({
   agentID,
@@ -44,7 +40,9 @@ export function ApiSnippet({
           copied: "已复制到剪贴板",
           copyFailed: "复制失败，请手动选中代码",
           copyCode: "复制代码",
+          tabLabels: { curl: "cURL", typescript: "TypeScript SDK 示例", go: "Go SDK 示例" },
           responseComment: "响应会返回 {\"run_id\":\"...\",\"status\":\"running\"}",
+          newIntentComment: "每次新的运行意图只生成一次 key；同一意图的网络重试继续复用它。",
           hint: (
             <>
               提示：YOUR_TOKEN 是 User Token。前往{" "}
@@ -54,7 +52,7 @@ export function ApiSnippet({
               >
                 User Token 设置
               </Link>{" "}
-              查看本地签发的当前实现状态；已有 Token 的部署可按以下示例调用，返回 run_id 后用 SSE 追踪进度。
+              查看本地签发的当前实现状态。一次新的运行意图必须使用新的幂等键；请求超时或断线后重试时，保持键和请求内容不变。
             </>
           ),
         }
@@ -62,7 +60,9 @@ export function ApiSnippet({
           copied: "Copied to clipboard",
           copyFailed: "Copy failed. Select the code manually.",
           copyCode: "Copy code",
+          tabLabels: { curl: "cURL", typescript: "TypeScript SDK", go: "Go SDK" },
           responseComment: "The response includes {\"run_id\":\"...\",\"status\":\"running\"}",
+          newIntentComment: "Generate one key for each new run intent, then reuse it for network retries of that same intent.",
           hint: (
             <>
               Tip: YOUR_TOKEN is a User Token. Open{" "}
@@ -72,7 +72,7 @@ export function ApiSnippet({
               >
                 User Token settings
               </Link>{" "}
-              for the current local-issuance status. Deployments with an existing token can use the examples below and track the returned run_id over SSE.
+              for the current local-issuance status. Every new run intent needs a new idempotency key. After a timeout or disconnect, retry with the same key and unchanged request content.
             </>
           ),
         };
@@ -83,14 +83,19 @@ export function ApiSnippet({
     input: sampleInput ?? { your_field: "your_value" },
   };
   const requestBodyJSON = JSON.stringify(requestBody, null, 2);
-  const requestBodyStringLiteral = JSON.stringify(requestBodyJSON);
+  const sampleInputJSON = JSON.stringify(requestBody.input, null, 2);
+  const sampleInputStringLiteral = JSON.stringify(sampleInputJSON);
+  const agentIDLiteral = JSON.stringify(agentID);
 
   const snippets: Record<Tab, string> = {
     curl: `OPENLINKER_USER_TOKEN=your_user_token
 AUTH_HEADER="Authorization: Bearer $OPENLINKER_USER_TOKEN"
+# ${copy.newIntentComment}
+OPENLINKER_RUN_KEY="\${OPENLINKER_RUN_KEY:-$(uuidgen)}"
 
 curl -X POST ${apiURL}/api/v1/runs \\
   -H "$AUTH_HEADER" \\
+  -H "Idempotency-Key: $OPENLINKER_RUN_KEY" \\
   -H "Content-Type: application/json" \\
   -d '${requestBodyJSON}'
 
@@ -98,51 +103,68 @@ curl -X POST ${apiURL}/api/v1/runs \\
 curl -N ${apiURL}/api/v1/runs/RUN_ID/stream \\
   -H "$AUTH_HEADER" \\
   -H "Accept: text/event-stream"`,
-    python: `import json
-import requests
+    typescript: `import { OpenLinkerClient } from "@openlinker/sdk";
 
-body = json.loads(${requestBodyStringLiteral})
-
-run = requests.post(
-    "${apiURL}/api/v1/runs",
-    headers={"Authorization": "Bearer YOUR_TOKEN"},
-    json=body,
-).json()
-print(run)
-
-with requests.get(
-    f"${apiURL}/api/v1/runs/{run['run_id']}/stream",
-    headers={
-        "Authorization": "Bearer YOUR_TOKEN",
-        "Accept": "text/event-stream",
-    },
-    stream=True,
-) as events:
-    for line in events.iter_lines(decode_unicode=True):
-        if line:
-            print(line)`,
-    node: `const res = await fetch("${apiURL}/api/v1/runs", {
-  method: "POST",
-  headers: {
-    "Authorization": "Bearer YOUR_TOKEN",
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify(${requestBodyJSON}),
+const openlinker = new OpenLinkerClient({
+  baseUrl: "${apiURL}",
+  userToken: process.env.OPENLINKER_USER_TOKEN,
 });
-const run = await res.json();
-console.log(run);
 
-const stream = await fetch(
-  "${apiURL}/api/v1/runs/" + encodeURIComponent(run.run_id) + "/stream",
-  {
-    headers: {
-      "Authorization": "Bearer YOUR_TOKEN",
-      "Accept": "text/event-stream",
-    },
+// ${copy.newIntentComment}
+const request = {
+  agentId: ${agentIDLiteral},
+  input: ${sampleInputJSON},
+  idempotencyKey: crypto.randomUUID(),
+};
+
+const run = await openlinker.startAgentRun(request);
+console.log(run.run_id, run.status, run.replayed);
+
+await openlinker.streamRunEvents(run.run_id, {
+  onEvent(event) {
+    console.log(event.event, event.data);
   },
-);
-for await (const chunk of stream.body) {
-  process.stdout.write(Buffer.from(chunk).toString("utf8"));
+});`,
+    go: `package main
+
+import (
+  "context"
+  "crypto/rand"
+  "encoding/json"
+  "fmt"
+  "log"
+  "os"
+
+  openlinker "github.com/OpenLinker-ai/openlinker-go"
+)
+
+func main() {
+  client, err := openlinker.NewClient(
+    "${apiURL}",
+    openlinker.WithUserToken(os.Getenv("OPENLINKER_USER_TOKEN")),
+  )
+  if err != nil { log.Fatal(err) }
+
+  // ${copy.newIntentComment}
+  request := openlinker.RunAgentRequest{
+    AgentID: ${agentIDLiteral},
+    Input: json.RawMessage(${sampleInputStringLiteral}),
+    IdempotencyKey: rand.Text(),
+  }
+  run, err := client.StartAgentRun(context.Background(), request)
+  if err != nil { log.Fatal(err) }
+  fmt.Println(run.RunID, run.Status, run.Replayed)
+
+  err = client.StreamRunEvents(
+    context.Background(),
+    run.RunID,
+    openlinker.StreamRunEventsOptions{},
+    func(event openlinker.StreamRunEvent) error {
+      fmt.Println(event.Event, string(event.Data))
+      return nil
+    },
+  )
+  if err != nil { log.Fatal(err) }
 }`,
   };
 
@@ -158,7 +180,7 @@ for await (const chunk of stream.body) {
   return (
     <div className="space-y-2">
       <div className="flex gap-1">
-        {TABS.map(({ id, label }) => (
+        {TABS.map((id) => (
           <button
             key={id}
             type="button"
@@ -169,7 +191,7 @@ for await (const chunk of stream.body) {
                 : "bg-transparent text-[color:var(--ol-muted)] hover:bg-[color:var(--ol-soft)]"
             }`}
           >
-            {label}
+            {copy.tabLabels[id]}
           </button>
         ))}
       </div>
