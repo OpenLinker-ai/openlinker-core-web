@@ -22,8 +22,8 @@ const NAV_ITEMS: ReadonlyArray<{
   },
   {
     id: "access",
-    label: { zh: "注册邀请", en: "Registration Invites" },
-    desc: { zh: "签发 Agent Token", en: "Issue an Agent Token" },
+    label: { zh: "签发 Agent Token", en: "Issue Agent Token" },
+    desc: { zh: "给 Agent 自注册", en: "For Agent self-registration" },
     href: "/hub/access",
   },
   {

@@ -88,7 +88,7 @@ export default async function AdminOverviewPage({
       title: copy.nodes,
       body:
         locale === "zh"
-          ? "查看私有 Agent 的运行节点、当前连接、容量和 Runtime contract 是否一致。"
+          ? "查看私有 Agent 的运行节点、当前连接、容量和 Runtime 契约是否一致。"
           : "Review private-Agent nodes, live sessions, capacity, and Runtime contract alignment.",
       metric: null,
     },
@@ -106,7 +106,7 @@ export default async function AdminOverviewPage({
       title: copy.maintenance,
       body:
         locale === "zh"
-          ? "确认 Core 实例、数据库结构、发布版本、Runtime contract 和唤醒通道是否可以开放新任务。"
+          ? "确认 Core 实例、数据库结构、发布版本、Runtime 契约和唤醒通道是否可以开放新任务。"
           : "Verify Core membership, schema, release, Runtime contract, and wake-up health before opening new runs.",
       metric: null,
     },

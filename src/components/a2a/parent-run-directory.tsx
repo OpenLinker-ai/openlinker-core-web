@@ -91,7 +91,7 @@ export function ParentRunDirectory({
           running: "运行中",
           source: "入口",
           context: "会话",
-          boundTokens: "绑定凭证",
+          boundTokens: "已绑定 Agent Token",
           prev: "上一页",
           next: "下一页",
           page: (page: number, pages: number) => `第 ${page} / ${pages} 页`,

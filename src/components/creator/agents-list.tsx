@@ -563,7 +563,7 @@ function AgentItemRow({
           settings: "设置",
           settingsTitle: "编辑基础信息、连接方式和可见性",
           runHistory: "调用记录",
-          runHistoryTitle: "查看这个 Agent 被用户、访问凭证或 MCP 触发的调用记录",
+          runHistoryTitle: "查看这个 Agent 被用户、User Token、Agent Token 或 MCP 触发的调用记录",
           benchmarkTitle: "为已声明 Skill 运行能力测评；通过后详情页会显示测评已通过",
           deliveryTitle: "管理通知投递目标与通知投递历史",
           delivery: "投递",

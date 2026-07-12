@@ -90,7 +90,7 @@ export function A2AConsole({
           parentDetail: "最初运行详情",
           selectedParent: "已选协作会话",
           source: "入口",
-          boundTokens: "绑定凭证",
+          boundTokens: "已绑定 Agent Token",
           parentNoSkills: "发起协作的 Agent 尚未声明 Skill",
           parentExplainer: "这里从最初运行开始，展示同一次任务中的并行、连续和多层 Agent 调用。",
           selectParent: "从上方选择一条协作会话，查看 Agent 之间的调用关系。",

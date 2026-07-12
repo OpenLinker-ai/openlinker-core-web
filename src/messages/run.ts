@@ -156,7 +156,7 @@ export const runDetailMessages = {
     cancelAcknowledgedTechnical: "cancel_acknowledged_at",
     activeAttempt: "当前 Attempt",
     latestAttempt: "最近 Attempt",
-    runtimeContract: "Runtime contract",
+    runtimeContract: "Runtime 契约",
     replaySource: "重放来源",
     openOriginal: "查看原运行",
     deadLetterTitle: "这次运行需要人工处理",

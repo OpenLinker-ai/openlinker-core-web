@@ -189,7 +189,7 @@ export const coreUserTokenMessages = {
     permissionCopy: {
       "agents:read": { label: "读取 Agent", description: "通过需鉴权入口查看 Agent。" },
       "agents:run": { label: "调用 Agent", description: "创建 Agent Run，可限制到指定 Agent。" },
-      "agents:create": { label: "接入新 Agent", description: "进入自动接入流程；签发注册凭证还需要 Agent Token 签发权限。" },
+      "agents:create": { label: "接入新 Agent", description: "进入自动接入流程；让 Agent 自行注册还需要 Agent Token 签发权限。" },
       "runs:read": { label: "读取 Run", description: "查看自己的 Run、事件、消息和产物。" },
       "runs:cancel": { label: "取消 Run", description: "取消自己仍可取消的 Run。" },
       "tasks:read": { label: "读取 Task", description: "读取自己的私有 Task。" },

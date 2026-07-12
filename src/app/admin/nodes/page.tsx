@@ -90,7 +90,7 @@ export default async function AdminRuntimeNodesPage({
         features: "能力",
         contractMatch: "契约一致",
         contractMismatch: "契约不一致",
-        contractMismatchBody: "这台 Node 的 Runtime contract 与当前 Core 不一致。升级 Node 后重新签发或重新连接，不要继续派发新运行。",
+        contractMismatchBody: "这台 Node 的 Runtime 契约与当前 Core 不一致。升级 Node 后重新签发或重新连接，不要继续派发新运行。",
         drain: "开始排空",
         drainingDone: "正在排空，不会再接收新运行。",
         revoke: "撤销节点",
