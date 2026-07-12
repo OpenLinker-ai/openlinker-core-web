@@ -275,8 +275,7 @@ const DRY_RUN_RESULT_LABELS: LabelMap = {
 const CONNECTION_MODE_LABELS: LabelMap = {
   direct_http: { zh: "HTTP 直连", en: "Direct HTTP" },
   mcp_server: { zh: "MCP Server", en: "MCP server" },
-  runtime_pull: { zh: "Agent Node（v2 长轮询）", en: "Agent Node (v2 long-poll)" },
-  runtime_ws: { zh: "Agent Node（v2 WebSocket）", en: "Agent Node (v2 WebSocket)" },
+  agent_node: { zh: "Agent Node", en: "Agent Node" },
 };
 
 const TARGET_TYPE_LABELS: LabelMap = {

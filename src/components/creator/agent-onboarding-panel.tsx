@@ -36,7 +36,7 @@ export interface OnboardingAgent {
   visibility: "public" | "unlisted" | "private";
   certification_status: "unreviewed" | "pending" | "certified" | "rejected";
   endpoint_url: string;
-  connection_mode: "direct_http" | "mcp_server" | "runtime_ws" | "runtime_pull";
+  connection_mode: "direct_http" | "mcp_server" | "agent_node";
   mcp_tool_name?: string;
 }
 
@@ -104,7 +104,7 @@ type RuntimeWorkbench = {
     id: string;
     slug: string;
     name: string;
-    connection_mode: "direct_http" | "mcp_server" | "runtime_ws" | "runtime_pull" | string;
+    connection_mode: "direct_http" | "mcp_server" | "agent_node" | string;
     lifecycle_status: string;
     visibility: string;
     certification_status: string;
@@ -115,8 +115,8 @@ type RuntimeWorkbench = {
     runtime_contract_id: string;
     runtime_contract_digest: string;
     transport_policy: "ws_primary_pull_v2_fallback" | string;
-    primary_transport: "runtime_ws" | string;
-    fallback_transport: "runtime_pull_v2" | string;
+    primary_transport: "websocket" | string;
+    fallback_transport: "pull_v2" | string;
     connection_status: "online" | "draining" | "offline" | "not_applicable" | string;
     active_node_count: number;
     active_session_count: number;
@@ -234,11 +234,8 @@ function connectionModeLabel(agent: OnboardingAgent, locale: Locale): string {
   if (agent.connection_mode === "mcp_server") {
     return `${locale === "zh" ? "已有 MCP 工具" : "Existing MCP tool"} · ${agent.mcp_tool_name || (locale === "zh" ? "未配置工具" : "tool not configured")}`;
   }
-  if (agent.connection_mode === "runtime_ws") {
-    return locale === "zh" ? "Agent Node · Runtime v2 WebSocket" : "Agent Node · Runtime v2 WebSocket";
-  }
-  if (agent.connection_mode === "runtime_pull") {
-    return locale === "zh" ? "Agent Node · Runtime v2 长轮询兜底" : "Agent Node · Runtime v2 long-poll fallback";
+  if (agent.connection_mode === "agent_node") {
+    return locale === "zh" ? "Agent Node · WebSocket 主通道 / Pull v2 兜底" : "Agent Node · WebSocket primary / Pull v2 fallback";
   }
   return `HTTP · ${endpointHost(agent.endpoint_url)}`;
 }
@@ -670,7 +667,7 @@ export function AgentOnboardingPanel({
           <div className="ol-info-card">
             <strong>{copy.endpoint}</strong>
             <span>{connectionModeLabel(agentState, locale)}</span>
-            {agentState.connection_mode !== "runtime_ws" && agentState.connection_mode !== "runtime_pull" ? (
+            {agentState.connection_mode !== "agent_node" ? (
               <code className="mt-1 block break-all text-[11.5px] text-[color:var(--ol-muted)]">
                 {agentState.endpoint_url}
               </code>

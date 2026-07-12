@@ -1,11 +1,11 @@
 /**
- * 发布页“选择接入方式”卡片（HTTP Endpoint / Agent Node / Runtime Pull / MCP Tool）。
+ * 发布页"选择接入方式"卡片（HTTP Endpoint / Agent Node / MCP Tool）。
  *
  * 视觉来自 prototype/openlinker-flow-17-publish.png 的 .source-tabs：
  * 现在是受控组件：选择会写入后端 connection_mode。
  */
 
-export type AgentConnectionMode = "direct_http" | "runtime_ws" | "runtime_pull" | "mcp_server";
+export type AgentConnectionMode = "direct_http" | "agent_node" | "mcp_server";
 
 import type { Locale } from "@/lib/i18n";
 
@@ -29,23 +29,13 @@ const SOURCES: readonly SourceCardSpec[] = [
     },
   },
   {
-    key: "runtime_ws",
-    icon: "WS",
+    key: "agent_node",
+    icon: "Node",
     iconClass: "blue",
-    title: { zh: "Agent Node / WebSocket", en: "Agent Node / WebSocket" },
+    title: { zh: "Agent Node", en: "Agent Node" },
     desc: {
-      zh: "本地、内网或 NAT 后的默认选择；Runtime v2 低延迟接单，断线后由同一 Node 可靠恢复。",
-      en: "Default for local, private-network, or NAT Agents. Runtime v2 provides low-latency dispatch and durable recovery.",
-    },
-  },
-  {
-    key: "runtime_pull",
-    icon: "Pull",
-    iconClass: "blue",
-    title: { zh: "Agent Node（长轮询兜底）", en: "Agent Node (long-poll fallback)" },
-    desc: {
-      zh: "企业代理或网络阻断 WebSocket 时使用；仍是完整 Runtime v2，不会退回旧领取接口。",
-      en: "Use when a proxy or network blocks WebSocket. It remains full Runtime v2 and never falls back to legacy claim endpoints.",
+      zh: "适合本地、内网或 NAT 后的 Agent。默认走 WebSocket，网络受限时自动切到 Pull v2。",
+      en: "For local, private-network, or NAT Agents. WebSocket is primary, with automatic Pull v2 fallback on restricted networks.",
     },
   },
   {

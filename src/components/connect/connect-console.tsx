@@ -6,7 +6,7 @@ import { useMemo, useRef, useState } from "react";
 import { Icon, type IconName } from "@/components/ui/icon";
 import type { Locale } from "@/lib/i18n";
 
-type Mode = "endpoint" | "mcp_server" | "runtime_ws" | "sdk" | "mcp";
+type Mode = "endpoint" | "mcp_server" | "agent_node" | "sdk" | "mcp";
 
 interface ModeSpec {
   category: string;
@@ -63,7 +63,7 @@ const MODES: Record<Mode, ModeSpec> = {
     ].join("\n"),
     bullets: ["目标是远程 HTTP MCP Server", "必须填写 mcp_tool_name", "不是 OpenLinker /mcp 客户端配置"],
   },
-  runtime_ws: {
+  agent_node: {
     category: "Agent connection",
     label: "Agent Node",
     title: "Agent Node：可靠接入本地 Agent",
@@ -72,11 +72,11 @@ const MODES: Record<Mode, ModeSpec> = {
     icon: "bot",
     accent: "var(--ol-blue)",
     code: [
-      "# 1. 默认选择 Runtime v2 WebSocket；受限网络可改为 runtime_pull",
+      "# 1. 连接模式只选 agent_node；默认 auto 会在 WebSocket 不可用时切到 Pull v2",
       "curl -X POST $OPENLINKER_API/api/v1/agent-registration/agents \\",
       "  -H \"Authorization: Bearer $OPENLINKER_AGENT_TOKEN\" \\",
       "  -H \"Content-Type: application/json\" \\",
-      "  -d '{\"name\":\"Local Analyst\",\"connection_mode\":\"runtime_ws\",\"tags\":[\"data\"]}'",
+      "  -d '{\"name\":\"Local Analyst\",\"connection_mode\":\"agent_node\",\"tags\":[\"data\"]}'",
       "",
       "# 2. 由管理员登记 Node 并安全交付证书；然后启动 Agent Node",
       "cd openlinker-agent-node",
@@ -205,7 +205,7 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "category" | "label"
       bestFor: "已有远程 MCP 工具",
       bullets: ["目标是远程 HTTP MCP Server", "必须填写 mcp_tool_name", "不是 OpenLinker /mcp 客户端配置"],
     },
-    runtime_ws: {
+    agent_node: {
       category: "Agent 接入",
       label: "Agent Node",
       title: "Agent Node：可靠接入本地 Agent",
@@ -253,7 +253,7 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "category" | "label"
       bestFor: "Existing remote MCP tools",
       bullets: ["Target a remote HTTP MCP Server", "mcp_tool_name is required", "Not an OpenLinker /mcp client configuration"],
     },
-    runtime_ws: {
+    agent_node: {
       category: "Agent connection",
       label: "Agent Node",
       title: "Agent Node: reliable private execution",
@@ -307,9 +307,9 @@ function codeForLocale(mode: Mode, code: string, locale: Locale) {
       .replace("// 每次新的运行意图生成一次 key；同一意图的网络重试复用整个 request。", "// Generate one key per new run intent; reuse this request for network retries.")
       .replace("检查供应商报价", "Review the supplier quote");
   }
-  if (mode === "runtime_ws") {
+  if (mode === "agent_node") {
     return code
-      .replace("# 1. 默认选择 Runtime v2 WebSocket；受限网络可改为 runtime_pull", "# 1. Use Runtime v2 WebSocket by default; choose runtime_pull on restricted networks")
+      .replace("# 1. 连接模式只选 agent_node；默认 auto 会在 WebSocket 不可用时切到 Pull v2", "# 1. Use connection_mode=agent_node; auto falls back to Pull v2 when WebSocket is unavailable")
       .replace("# 2. 由管理员登记 Node 并安全交付证书；然后启动 Agent Node", "# 2. Ask an operator to enroll the Node and deliver its certificates, then start Agent Node")
       .replace("# 3. 业务后端只处理任务；Node 负责 assignment ACK、租约、取消、恢复和可靠结果提交。", "# 3. The backend handles business logic; the Node owns assignment ACKs, leases, cancellation, recovery, and reliable result delivery.");
   }

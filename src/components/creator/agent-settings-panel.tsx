@@ -21,7 +21,7 @@ import {
 type Visibility = "public" | "unlisted" | "private";
 type LifecycleStatus = "active" | "disabled";
 type CertificationStatus = "unreviewed" | "pending" | "certified" | "rejected";
-type ConnectionMode = "direct_http" | "mcp_server" | "runtime_ws" | "runtime_pull";
+type ConnectionMode = "direct_http" | "mcp_server" | "agent_node";
 
 export interface EditableAgent {
   id: string;
@@ -185,7 +185,7 @@ export function AgentSettingsPanel({ agent, locale }: Props) {
           connectionDesc: "修改调用端点或连接模式后，建议回到接入配置执行试运行。",
           mode: "连接模式",
           endpoint: "调用端点 URL",
-          endpointRuntimeHint: "runtime_ws / runtime_pull 只选择 Runtime v2 transport；实际地址、Node 证书和凭证由 Agent Node 配置，不把私网地址暴露给当前实例。",
+          endpointRuntimeHint: "Agent Node 使用平台生成的运行时地址；WebSocket 与 Pull v2 由 Node 自动切换，私网地址不会暴露给当前实例。",
           mcpTool: "MCP 工具名称",
           authHeader: "调用端点鉴权 Header",
           authPlaceholder: "留空表示保留当前密钥",
@@ -227,7 +227,7 @@ export function AgentSettingsPanel({ agent, locale }: Props) {
           connectionDesc: "After changing endpoint or connection mode, run a dry-run from onboarding.",
           mode: "Connection mode",
           endpoint: "Endpoint URL",
-          endpointRuntimeHint: "runtime_ws / runtime_pull select the Runtime v2 transport only. Configure the Runtime origin, Node certificate, and credentials on Agent Node without exposing a private URL.",
+          endpointRuntimeHint: "Agent Node uses a platform-generated runtime URL and switches between WebSocket and Pull v2 without exposing a private backend URL.",
           mcpTool: "MCP tool name",
           authHeader: "Endpoint auth header",
           authPlaceholder: "Leave blank to keep the current secret",
@@ -392,8 +392,7 @@ export function AgentSettingsPanel({ agent, locale }: Props) {
                   onChange={(event) => updateForm("connectionMode", event.target.value as ConnectionMode)}
                 >
                   <option value="direct_http">{localizedConnectionModeLabel("direct_http", locale)}</option>
-                  <option value="runtime_ws">{localizedConnectionModeLabel("runtime_ws", locale)}</option>
-                  <option value="runtime_pull">{localizedConnectionModeLabel("runtime_pull", locale)}</option>
+                  <option value="agent_node">{localizedConnectionModeLabel("agent_node", locale)}</option>
                   <option value="mcp_server">{localizedConnectionModeLabel("mcp_server", locale)}</option>
                 </select>
               </label>
@@ -404,9 +403,9 @@ export function AgentSettingsPanel({ agent, locale }: Props) {
                   value={form.endpointURL}
                   onChange={(event) => updateForm("endpointURL", event.target.value)}
                   maxLength={500}
-                  disabled={form.connectionMode === "runtime_ws" || form.connectionMode === "runtime_pull"}
+                  disabled={form.connectionMode === "agent_node"}
                 />
-                {form.connectionMode === "runtime_ws" || form.connectionMode === "runtime_pull" ? (
+                {form.connectionMode === "agent_node" ? (
                   <p className="ol-publish-field-hint">{copy.endpointRuntimeHint}</p>
                 ) : null}
               </label>

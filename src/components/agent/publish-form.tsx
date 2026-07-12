@@ -73,14 +73,13 @@ function isAllowedEndpointURL(value: string): boolean {
 }
 
 function connectionModeLabel(mode: AgentConnectionMode, locale: Locale): string {
-  if (mode === "runtime_ws") return "Agent Node / Runtime v2 WebSocket";
-  if (mode === "runtime_pull") return locale === "zh" ? "Agent Node（Runtime v2 长轮询）" : "Agent Node (Runtime v2 long-poll)";
+  if (mode === "agent_node") return "Agent Node / Runtime v2";
   if (mode === "mcp_server") return locale === "zh" ? "已有 MCP 工具" : "Existing MCP tool";
   return locale === "zh" ? "HTTP 端点" : "HTTP Endpoint";
 }
 
 function isRuntimeConnectionMode(mode: AgentConnectionMode): boolean {
-  return mode === "runtime_ws" || mode === "runtime_pull";
+  return mode === "agent_node";
 }
 
 const VALIDATION_COPY = {
@@ -124,7 +123,7 @@ function createSchema(locale: Locale) {
   const copy = VALIDATION_COPY[locale];
   return z
     .object({
-      connection_mode: z.enum(["direct_http", "runtime_ws", "runtime_pull", "mcp_server"]),
+      connection_mode: z.enum(["direct_http", "agent_node", "mcp_server"]),
       slug: z
         .string()
         .min(3, copy.min3)
@@ -595,16 +594,10 @@ function EndpointSection({
   const copy =
     locale === "zh"
       ? {
-          runtimeWSTitle: "Agent Node / Runtime v2 WebSocket",
-          runtimeWSBody: (
-            <>
-              本地、内网或 NAT 后的默认选择。管理员登记 Node 并签发 mTLS 设备证书后，Agent Node 会用 Runtime v2 WebSocket 低延迟接单，并负责 assignment ACK、租约、resume、取消和 Event/Result ACK。网络阻断 WebSocket 时可切换到同一套 v2 长轮询，不会退回旧接口。
-            </>
-          ),
-          runtimePullTitle: "Agent Node / Runtime v2 长轮询",
+          runtimeTitle: "Agent Node / Runtime v2",
           runtimeBody: (
             <>
-              企业代理或网络无法维持 WebSocket 时选择。它与 WebSocket 使用同一套 mTLS 身份、assignment ACK、租约、resume、取消、Event/Result ACK 和持久化 spool，只把接单与控制消息改为 HTTPS 长轮询；不是旧版 heartbeat / claim / result。
+              适合本地、内网或 NAT 后的 Agent。登记 Node 并签发 mTLS 设备证书后，默认的 <code>auto</code> 策略会优先使用 WebSocket，并在网络受限时自动切到 Pull v2。两个通道共用 assignment ACK、租约、resume、取消、Event/Result ACK 和持久化 spool，不会退回旧接口。
             </>
           ),
           httpsOrLoopback: "调用端点 URL（HTTPS 或本地回环 HTTP）",
@@ -621,16 +614,10 @@ function EndpointSection({
           endpointAuth: "鉴权 Header（可选，当前实例调用端点时携带）",
         }
       : {
-          runtimeWSTitle: "Agent Node over Runtime v2 WebSocket",
-          runtimeWSBody: (
-            <>
-              This is the default for local, private-network, or NAT Agents. After an operator enrolls the Node and issues its mTLS device certificate, Agent Node uses Runtime v2 WebSocket for low-latency dispatch and owns assignment ACKs, leases, resume, cancellation, and Event/Result ACKs. If the network blocks WebSocket, switch to the same v2 long-poll protocol—never a legacy endpoint.
-            </>
-          ),
-          runtimePullTitle: "Agent Node over Runtime v2 long-poll",
+          runtimeTitle: "Agent Node over Runtime v2",
           runtimeBody: (
             <>
-              Choose this when a corporate proxy or network cannot sustain WebSocket. It uses the same mTLS identity, assignment ACKs, leases, resume, cancellation, Event/Result ACKs, and durable spool; only dispatch and control use HTTPS long-poll. It is not the former heartbeat / claim / result protocol.
+              For local, private-network, or NAT Agents. After Node enrollment and mTLS issuance, the default <code>auto</code> policy prefers WebSocket and automatically falls back to Pull v2 on restricted networks. Both transports share assignment ACKs, leases, resume, cancellation, Event/Result ACKs, and the durable spool—never a legacy endpoint.
             </>
           ),
           httpsOrLoopback: "Endpoint URL (HTTPS or local loopback HTTP)",
@@ -647,15 +634,14 @@ function EndpointSection({
           endpointAuth: "Auth header (optional, sent when OpenLinker calls the endpoint)",
         };
 
-  if (connectionMode === "runtime_ws" || connectionMode === "runtime_pull") {
-    const isWS = connectionMode === "runtime_ws";
+  if (connectionMode === "agent_node") {
     return (
       <div className="rounded-2xl border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] p-4">
         <div className="text-[13px] font-[900] text-[color:var(--ol-ink)]">
-          {isWS ? copy.runtimeWSTitle : copy.runtimePullTitle}
+          {copy.runtimeTitle}
         </div>
         <p className="mt-2 text-[12.5px] leading-relaxed text-[color:var(--ol-muted)]">
-          {isWS ? copy.runtimeWSBody : copy.runtimeBody}
+          {copy.runtimeBody}
         </p>
       </div>
     );
