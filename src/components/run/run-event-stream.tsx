@@ -60,8 +60,9 @@ export function RunEventStream({
   const [openSeq, setOpenSeq] = useState<number>(-1);
   const lastSequenceRef = useRef(0);
   const terminalRef = useRef(false);
-  // 用 Set 追踪已收到的 sequence，O(1) 去重代替 Array.some O(n)
+  // 重连可能按 SSE id 或 sequence 重放；两种稳定身份都要去重。
   const seenSequencesRef = useRef(new Set<number>());
+  const seenEventIdsRef = useRef(new Set<string>());
 
   useEffect(() => {
     if (!enabled) {
@@ -78,6 +79,7 @@ export function RunEventStream({
     lastSequenceRef.current = 0;
     terminalRef.current = false;
     seenSequencesRef.current = new Set();
+    seenEventIdsRef.current = new Set();
 
     function scheduleReconnect() {
       if (stopped || terminalRef.current) return;
@@ -119,9 +121,12 @@ export function RunEventStream({
           if (stopped) return;
           lastSequenceRef.current = Math.max(lastSequenceRef.current, event.sequence);
           if (isTerminalEvent(event.event_type)) terminalRef.current = true;
-          // Set 去重：同一 sequence 的事件只处理一次
-          if (seenSequencesRef.current.has(event.sequence)) return;
+          if (
+            seenSequencesRef.current.has(event.sequence) ||
+            seenEventIdsRef.current.has(event.event_id)
+          ) return;
           seenSequencesRef.current.add(event.sequence);
+          seenEventIdsRef.current.add(event.event_id);
           setEvents((current) => [...current, event].sort((a, b) => a.sequence - b.sequence));
         },
         onClose: () => {
@@ -211,6 +216,7 @@ async function readRunEventStream({
         headers: {
           Accept: "text/event-stream",
           Authorization: `Bearer ${token}`,
+          ...(afterSequence > 0 ? { "Last-Event-ID": String(afterSequence) } : {}),
         },
         signal,
       },

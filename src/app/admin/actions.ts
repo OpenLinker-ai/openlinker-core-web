@@ -35,6 +35,7 @@ function revalidateAdmin() {
   revalidatePath("/admin/tasks");
   revalidatePath("/admin/users");
   revalidatePath("/admin/agents");
+  revalidatePath("/admin/nodes");
 }
 
 export async function updateUserFlagsAction(formData: FormData) {
@@ -132,4 +133,61 @@ export async function rejectCertificationAction(formData: FormData) {
   }
 
   adminRedirect(formData, "status", "Agent 实例认证已拒绝", "/admin/agents");
+}
+
+function actionLocale(formData: FormData): "zh" | "en" {
+  return formData.get("locale") === "en" ? "en" : "zh";
+}
+
+export async function drainRuntimeNodeAction(formData: FormData) {
+  const locale = actionLocale(formData);
+  const nodeID = String(formData.get("node_id") ?? "").trim();
+  const copy = locale === "zh"
+    ? { missing: "缺少 Node ID", failed: "无法让运行节点进入排空状态", done: "运行节点已开始排空" }
+    : { missing: "Node ID is missing", failed: "Failed to start draining the runtime node", done: "The runtime node is draining" };
+  if (!nodeID) adminRedirect(formData, "error", copy.missing, "/admin/nodes");
+
+  try {
+    await apiFetchAuthed(`/api/v1/admin/runtime/nodes/${encodeURIComponent(nodeID)}/drain`, {
+      method: "POST",
+    });
+    revalidateAdmin();
+  } catch {
+    adminRedirect(formData, "error", copy.failed, "/admin/nodes");
+  }
+
+  adminRedirect(formData, "status", copy.done, "/admin/nodes");
+}
+
+export async function revokeRuntimeNodeAction(formData: FormData) {
+  const locale = actionLocale(formData);
+  const nodeID = String(formData.get("node_id") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim();
+  const copy = locale === "zh"
+    ? {
+        missing: "缺少 Node ID",
+        reason: "撤销原因不能为空",
+        failed: "无法撤销运行节点",
+        done: "运行节点已撤销，现有连接将失效",
+      }
+    : {
+        missing: "Node ID is missing",
+        reason: "A revocation reason is required",
+        failed: "Failed to revoke the runtime node",
+        done: "The runtime node was revoked and its existing connections are no longer valid",
+      };
+  if (!nodeID) adminRedirect(formData, "error", copy.missing, "/admin/nodes");
+  if (!reason) adminRedirect(formData, "error", copy.reason, "/admin/nodes");
+
+  try {
+    await apiFetchAuthed(`/api/v1/admin/runtime/nodes/${encodeURIComponent(nodeID)}/revoke`, {
+      method: "POST",
+      body: { reason },
+    });
+    revalidateAdmin();
+  } catch {
+    adminRedirect(formData, "error", copy.failed, "/admin/nodes");
+  }
+
+  adminRedirect(formData, "status", copy.done, "/admin/nodes");
 }

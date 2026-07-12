@@ -17,6 +17,7 @@ import Link from "next/link";
 
 import { avatarFromSlug } from "@/components/market/avatar";
 import type { Locale } from "@/lib/i18n";
+import { runCancelStateLabel, runDispatchStateLabel } from "@/lib/i18n-labels";
 
 export interface Run {
   id: string;
@@ -24,6 +25,10 @@ export interface Run {
   agent_slug: string;
   agent_name: string;
   status: string;
+  dispatch_state?: string;
+  attempt_count?: number;
+  max_attempts?: number;
+  cancel_state?: string | null;
   cost_cents: number;
   duration_ms?: number;
   started_at: string;
@@ -188,10 +193,15 @@ export function RunHistory({
 function RunItemRow({ run, locale }: { run: Run; locale: Locale }) {
   const avatar = avatarFromSlug(run.agent_slug);
   const statusLabel = STATUS_LABEL[locale][run.status] ?? run.status;
+  const progressLabel = run.cancel_state
+    ? runCancelStateLabel(run.cancel_state, locale)
+    : run.dispatch_state
+      ? runDispatchStateLabel(run.dispatch_state, locale)
+      : statusLabel;
   const subtitle =
     run.duration_ms != null
-      ? `${run.agent_name} · ${statusLabel} · ${run.duration_ms}ms`
-      : `${run.agent_name} · ${statusLabel}`;
+      ? `${run.agent_name} · ${progressLabel} · ${run.duration_ms}ms`
+      : `${run.agent_name} · ${progressLabel}`;
   const sourceBadge = run.source ? SOURCE_BADGE[run.source] : undefined;
 
   return (

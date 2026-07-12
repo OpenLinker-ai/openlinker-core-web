@@ -57,7 +57,7 @@ flowchart LR
   CoreWeb -->|"浏览器 / Server Component API 调用"| Core["openlinker-core<br/>auth / registry / runs / admin"]
 
   SDKs["openlinker-js / openlinker-go"] -->|"同一 Core API contract"| Core
-  AgentNode["openlinker-agent-node"] <-->|"runtime_ws / runtime_pull"| Core
+  AgentNode["openlinker-agent-node"] -->|"Runtime v2 WebSocket + 长轮询兜底<br/>mTLS / 租约 / 取消 / 结果确认"| Core
 
   Core -->|"direct_http"| HTTPAgent["公网 HTTPS Agent"]
   Core -->|"mcp_server"| MCPAgent["远程 MCP / JSON-RPC server"]

@@ -318,7 +318,7 @@ export default async function AgentDetailPage({
                 <MetaCell label={copy.scope} value={copy.scopeValue} />
                 <MetaCell label={copy.pricing} value={priceMetadataDescription} />
                 <MetaCell label={copy.availability} value={`${availabilityLabel} · ${availabilityStatusSummary(availability.status, locale)}`} />
-                <MetaCell label={copy.integration} value="HTTP · MCP · WebSocket · Pull" />
+                <MetaCell label={copy.integration} value="HTTP · MCP · Runtime v2" />
               </div>
             </div>
 

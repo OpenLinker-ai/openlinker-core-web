@@ -1,6 +1,7 @@
 import "client-only";
 
 const storagePrefix = "openlinker.pending-run-intent.v2";
+const replayStoragePrefix = "openlinker.pending-run-replay.v2";
 
 interface StoredRunIntent {
   fingerprint: string;
@@ -49,6 +50,22 @@ export function completeRunCreationIntent(agentId: string, intentId: string): vo
   removeStoredValue(storageKey);
 }
 
+export function acquireRunReplayIntent(sourceRunId: string): string {
+  const storageKey = `${replayStoragePrefix}:${sourceRunId}`;
+  const existing = readStoredValue(storageKey);
+  if (existing && /^core-web-replay-[0-9a-f-]{36}$/.test(existing)) return existing;
+
+  const idempotencyKey = `core-web-replay-${randomUUID()}`;
+  writeStoredValue(storageKey, idempotencyKey);
+  return idempotencyKey;
+}
+
+export function completeRunReplayIntent(sourceRunId: string, idempotencyKey: string): void {
+  const storageKey = `${replayStoragePrefix}:${sourceRunId}`;
+  if (readStoredValue(storageKey) !== idempotencyKey) return;
+  removeStoredValue(storageKey);
+}
+
 function readIntent(storageKey: string): StoredRunIntent | null {
   const raw = readStoredValue(storageKey);
   if (!raw) return null;
@@ -70,7 +87,10 @@ function readIntent(storageKey: string): StoredRunIntent | null {
 }
 
 function writeIntent(storageKey: string, intent: StoredRunIntent): void {
-  const raw = JSON.stringify(intent);
+  writeStoredValue(storageKey, JSON.stringify(intent));
+}
+
+function writeStoredValue(storageKey: string, raw: string): void {
   try {
     window.sessionStorage.setItem(storageKey, raw);
     memoryFallback.delete(storageKey);

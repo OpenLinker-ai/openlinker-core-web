@@ -1,18 +1,29 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { RunEventStream } from "@/components/run/run-event-stream";
 import { TaskCallbackSection } from "@/components/run/task-callback-section";
 import { Icon } from "@/components/ui/icon";
+import { useApi } from "@/hooks/use-api";
+import { localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
 import {
   artifactVisibilityLabel,
   coverageStatusLabel,
+  localizedBackendText,
+  runCancelStateLabel,
+  runDispatchStateLabel,
   runErrorMessage,
   runStatusLabel,
 } from "@/lib/i18n-labels";
+import {
+  acquireRunReplayIntent,
+  completeRunReplayIntent,
+} from "@/lib/run-idempotency";
 import { runDetailMessages } from "@/messages/run";
 
 export type RunDetailData = {
@@ -22,6 +33,19 @@ export type RunDetailData = {
   agent_name?: string;
   agent_connection_mode?: string;
   status: string;
+  dispatch_state?: string;
+  attempt_count?: number;
+  max_attempts?: number;
+  next_attempt_at?: string | null;
+  active_attempt_id?: string | null;
+  latest_attempt_id?: string | null;
+  cancel_state?: string | null;
+  cancel_requested_at?: string | null;
+  cancel_acknowledged_at?: string | null;
+  cancel_reason?: string | null;
+  dead_lettered_at?: string | null;
+  replay_of_run_id?: string | null;
+  runtime_contract_id?: string;
   input?: Record<string, unknown>;
   output?: Record<string, unknown>;
   error_code?: string;
@@ -110,13 +134,25 @@ type ViewRun = {
   agentName?: string;
   agentConnectionMode?: string;
   status: string;
+  dispatchState?: string;
+  attemptCount: number;
+  maxAttempts: number;
+  nextAttemptAt?: string;
+  activeAttemptId?: string;
+  latestAttemptId?: string;
+  cancelState?: string;
+  cancelRequestedAt?: string;
+  cancelAcknowledgedAt?: string;
+  cancelReason?: string;
+  deadLetteredAt?: string;
+  replayOfRunId?: string;
+  runtimeContractId?: string;
   input: Record<string, unknown>;
   costCents: number;
   durationMs: number;
   output: Record<string, unknown>;
   errorCode?: string;
   error?: string;
-  rawError?: string;
   parentRunId?: string;
   callerAgentId?: string;
   billingMode?: string;
@@ -133,13 +169,25 @@ function normalizeRun(run: RunDetailData, locale: Locale): ViewRun {
     agentName: run.agent_name,
     agentConnectionMode: run.agent_connection_mode,
     status: run.status,
+    dispatchState: run.dispatch_state,
+    attemptCount: Math.max(0, run.attempt_count ?? 0),
+    maxAttempts: Math.max(1, run.max_attempts ?? 1),
+    nextAttemptAt: run.next_attempt_at ?? undefined,
+    activeAttemptId: run.active_attempt_id ?? undefined,
+    latestAttemptId: run.latest_attempt_id ?? undefined,
+    cancelState: run.cancel_state ?? undefined,
+    cancelRequestedAt: run.cancel_requested_at ?? undefined,
+    cancelAcknowledgedAt: run.cancel_acknowledged_at ?? undefined,
+    cancelReason: run.cancel_reason ?? undefined,
+    deadLetteredAt: run.dead_lettered_at ?? undefined,
+    replayOfRunId: run.replay_of_run_id ?? undefined,
+    runtimeContractId: run.runtime_contract_id,
     input: run.input ?? {},
     costCents: run.cost_cents,
     durationMs: run.duration_ms,
     output: run.output ?? {},
     errorCode: run.error_code,
     error: runErrorMessage(run.error_code, run.error_message, locale),
-    rawError: run.error_message?.trim() || undefined,
     parentRunId: run.parent_run_id,
     callerAgentId: run.caller_agent_id,
     billingMode: run.billing_mode,
@@ -246,6 +294,9 @@ export function RunDetail({
             >
               {copy.rerun}
             </Link>
+            {view.status === "running" && !view.cancelState ? (
+              <RunCancelButton locale={locale} runId={view.id} />
+            ) : null}
             <Link
               href="/runs"
               className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12.5px] font-[900] text-[color:var(--ol-ink)] hover:border-[color:var(--ol-primary)]/40"
@@ -268,6 +319,8 @@ export function RunDetail({
         <StatCell label={copy.status} value={runStatusLabel(view.status, locale)} />
         <StatCell label={copy.delivery} value={delegated ? copy.deliveryNoSeparate : copy.deliverySettings} />
       </section>
+
+      <RuntimeProgressPanel locale={locale} run={view} />
 
       {view.evidenceSummary ? (
         <section className="ol-panel p-5">
@@ -302,7 +355,7 @@ export function RunDetail({
             <TaskCallbackSection locale={locale} runId={view.id} enabled />
           ) : null}
 
-          <div className="ol-panel overflow-hidden">
+          {view.status !== "running" ? <div className="ol-panel overflow-hidden">
             <div className="ol-panel-head">
               <strong>{success ? copy.output : copy.error}</strong>
               <span className={success ? "ol-chip ol-chip-green" : "ol-chip ol-chip-amber"}>
@@ -335,9 +388,6 @@ export function RunDetail({
                           {
                             error_code: view.errorCode,
                             error: view.error ?? copy.unknownError,
-                            ...(view.rawError && view.rawError !== view.error
-                              ? { raw_error: view.rawError }
-                              : {}),
                           },
                           null,
                           2,
@@ -346,7 +396,7 @@ export function RunDetail({
                 </pre>
               </div>
             </div>
-          </div>
+          </div> : null}
 
           {artifacts.length > 0 ? (
             <div className="ol-panel overflow-hidden">
@@ -469,6 +519,228 @@ export function RunDetail({
       </div>
     </div>
   );
+}
+
+function RuntimeProgressPanel({ locale, run }: { locale: Locale; run: ViewRun }) {
+  const copy = runDetailMessages[locale];
+  const state = run.dispatchState ?? "";
+  const description =
+    state === "pending"
+      ? copy.progressPending
+      : state === "offered"
+        ? copy.progressOffered
+        : state === "executing"
+          ? copy.progressExecuting
+          : state === "retry_wait"
+            ? copy.progressRetry
+            : state === "terminal"
+              ? copy.progressTerminal
+              : state === "dead_letter"
+                ? copy.progressDeadLetter
+                : copy.progressUnknown;
+  const hasOperationsEvidence = Boolean(
+    run.dispatchState ||
+      run.cancelState ||
+      run.activeAttemptId ||
+      run.latestAttemptId ||
+      run.runtimeContractId ||
+      run.replayOfRunId,
+  );
+
+  if (!hasOperationsEvidence) return null;
+
+  const attemptValue =
+    run.attemptCount > 0
+      ? `${run.attemptCount} / ${run.maxAttempts}`
+      : copy.noAttempt;
+  const stateTone =
+    state === "executing"
+      ? "ol-chip-green"
+      : state === "retry_wait"
+        ? "ol-chip-blue"
+        : state === "dead_letter"
+          ? "ol-chip-amber"
+          : "ol-chip-mint";
+
+  return (
+    <section className="ol-panel overflow-hidden">
+      <div className="ol-panel-head">
+        <strong>{copy.progress}</strong>
+        <span className={`ol-chip ${stateTone}`}>
+          {runDispatchStateLabel(state, locale)}
+        </span>
+      </div>
+      <div className="grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_260px]">
+        <div>
+          <p className="text-[13.5px] font-semibold leading-relaxed text-[color:var(--ol-ink)]">
+            {description}
+          </p>
+          {state === "dead_letter" ? (
+            <div className="mt-4 rounded-[14px] border border-amber-200 bg-amber-50 p-4">
+              <strong className="text-[13px] font-black text-amber-950">{copy.deadLetterTitle}</strong>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-amber-900">{copy.deadLetterBody}</p>
+              <RunReplayButton locale={locale} sourceRunId={run.id} />
+            </div>
+          ) : null}
+          {run.cancelState ? (
+            <div className="mt-4 rounded-[14px] border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <strong className="text-[12.5px] font-black text-[color:var(--ol-ink)]">
+                  {copy.cancelProgress}
+                </strong>
+                <span className="ol-chip ol-chip-amber">
+                  {runCancelStateLabel(run.cancelState, locale)}
+                </span>
+              </div>
+              {run.cancelReason ? (
+                <p className="mt-2 text-[12px] text-[color:var(--ol-muted)]">
+                  {copy.cancelReason}: {localizedBackendText(run.cancelReason, locale, copy.cancelReasonFallback)}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="grid content-start gap-2.5">
+          <EvidenceStat label={copy.attempts} value={attemptValue} />
+          {run.nextAttemptAt ? (
+            <EvidenceStat label={copy.nextRetry} value={formatRuntimeTime(run.nextAttemptAt, locale)} />
+          ) : null}
+          {run.replayOfRunId ? (
+            <Link
+              href={`/run/${encodeURIComponent(run.replayOfRunId)}`}
+              className="inline-flex min-h-10 items-center justify-between rounded-[12px] border border-[color:var(--ol-line)] bg-white px-3 text-[12px] font-black text-[color:var(--ol-primary-dark)] hover:border-[color:var(--ol-primary)]/40"
+            >
+              <span>{copy.openOriginal}</span>
+              <span aria-hidden="true">→</span>
+            </Link>
+          ) : null}
+        </div>
+      </div>
+
+      <details className="border-t border-[color:var(--ol-line)] bg-[#fbfcfe] px-5 py-3">
+        <summary className="cursor-pointer text-[12px] font-black text-[color:var(--ol-muted)]">
+          {copy.operations}
+        </summary>
+        <dl className="mt-3 grid gap-2 text-[12px] sm:grid-cols-2">
+          <OperationsDatum label={copy.dispatchStateTechnical} value={run.dispatchState} />
+          <OperationsDatum label={copy.activeAttempt} value={run.activeAttemptId} mono />
+          <OperationsDatum label={copy.latestAttempt} value={run.latestAttemptId} mono />
+          <OperationsDatum label={copy.runtimeContract} value={run.runtimeContractId} mono />
+          <OperationsDatum label={copy.cancelStateTechnical} value={run.cancelState} />
+          <OperationsDatum label={copy.cancelRequestedTechnical} value={run.cancelRequestedAt} mono />
+          <OperationsDatum label={copy.cancelAcknowledgedTechnical} value={run.cancelAcknowledgedAt} mono />
+          <OperationsDatum label={copy.replaySource} value={run.replayOfRunId} mono />
+        </dl>
+      </details>
+    </section>
+  );
+}
+
+function RunReplayButton({ locale, sourceRunId }: { locale: Locale; sourceRunId: string }) {
+  const copy = runDetailMessages[locale];
+  const router = useRouter();
+  const { fetch: apiFetch } = useApi();
+  const [submitting, setSubmitting] = useState(false);
+
+  const replay = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    const idempotencyKey = acquireRunReplayIntent(sourceRunId);
+    try {
+      const created = await apiFetch<RunDetailData>(
+        `/api/v1/runs/${encodeURIComponent(sourceRunId)}/replay`,
+        {
+          method: "POST",
+          headers: { "Idempotency-Key": idempotencyKey },
+        },
+      );
+      if (!created.run_id) throw new Error(copy.replayFailed);
+      completeRunReplayIntent(sourceRunId, idempotencyKey);
+      toast.success(copy.replayStarted);
+      router.push(`/run/${encodeURIComponent(created.run_id)}`);
+      router.refresh();
+    } catch (error) {
+      toast.error(localizedErrorMessage(error, locale, copy.replayFailed));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      disabled={submitting}
+      onClick={() => void replay()}
+      className="mt-3 inline-flex h-9 items-center justify-center rounded-xl bg-amber-900 px-3 text-[12px] font-black text-white hover:bg-amber-950 disabled:cursor-wait disabled:opacity-60"
+    >
+      {submitting ? copy.replaying : copy.replayRun}
+    </button>
+  );
+}
+
+function RunCancelButton({ locale, runId }: { locale: Locale; runId: string }) {
+  const copy = runDetailMessages[locale];
+  const router = useRouter();
+  const { fetch: apiFetch } = useApi();
+  const [submitting, setSubmitting] = useState(false);
+
+  const cancel = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      await apiFetch(`/api/v1/runs/${encodeURIComponent(runId)}/cancel`, { method: "POST" });
+      toast.success(copy.cancelStarted);
+      router.refresh();
+    } catch (error) {
+      toast.error(localizedErrorMessage(error, locale, copy.cancelFailed));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      disabled={submitting}
+      onClick={() => void cancel()}
+      className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 text-[12.5px] font-[900] text-rose-800 hover:bg-rose-100 disabled:cursor-wait disabled:opacity-60"
+    >
+      <Icon name="cancel" size="sm" />
+      {submitting ? copy.canceling : copy.cancelRun}
+    </button>
+  );
+}
+
+function OperationsDatum({
+  label,
+  value,
+  mono = false,
+}: {
+  label: string;
+  value?: string;
+  mono?: boolean;
+}) {
+  if (!value) return null;
+  return (
+    <div className="min-w-0 rounded-[10px] border border-[color:var(--ol-line)] bg-white px-3 py-2">
+      <dt className="text-[10.5px] font-black uppercase tracking-[0.05em] text-[color:var(--ol-subtle)]">
+        {label}
+      </dt>
+      <dd className={`mt-1 break-all text-[11.5px] font-bold text-[color:var(--ol-ink)] ${mono ? "font-mono" : ""}`}>
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+function formatRuntimeTime(value: string, locale: Locale): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(parsed);
 }
 
 function RequirementEvidencePanel({ locale, evidence }: { locale: Locale; evidence?: RunRequirementEvidenceData }) {
@@ -719,9 +991,6 @@ function buildReplayMessages(
       content: run.error || fallback.error,
       payload: {
         error: run.error,
-        ...(run.rawError && run.rawError !== run.error
-          ? { raw_error: run.rawError }
-          : {}),
         status: run.status,
       },
       synthetic: true,

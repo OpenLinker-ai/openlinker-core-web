@@ -73,8 +73,8 @@ function isAllowedEndpointURL(value: string): boolean {
 }
 
 function connectionModeLabel(mode: AgentConnectionMode, locale: Locale): string {
-  if (mode === "runtime_ws") return "Agent Node / WebSocket";
-  if (mode === "runtime_pull") return locale === "zh" ? "Agent Node（长轮询）" : "Runtime Pull";
+  if (mode === "runtime_ws") return "Agent Node / Runtime v2 WebSocket";
+  if (mode === "runtime_pull") return locale === "zh" ? "Agent Node（Runtime v2 长轮询）" : "Agent Node (Runtime v2 long-poll)";
   if (mode === "mcp_server") return locale === "zh" ? "已有 MCP 工具" : "Existing MCP tool";
   return locale === "zh" ? "HTTP 端点" : "HTTP Endpoint";
 }
@@ -595,20 +595,16 @@ function EndpointSection({
   const copy =
     locale === "zh"
       ? {
-          runtimeWSTitle: "Agent Node / WebSocket：本地与内网 Agent",
+          runtimeWSTitle: "Agent Node / Runtime v2 WebSocket",
           runtimeWSBody: (
             <>
-              保存后在 Agent 管理生成绑定该 Agent 的接入凭证。你的 Agent Node 不需要公网入站地址，只要用该凭证建立{" "}
-              <code>/api/v1/agent-runtime/ws</code> 出站长连接，就能实时接收运行请求、回传事件和最终结果；不适合保持 WebSocket 时可选择 Agent Node（长轮询）。
+              本地、内网或 NAT 后的默认选择。管理员登记 Node 并签发 mTLS 设备证书后，Agent Node 会用 Runtime v2 WebSocket 低延迟接单，并负责 assignment ACK、租约、resume、取消和 Event/Result ACK。网络阻断 WebSocket 时可切换到同一套 v2 长轮询，不会退回旧接口。
             </>
           ),
-          runtimePullTitle: "Agent Node（长轮询）：无需持续 WebSocket",
+          runtimePullTitle: "Agent Node / Runtime v2 长轮询",
           runtimeBody: (
             <>
-              保存后在 Agent 管理生成绑定该 Agent 的接入凭证。你的本地 Agent 不需要公网入站地址，只要定时请求{" "}
-              <code>/api/v1/agent-runtime/heartbeat</code> 读取是否有待领取运行请求，并用{" "}
-              <code>/api/v1/agent-runtime/runs/claim?wait=25</code> 长轮询领取运行请求，再 POST{" "}
-              <code>/api/v1/agent-runtime/runs/&lt;id&gt;/result</code> 回传结果。
+              企业代理或网络无法维持 WebSocket 时选择。它与 WebSocket 使用同一套 mTLS 身份、assignment ACK、租约、resume、取消、Event/Result ACK 和持久化 spool，只把接单与控制消息改为 HTTPS 长轮询；不是旧版 heartbeat / claim / result。
             </>
           ),
           httpsOrLoopback: "调用端点 URL（HTTPS 或本地回环 HTTP）",
@@ -625,20 +621,16 @@ function EndpointSection({
           endpointAuth: "鉴权 Header（可选，当前实例调用端点时携带）",
         }
       : {
-          runtimeWSTitle: "Agent Node / WebSocket for local and private Agents",
+          runtimeWSTitle: "Agent Node over Runtime v2 WebSocket",
           runtimeWSBody: (
             <>
-              After saving, Agent Console generates an access credential bound to this Agent. Agent Node does not need a public inbound URL. It opens an outbound{" "}
-              <code>/api/v1/agent-runtime/ws</code> connection with that credential to receive run requests in real time, stream events, and send final results. Choose Runtime Pull when maintaining a WebSocket is not suitable.
+              This is the default for local, private-network, or NAT Agents. After an operator enrolls the Node and issues its mTLS device certificate, Agent Node uses Runtime v2 WebSocket for low-latency dispatch and owns assignment ACKs, leases, resume, cancellation, and Event/Result ACKs. If the network blocks WebSocket, switch to the same v2 long-poll protocol—never a legacy endpoint.
             </>
           ),
-          runtimePullTitle: "Runtime Pull without a persistent WebSocket",
+          runtimePullTitle: "Agent Node over Runtime v2 long-poll",
           runtimeBody: (
             <>
-              After saving, Agent Console generates an access credential bound to this Agent. Your local Agent does not need a public inbound URL. It periodically calls{" "}
-              <code>/api/v1/agent-runtime/heartbeat</code> to check for pending run requests, long-polls{" "}
-              <code>/api/v1/agent-runtime/runs/claim?wait=25</code> to claim a run, then POSTs the result to{" "}
-              <code>/api/v1/agent-runtime/runs/&lt;id&gt;/result</code>.
+              Choose this when a corporate proxy or network cannot sustain WebSocket. It uses the same mTLS identity, assignment ACKs, leases, resume, cancellation, Event/Result ACKs, and durable spool; only dispatch and control use HTTPS long-poll. It is not the former heartbeat / claim / result protocol.
             </>
           ),
           httpsOrLoopback: "Endpoint URL (HTTPS or local loopback HTTP)",

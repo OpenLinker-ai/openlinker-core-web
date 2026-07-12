@@ -112,31 +112,40 @@ type RuntimeWorkbench = {
     availability_status: string;
   };
   runtime: {
-    active_token_count: number;
+    runtime_contract_id: string;
+    runtime_contract_digest: string;
+    transport_policy: "ws_primary_pull_v2_fallback" | string;
+    primary_transport: "runtime_ws" | string;
+    fallback_transport: "runtime_pull_v2" | string;
+    connection_status: "online" | "draining" | "offline" | "not_applicable" | string;
+    active_node_count: number;
+    active_session_count: number;
+    ready_session_count: number;
+    draining_session_count: number;
+    total_capacity: number;
+    total_inflight: number;
     pending_run_count: number;
-    claim_now: boolean;
-    last_runtime_activity_at?: string;
-    last_claimed_at?: string;
+    retry_wait_run_count: number;
+    offered_run_count: number;
+    executing_run_count: number;
+    last_session_activity_at?: string;
+    last_assignment_at?: string;
     last_result_at?: string;
-    recommended_heartbeat_after_seconds: number;
-    max_claim_wait_seconds: number;
   };
-  tokens: Array<{
-    id: string;
-    name: string;
-    prefix: string;
-    scopes: string[];
-    last_used_at?: string;
-    revoked_at?: string;
-    created_at: string;
-  }>;
   recent_runs: Array<{
     run_id: string;
     status: string;
+    dispatch_state: string;
+    attempt_count: number;
+    max_attempts: number;
+    next_attempt_at?: string;
     source: string;
     started_at: string;
-    claimed_at?: string;
     finished_at?: string;
+    latest_attempt_id?: string;
+    latest_attempt_state?: string;
+    last_assignment_at?: string;
+    latest_attempt_ended_at?: string;
     error_code?: string;
     error_message?: string;
     detail_url: string;
@@ -144,7 +153,8 @@ type RuntimeWorkbench = {
   diagnostics: Array<{
     code: string;
     severity: "success" | "info" | "warning" | "error" | string;
-    message: string;
+    summary: string;
+    technical_detail: string;
     next_action: string;
   }>;
 };
@@ -225,10 +235,10 @@ function connectionModeLabel(agent: OnboardingAgent, locale: Locale): string {
     return `${locale === "zh" ? "已有 MCP 工具" : "Existing MCP tool"} · ${agent.mcp_tool_name || (locale === "zh" ? "未配置工具" : "tool not configured")}`;
   }
   if (agent.connection_mode === "runtime_ws") {
-    return locale === "zh" ? "Agent Node / WebSocket · 出站长连接" : "Agent Node / WebSocket · outbound socket";
+    return locale === "zh" ? "Agent Node · Runtime v2 WebSocket" : "Agent Node · Runtime v2 WebSocket";
   }
   if (agent.connection_mode === "runtime_pull") {
-    return locale === "zh" ? "Agent Node（长轮询）· WebSocket 降级领取" : "Runtime Pull · fallback claim loop";
+    return locale === "zh" ? "Agent Node · Runtime v2 长轮询兜底" : "Agent Node · Runtime v2 long-poll fallback";
   }
   return `HTTP · ${endpointHost(agent.endpoint_url)}`;
 }
@@ -836,33 +846,59 @@ function RuntimeWorkbenchPanel({
           loadFailed: "运行时工作台暂时不可用",
           callable: "可调用",
           notCallable: "未达可调用",
-          activeTokens: "有效凭证",
-          pendingRuns: "待领取",
-          lastActivity: "最近活动",
-          lastClaim: "最近领取",
+          activeNodes: "在线 Node",
+          sessions: "可用 Session",
+          capacity: "执行容量",
+          queuedRuns: "等待执行",
+          activeRuns: "正在执行",
+          lastActivity: "最近连接",
+          lastAssignment: "最近派发",
           lastResult: "最近回传",
-          heartbeat: "建议心跳",
-          claimWait: "最长领取等待",
           diagnostics: "诊断",
+          noDiagnostics: "当前没有需要处理的问题",
           recentRuns: "最近运行",
           noRuns: "暂无运行记录",
           openRun: "打开",
+          attempts: "尝试",
+          runtimeDetails: "展开 Runtime 技术状态",
+          transportPolicy: "通道策略",
+          primaryTransport: "主通道",
+          fallbackTransport: "降级通道",
+          contractId: "runtime_contract_id",
+          contractDigest: "runtime_contract_digest",
+          drainingSessions: "排空中的 Session",
+          diagnosticDetails: "查看技术原因与下一步",
+          technicalReason: "技术原因",
+          nextAction: "下一步",
         }
       : {
           loadFailed: "Workbench is temporarily unavailable",
           callable: "Callable",
           notCallable: "Not callable",
-          activeTokens: "Active credentials",
-          pendingRuns: "Pending",
-          lastActivity: "Last activity",
-          lastClaim: "Last claim",
+          activeNodes: "Online Nodes",
+          sessions: "Ready sessions",
+          capacity: "Execution capacity",
+          queuedRuns: "Waiting",
+          activeRuns: "In progress",
+          lastActivity: "Last connection",
+          lastAssignment: "Last assignment",
           lastResult: "Last result",
-          heartbeat: "Heartbeat",
-          claimWait: "Claim wait",
           diagnostics: "Diagnostics",
+          noDiagnostics: "Nothing needs attention",
           recentRuns: "Recent runs",
           noRuns: "No runs yet",
           openRun: "Open",
+          attempts: "Attempts",
+          runtimeDetails: "Show Runtime technical state",
+          transportPolicy: "Transport policy",
+          primaryTransport: "Primary",
+          fallbackTransport: "Fallback",
+          contractId: "runtime_contract_id",
+          contractDigest: "runtime_contract_digest",
+          drainingSessions: "Draining sessions",
+          diagnosticDetails: "Show technical cause and next step",
+          technicalReason: "Technical cause",
+          nextAction: "Next step",
         };
 
   useEffect(() => {
@@ -905,6 +941,8 @@ function RuntimeWorkbenchPanel({
   const recentRuns = Array.isArray(workbench.recent_runs) ? workbench.recent_runs : [];
   const connectionMode = workbenchAgent.connection_mode ?? "direct_http";
   const callable = Boolean(workbenchAgent.readiness_callable);
+  const queuedRuns = Number(runtime.pending_run_count ?? 0) + Number(runtime.retry_wait_run_count ?? 0);
+  const activeRuns = Number(runtime.offered_run_count ?? 0) + Number(runtime.executing_run_count ?? 0);
 
   return (
     <div className="ol-panel ol-panel-pad space-y-3">
@@ -921,16 +959,47 @@ function RuntimeWorkbenchPanel({
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <WorkbenchMetric label={copy.activeTokens} value={String(runtime.active_token_count ?? 0)} />
-        <WorkbenchMetric label={copy.pendingRuns} value={String(runtime.pending_run_count ?? 0)} />
-        <WorkbenchMetric label={copy.lastActivity} value={formatDate(runtime.last_runtime_activity_at, locale)} />
-        <WorkbenchMetric label={copy.lastClaim} value={formatDate(runtime.last_claimed_at, locale)} />
-        <WorkbenchMetric label={copy.lastResult} value={formatDate(runtime.last_result_at, locale)} />
+        <WorkbenchMetric label={copy.activeNodes} value={String(runtime.active_node_count ?? 0)} />
         <WorkbenchMetric
-          label={copy.heartbeat}
-          value={`${runtime.recommended_heartbeat_after_seconds ?? 0}s / ${copy.claimWait} ${runtime.max_claim_wait_seconds ?? 0}s`}
+          label={copy.sessions}
+          value={`${runtime.ready_session_count ?? 0} / ${runtime.active_session_count ?? 0}`}
         />
+        <WorkbenchMetric
+          label={copy.capacity}
+          value={`${runtime.total_inflight ?? 0} / ${runtime.total_capacity ?? 0}`}
+        />
+        <WorkbenchMetric label={copy.queuedRuns} value={String(queuedRuns)} />
+        <WorkbenchMetric label={copy.activeRuns} value={String(activeRuns)} />
+        <WorkbenchMetric
+          label={copy.lastActivity}
+          value={formatDate(runtime.last_session_activity_at, locale)}
+        />
+        <WorkbenchMetric
+          label={copy.lastAssignment}
+          value={formatDate(runtime.last_assignment_at, locale)}
+        />
+        <WorkbenchMetric label={copy.lastResult} value={formatDate(runtime.last_result_at, locale)} />
       </div>
+
+      <details className="rounded-xl border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] px-3 py-2">
+        <summary className="cursor-pointer text-[11.5px] font-black text-[color:var(--ol-muted)]">
+          {copy.runtimeDetails}
+        </summary>
+        <dl className="mt-3 grid gap-2 sm:grid-cols-2">
+          <WorkbenchTechnicalDatum label={copy.transportPolicy} value={runtime.transport_policy || "—"} />
+          <WorkbenchTechnicalDatum label={copy.primaryTransport} value={runtime.primary_transport || "—"} />
+          <WorkbenchTechnicalDatum label={copy.fallbackTransport} value={runtime.fallback_transport || "—"} />
+          <WorkbenchTechnicalDatum
+            label={copy.drainingSessions}
+            value={String(runtime.draining_session_count ?? 0)}
+          />
+          <WorkbenchTechnicalDatum label={copy.contractId} value={runtime.runtime_contract_id || "—"} />
+          <WorkbenchTechnicalDatum
+            label={copy.contractDigest}
+            value={runtime.runtime_contract_digest || "—"}
+          />
+        </dl>
+      </details>
 
       <div className="rounded-xl border border-[color:var(--ol-line)] bg-white p-3">
         <strong className="text-[12px] font-black text-[color:var(--ol-ink)]">
@@ -938,11 +1007,39 @@ function RuntimeWorkbenchPanel({
         </strong>
         <div className="mt-2 grid gap-1.5">
           {diagnostics.map((item) => (
-            <div key={`${item.code}:${item.next_action}`} className="flex items-start gap-2 text-[12px] font-semibold leading-5 text-[color:var(--ol-muted)]">
-              <span className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${diagnosticDot(item.severity)}`} />
-              <span>{localizedRuntimeDiagnostic(item.code, item.message, locale)}</span>
+            <div key={`${item.code}:${item.next_action}`} className="rounded-xl bg-[color:var(--ol-soft)] px-3 py-2">
+              <div className="flex items-start gap-2 text-[12px] font-semibold leading-5 text-[color:var(--ol-muted)]">
+                <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${diagnosticDot(item.severity)}`} />
+                <span>{localizedRuntimeDiagnostic(item.code, item.summary, locale)}</span>
+              </div>
+              {(item.technical_detail || item.next_action) ? (
+                <details className="mt-1 pl-4">
+                  <summary className="cursor-pointer text-[11px] font-black text-[color:var(--ol-primary-dark)]">
+                    {copy.diagnosticDetails}
+                  </summary>
+                  <dl className="mt-2 grid gap-2 text-[11px] leading-5 text-[color:var(--ol-muted)]">
+                    {item.technical_detail ? (
+                      <WorkbenchTechnicalDatum
+                        label={copy.technicalReason}
+                        value={localizedBackendText(item.technical_detail, locale, item.code)}
+                        mono={false}
+                      />
+                    ) : null}
+                    {item.next_action ? (
+                      <WorkbenchTechnicalDatum
+                        label={copy.nextAction}
+                        value={localizedBackendText(item.next_action, locale, item.code)}
+                        mono={false}
+                      />
+                    ) : null}
+                  </dl>
+                </details>
+              ) : null}
             </div>
           ))}
+          {diagnostics.length === 0 ? (
+            <p className="text-[12px] font-semibold text-[color:var(--ol-muted)]">{copy.noDiagnostics}</p>
+          ) : null}
         </div>
       </div>
 
@@ -961,6 +1058,9 @@ function RuntimeWorkbenchPanel({
                   <code className="ml-2 text-[11px] text-[color:var(--ol-muted)]">
                     {run.run_id.slice(0, 8)}
                   </code>
+                  <span className="ml-2 text-[11px] font-bold text-[color:var(--ol-subtle)]">
+                    {copy.attempts} {run.attempt_count ?? 0}/{run.max_attempts ?? 0}
+                  </span>
                 </div>
                 <Link href={run.detail_url || `/run/${run.run_id}`} className="text-[12px] font-black text-[color:var(--ol-primary-dark)] hover:underline">
                   {copy.openRun}
@@ -987,6 +1087,29 @@ function WorkbenchMetric({ label, value }: { label: string; value: string }) {
       <div className="mt-1 truncate text-[12.5px] font-black text-[color:var(--ol-ink)]">
         {value}
       </div>
+    </div>
+  );
+}
+
+function WorkbenchTechnicalDatum({
+  label,
+  value,
+  mono = true,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[10.5px] font-black text-[color:var(--ol-subtle)]">{label}</dt>
+      <dd
+        className={`mt-0.5 break-all text-[11px] font-bold leading-5 text-[color:var(--ol-ink)] ${
+          mono ? "font-mono" : ""
+        }`}
+      >
+        {value}
+      </dd>
     </div>
   );
 }

@@ -15,7 +15,11 @@ import {
   getAdminContext,
 } from "./_components/shared";
 
-function messageFromError(error: unknown, locale: "zh" | "en", fallback: string): string {
+function messageFromError(
+  error: unknown,
+  locale: "zh" | "en",
+  fallback: string,
+): string {
   return localizedErrorMessage(error, locale, fallback);
 }
 
@@ -79,28 +83,109 @@ export default async function AdminOverviewPage({
           : "Review agents by page and manage lifecycle, visibility, and certification state.",
       metric: formatNumber(summary?.total_agents ?? 0),
     },
+    {
+      href: "/admin/nodes",
+      title: copy.nodes,
+      body:
+        locale === "zh"
+          ? "查看私有 Agent 的运行节点、当前连接、容量和 Runtime contract 是否一致。"
+          : "Review private-Agent nodes, live sessions, capacity, and Runtime contract alignment.",
+      metric: null,
+    },
+    {
+      href: "/admin/dead-letters",
+      title: copy.deadLetters,
+      body:
+        locale === "zh"
+          ? "查看自动重试已经耗尽的运行证据；回放仍由任务所有者从运行详情发起。"
+          : "Inspect runs that exhausted automatic retries; owners still initiate replays from Run detail.",
+      metric: null,
+    },
+    {
+      href: "/admin/maintenance",
+      title: copy.maintenance,
+      body:
+        locale === "zh"
+          ? "确认 Core 实例、数据库结构、发布版本、Runtime contract 和唤醒通道是否可以开放新任务。"
+          : "Verify Core membership, schema, release, Runtime contract, and wake-up health before opening new runs.",
+      metric: null,
+    },
   ];
 
   return (
-    <AdminShell active="overview" locale={locale} status={params.status} error={params.error}>
+    <AdminShell
+      active="overview"
+      locale={locale}
+      status={params.status}
+      error={params.error}
+    >
       <section className="ol-panel ol-usage-stats mt-6">
         {error ? <ErrorBox message={error} /> : null}
-        <StatCard label={copy.totalUsers} value={formatNumber(summary?.total_users ?? 0)} tone="blue" href="/admin/users" />
-        <StatCard label={copy.admins} value={formatNumber(summary?.admin_users ?? 0)} href="/admin/users?role=admin" />
-        <StatCard label={copy.creators} value={formatNumber(summary?.creator_users ?? 0)} href="/admin/users?role=creator" />
+        <StatCard
+          label={copy.totalUsers}
+          value={formatNumber(summary?.total_users ?? 0)}
+          tone="blue"
+          href="/admin/users"
+        />
+        <StatCard
+          label={copy.admins}
+          value={formatNumber(summary?.admin_users ?? 0)}
+          href="/admin/users?role=admin"
+        />
+        <StatCard
+          label={copy.creators}
+          value={formatNumber(summary?.creator_users ?? 0)}
+          href="/admin/users?role=creator"
+        />
         <StatCard
           label={copy.verifiedCreators}
           value={formatNumber(summary?.verified_creators ?? 0)}
           href="/admin/users?role=creator_verified"
         />
-        <StatCard label={copy.totalAgents} value={formatNumber(summary?.total_agents ?? 0)} tone="highlight" href="/admin/agents" />
-        <StatCard label={copy.activeAgents} value={formatNumber(summary?.active_agents ?? 0)} href="/admin/agents?lifecycle_status=active" />
-        <StatCard label={copy.pendingAgents} value={formatNumber(summary?.pending_agents ?? 0)} tone="blue" href="/admin/agents?certification_status=pending" />
-        <StatCard label={copy.certifiedAgents} value={formatNumber(summary?.certified_agents ?? 0)} href="/admin/agents?certification_status=certified" />
-        <StatCard label={copy.totalTasks} value={formatNumber(summary?.total_tasks ?? 0)} tone="highlight" href="/admin/tasks" />
-        <StatCard label={copy.publicTasks} value={formatNumber(summary?.public_tasks ?? 0)} href="/admin/tasks?visibility=public" />
-        <StatCard label={copy.openTasks} value={formatNumber(summary?.open_tasks ?? 0)} tone="blue" href="/admin/tasks?task_status=open" />
-        <StatCard label={copy.completedTasks} value={formatNumber(summary?.completed_tasks ?? 0)} href="/admin/tasks?task_status=completed" />
+        <StatCard
+          label={copy.totalAgents}
+          value={formatNumber(summary?.total_agents ?? 0)}
+          tone="highlight"
+          href="/admin/agents"
+        />
+        <StatCard
+          label={copy.activeAgents}
+          value={formatNumber(summary?.active_agents ?? 0)}
+          href="/admin/agents?lifecycle_status=active"
+        />
+        <StatCard
+          label={copy.pendingAgents}
+          value={formatNumber(summary?.pending_agents ?? 0)}
+          tone="blue"
+          href="/admin/agents?certification_status=pending"
+        />
+        <StatCard
+          label={copy.certifiedAgents}
+          value={formatNumber(summary?.certified_agents ?? 0)}
+          href="/admin/agents?certification_status=certified"
+        />
+        <StatCard
+          label={copy.totalTasks}
+          value={formatNumber(summary?.total_tasks ?? 0)}
+          tone="highlight"
+          href="/admin/tasks"
+        />
+        <StatCard
+          label={copy.publicTasks}
+          value={formatNumber(summary?.public_tasks ?? 0)}
+          href="/admin/tasks?visibility=public"
+        />
+        <StatCard
+          label={copy.openTasks}
+          value={formatNumber(summary?.open_tasks ?? 0)}
+          tone="blue"
+          href="/admin/tasks?task_status=open"
+        />
+        <StatCard
+          label={copy.completedTasks}
+          value={formatNumber(summary?.completed_tasks ?? 0)}
+          href="/admin/tasks?task_status=completed"
+        />
       </section>
 
       <section className="mt-6 grid gap-4 lg:grid-cols-3">
@@ -112,16 +197,33 @@ export default async function AdminOverviewPage({
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <strong className="text-[17px] font-black text-[color:var(--ol-ink)]">{module.title}</strong>
-                <p className="mt-2 text-[13px] leading-6 text-[color:var(--ol-muted)]">{module.body}</p>
+                <strong className="text-[17px] font-black text-[color:var(--ol-ink)]">
+                  {module.title}
+                </strong>
+                <p className="mt-2 text-[13px] leading-6 text-[color:var(--ol-muted)]">
+                  {module.body}
+                </p>
               </div>
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[color:var(--ol-soft)] text-[color:var(--ol-primary)] group-hover:bg-[color:var(--ol-primary)] group-hover:text-white">
                 <Icon name="arrow-up-right" size="md" />
               </span>
             </div>
             <div className="mt-auto pt-6">
-              <span className="text-3xl font-black text-[color:var(--ol-ink)]">{module.metric}</span>
-              <span className="ml-2 text-[12px] font-bold text-[color:var(--ol-muted)]">{copy.open}</span>
+              {module.metric ? (
+                <>
+                  <span className="text-3xl font-black text-[color:var(--ol-ink)]">
+                    {module.metric}
+                  </span>
+                  <span className="ml-2 text-[12px] font-bold text-[color:var(--ol-muted)]">
+                    {copy.open}
+                  </span>
+                </>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[12px] font-black text-[color:var(--ol-primary-dark)]">
+                  {copy.open}
+                  <Icon name="arrow-up-right" size="sm" />
+                </span>
+              )}
             </div>
           </Link>
         ))}

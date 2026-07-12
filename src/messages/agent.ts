@@ -101,7 +101,7 @@ export const agentOnboardingMessages = {
     exampleTitlePlaceholder: "示例标题",
     adding: "添加中...",
     addExample: "添加示例",
-    tokenPolling: "用绑定当前 Agent 的接入凭证建立 WebSocket；必要时可降级为轮询领取运行请求，不需要当前实例访问你的 IPv4 地址。",
+    tokenPolling: "用 Node 设备证书和绑定当前 Agent 的凭证建立 Runtime v2 会话。WebSocket 受阻时可切换到同一套 v2 长轮询，不需要当前实例访问你的私网地址。",
     visibility: "Agent 库展示",
     visibilityOptions: {
       public: "公开 - 在 Agent 库中展示",
@@ -166,7 +166,7 @@ export const agentOnboardingMessages = {
     exampleTitlePlaceholder: "Example title",
     adding: "Adding...",
     addExample: "Add example",
-    tokenPolling: "Use an access credential bound to this Agent to open WebSocket; fall back to polling claims only when needed. The instance does not need to reach your IPv4 address.",
+    tokenPolling: "Open a Runtime v2 session with the Node device certificate and the credential bound to this Agent. If WebSocket is blocked, switch to the same v2 long-poll protocol without exposing the private network.",
     visibility: "Registry visibility",
     visibilityOptions: {
       public: "Public - listed in Registry",
@@ -196,13 +196,13 @@ export const agentOnboardingMessages = {
 } satisfies Record<Locale, AgentOnboardingMessages>;
 
 type RuntimeDiagnosticMessages = {
-  not_runtime_pull: string;
-  no_agent_token: string;
-  scope_missing: string;
-  no_recent_runtime_activity: string;
-  pending_claimable_runs: string;
-  pending_not_claimed: string;
-  result_timeout: string;
+  runtime_not_applicable: string;
+  agent_disabled: string;
+  runtime_session_offline: string;
+  runtime_sessions_draining: string;
+  runtime_backlog_without_capacity: string;
+  recent_dispatch_timeout: string;
+  recent_retry_exhausted: string;
   runtime_ready: string;
 };
 
@@ -210,23 +210,23 @@ export type RuntimeDiagnosticCode = keyof RuntimeDiagnosticMessages;
 
 export const runtimeDiagnosticMessages = {
   zh: {
-    not_runtime_pull: "此 Agent 通过调用端点或 MCP 接入；请用健康检查确认可用性。",
-    no_agent_token: "没有可用的 Agent Token。创建凭证后再启动 Agent Node。",
-    scope_missing: "现有 Agent Token 缺少 agent:pull 权限，无法建立连接或领取任务。",
-    no_recent_runtime_activity: "还没有收到 Agent Node 的连接或心跳。请确认进程已启动。",
-    pending_claimable_runs: "有运行正在等待 Agent Node。请确认 WebSocket 已连接，或长轮询仍在工作。",
-    pending_not_claimed: "最近有运行在等待领取时超时。请检查 Agent Node 连接。",
-    result_timeout: "最近有运行已被接收，但没有在时限内返回结果。请检查 Agent 处理程序和日志。",
+    runtime_not_applicable: "此 Agent 通过公网端点或 MCP 接入，请用健康检查确认可用性。",
+    agent_disabled: "此 Agent 当前未启用，恢复前不会接收新运行。",
+    runtime_session_offline: "当前没有在线 Runtime Session。请确认 Node 已登记、证书有效且进程已启动。",
+    runtime_sessions_draining: "当前 Session 正在排空，只会完成在途运行，不会接收新运行。",
+    runtime_backlog_without_capacity: "有运行正在等待，但在线 Node 暂无可用容量。",
+    recent_dispatch_timeout: "最近有运行在被 Agent Node 接收前超时。请检查连接、容量和排空状态。",
+    recent_retry_exhausted: "最近有运行已经耗尽自动重试，需要查看运行详情后决定是否回放。",
     runtime_ready: "Agent Node 连接和近期运行未发现异常。",
   },
   en: {
-    not_runtime_pull: "This Agent connects through an endpoint or MCP. Use the health check to verify availability.",
-    no_agent_token: "No active Agent Token. Create one before starting Agent Node.",
-    scope_missing: "The active Agent Token lacks the agent:pull scope, so Agent Node cannot connect or receive runs.",
-    no_recent_runtime_activity: "No Agent Node connection or heartbeat yet. Confirm that the process is running.",
-    pending_claimable_runs: "Runs are waiting for Agent Node. Check the WebSocket connection or long-poll loop.",
-    pending_not_claimed: "A recent run timed out while waiting to be received. Check the Agent Node connection.",
-    result_timeout: "A recent run was received but did not return a result in time. Check the Agent process and logs.",
+    runtime_not_applicable: "This Agent connects through a public endpoint or MCP. Use the health check to verify availability.",
+    agent_disabled: "This Agent is disabled and will not receive new runs until it is restored.",
+    runtime_session_offline: "No Runtime session is online. Confirm Node enrollment, certificate validity, and the running process.",
+    runtime_sessions_draining: "Runtime sessions are draining. They can finish in-flight runs but will not receive new ones.",
+    runtime_backlog_without_capacity: "Runs are waiting, but the online Nodes have no available capacity.",
+    recent_dispatch_timeout: "A recent run timed out before Agent Node accepted it. Check connectivity, capacity, and drain state.",
+    recent_retry_exhausted: "A recent run exhausted automatic retries. Review Run detail before deciding whether to replay it.",
     runtime_ready: "No issues found with the Agent Node connection or recent runs.",
   },
 } as const satisfies Record<Locale, RuntimeDiagnosticMessages>;

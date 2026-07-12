@@ -9,7 +9,7 @@ import { Icon } from "@/components/ui/icon";
 import { useApi } from "@/hooks/use-api";
 import { localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
-import { runErrorMessage } from "@/lib/i18n-labels";
+import { runDispatchStateLabel, runErrorMessage } from "@/lib/i18n-labels";
 import {
   acquireRunCreationIntent,
   completeRunCreationIntent,
@@ -598,6 +598,9 @@ function ConversationTurnCard({
 }) {
   const assistantText = assistantTextForTurn(turn, locale, labels.pending);
   const statusTone = statusToneClass(turn.status);
+  const progressStatus = turn.status === "running" && turn.result?.dispatch_state
+    ? runDispatchStateLabel(turn.result.dispatch_state, locale)
+    : statusLabel(turn.status, locale);
 
   return (
     <article
@@ -620,7 +623,7 @@ function ConversationTurnCard({
         <span className="text-[12px] font-black text-[color:var(--ol-ink)]">
           {labels.selectedTurn(turn.sequence)}
         </span>
-        <span className={`ol-chip ${statusTone}`}>{statusLabel(turn.status, locale)}</span>
+        <span className={`ol-chip ${statusTone}`}>{progressStatus}</span>
       </div>
 
       <div className="space-y-3">
@@ -739,6 +742,9 @@ function ActiveTurnSummary({
   }
 
   const assistantText = assistantTextForTurn(turn, locale, labels.pending);
+  const progressStatus = turn.status === "running" && turn.result?.dispatch_state
+    ? runDispatchStateLabel(turn.result.dispatch_state, locale)
+    : statusLabel(turn.status, locale);
 
   return (
     <section className="ol-panel ol-panel-pad min-w-0 overflow-hidden">
@@ -752,7 +758,7 @@ function ActiveTurnSummary({
           </span>
         </div>
         <span className={`ol-chip shrink-0 ${statusToneClass(turn.status)}`}>
-          {statusLabel(turn.status, locale)}
+          {progressStatus}
         </span>
       </div>
 
@@ -762,7 +768,7 @@ function ActiveTurnSummary({
       </div>
 
       <div className="mt-4 grid gap-2 rounded-[14px] border border-[color:var(--ol-line)] bg-white p-3 text-[12px] font-bold text-[color:var(--ol-muted)]">
-        <MetaRow label={labels.status} value={statusLabel(turn.status, locale)} />
+        <MetaRow label={labels.status} value={progressStatus} />
         <MetaRow label={labels.sentAt} value={formatDateTime(turn.createdAt, locale)} />
         {turn.completedAt ? (
           <MetaRow
@@ -893,7 +899,11 @@ function assistantTextForTurn(
   locale: Locale,
   pendingText: string,
 ): string {
-  if (turn.status === "running") return pendingText;
+  if (turn.status === "running") {
+    return turn.result?.dispatch_state
+      ? runDispatchStateLabel(turn.result.dispatch_state, locale)
+      : pendingText;
+  }
   if (turn.result?.status === "success") return summarizeRunOutput(turn.result, locale);
   if (turn.result) {
     return runErrorMessage(turn.result.error_code, turn.result.error_message, locale);

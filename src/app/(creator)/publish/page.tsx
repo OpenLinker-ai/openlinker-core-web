@@ -13,7 +13,7 @@
  *      is_creator=false → <BecomeCreatorPrompt /> 引导一键开通
  *   4. 后端不可用 → 显示降级提示，不抛错让 RSC tree 崩溃
  *
- * Agent 支持 HTTP Endpoint、Agent Node WebSocket、Runtime Pull fallback，以及已有 MCP Tool 包装；无人值守 Agent 可从这里进入自注册邀请。创建后可继续补充能力声明、dry-run 与实例认证信息。
+ * Agent 支持 HTTP Endpoint、Runtime v2 Agent Node（WebSocket + 长轮询兜底），以及已有 MCP Tool 包装；无人值守 Agent 可从这里进入自注册邀请。创建后可继续补充能力声明、dry-run 与实例认证信息。
  */
 
 import Link from "next/link";

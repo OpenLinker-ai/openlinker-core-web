@@ -15,6 +15,7 @@
 
 import { getApiBaseUrl, getApiBaseUrlForPath } from "@/lib/api-root";
 import type { Locale } from "@/lib/i18n";
+import { runtimeReasonMessage } from "@/lib/i18n-labels";
 
 export const API_BASE_URL = getApiBaseUrl();
 
@@ -71,6 +72,9 @@ export function localizedErrorMessage(error: unknown, locale: Locale, fallback: 
   if (error instanceof ApiError) {
     const byCode = API_ERROR_CODE_COPY[normalizeApiErrorCode(error.code)]?.[locale];
     if (byCode) return byCode;
+
+    const runtimeMessage = runtimeReasonMessage(error.code, locale);
+    if (runtimeMessage) return runtimeMessage;
 
     const trimmed = error.message.trim();
     if (trimmed && !/^HTTP \d{3}$/.test(trimmed) && messageMatchesLocale(trimmed, locale)) {

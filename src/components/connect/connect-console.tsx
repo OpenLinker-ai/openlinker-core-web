@@ -66,30 +66,36 @@ const MODES: Record<Mode, ModeSpec> = {
   runtime_ws: {
     category: "Agent connection",
     label: "Agent Node",
-    title: "Agent Node：runtime_ws / runtime_pull",
-    blurb: "Agent Node 首选 runtime_ws 出站长连接；WebSocket 无法稳定维持时再使用 runtime_pull。",
+    title: "Agent Node：可靠接入本地 Agent",
+    blurb: "Agent Node 默认使用 Runtime v2 WebSocket，网络阻断时切到同一套 v2 长轮询；两条通道共享落盘、租约、恢复和结果确认。",
     bestFor: "本地 Agent · 企业内网",
     icon: "bot",
     accent: "var(--ol-blue)",
     code: [
-      "# 1. Agent 自注册时选择 connection_mode=runtime_ws",
+      "# 1. 默认选择 Runtime v2 WebSocket；受限网络可改为 runtime_pull",
       "curl -X POST $OPENLINKER_API/api/v1/agent-registration/agents \\",
       "  -H \"Authorization: Bearer $OPENLINKER_AGENT_TOKEN\" \\",
       "  -H \"Content-Type: application/json\" \\",
       "  -d '{\"name\":\"Local Analyst\",\"connection_mode\":\"runtime_ws\",\"tags\":[\"data\"]}'",
       "",
-      "# 2. 启动 OpenLinker Agent Node，协议由 node 负责",
+      "# 2. 由管理员登记 Node 并安全交付证书；然后启动 Agent Node",
       "cd openlinker-agent-node",
-      "OPENLINKER_API_BASE=$OPENLINKER_API \\",
+      "OPENLINKER_CORE_V2_URL=https://runtime.example.com:8443 \\",
+      "OPENLINKER_NODE_ID=$OPENLINKER_NODE_ID \\",
+      "OPENLINKER_AGENT_ID=$OPENLINKER_AGENT_ID \\",
       "OPENLINKER_AGENT_TOKEN=$OPENLINKER_AGENT_TOKEN \\",
-      "OPENLINKER_AGENT_NODE_ADAPTER=openclaw \\",
+      "OPENLINKER_AGENT_NODE_TRANSPORT=auto \\",
+      "OPENLINKER_AGENT_NODE_DATA_DIR=/var/lib/openlinker-agent-node \\",
+      "OPENLINKER_AGENT_NODE_MTLS_CERT_FILE=/run/openlinker/node.crt \\",
+      "OPENLINKER_AGENT_NODE_MTLS_KEY_FILE=/run/openlinker/node.key \\",
+      "OPENLINKER_AGENT_NODE_MTLS_CA_FILE=/run/openlinker/core-ca.crt \\",
+      "OPENLINKER_AGENT_NODE_ADAPTER=http \\",
       "OPENLINKER_AGENT_NODE_HTTP_URL=http://127.0.0.1:18080/run \\",
       "go run ./cmd/openlinker-agent-node",
       "",
-      "# 3. 后端只实现业务接口；node 负责 run.assigned、run.event、run.result 和 localhost helper A2A。",
-      "#    WebSocket 无法维持时，再降级到 runtime_pull heartbeat + claim。",
+      "# 3. 业务后端只处理任务；Node 负责 assignment ACK、租约、取消、恢复和可靠结果提交。",
     ].join("\n"),
-    bullets: ["当前实例不访问你的私网 IPv4", "runtime_ws 实时接收调用", "runtime_pull 用于长连接降级"],
+    bullets: ["WebSocket 低延迟，v2 长轮询兜底", "事件与结果先落盘再发送", "切换通道不会直接重跑任务"],
   },
   sdk: {
     category: "Invocation",
@@ -202,10 +208,10 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "category" | "label"
     runtime_ws: {
       category: "Agent 接入",
       label: "Agent Node",
-      title: "Agent Node：runtime_ws / runtime_pull",
-      blurb: "Agent Node 首选 runtime_ws 出站长连接；WebSocket 无法稳定维持时再使用 runtime_pull。",
+      title: "Agent Node：可靠接入本地 Agent",
+      blurb: "Agent Node 默认使用 Runtime v2 WebSocket，网络阻断时切到同一套 v2 长轮询；两条通道共享落盘、租约、恢复和结果确认。",
       bestFor: "本地 Agent · 企业内网",
-      bullets: ["当前实例不访问你的私网 IPv4", "runtime_ws 实时接收调用", "runtime_pull 用于长连接降级"],
+      bullets: ["WebSocket 低延迟，v2 长轮询兜底", "事件与结果先落盘再发送", "切换通道不会直接重跑任务"],
     },
     sdk: {
       category: "调用入口",
@@ -250,10 +256,10 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "category" | "label"
     runtime_ws: {
       category: "Agent connection",
       label: "Agent Node",
-      title: "Agent Node: runtime_ws / runtime_pull",
-      blurb: "Agent Node prefers an outbound runtime_ws connection and falls back to runtime_pull only when WebSocket cannot stay connected.",
+      title: "Agent Node: reliable private execution",
+      blurb: "Agent Node uses Runtime v2 WebSocket by default and switches to the same v2 long-poll protocol when the network blocks it. Both share durable state, leases, resume, and result ACKs.",
       bestFor: "Local Agents · private networks",
-      bullets: ["OpenLinker does not reach into your private IPv4 network", "runtime_ws receives calls in real time", "runtime_pull is the connection fallback"],
+      bullets: ["Low-latency WebSocket with v2 long-poll fallback", "Events and results are persisted before sending", "Transport switches never directly re-run work"],
     },
     sdk: {
       category: "Invocation",
@@ -303,10 +309,9 @@ function codeForLocale(mode: Mode, code: string, locale: Locale) {
   }
   if (mode === "runtime_ws") {
     return code
-      .replace("# 1. Agent 自注册时选择 connection_mode=runtime_ws", "# 1. Choose connection_mode=runtime_ws during Agent registration")
-      .replace("# 2. 启动 OpenLinker Agent Node，协议由 node 负责", "# 2. Start OpenLinker Agent Node; the node owns the protocol")
-      .replace("# 3. 后端只实现业务接口；node 负责 run.assigned、run.event、run.result 和 localhost helper A2A。", "# 3. The backend only implements business logic; the node owns run.assigned, run.event, run.result, and localhost helper A2A.")
-      .replace("#    WebSocket 无法维持时，再降级到 runtime_pull heartbeat + claim。", "#    Fall back to runtime_pull heartbeat + claim only when WebSocket cannot stay connected.");
+      .replace("# 1. 默认选择 Runtime v2 WebSocket；受限网络可改为 runtime_pull", "# 1. Use Runtime v2 WebSocket by default; choose runtime_pull on restricted networks")
+      .replace("# 2. 由管理员登记 Node 并安全交付证书；然后启动 Agent Node", "# 2. Ask an operator to enroll the Node and deliver its certificates, then start Agent Node")
+      .replace("# 3. 业务后端只处理任务；Node 负责 assignment ACK、租约、取消、恢复和可靠结果提交。", "# 3. The backend handles business logic; the Node owns assignment ACKs, leases, cancellation, recovery, and reliable result delivery.");
   }
   return code;
 }
@@ -327,7 +332,7 @@ export function ConnectConsole({ locale = "zh" }: { locale?: Locale }) {
           checklist: "检查项",
           simpleCurl: "最简 cURL",
           auth: "User Token 调用",
-          tokenStatus: "User Token 已纳入 Core 正式契约，本地签发、scope 校验与撤销正在实现；已配置外部兼容验证器的部署可继续使用现有 ol_user_* Token。",
+          tokenStatus: "Core 会在本地签发、校验和撤销 User Token。明文只在创建时显示一次；调用时只授予已选 permission 和资源范围。",
           agentAuth: "Agent 接入凭据",
           agentAuthBody: "Agent Node 使用 Agent Token 完成注册并标识运行身份；direct_http 与 mcp_server 的目标端鉴权在 Agent 配置中单独设置。",
           rate: "速率",
@@ -353,7 +358,7 @@ export function ConnectConsole({ locale = "zh" }: { locale?: Locale }) {
           checklist: "Checklist",
           simpleCurl: "Minimal cURL",
           auth: "User Token calls",
-          tokenStatus: "User Tokens are part of the defined Core contract. Local issuance, scope validation, and revocation are in progress; deployments with the external compatibility verifier can keep using existing ol_user_* tokens.",
+          tokenStatus: "Core issues, verifies, and revokes User Tokens locally. Plaintext is shown only at creation, and each call is limited to the selected permissions and resources.",
           agentAuth: "Agent connection credentials",
           agentAuthBody: "Agent Node uses an Agent Token for registration and runtime identity. Target authentication for direct_http and mcp_server is configured separately on the Agent.",
           rate: "Rate",

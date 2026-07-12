@@ -171,6 +171,123 @@ export interface AdminTaskList {
   offset: number;
 }
 
+export interface AdminRuntimeNode {
+  node_id: string;
+  display_name: string;
+  node_version: string;
+  protocol_version: number;
+  runtime_contract_id: string;
+  runtime_contract_digest: string;
+  contract_match: boolean;
+  features: string[];
+  capacity: number;
+  inflight: number;
+  status: "active" | "draining" | "revoked" | string;
+  last_seen_at?: string | null;
+  draining_at?: string | null;
+  revoked_at?: string | null;
+  revoke_reason?: string | null;
+  created_at: string;
+  updated_at: string;
+  active_session_count: number;
+  active_agent_count: number;
+}
+
+export interface AdminRuntimeNodeList {
+  items: AdminRuntimeNode[];
+  total: number;
+  limit: number;
+  offset: number;
+  current_contract_id: string;
+  current_contract_digest: string;
+  database_time: string;
+}
+
+export interface AdminRuntimeDeadLetter {
+  dead_letter_id: string;
+  run_id: string;
+  agent_id: string;
+  agent_slug: string;
+  agent_name: string;
+  status: string;
+  dispatch_state: string;
+  attempt_count: number;
+  max_attempts: number;
+  final_attempt_id?: string;
+  final_attempt_no: number;
+  error_code?: string;
+  error_message?: string;
+  error_detail_redacted?: string;
+  reason_code: string;
+  reason_redacted?: string;
+  dead_lettered_at?: string;
+  created_at: string;
+  replay_of_run_id?: string;
+  replayed_as_run_ids: string[];
+}
+
+export interface AdminRuntimeDeadLetterList {
+  items: AdminRuntimeDeadLetter[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface AdminRuntimeMaintenanceBlocker {
+  code: string;
+  scope?: string;
+  id?: string;
+  message_redacted?: string;
+}
+
+export interface AdminRuntimeMember {
+  instance_id: string;
+  live: boolean;
+  ready: boolean;
+  draining: boolean;
+  started_at: string;
+  last_seen_at: string;
+  release_id: string;
+  git_sha: string;
+  schema_version: number;
+  schema_checksum: string;
+  runtime_contract_id: string;
+  runtime_contract_digest: string;
+}
+
+export interface AdminRuntimeMaintenance {
+  database_time: string;
+  runtime_schema_installed: boolean;
+  control?: {
+    mode: "normal" | "draining" | "hard_maintenance" | string;
+    expected_replicas: number;
+    cutover_id: string;
+    version: number;
+    updated_at: string;
+  } | null;
+  current: {
+    schema_version: number;
+    schema_checksum: string;
+    runtime_contract_id: string;
+    runtime_contract_digest: string;
+    release_id: string;
+    git_sha: string;
+  };
+  members: AdminRuntimeMember[];
+  readiness: {
+    ready: boolean;
+    blockers: AdminRuntimeMaintenanceBlocker[];
+  };
+  reopen_readiness?: {
+    ready: boolean;
+    blockers: AdminRuntimeMaintenanceBlocker[];
+  } | null;
+  signal_bus: {
+    mode: string;
+    healthy: boolean;
+  };
+}
+
 export type AdminSearchParams = {
   error?: string;
   status?: string;
@@ -184,7 +301,14 @@ export type AdminSearchParams = {
   page?: string;
 };
 
-type AdminTab = "overview" | "tasks" | "users" | "agents";
+type AdminTab =
+  | "overview"
+  | "tasks"
+  | "users"
+  | "agents"
+  | "nodes"
+  | "dead_letters"
+  | "maintenance";
 
 export function adminCopy(locale: Locale) {
   return locale === "zh"
@@ -194,9 +318,12 @@ export function adminCopy(locale: Locale) {
         tasks: "任务",
         users: "用户",
         agents: "Agent",
+        nodes: "运行节点",
+        deadLetters: "待人工处理",
+        maintenance: "运行维护",
         kicker: "管理员视角 · 当前实例",
         heading: "实例管理台",
-        lead: "管理当前实例中的任务、用户和 Agent。",
+        lead: "管理当前实例中的任务、用户、Agent 和运行节点。",
         totalUsers: "用户总数",
         admins: "管理员",
         creators: "Agent 所有者",
@@ -228,7 +355,8 @@ export function adminCopy(locale: Locale) {
         noTasks: "没有匹配任务",
         noTasksBody: "换一个搜索、可见性或任务状态筛选。",
         addUser: "添加用户",
-        addUserLead: "创建可用邮箱密码登录的用户，并按需预设管理员或 Agent 所有者身份。",
+        addUserLead:
+          "创建可用邮箱密码登录的用户，并按需预设管理员或 Agent 所有者身份。",
         email: "邮箱",
         displayName: "显示名称",
         initialPassword: "初始密码",
@@ -298,9 +426,12 @@ export function adminCopy(locale: Locale) {
         tasks: "Tasks",
         users: "Users",
         agents: "Agents",
+        nodes: "Runtime Nodes",
+        deadLetters: "Dead letters",
+        maintenance: "Runtime health",
         kicker: "Admin view · Current instance",
         heading: "Instance Admin Console",
-        lead: "Manage tasks, users, and Agents in this instance.",
+        lead: "Manage tasks, users, Agents, and runtime nodes in this instance.",
         totalUsers: "Total users",
         admins: "Admins",
         creators: "Agent owners",
@@ -332,7 +463,8 @@ export function adminCopy(locale: Locale) {
         noTasks: "No matching tasks",
         noTasksBody: "Try another search, visibility, or task status filter.",
         addUser: "Add user",
-        addUserLead: "Create an email/password user and preset admin or Agent owner roles when needed.",
+        addUserLead:
+          "Create an email/password user and preset admin or Agent owner roles when needed.",
         email: "Email",
         displayName: "Display name",
         initialPassword: "Initial password",
@@ -400,7 +532,8 @@ export function adminCopy(locale: Locale) {
 
 export async function getAdminContext(callbackUrl: string) {
   const session = await auth();
-  if (!session) redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+  if (!session)
+    redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
 
   const locale = await getLocale();
   let me: MeResponse | null = null;
@@ -461,8 +594,16 @@ export function AdminShell({
     { key: "tasks", href: "/admin/tasks", label: copy.tasks },
     { key: "users", href: "/admin/users", label: copy.users },
     { key: "agents", href: "/admin/agents", label: copy.agents },
+    { key: "nodes", href: "/admin/nodes", label: copy.nodes },
+    {
+      key: "dead_letters",
+      href: "/admin/dead-letters",
+      label: copy.deadLetters,
+    },
+    { key: "maintenance", href: "/admin/maintenance", label: copy.maintenance },
   ];
-  const activeLabel = tabs.find((tab) => tab.key === active)?.label ?? copy.overview;
+  const activeLabel =
+    tabs.find((tab) => tab.key === active)?.label ?? copy.overview;
 
   return (
     <>
@@ -505,7 +646,13 @@ export function AdminShell({
   );
 }
 
-export function StatusMessages({ status, error }: { status?: string; error?: string }) {
+export function StatusMessages({
+  status,
+  error,
+}: {
+  status?: string;
+  error?: string;
+}) {
   return (
     <>
       {status ? (
@@ -542,7 +689,10 @@ export function StatCard({
   const className = `ol-stat-card ${tone ?? ""}`;
   if (!href) return <div className={className}>{content}</div>;
   return (
-    <Link href={href} className={`${className} transition hover:-translate-y-0.5 hover:shadow-md`}>
+    <Link
+      href={href}
+      className={`${className} transition hover:-translate-y-0.5 hover:shadow-md`}
+    >
       {content}
     </Link>
   );
@@ -562,7 +712,9 @@ export function EmptyState({ title, body }: { title: string; body: string }) {
       <div className="mx-auto grid h-10 w-10 place-items-center rounded-xl bg-white text-[color:var(--ol-primary)]">
         <Icon name="check" size="lg" />
       </div>
-      <h2 className="mt-3 text-[15px] font-black text-[color:var(--ol-ink)]">{title}</h2>
+      <h2 className="mt-3 text-[15px] font-black text-[color:var(--ol-ink)]">
+        {title}
+      </h2>
       <p className="mt-1 text-[13px] text-[color:var(--ol-muted)]">{body}</p>
     </div>
   );
@@ -591,7 +743,8 @@ export function Pagination({
   return (
     <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-[13px]">
       <div className="font-bold text-[color:var(--ol-muted)]">
-        {copy.total} {formatNumber(total)} {copy.items} · {copy.page} {page} / {totalPages}
+        {copy.total} {formatNumber(total)} {copy.items} · {copy.page} {page} /{" "}
+        {totalPages}
       </div>
       <div className="flex gap-2">
         {canPrevious ? (
@@ -599,14 +752,21 @@ export function Pagination({
             {copy.previous}
           </Link>
         ) : (
-          <span className="ol-mini-btn pointer-events-none opacity-50">{copy.previous}</span>
+          <span className="ol-mini-btn pointer-events-none opacity-50">
+            {copy.previous}
+          </span>
         )}
         {canNext ? (
-          <Link className="ol-mini-btn ol-mini-btn-primary" href={pageHref(path, params, page + 1)}>
+          <Link
+            className="ol-mini-btn ol-mini-btn-primary"
+            href={pageHref(path, params, page + 1)}
+          >
             {copy.next}
           </Link>
         ) : (
-          <span className="ol-mini-btn pointer-events-none opacity-50">{copy.next}</span>
+          <span className="ol-mini-btn pointer-events-none opacity-50">
+            {copy.next}
+          </span>
         )}
       </div>
     </div>
@@ -676,10 +836,23 @@ export function statusChip(value: string): string {
   ) {
     return "ol-chip ol-chip-green";
   }
-  if (value === "pending" || value === "unlisted" || value === "submitted" || value === "in_progress" || value === "matched") {
+  if (
+    value === "pending" ||
+    value === "unlisted" ||
+    value === "submitted" ||
+    value === "in_progress" ||
+    value === "matched"
+  ) {
     return "ol-chip ol-chip-blue";
   }
-  if (value === "disabled" || value === "private" || value === "rejected" || value === "failed" || value === "revision_requested" || value === "needs_agent") {
+  if (
+    value === "disabled" ||
+    value === "private" ||
+    value === "rejected" ||
+    value === "failed" ||
+    value === "revision_requested" ||
+    value === "needs_agent"
+  ) {
     return "ol-chip ol-chip-amber";
   }
   return "ol-chip";
@@ -695,16 +868,35 @@ export function adminStatusLabel(value: string, locale: Locale): string {
   if (value === "unreviewed" || value === "certified" || value === "rejected") {
     return certificationStatusLabel(value, locale);
   }
-  if (value === "open" || value === "matched" || value === "in_progress" || value === "completed" || value === "accepted" || value === "revision_requested" || value === "needs_agent" || value === "draft" || value === "submitted") {
+  if (
+    value === "open" ||
+    value === "matched" ||
+    value === "in_progress" ||
+    value === "completed" ||
+    value === "accepted" ||
+    value === "revision_requested" ||
+    value === "needs_agent" ||
+    value === "draft" ||
+    value === "submitted"
+  ) {
     return taskStatusLabel(value, locale);
   }
-  if (value === "pending" || value === "success" || value === "failed" || value === "timeout" || value === "canceled") {
+  if (
+    value === "pending" ||
+    value === "success" ||
+    value === "failed" ||
+    value === "timeout" ||
+    value === "canceled"
+  ) {
     return deliveryStatusLabel(value, locale);
   }
   return fallbackEnumLabel(value, locale);
 }
 
-export function adminCertificationStatusLabel(value: string, locale: Locale): string {
+export function adminCertificationStatusLabel(
+  value: string,
+  locale: Locale,
+): string {
   const labels: Record<string, Record<Locale, string>> = {
     unreviewed: { zh: "未提交实例认证", en: "Not instance-certified" },
     pending: { zh: "实例认证中", en: "Instance certification pending" },
@@ -714,11 +906,17 @@ export function adminCertificationStatusLabel(value: string, locale: Locale): st
   return labels[value]?.[locale] ?? certificationStatusLabel(value, locale);
 }
 
-export function adminDeliveryVisibilityLabel(value: string, locale: Locale): string {
+export function adminDeliveryVisibilityLabel(
+  value: string,
+  locale: Locale,
+): string {
   return deliveryVisibilityLabel(value, locale);
 }
 
-export function adminConnectionModeLabel(value: string, locale: Locale): string {
+export function adminConnectionModeLabel(
+  value: string,
+  locale: Locale,
+): string {
   return connectionModeLabel(value, locale);
 }
 
@@ -753,7 +951,9 @@ export function searchValue(value: string | undefined): string {
   return String(value ?? "").trim();
 }
 
-export function buildQuery(params: Record<string, string | number | undefined>): string {
+export function buildQuery(
+  params: Record<string, string | number | undefined>,
+): string {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     const text = String(value ?? "").trim();
@@ -772,7 +972,11 @@ export function offsetForPage(page: number, limit = ADMIN_PAGE_SIZE): number {
   return Math.max(0, page - 1) * limit;
 }
 
-export function pageHref(path: string, params: AdminSearchParams, page: number): string {
+export function pageHref(
+  path: string,
+  params: AdminSearchParams,
+  page: number,
+): string {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (key === "status" || key === "error") continue;

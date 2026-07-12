@@ -52,6 +52,25 @@ const RUN_STATUS_LABELS: LabelMap = {
   endpoint_response_received: { zh: "调用端点已响应", en: "Endpoint responded" },
 };
 
+const RUN_DISPATCH_STATE_LABELS: LabelMap = {
+  pending: { zh: "等待 Agent 接手", en: "Waiting for an Agent" },
+  offered: { zh: "正在交给 Agent", en: "Handing off to the Agent" },
+  executing: { zh: "Agent 正在处理", en: "Agent is working" },
+  retry_wait: { zh: "等待重试", en: "Waiting to retry" },
+  terminal: { zh: "已结束", en: "Finished" },
+  dead_letter: { zh: "需要处理", en: "Needs attention" },
+};
+
+const RUN_CANCEL_STATE_LABELS: LabelMap = {
+  requested: { zh: "正在通知 Agent 停止", en: "Asking the Agent to stop" },
+  delivered: { zh: "Agent 已收到停止请求", en: "Stop request delivered" },
+  stopping: { zh: "Agent 正在停止", en: "Agent is stopping" },
+  stopped: { zh: "已确认停止", en: "Stop confirmed" },
+  unsupported: { zh: "Agent 无法自动停止", en: "Agent cannot stop automatically" },
+  failed: { zh: "停止失败", en: "Stop failed" },
+  unconfirmed: { zh: "尚未确认是否停止", en: "Stop not yet confirmed" },
+};
+
 const RUN_ERROR_MESSAGES: LabelMap = {
   UNSUPPORTED_CONNECTION_MODE: {
     zh: "该 Agent 的连接模式不受支持，请检查接入配置。",
@@ -72,6 +91,106 @@ const RUN_ERROR_MESSAGES: LabelMap = {
   TIMEOUT: {
     zh: "等待 Agent 响应超时，请稍后重试或检查连接。",
     en: "The Agent response timed out. Try again later or check the connection.",
+  },
+  CONNECTION_ERROR: {
+    zh: "连接 Agent 时中断，运行没有取得可确认的结果。",
+    en: "The Agent connection ended before a result could be confirmed.",
+  },
+  INTERNAL_ERROR: {
+    zh: "运行服务暂时无法完成这次调用，请稍后重试。",
+    en: "The runtime service could not complete this call. Try again later.",
+  },
+  CANCELED: {
+    zh: "此运行已按请求取消。",
+    en: "This run was canceled as requested.",
+  },
+  CANCEL_UNCONFIRMED: {
+    zh: "运行已取消，但尚未确认 Agent 是否完全停止。",
+    en: "The run is canceled, but the Agent has not confirmed that execution fully stopped.",
+  },
+  POLICY_REJECTED: {
+    zh: "当前策略不允许完成这次运行。",
+    en: "Current policy did not allow this run to complete.",
+  },
+  TEMPORARY_UNAVAILABLE: {
+    zh: "Agent 暂时不可用，系统会按当前重试策略继续处理。",
+    en: "The Agent is temporarily unavailable. The run will follow its retry policy.",
+  },
+  RUNTIME_CLIENT_UPGRADE_REQUIRED: {
+    zh: "此 Agent Node 版本已过期。升级后重新连接即可继续接收运行。",
+    en: "This Agent Node is out of date. Upgrade it and reconnect to receive runs.",
+  },
+  RUNTIME_REQUIRED_FEATURE_MISSING: {
+    zh: "此 Agent Node 缺少当前运行所需能力，请升级或更换节点。",
+    en: "This Agent Node is missing a required capability. Upgrade it or use another node.",
+  },
+  NODE_AT_CAPACITY: {
+    zh: "Agent 当前任务已满，本次运行会在有空位时继续。",
+    en: "The Agent is at capacity. This run will continue when a slot is available.",
+  },
+  NODE_DRAINING: {
+    zh: "Agent Node 正在下线，不再接收新运行。",
+    en: "The Agent Node is draining and is not accepting new runs.",
+  },
+  RUN_CANCEL_REQUESTED: {
+    zh: "已提交取消请求，正在等待 Agent 停止。",
+    en: "Cancellation was requested. Waiting for the Agent to stop.",
+  },
+  RUN_CANCEL_UNCONFIRMED: {
+    zh: "运行已取消，但尚未收到 Agent 的停止确认。",
+    en: "The run is canceled, but the Agent has not confirmed that execution stopped.",
+  },
+  RUNTIME_RETRY_EXHAUSTED: {
+    zh: "多次尝试仍未完成。请查看尝试记录，再决定是否重新发起。",
+    en: "The run did not complete after several attempts. Review the attempts before starting a new run.",
+  },
+  RUNTIME_DISPATCH_TIMEOUT: {
+    zh: "在截止时间前没有可用 Agent 接手此运行。",
+    en: "No Agent accepted this run before the dispatch deadline.",
+  },
+  RUN_DEADLINE_EXCEEDED: {
+    zh: "此运行超过了允许的总时长，已停止等待结果。",
+    en: "This run exceeded its overall deadline, so OpenLinker stopped waiting for a result.",
+  },
+  EVENTS_MISSING: {
+    zh: "Agent 的进度记录尚未补齐，最终结果正在等待校验。",
+    en: "Some Agent progress records are still missing, so the final result is waiting for verification.",
+  },
+  REPLAY_INPUT_UNAVAILABLE: {
+    zh: "原运行的输入已清理，无法据此重新发起。",
+    en: "The original input has been removed, so this run cannot be replayed.",
+  },
+  ENDPOINT_RESULT_UNKNOWN: {
+    zh: "连接在结果确认前中断。为避免重复执行，OpenLinker 没有自动重试。",
+    en: "The connection ended before the result was confirmed. OpenLinker did not retry to avoid duplicate execution.",
+  },
+  RUNTIME_SESSION_CONFLICT: {
+    zh: "Agent Node 的连接身份发生冲突，请关闭重复进程后重新连接。",
+    en: "The Agent Node session conflicts with another connection. Stop the duplicate process and reconnect.",
+  },
+  RUNTIME_SPOOL_CORRUPT: {
+    zh: "Agent Node 的本地待发送记录无法校验，节点已停止领取新运行。",
+    en: "The Agent Node could not verify its local pending records and stopped accepting new runs.",
+  },
+  STALE_LEASE: {
+    zh: "此结果来自已经失效的执行尝试，未覆盖当前运行状态。",
+    en: "This result came from an expired attempt and did not replace the current run state.",
+  },
+  LEASE_EXPIRED: {
+    zh: "本次执行授权已过期，运行将按当前重试策略继续处理。",
+    en: "This execution lease expired. The run will continue according to its retry policy.",
+  },
+  LEASE_IDENTITY_MISMATCH: {
+    zh: "执行身份与当前运行不一致，回传内容未被采用。",
+    en: "The execution identity did not match the current run, so the update was not accepted.",
+  },
+  RESULT_ID_CONFLICT: {
+    zh: "同一结果标识对应了不同内容，结果未被采用。",
+    en: "The same result ID was used for different content, so the result was not accepted.",
+  },
+  EVENT_ID_CONFLICT: {
+    zh: "同一事件标识对应了不同内容，事件未被采用。",
+    en: "The same event ID was used for different content, so the event was not accepted.",
   },
 };
 
@@ -156,8 +275,8 @@ const DRY_RUN_RESULT_LABELS: LabelMap = {
 const CONNECTION_MODE_LABELS: LabelMap = {
   direct_http: { zh: "HTTP 直连", en: "Direct HTTP" },
   mcp_server: { zh: "MCP Server", en: "MCP server" },
-  runtime_pull: { zh: "Agent Node（长轮询）", en: "Agent Node (long polling)" },
-  runtime_ws: { zh: "Agent Node（WebSocket）", en: "Agent Node (WebSocket)" },
+  runtime_pull: { zh: "Agent Node（v2 长轮询）", en: "Agent Node (v2 long-poll)" },
+  runtime_ws: { zh: "Agent Node（v2 WebSocket）", en: "Agent Node (v2 WebSocket)" },
 };
 
 const TARGET_TYPE_LABELS: LabelMap = {
@@ -262,13 +381,26 @@ export function runStatusLabel(status: string | null | undefined, locale: Locale
   return labelFrom(RUN_STATUS_LABELS, status, locale);
 }
 
+export function runDispatchStateLabel(state: string | null | undefined, locale: Locale): string {
+  return labelFrom(RUN_DISPATCH_STATE_LABELS, state, locale);
+}
+
+export function runCancelStateLabel(state: string | null | undefined, locale: Locale): string {
+  return labelFrom(RUN_CANCEL_STATE_LABELS, state, locale);
+}
+
+export function runtimeReasonMessage(code: string | null | undefined, locale: Locale): string | undefined {
+  const key = code?.trim().toUpperCase() ?? "";
+  return RUN_ERROR_MESSAGES[key]?.[locale];
+}
+
 export function runErrorMessage(
   errorCode: string | null | undefined,
-  errorMessage: string | null | undefined,
+  _errorMessage: string | null | undefined,
   locale: Locale,
 ): string {
   const code = errorCode?.trim().toUpperCase() ?? "";
-  const mapped = RUN_ERROR_MESSAGES[code]?.[locale];
+  const mapped = runtimeReasonMessage(code, locale);
   if (mapped) return mapped;
 
   const fallback = code
@@ -278,7 +410,7 @@ export function runErrorMessage(
     : locale === "zh"
       ? "运行失败"
       : "Run failed";
-  return localizedBackendText(errorMessage, locale, fallback);
+  return fallback;
 }
 
 export function streamStateLabel(state: string | null | undefined, locale: Locale): string {

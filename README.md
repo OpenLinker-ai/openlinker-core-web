@@ -68,7 +68,7 @@ flowchart LR
   CoreWeb -->|"browser / server component API calls"| Core["openlinker-core<br/>auth / registry / runs / admin"]
 
   SDKs["openlinker-js / openlinker-go"] -->|"same Core API contract"| Core
-  AgentNode["openlinker-agent-node"] <-->|"runtime_ws / runtime_pull"| Core
+  AgentNode["openlinker-agent-node"] -->|"Runtime v2 WebSocket + long-poll fallback<br/>mTLS / lease / cancel / result ACK"| Core
 
   Core -->|"direct_http"| HTTPAgent["Public HTTPS Agent"]
   Core -->|"mcp_server"| MCPAgent["Remote MCP / JSON-RPC server"]
