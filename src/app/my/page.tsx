@@ -101,7 +101,7 @@ export default async function MyPage() {
           creatorTitle: "Agent 管理 / 我的 Agent",
           creatorDesc: "管理已接入的 Agent、Agent Token、Skill 声明、跨节点 Bridge、调用记录和投递设置。这里是你管理 Agent 的主入口。",
           agentCount: "个 Agent",
-          chips: ["我的 Agent", "调用记录", "注册邀请", "Skill / MCP"],
+          chips: ["我的 Agent", "调用记录", "Agent Token", "Skill / MCP"],
           newAgent: "接入新 Agent",
           newAgentDesc: "选择 direct HTTP、MCP Server 或可靠 Agent Node；无人值守接入可使用 Agent Token。",
           connect: "开发者中心",

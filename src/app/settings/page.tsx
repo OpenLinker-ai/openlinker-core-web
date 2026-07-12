@@ -62,12 +62,12 @@ export default async function SettingsPage({
       ? {
           kicker: "设置",
           heading: "账户、安全与通知",
-          lead: "管理登录资料、密码、站内告警和运行投递/回调入口。Agent 自注册邀请在接入 Agent 流程和 Agent 管理的注册邀请页维护。",
+          lead: "管理登录资料、密码、站内告警和运行投递/回调入口。Agent Token 在接入 Agent 流程和 Agent 管理中签发与吊销。",
         }
       : {
           kicker: "settings",
           heading: "Account, Security, and Notifications",
-          lead: "Manage profile details, password, in-app alerts, and run delivery/callback entry points. Agent self-registration invites live in the Connect Agent flow and Agent Console.",
+          lead: "Manage profile details, password, in-app alerts, and run delivery/callback entry points. Issue and revoke Agent Tokens from the Connect Agent flow or Agent Console.",
         };
 
   let me: MeResponse | null = null;

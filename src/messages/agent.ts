@@ -333,7 +333,7 @@ export const automationAccessMessages = {
   },
   en: {
     created: "Agent Token created. Plaintext is shown only once.",
-    createFailed: "Failed to create invite",
+    createFailed: "Failed to create Agent Token",
     loadFailed: "Failed to load Agent Tokens",
     approved: "Approval confirmed",
     rejected: "Approval rejected",

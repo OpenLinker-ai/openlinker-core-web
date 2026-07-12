@@ -291,7 +291,8 @@ function codeForLocale(mode: Mode, code: string, locale: Locale) {
   if (mode === "endpoint") {
     return code
       .replace("# 保存 Agent 时选择 connection_mode=direct_http，并填写 endpoint_url", "# Save the Agent with connection_mode=direct_http and an endpoint_url")
-      .replace("# 运行时当前实例会向该 endpoint 发送：", "# At runtime, this instance sends:");
+      .replace("# 运行时当前实例会向该 endpoint 发送：", "# At runtime, this instance sends:")
+      .replace("生成一份竞品定价摘要", "Create a competitor pricing summary");
   }
   if (mode === "mcp") {
     return code
@@ -311,7 +312,7 @@ function codeForLocale(mode: Mode, code: string, locale: Locale) {
     return code
       .replace("# 1. 连接模式只选 agent_node；默认 auto 会在 WebSocket 不可用时切到 Pull v2", "# 1. Use connection_mode=agent_node; auto falls back to Pull v2 when WebSocket is unavailable")
       .replace("# 2. 由管理员登记 Node 并安全交付证书；然后启动 Agent Node", "# 2. Ask an operator to enroll the Node and deliver its certificates, then start Agent Node")
-      .replace("# 3. 业务后端只处理任务；Node 负责 assignment ACK、租约、取消、恢复和可靠结果提交。", "# 3. The backend handles business logic; the Node owns assignment ACKs, leases, cancellation, recovery, and reliable result delivery.");
+      .replace("# 3. 业务后端只处理请求；Node 负责 assignment ACK、租约、取消、恢复和可靠结果提交。", "# 3. The backend handles business logic; the Node owns assignment ACKs, leases, cancellation, recovery, and reliable result delivery.");
   }
   return code;
 }
