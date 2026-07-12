@@ -274,7 +274,6 @@ export type AdminSearchParams = {
   lifecycle_status?: string;
   visibility?: string;
   certification_status?: string;
-  delivery_status?: string;
   task_status?: string;
   page?: string;
 };
