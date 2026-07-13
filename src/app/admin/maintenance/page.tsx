@@ -511,7 +511,7 @@ function maintenanceCopy(locale: "zh" | "en"): Copy {
           ready: {
             label: "可以开始新任务",
             title: "运行链路已就绪",
-            body: "Core、数据库、Runtime 契约和唤醒通道一致，新任务可以进入；WebSocket 为主通道，Pull v2 可在连接不稳定时接续。",
+            body: "Core、数据库、Runtime 契约和唤醒通道一致，新任务可以进入；WebSocket 为主通道，连接不稳定时由长轮询接续。",
             chip: "ol-chip-green",
             panel: "border-emerald-200 bg-emerald-50/70",
           },
@@ -601,7 +601,7 @@ function maintenanceCopy(locale: "zh" | "en"): Copy {
           ready: {
             label: "Ready for new runs",
             title: "The runtime path is ready",
-            body: "Core, database, Runtime contract, and wake-up path agree. WebSocket is primary, while Pull v2 can continue work through an unstable connection.",
+            body: "Core, database, Runtime contract, and wake-up path agree. WebSocket is primary, while long-poll can continue work through an unstable connection.",
             chip: "ol-chip-green",
             panel: "border-emerald-200 bg-emerald-50/70",
           },

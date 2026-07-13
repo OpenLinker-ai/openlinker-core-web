@@ -34,8 +34,8 @@ const SOURCES: readonly SourceCardSpec[] = [
     iconClass: "blue",
     title: { zh: "Agent Node", en: "Agent Node" },
     desc: {
-      zh: "适合本地、内网或 NAT 后的 Agent。默认走 WebSocket，网络受限时自动切到 Pull v2。",
-      en: "For local, private-network, or NAT Agents. WebSocket is primary, with automatic Pull v2 fallback on restricted networks.",
+      zh: "适合本地、内网或 NAT 后的 Agent。默认走 WebSocket，网络受限时自动切到长轮询。",
+      en: "For local, private-network, or NAT Agents. WebSocket is primary, with automatic long-poll fallback on restricted networks.",
     },
   },
   {

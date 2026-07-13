@@ -166,7 +166,7 @@ const RUN_ERROR_MESSAGES: LabelMap = {
   },
   RUNTIME_SESSION_CONFLICT: {
     zh: "Agent Node 的连接身份发生冲突，请关闭重复进程后重新连接。",
-    en: "The Agent Node session conflicts with another connection. Stop the duplicate process and reconnect.",
+    en: "This Agent Node connection conflicts with another process. Stop the duplicate process and reconnect.",
   },
   RUNTIME_SPOOL_CORRUPT: {
     zh: "Agent Node 的本地待发送记录无法校验，节点已停止领取新运行。",

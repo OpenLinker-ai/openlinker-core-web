@@ -15,13 +15,13 @@ interface ProofStat {
 const STATS: Record<Locale, ProofStat[]> = {
   zh: [
     { value: "3 种", label: "Agent 连接模式" },
-    { value: "WS + Pull", label: "Agent Node 双传输" },
+    { value: "WS + 长轮询", label: "Agent Node 双通道" },
     { value: "Run / Attempt", label: "派发、事件与结果" },
     { value: "User / Agent", label: "两类用户可见 Token" },
   ],
   en: [
     { value: "3 modes", label: "Agent connections" },
-    { value: "WS + Pull", label: "Agent Node dual transport" },
+    { value: "WS + long poll", label: "Agent Node dual transport" },
     { value: "Run / Attempt", label: "Dispatch, events, and results" },
     { value: "User / Agent", label: "Two user-facing token types" },
   ],

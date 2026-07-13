@@ -73,7 +73,7 @@ function isAllowedEndpointURL(value: string): boolean {
 }
 
 function connectionModeLabel(mode: AgentConnectionMode, locale: Locale): string {
-  if (mode === "agent_node") return "Agent Node / Runtime v2";
+  if (mode === "agent_node") return "Agent Node";
   if (mode === "mcp_server") return locale === "zh" ? "已有 MCP 工具" : "Existing MCP tool";
   return locale === "zh" ? "HTTP 端点" : "HTTP Endpoint";
 }
@@ -594,10 +594,10 @@ function EndpointSection({
   const copy =
     locale === "zh"
       ? {
-          runtimeTitle: "Agent Node / Runtime v2",
+          runtimeTitle: "Agent Node",
           runtimeBody: (
             <>
-              适合本地、内网或 NAT 后的 Agent。登记 Node 并签发 mTLS 设备证书后，默认的 <code>auto</code> 策略会优先使用 WebSocket，并在网络受限时自动切到 Pull v2。两个通道共用 assignment ACK、租约、resume、取消、Event/Result ACK 和持久化 spool，不会退回旧接口。
+              适合本地、内网或 NAT 后的 Agent。登记 Node 并签发 mTLS 设备证书后，Agent Node 会根据 OpenLinker 地址自动发现专用 Runtime。默认的 <code>auto</code> 策略优先使用 WebSocket，网络受限时切换长轮询；切换通道会延续同一次运行，不会重复执行已接收的任务。
             </>
           ),
           httpsOrLoopback: "调用端点 URL（HTTPS 或本地回环 HTTP）",
@@ -614,10 +614,10 @@ function EndpointSection({
           endpointAuth: "鉴权 Header（可选，当前实例调用端点时携带）",
         }
       : {
-          runtimeTitle: "Agent Node over Runtime v2",
+          runtimeTitle: "Agent Node",
           runtimeBody: (
             <>
-              For local, private-network, or NAT Agents. After Node enrollment and mTLS issuance, the default <code>auto</code> policy prefers WebSocket and automatically falls back to Pull v2 on restricted networks. Both transports share assignment ACKs, leases, resume, cancellation, Event/Result ACKs, and the durable spool—never a legacy endpoint.
+              For local, private-network, or NAT Agents. After Node enrollment and mTLS issuance, Agent Node discovers its dedicated Runtime from the OpenLinker URL. The default <code>auto</code> policy prefers WebSocket and falls back to long polling on restricted networks; switching transport continues the same run without repeating accepted work.
             </>
           ),
           httpsOrLoopback: "Endpoint URL (HTTPS or local loopback HTTP)",

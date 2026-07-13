@@ -13,7 +13,7 @@
  *      is_creator=false → <BecomeCreatorPrompt /> 引导一键开通
  *   4. 后端不可用 → 显示降级提示，不抛错让 RSC tree 崩溃
  *
- * Agent 支持 HTTP Endpoint、Runtime v2 Agent Node（WebSocket + 长轮询兜底），以及已有 MCP Tool 包装；无人值守 Agent 可从这里签发 Agent Token。创建后可继续补充能力声明、dry-run 与实例认证信息。
+ * Agent 支持 HTTP Endpoint、Agent Node（WebSocket + 长轮询兜底），以及已有 MCP Tool 包装；无人值守 Agent 可从这里签发 Agent Token。创建后可继续补充能力声明、dry-run 与实例认证信息。
  */
 
 import Link from "next/link";
@@ -94,14 +94,14 @@ function SelfRegistrationEntry({ locale }: { locale: Locale }) {
       ? {
           kicker: "接入方式",
           title: "无人值守 Agent 可先签发 Agent Token",
-          body: "如果你正在手动接入公网调用端点或 MCP 工具，继续填写下方表单。本地脚本、CLI、内网服务或 Agent Node 需要自行完成首次注册时，先签发限时 Agent Token；明文只显示一次，注册后同一个 Token 继续作为运行身份。",
+          body: "如果你正在手动接入公网调用端点或 MCP 工具，继续填写下方表单。本地脚本、CLI、内网服务或 Agent Node 需要自行完成首次注册时，先签发限时 Agent Token；明文只显示一次，注册后同一个 Token 会在连接和运行时继续标识这个 Agent。",
           primary: "签发 Agent Token",
           secondary: "继续手动接入",
         }
       : {
           kicker: "Connection method",
           title: "Unattended Agents can start with an Agent Token",
-          body: "Keep using the form below when you are manually connecting a public endpoint or MCP tool. For unattended registration, issue a time-limited Agent Token whose plaintext is shown once; the same Token becomes the runtime identity after registration.",
+          body: "Keep using the form below when manually connecting a public endpoint or MCP tool. For unattended registration, issue a time-limited Agent Token whose plaintext is shown once; after registration, the same Token identifies that Agent whenever it connects or runs.",
           primary: "Issue Agent Token",
           secondary: "Continue manual setup",
         };
@@ -146,7 +146,7 @@ function PublishHead({ activePill, locale }: { activePill: string | null; locale
       ? {
           kicker: "我的 / 接入 Agent",
           heading: "把 Agent 接入当前实例",
-          lead: "手动接入可选择公网 HTTPS、MCP 工具包装或 Agent Node。Agent Node 默认走 WebSocket，网络受限时自动切换 Pull v2；无人值守 Agent 可先创建 Agent Token，让它自己完成注册。",
+          lead: "手动接入可选择公网 HTTPS、MCP 工具包装或 Agent Node。Agent Node 默认走 WebSocket，网络受限时自动切换长轮询；无人值守 Agent 可先创建 Agent Token，让它自己完成注册。",
           later: "创建后可继续",
           progressAria: "接入进度",
           pills: [
@@ -159,7 +159,7 @@ function PublishHead({ activePill, locale }: { activePill: string | null; locale
       : {
           kicker: "My / Connect Agent",
           heading: "Connect an Agent to this instance",
-          lead: "Connect through public HTTPS, an MCP tool wrapper, or Agent Node. Agent Node prefers WebSocket and falls back to Pull v2; unattended Agents can start with an Agent Token and self-register.",
+          lead: "Connect through public HTTPS, an MCP tool wrapper, or Agent Node. Agent Node prefers WebSocket and falls back to long-poll; unattended Agents can start with an Agent Token and self-register.",
           later: "Available after creation",
           progressAria: "Connection progress",
           pills: [

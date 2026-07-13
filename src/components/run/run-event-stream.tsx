@@ -717,7 +717,7 @@ function connectionModeLabel(value: unknown, locale: Locale): string {
   const isZh = locale === "zh";
   if (mode === "direct_http") return isZh ? "HTTP 直连" : "direct HTTP";
   if (mode === "mcp_server") return isZh ? "MCP Server" : "MCP server";
-  if (mode === "agent_node") return "Agent Node Runtime v2";
+  if (mode === "agent_node") return "Agent Node";
   return mode;
 }
 

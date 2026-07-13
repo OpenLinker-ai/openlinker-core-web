@@ -66,21 +66,24 @@ const MODES: Record<Mode, ModeSpec> = {
   agent_node: {
     category: "Agent connection",
     label: "Agent Node",
-    title: "Agent Node：可靠接入本地 Agent",
-    blurb: "Agent Node 默认使用 Runtime v2 WebSocket，网络阻断时切到同一套 v2 长轮询；两条通道共享落盘、租约、恢复和结果确认。",
+    title: "Agent Node：让本地 Agent 稳定接入",
+    blurb: "只需提供 OpenLinker 地址。Agent Node 会自动发现专用 mTLS Runtime，优先使用 WebSocket，并在网络受限时切换长轮询。",
     bestFor: "本地 Agent · 企业内网",
     icon: "bot",
     accent: "var(--ol-blue)",
     code: [
-      "# 1. 连接模式只选 agent_node；默认 auto 会在 WebSocket 不可用时切到 Pull v2",
-      "curl -X POST $OPENLINKER_API/api/v1/agent-registration/agents \\",
+      "# OpenLinker 接入只需配置这一个平台地址",
+      "export OPENLINKER_URL=https://openlinker.example.com",
+      "# Agent Node 通过 OPENLINKER_URL/.well-known/openlinker.json 自动发现专用 mTLS Runtime",
+      "",
+      "# 1. 将连接模式设为 agent_node；默认 auto 优先 WebSocket，受限时切换长轮询",
+      "curl -X POST $OPENLINKER_URL/api/v1/agent-registration/agents \\",
       "  -H \"Authorization: Bearer $OPENLINKER_AGENT_TOKEN\" \\",
       "  -H \"Content-Type: application/json\" \\",
       "  -d '{\"name\":\"Local Analyst\",\"connection_mode\":\"agent_node\",\"tags\":[\"data\"]}'",
       "",
       "# 2. 由管理员登记 Node 并安全交付证书；然后启动 Agent Node",
       "cd openlinker-agent-node",
-      "OPENLINKER_CORE_V2_URL=https://runtime.example.com:8443 \\",
       "OPENLINKER_NODE_ID=$OPENLINKER_NODE_ID \\",
       "OPENLINKER_AGENT_ID=$OPENLINKER_AGENT_ID \\",
       "OPENLINKER_AGENT_TOKEN=$OPENLINKER_AGENT_TOKEN \\",
@@ -95,7 +98,7 @@ const MODES: Record<Mode, ModeSpec> = {
       "",
       "# 3. 业务后端只处理请求；Node 负责 assignment ACK、租约、取消、恢复和可靠结果提交。",
     ].join("\n"),
-    bullets: ["WebSocket 低延迟，v2 长轮询兜底", "事件与结果先落盘再发送", "切换通道不会直接重跑已接受的请求"],
+    bullets: ["一个 OpenLinker 地址即可启动", "事件与结果先落盘再发送", "切换通道不会重复执行已接收的请求"],
   },
   sdk: {
     category: "Invocation",
@@ -208,10 +211,10 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "category" | "label"
     agent_node: {
       category: "Agent 接入",
       label: "Agent Node",
-      title: "Agent Node：可靠接入本地 Agent",
-      blurb: "Agent Node 默认使用 Runtime v2 WebSocket，网络阻断时切到同一套 v2 长轮询；两条通道共享落盘、租约、恢复和结果确认。",
+      title: "Agent Node：让本地 Agent 稳定接入",
+      blurb: "只需提供 OpenLinker 地址。Agent Node 会自动发现专用 mTLS Runtime，优先使用 WebSocket，并在网络受限时切换长轮询。",
       bestFor: "本地 Agent · 企业内网",
-      bullets: ["WebSocket 低延迟，v2 长轮询兜底", "事件与结果先落盘再发送", "切换通道不会直接重跑已接受的请求"],
+      bullets: ["一个 OpenLinker 地址即可启动", "事件与结果先落盘再发送", "切换通道不会重复执行已接收的请求"],
     },
     sdk: {
       category: "调用入口",
@@ -256,10 +259,10 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "category" | "label"
     agent_node: {
       category: "Agent connection",
       label: "Agent Node",
-      title: "Agent Node: reliable private execution",
-      blurb: "Agent Node uses Runtime v2 WebSocket by default and switches to the same v2 long-poll protocol when the network blocks it. Both share durable state, leases, resume, and result ACKs.",
+      title: "Agent Node: reliable local execution",
+      blurb: "Provide one OpenLinker URL. Agent Node discovers the dedicated mTLS Runtime, prefers WebSocket, and falls back to long polling on restricted networks.",
       bestFor: "Local Agents · private networks",
-      bullets: ["Low-latency WebSocket with v2 long-poll fallback", "Events and results are persisted before sending", "Transport switches never directly re-run work"],
+      bullets: ["One OpenLinker URL starts the connection", "Events and results are persisted before sending", "Transport switches do not repeat accepted work"],
     },
     sdk: {
       category: "Invocation",
@@ -310,7 +313,9 @@ function codeForLocale(mode: Mode, code: string, locale: Locale) {
   }
   if (mode === "agent_node") {
     return code
-      .replace("# 1. 连接模式只选 agent_node；默认 auto 会在 WebSocket 不可用时切到 Pull v2", "# 1. Use connection_mode=agent_node; auto falls back to Pull v2 when WebSocket is unavailable")
+      .replace("# OpenLinker 接入只需配置这一个平台地址", "# Configure this single OpenLinker platform URL")
+      .replace("# Agent Node 通过 OPENLINKER_URL/.well-known/openlinker.json 自动发现专用 mTLS Runtime", "# Agent Node discovers the dedicated mTLS Runtime through OPENLINKER_URL/.well-known/openlinker.json")
+      .replace("# 1. 将连接模式设为 agent_node；默认 auto 优先 WebSocket，受限时切换长轮询", "# 1. Use connection_mode=agent_node; auto prefers WebSocket and falls back to long polling when needed")
       .replace("# 2. 由管理员登记 Node 并安全交付证书；然后启动 Agent Node", "# 2. Ask an operator to enroll the Node and deliver its certificates, then start Agent Node")
       .replace("# 3. 业务后端只处理请求；Node 负责 assignment ACK、租约、取消、恢复和可靠结果提交。", "# 3. The backend handles business logic; the Node owns assignment ACKs, leases, cancellation, recovery, and reliable result delivery.");
   }
@@ -361,7 +366,7 @@ export function ConnectConsole({ locale = "zh" }: { locale?: Locale }) {
           auth: "User Token calls",
           tokenStatus: "Core issues, verifies, and revokes User Tokens locally. Plaintext is shown only at creation, and each call is limited to the selected permissions and resources.",
           agentAuth: "Agent Token",
-          agentAuthBody: "Agent Node uses an Agent Token for registration and runtime identity. Target authentication for direct_http and mcp_server is configured separately on the Agent.",
+          agentAuthBody: "Agent Node uses an Agent Token for registration and execution identity. Target authentication for direct_http and mcp_server is configured separately on the Agent.",
           rate: "Rate",
           rateValue: "Server configured",
           baseURL: "Base URL",

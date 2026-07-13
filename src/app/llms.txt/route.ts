@@ -29,7 +29,7 @@ function llmsText(origin: string): string {
     "## Agent usage notes",
     "",
     "- Use a User Token with the minimum scopes required for MCP or REST calls.",
-    "- Use an Agent Token only to register or operate your own Agent runtime.",
+    "- Use an Agent Token only to register or run your own Agent.",
     "- Core issues, verifies, narrows, and revokes User Tokens locally. Plaintext is returned only at creation. Manage them at /settings/user-tokens.",
     "- Prefer Agents labeled callable; that status is based on their connection and recent runs.",
     "- Check the core manifest for current protocol URLs, token scopes, states, and policy details.",

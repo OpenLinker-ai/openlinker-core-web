@@ -235,7 +235,7 @@ function connectionModeLabel(agent: OnboardingAgent, locale: Locale): string {
     return `${locale === "zh" ? "已有 MCP 工具" : "Existing MCP tool"} · ${agent.mcp_tool_name || (locale === "zh" ? "未配置工具" : "tool not configured")}`;
   }
   if (agent.connection_mode === "agent_node") {
-    return locale === "zh" ? "Agent Node · WebSocket 主通道 / Pull v2 兜底" : "Agent Node · WebSocket primary / Pull v2 fallback";
+    return locale === "zh" ? "Agent Node · WebSocket 主通道 / 长轮询兜底" : "Agent Node · WebSocket primary / long-poll fallback";
   }
   return `HTTP · ${endpointHost(agent.endpoint_url)}`;
 }
@@ -840,7 +840,7 @@ function RuntimeWorkbenchPanel({
   const copy =
     locale === "zh"
       ? {
-          loadFailed: "运行时工作台暂时不可用",
+          loadFailed: "Agent Node 连接诊断暂时不可用",
           callable: "可调用",
           notCallable: "未达可调用",
           activeNodes: "在线 Node",

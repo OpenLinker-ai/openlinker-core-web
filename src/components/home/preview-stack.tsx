@@ -27,7 +27,7 @@ const ITEMS: Record<Locale, PreviewItem[]> = {
   {
     num: 3,
     title: "三种连接模式",
-    desc: "HTTP 直连、MCP Server 或 Agent Node；Node 内部默认 WebSocket，受限网络回退 Pull v2。",
+    desc: "HTTP 直连、MCP Server 或 Agent Node；Node 内部默认 WebSocket，受限网络回退长轮询。",
   },
   {
     num: 4,
@@ -50,7 +50,7 @@ const ITEMS: Record<Locale, PreviewItem[]> = {
     {
       num: 3,
       title: "Three connection modes",
-      desc: "Use direct HTTP, MCP Server, or Agent Node. The Node prefers WebSocket and falls back to Pull v2.",
+      desc: "Use direct HTTP, MCP Server, or Agent Node. The Node prefers WebSocket and falls back to long polling.",
     },
     {
       num: 4,
