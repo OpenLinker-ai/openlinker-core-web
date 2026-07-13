@@ -17,14 +17,14 @@ interface LoopStep {
 const STEPS: Record<Locale, LoopStep[]> = {
   zh: [
     { num: 1, title: "发现", desc: "浏览公开 Agent" },
-    { num: 2, title: "接入", desc: "HTTP 直连 / MCP / Agent Node" },
+    { num: 2, title: "接入", desc: "HTTP 直连 / MCP / Runtime Worker" },
     { num: 3, title: "调用", desc: "试用台直接调用" },
     { num: 4, title: "A2A/MCP", desc: "协议入口" },
     { num: 5, title: "追踪", desc: "查看结果与日志" },
   ],
   en: [
     { num: 1, title: "Discover", desc: "Browse Registry" },
-    { num: 2, title: "Connect", desc: "HTTP / MCP / Agent Node" },
+    { num: 2, title: "Connect", desc: "HTTP / MCP / Runtime Worker" },
     { num: 3, title: "Invoke", desc: "Try it in Playground" },
     { num: 4, title: "A2A/MCP", desc: "Protocol entries" },
     { num: 5, title: "Trace", desc: "Review results and logs" },

@@ -36,7 +36,7 @@ export interface OnboardingAgent {
   visibility: "public" | "unlisted" | "private";
   certification_status: "unreviewed" | "pending" | "certified" | "rejected";
   endpoint_url: string;
-  connection_mode: "direct_http" | "mcp_server" | "agent_node";
+  connection_mode: "direct_http" | "mcp_server" | "runtime";
   mcp_tool_name?: string;
 }
 
@@ -104,7 +104,7 @@ type RuntimeWorkbench = {
     id: string;
     slug: string;
     name: string;
-    connection_mode: "direct_http" | "mcp_server" | "agent_node" | string;
+    connection_mode: "direct_http" | "mcp_server" | "runtime" | string;
     lifecycle_status: string;
     visibility: string;
     certification_status: string;
@@ -234,8 +234,8 @@ function connectionModeLabel(agent: OnboardingAgent, locale: Locale): string {
   if (agent.connection_mode === "mcp_server") {
     return `${locale === "zh" ? "已有 MCP 工具" : "Existing MCP tool"} · ${agent.mcp_tool_name || (locale === "zh" ? "未配置工具" : "tool not configured")}`;
   }
-  if (agent.connection_mode === "agent_node") {
-    return locale === "zh" ? "Agent Node · WebSocket 主通道 / 长轮询兜底" : "Agent Node · WebSocket primary / long-poll fallback";
+  if (agent.connection_mode === "runtime") {
+    return locale === "zh" ? "Runtime Worker · WebSocket 主通道 / 长轮询兜底" : "Runtime Worker · WebSocket primary / long-poll fallback";
   }
   return `HTTP · ${endpointHost(agent.endpoint_url)}`;
 }
@@ -667,7 +667,7 @@ export function AgentOnboardingPanel({
           <div className="ol-info-card">
             <strong>{copy.endpoint}</strong>
             <span>{connectionModeLabel(agentState, locale)}</span>
-            {agentState.connection_mode !== "agent_node" ? (
+            {agentState.connection_mode !== "runtime" ? (
               <code className="mt-1 block break-all text-[11.5px] text-[color:var(--ol-muted)]">
                 {agentState.endpoint_url}
               </code>
@@ -840,10 +840,10 @@ function RuntimeWorkbenchPanel({
   const copy =
     locale === "zh"
       ? {
-          loadFailed: "Agent Node 连接诊断暂时不可用",
+          loadFailed: "Runtime Worker 连接诊断暂时不可用",
           callable: "可调用",
           notCallable: "未达可调用",
-          activeNodes: "在线 Node",
+          activeNodes: "在线 Runtime Node",
           sessions: "可用 Session",
           capacity: "执行容量",
           queuedRuns: "等待执行",
@@ -872,7 +872,7 @@ function RuntimeWorkbenchPanel({
           loadFailed: "Workbench is temporarily unavailable",
           callable: "Callable",
           notCallable: "Not callable",
-          activeNodes: "Online Nodes",
+          activeNodes: "Online Runtime Nodes",
           sessions: "Ready sessions",
           capacity: "Execution capacity",
           queuedRuns: "Waiting",
@@ -1125,8 +1125,8 @@ function localizedRuntimeDiagnostic(code: string, fallback: string, locale: Loca
     fallback,
     locale,
     locale === "zh"
-      ? "请检查 Agent Node 连接和近期运行状态。"
-      : "Review the Agent Node connection and recent runs.",
+      ? "请检查 Runtime Worker 连接和近期运行状态。"
+      : "Review the Runtime Worker connection and recent runs.",
   );
 }
 

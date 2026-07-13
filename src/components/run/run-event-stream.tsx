@@ -540,14 +540,14 @@ function eventMeta(event: RunEvent, locale: Locale): {
       };
     case "run.dispatch.pending":
       return {
-        title: isZh ? "等待 Agent Node" : "Waiting for Agent Node",
+        title: isZh ? "等待 Runtime Worker" : "Waiting for Runtime Worker",
         detail: dispatchDetail(event.payload, locale, "pending"),
         icon: "refresh",
         tone: "bg-[#EAF1FF] text-[#2952A3]",
       };
     case "run.dispatch.waiting_runtime":
       return {
-        title: isZh ? "Agent Node 未连接" : "Agent Node disconnected",
+        title: isZh ? "Runtime Worker 未连接" : "Runtime Worker disconnected",
         detail: dispatchDetail(event.payload, locale, "waiting"),
         icon: "warn",
         tone: "bg-[#FFF4D8] text-[#9A6200]",
@@ -664,21 +664,21 @@ function dispatchDetail(
   const isZh = locale === "zh";
   if (state === "waiting") {
     return isZh
-      ? "Agent Node 当前未连接。请确认 Agent Node 已启动并能访问这个实例。"
-      : "Agent Node is not connected. Confirm that it is running and can reach this instance.";
+      ? "Runtime Worker 当前未连接。请确认 Runtime Worker 已启动并能访问这个实例。"
+      : "Runtime Worker is not connected. Confirm that it is running and can reach this instance.";
   }
   if (state === "claimed") {
     return isZh
-      ? "Agent Node 已接收这次运行，正在处理。"
-      : "Agent Node received this run and is processing it.";
+      ? "Runtime Worker 已接收这次运行，正在处理。"
+      : "Runtime Worker received this run and is processing it.";
   }
   return isZh
-    ? "这次运行正在等待 Agent Node 接收。"
-    : "This run is waiting for Agent Node to receive it.";
+    ? "这次运行正在等待 Runtime Worker 接收。"
+    : "This run is waiting for Runtime Worker to receive it.";
 }
 
 function dispatchClaimedTitle(_payload: Record<string, unknown>, locale: Locale): string {
-  return locale === "zh" ? "Agent Node 已接收" : "Agent Node received run";
+  return locale === "zh" ? "Runtime Worker 已接收" : "Runtime Worker received run";
 }
 
 function messageDeltaTitle(payload: Record<string, unknown>, locale: Locale): string {
@@ -717,7 +717,7 @@ function connectionModeLabel(value: unknown, locale: Locale): string {
   const isZh = locale === "zh";
   if (mode === "direct_http") return isZh ? "HTTP 直连" : "direct HTTP";
   if (mode === "mcp_server") return isZh ? "MCP Server" : "MCP server";
-  if (mode === "agent_node") return "Agent Node";
+  if (mode === "runtime") return "Runtime Worker";
   return mode;
 }
 

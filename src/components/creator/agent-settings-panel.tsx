@@ -21,7 +21,7 @@ import {
 type Visibility = "public" | "unlisted" | "private";
 type LifecycleStatus = "active" | "disabled";
 type CertificationStatus = "unreviewed" | "pending" | "certified" | "rejected";
-type ConnectionMode = "direct_http" | "mcp_server" | "agent_node";
+type ConnectionMode = "direct_http" | "mcp_server" | "runtime";
 
 export interface EditableAgent {
   id: string;
@@ -185,7 +185,7 @@ export function AgentSettingsPanel({ agent, locale }: Props) {
           connectionDesc: "修改调用端点或连接模式后，建议回到接入配置执行试运行。",
           mode: "连接模式",
           endpoint: "调用端点 URL",
-          endpointRuntimeHint: "Agent Node 会根据 OpenLinker 地址自动发现专用 mTLS Runtime；WebSocket 受限时会切换长轮询，私网地址无需暴露给当前实例。",
+          endpointRuntimeHint: "Runtime Worker 会根据 OpenLinker 地址自动发现专用 mTLS Runtime；WebSocket 受限时会切换长轮询，私网地址无需暴露给当前实例。",
           mcpTool: "MCP 工具名称",
           authHeader: "调用端点鉴权 Header",
           authPlaceholder: "留空表示保留当前密钥",
@@ -227,7 +227,7 @@ export function AgentSettingsPanel({ agent, locale }: Props) {
           connectionDesc: "After changing endpoint or connection mode, run a dry-run from onboarding.",
           mode: "Connection mode",
           endpoint: "Endpoint URL",
-          endpointRuntimeHint: "Agent Node discovers the dedicated mTLS Runtime from the OpenLinker URL and falls back to long polling when WebSocket is unavailable, without exposing a private backend URL.",
+          endpointRuntimeHint: "Runtime Worker discovers the dedicated mTLS Runtime from the OpenLinker URL and falls back to long polling when WebSocket is unavailable, without exposing a private backend URL.",
           mcpTool: "MCP tool name",
           authHeader: "Endpoint auth header",
           authPlaceholder: "Leave blank to keep the current secret",
@@ -392,7 +392,7 @@ export function AgentSettingsPanel({ agent, locale }: Props) {
                   onChange={(event) => updateForm("connectionMode", event.target.value as ConnectionMode)}
                 >
                   <option value="direct_http">{localizedConnectionModeLabel("direct_http", locale)}</option>
-                  <option value="agent_node">{localizedConnectionModeLabel("agent_node", locale)}</option>
+                  <option value="runtime">{localizedConnectionModeLabel("runtime", locale)}</option>
                   <option value="mcp_server">{localizedConnectionModeLabel("mcp_server", locale)}</option>
                 </select>
               </label>
@@ -403,9 +403,9 @@ export function AgentSettingsPanel({ agent, locale }: Props) {
                   value={form.endpointURL}
                   onChange={(event) => updateForm("endpointURL", event.target.value)}
                   maxLength={500}
-                  disabled={form.connectionMode === "agent_node"}
+                  disabled={form.connectionMode === "runtime"}
                 />
-                {form.connectionMode === "agent_node" ? (
+                {form.connectionMode === "runtime" ? (
                   <p className="ol-publish-field-hint">{copy.endpointRuntimeHint}</p>
                 ) : null}
               </label>

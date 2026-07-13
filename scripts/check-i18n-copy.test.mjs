@@ -161,6 +161,16 @@ test("allows exact protocol, credential, and code identifiers", () => {
   assert.deepEqual(result, []);
 });
 
+test("allows Runtime product terms in Chinese copy", () => {
+  const result = failures(`
+    const copy = locale === "zh"
+      ? { title: "Runtime Worker", label: "Runtime Node" }
+      : { title: "Runtime Worker", label: "Runtime Node" };
+    export default function Page() { return <div>{copy.title}{copy.label}</div>; }
+  `);
+  assert.deepEqual(result, []);
+});
+
 test("allows raw evidence inside a technical code view", () => {
   const result = failures(`
     export default function Page() {

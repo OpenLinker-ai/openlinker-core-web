@@ -535,7 +535,7 @@ async function checkLongOnline(
     const state = String(asRecord(task.status).state ?? "");
     assertTaskState(state);
     if (state !== "TASK_STATE_WORKING") {
-      throw new Error("Long-online check requires a running agent_node or long task");
+      throw new Error("Long-online check requires a running runtime or long task");
     }
 
     setCheck("long-online", { state: "running", detail: `subscribe ${shortID(taskId)} until heartbeat` });

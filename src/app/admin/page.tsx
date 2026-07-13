@@ -88,7 +88,7 @@ export default async function AdminOverviewPage({
       title: copy.nodes,
       body:
         locale === "zh"
-          ? "查看私有 Agent 的 Agent Node、当前连接、容量和 Runtime 契约是否一致。"
+          ? "查看私有 Agent 的 Runtime Node、当前连接、容量和 Runtime 契约是否一致。"
           : "Review private-Agent nodes, live sessions, capacity, and Runtime contract alignment.",
       metric: null,
     },

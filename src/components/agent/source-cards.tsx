@@ -1,11 +1,11 @@
 /**
- * 发布页"选择接入方式"卡片（HTTP Endpoint / Agent Node / MCP Tool）。
+ * 发布页"选择接入方式"卡片（HTTP Endpoint / SDK Runtime Worker / MCP Tool）。
  *
  * 视觉来自 prototype/openlinker-flow-17-publish.png 的 .source-tabs：
  * 现在是受控组件：选择会写入后端 connection_mode。
  */
 
-export type AgentConnectionMode = "direct_http" | "agent_node" | "mcp_server";
+export type AgentConnectionMode = "direct_http" | "runtime" | "mcp_server";
 
 import type { Locale } from "@/lib/i18n";
 
@@ -29,13 +29,13 @@ const SOURCES: readonly SourceCardSpec[] = [
     },
   },
   {
-    key: "agent_node",
+    key: "runtime",
     icon: "Node",
     iconClass: "blue",
-    title: { zh: "Agent Node", en: "Agent Node" },
+    title: { zh: "Runtime Worker", en: "Runtime Worker" },
     desc: {
-      zh: "适合本地、内网或 NAT 后的 Agent。默认走 WebSocket，网络受限时自动切到长轮询。",
-      en: "For local, private-network, or NAT Agents. WebSocket is primary, with automatic long-poll fallback on restricted networks.",
+      zh: "使用 Go、TypeScript 或 Python SDK 直接运行，适合本地、内网与 NAT 后的 Agent。已有服务可暂用 Agent Node Adapter。",
+      en: "Run directly with the Go, TypeScript, or Python SDK. Existing backends can temporarily use Agent Node Adapter.",
     },
   },
   {

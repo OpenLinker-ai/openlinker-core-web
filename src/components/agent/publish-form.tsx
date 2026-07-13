@@ -73,13 +73,13 @@ function isAllowedEndpointURL(value: string): boolean {
 }
 
 function connectionModeLabel(mode: AgentConnectionMode, locale: Locale): string {
-  if (mode === "agent_node") return "Agent Node";
+  if (mode === "runtime") return "Runtime Worker";
   if (mode === "mcp_server") return locale === "zh" ? "已有 MCP 工具" : "Existing MCP tool";
   return locale === "zh" ? "HTTP 端点" : "HTTP Endpoint";
 }
 
 function isRuntimeConnectionMode(mode: AgentConnectionMode): boolean {
-  return mode === "agent_node";
+  return mode === "runtime";
 }
 
 const VALIDATION_COPY = {
@@ -123,7 +123,7 @@ function createSchema(locale: Locale) {
   const copy = VALIDATION_COPY[locale];
   return z
     .object({
-      connection_mode: z.enum(["direct_http", "agent_node", "mcp_server"]),
+      connection_mode: z.enum(["direct_http", "runtime", "mcp_server"]),
       slug: z
         .string()
         .min(3, copy.min3)
@@ -594,10 +594,10 @@ function EndpointSection({
   const copy =
     locale === "zh"
       ? {
-          runtimeTitle: "Agent Node",
+          runtimeTitle: "Runtime Worker",
           runtimeBody: (
             <>
-              适合本地、内网或 NAT 后的 Agent。登记 Node 并签发 mTLS 设备证书后，Agent Node 会根据 OpenLinker 地址自动发现专用 Runtime。默认的 <code>auto</code> 策略优先使用 WebSocket，网络受限时切换长轮询；切换通道会延续同一次运行，不会重复执行已接收的任务。
+              使用 Go、TypeScript 或 Python SDK 直接运行 Agent。Runtime Worker 会发现专用 mTLS Runtime，并负责可靠连接、恢复和结果提交；生产环境需要持久化 Runtime Store。已有 HTTP、命令、Codex 或 A2A 服务时，可暂用 Agent Node Adapter。
             </>
           ),
           httpsOrLoopback: "调用端点 URL（HTTPS 或本地回环 HTTP）",
@@ -614,10 +614,10 @@ function EndpointSection({
           endpointAuth: "鉴权 Header（可选，当前实例调用端点时携带）",
         }
       : {
-          runtimeTitle: "Agent Node",
+          runtimeTitle: "Runtime Worker",
           runtimeBody: (
             <>
-              For local, private-network, or NAT Agents. After Node enrollment and mTLS issuance, Agent Node discovers its dedicated Runtime from the OpenLinker URL. The default <code>auto</code> policy prefers WebSocket and falls back to long polling on restricted networks; switching transport continues the same run without repeating accepted work.
+              Run the Agent directly with the Go, TypeScript, or Python SDK. Runtime Worker discovers the mTLS Runtime and owns reliable connectivity, recovery, and result delivery; production requires a durable Store. Existing HTTP, command, Codex, or A2A backends can temporarily use Agent Node Adapter.
             </>
           ),
           httpsOrLoopback: "Endpoint URL (HTTPS or local loopback HTTP)",
@@ -634,7 +634,7 @@ function EndpointSection({
           endpointAuth: "Auth header (optional, sent when OpenLinker calls the endpoint)",
         };
 
-  if (connectionMode === "agent_node") {
+  if (connectionMode === "runtime") {
     return (
       <div className="rounded-2xl border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] p-4">
         <div className="text-[13px] font-[900] text-[color:var(--ol-ink)]">

@@ -19,8 +19,8 @@ const COPY = {
     features: [
       "User Token 用于用户侧 API 与 MCP 调用",
       "Agent Token 用于 Agent 注册与运行身份",
-      "三种连接模式：HTTP、MCP Server 与 Agent Node",
-      "Agent Node 默认 WebSocket，网络受限时切换长轮询",
+      "三种连接模式：HTTP、MCP Server 与 Runtime Worker",
+      "Runtime Worker 默认 WebSocket，网络受限时切换长轮询",
       "Web、SDK、MCP 与 A2A 共用运行记录",
     ],
     stats: [
@@ -37,8 +37,8 @@ const COPY = {
     features: [
       "User Tokens authorize user-side API and MCP calls",
       "Agent Tokens identify Agents during onboarding and execution",
-      "Three connection modes: HTTP, MCP Server, and Agent Node",
-      "Agent Node prefers WebSocket and falls back to long-poll",
+      "Three connection modes: HTTP, MCP Server, and Runtime Worker",
+      "Runtime Worker prefers WebSocket and falls back to long-poll",
       "Web, SDK, MCP, and A2A share the same run records",
     ],
     stats: [

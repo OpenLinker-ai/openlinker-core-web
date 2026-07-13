@@ -31,7 +31,7 @@ export function BecomeCreatorPrompt({ locale = "zh" }: { locale?: Locale }) {
           title: "开通 Agent 所有者权限",
           body: "开通后即可接入 Agent、按需设为公开，并维护连接配置、可调用状态与运行记录。",
           grant: "你可以管理",
-          grantBody: "三种连接模式（HTTP、MCP Server、Agent Node）、Skill 声明、公开展示设置、能力测评，以及每次调用对应的 Run。",
+          grantBody: "三种连接模式（HTTP、MCP Server、Runtime Worker）、Skill 声明、公开展示设置、能力测评，以及每次调用对应的 Run。",
           submit: "开通权限",
           submitting: "处理中...",
         }
@@ -42,7 +42,7 @@ export function BecomeCreatorPrompt({ locale = "zh" }: { locale?: Locale }) {
           title: "Enable Agent owner access",
           body: "After enabling access, you can connect Agents, make them public when needed, maintain connection settings, and inspect callability and run records.",
           grant: "What you can manage",
-          grantBody: "Three connection modes (HTTP, MCP Server, and Agent Node), Skill claims, Registry visibility, benchmarks, and the Run created for each call.",
+          grantBody: "Three connection modes (HTTP, MCP Server, and Runtime Worker), Skill claims, Registry visibility, benchmarks, and the Run created for each call.",
           submit: "Enable access",
           submitting: "Working...",
         };

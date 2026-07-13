@@ -64,16 +64,16 @@ export function HeroDual({ locale = "zh" }: { locale?: Locale }) {
       ? {
           tag: "Agent 接入",
           title: "接入你的 Agent",
-          desc: "选择直连 HTTP、MCP Server 或可靠 Agent Node，把公网、本地或私有网络中的 Agent 接到当前实例。",
+          desc: "选择直连 HTTP、MCP Server 或可靠 Runtime Worker，把公网、本地或私有网络中的 Agent 接到当前实例。",
           cta: "→ 接入 Agent",
-          meta: "direct_http · mcp_server · agent_node",
+          meta: "direct_http · mcp_server · runtime",
         }
       : {
           tag: "Agent connection",
           title: "Connect your Agent",
-          desc: "Use direct HTTP, MCP Server, or the reliable Agent Node to connect Agents on public, local, or private networks.",
+          desc: "Use direct HTTP, MCP Server, or the reliable Runtime Worker to connect Agents on public, local, or private networks.",
           cta: "→ Connect Agent",
-          meta: "direct_http · mcp_server · agent_node",
+          meta: "direct_http · mcp_server · runtime",
         };
 
   return (

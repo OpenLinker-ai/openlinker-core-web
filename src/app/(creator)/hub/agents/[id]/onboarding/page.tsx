@@ -21,7 +21,7 @@ interface CreatorAgent {
   visibility: "public" | "unlisted" | "private";
   certification_status: "unreviewed" | "pending" | "certified" | "rejected";
   endpoint_url: string;
-  connection_mode?: "direct_http" | "mcp_server" | "agent_node";
+  connection_mode?: "direct_http" | "mcp_server" | "runtime";
   mcp_tool_name?: string;
 }
 

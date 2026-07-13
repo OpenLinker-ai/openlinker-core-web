@@ -143,8 +143,8 @@ export async function drainRuntimeNodeAction(formData: FormData) {
   const locale = actionLocale(formData);
   const nodeID = String(formData.get("node_id") ?? "").trim();
   const copy = locale === "zh"
-    ? { missing: "缺少 Node ID", failed: "无法让 Agent Node 进入排空状态", done: "Agent Node 已开始排空" }
-    : { missing: "Node ID is missing", failed: "Failed to start draining the Agent Node", done: "The Agent Node is draining" };
+    ? { missing: "缺少 Node ID", failed: "无法让 Runtime Node 进入排空状态", done: "Runtime Node 已开始排空" }
+    : { missing: "Node ID is missing", failed: "Failed to start draining the Runtime Node", done: "The Runtime Node is draining" };
   if (!nodeID) adminRedirect(formData, "error", copy.missing, "/admin/nodes");
 
   try {
@@ -167,14 +167,14 @@ export async function revokeRuntimeNodeAction(formData: FormData) {
     ? {
         missing: "缺少 Node ID",
         reason: "撤销原因不能为空",
-        failed: "无法撤销 Agent Node",
-        done: "Agent Node 已撤销，现有连接将失效",
+        failed: "无法撤销 Runtime Node",
+        done: "Runtime Node 已撤销，现有连接将失效",
       }
     : {
         missing: "Node ID is missing",
         reason: "A revocation reason is required",
-        failed: "Failed to revoke the Agent Node",
-        done: "The Agent Node was revoked and its existing connections are no longer valid",
+        failed: "Failed to revoke the Runtime Node",
+        done: "The Runtime Node was revoked and its existing connections are no longer valid",
       };
   if (!nodeID) adminRedirect(formData, "error", copy.missing, "/admin/nodes");
   if (!reason) adminRedirect(formData, "error", copy.reason, "/admin/nodes");

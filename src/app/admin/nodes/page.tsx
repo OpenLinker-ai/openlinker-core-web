@@ -47,7 +47,7 @@ async function loadNodes(page: number, locale: "zh" | "en") {
       error: localizedErrorMessage(
         error,
         locale,
-        locale === "zh" ? "Agent Node 列表加载失败" : "Failed to load Agent Nodes",
+        locale === "zh" ? "Runtime Node 列表加载失败" : "Failed to load Runtime Nodes",
       ),
     };
   }
@@ -65,7 +65,7 @@ export default async function AdminRuntimeNodesPage({
 
   const copy = locale === "zh"
     ? {
-        title: "Agent Node",
+        title: "Runtime Node",
         lead: "查看负责执行私有 Agent 的 Node。先排空再维护；撤销会立即让设备身份和现有连接失效。",
         total: "节点总数",
         active: "可接收运行",
@@ -73,7 +73,7 @@ export default async function AdminRuntimeNodesPage({
         revoked: "已撤销",
         capacity: "总容量",
         inflight: "执行中",
-        noData: "还没有登记 Agent Node",
+        noData: "还没有登记 Runtime Node",
         noDataBody: "使用 Core 的 runtime-node issue 命令签发并登记第一台 Node。",
         identity: "节点",
         state: "状态与容量",
@@ -104,7 +104,7 @@ export default async function AdminRuntimeNodesPage({
         confirmRevoke: "撤销后设备证书和现有 Session 都会失效。请确认原因无误。",
       }
     : {
-        title: "Agent Nodes",
+        title: "Runtime Nodes",
         lead: "Review the Nodes that execute private Agents. Drain before maintenance; revocation immediately invalidates the device identity and existing connections.",
         total: "Total nodes",
         active: "Accepting runs",
@@ -112,7 +112,7 @@ export default async function AdminRuntimeNodesPage({
         revoked: "Revoked",
         capacity: "Total capacity",
         inflight: "In flight",
-        noData: "No Agent Nodes are enrolled",
+        noData: "No Runtime Nodes are enrolled",
         noDataBody: "Use Core's runtime-node issue command to enroll the first Node.",
         identity: "Node",
         state: "State and capacity",

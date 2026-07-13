@@ -73,7 +73,7 @@ export default async function RunsPage({
           emptyText: "还没有运行记录。",
           emptyAction: "打开 Agent 库 ->",
           connect: "接入 Agent",
-          connectBody: "如果你是 Agent 所有者，可以通过 HTTP、MCP 或可靠 Agent Node 接入；Agent Node 优先使用 WebSocket，受限时切换长轮询。",
+          connectBody: "如果你是 Agent 所有者，可以通过 HTTP、MCP 或可靠 Runtime Worker 接入；Runtime Worker 优先使用 WebSocket，受限时切换长轮询。",
           connectAction: "接入新 Agent",
         }
       : {
@@ -91,7 +91,7 @@ export default async function RunsPage({
           emptyText: "No run records yet.",
           emptyAction: "Open Registry ->",
           connect: "Connect an Agent",
-          connectBody: "Agent owners can connect over HTTP, MCP, or the reliable Agent Node, which prefers WebSocket and falls back to long polling when needed.",
+          connectBody: "Agent owners can connect over HTTP, MCP, or the reliable Runtime Worker, which prefers WebSocket and falls back to long polling when needed.",
           connectAction: "Connect a new Agent",
         };
 

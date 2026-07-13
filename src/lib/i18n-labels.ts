@@ -117,20 +117,20 @@ const RUN_ERROR_MESSAGES: LabelMap = {
     en: "The Agent is temporarily unavailable. The run will follow its retry policy.",
   },
   RUNTIME_CLIENT_UPGRADE_REQUIRED: {
-    zh: "此 Agent Node 版本已过期。升级后重新连接即可继续接收运行。",
-    en: "This Agent Node is out of date. Upgrade it and reconnect to receive runs.",
+    zh: "此 Runtime Worker 版本已过期。升级后重新连接即可继续接收运行。",
+    en: "This Runtime Worker is out of date. Upgrade it and reconnect to receive runs.",
   },
   RUNTIME_REQUIRED_FEATURE_MISSING: {
-    zh: "此 Agent Node 缺少当前运行所需能力，请升级或更换节点。",
-    en: "This Agent Node is missing a required capability. Upgrade it or use another node.",
+    zh: "此 Runtime Worker 缺少当前运行所需能力，请升级或更换节点。",
+    en: "This Runtime Worker is missing a required capability. Upgrade it or use another node.",
   },
   NODE_AT_CAPACITY: {
     zh: "Agent 当前任务已满，本次运行会在有空位时继续。",
     en: "The Agent is at capacity. This run will continue when a slot is available.",
   },
   NODE_DRAINING: {
-    zh: "Agent Node 正在下线，不再接收新运行。",
-    en: "The Agent Node is draining and is not accepting new runs.",
+    zh: "Runtime Worker 正在下线，不再接收新运行。",
+    en: "The Runtime Worker is draining and is not accepting new runs.",
   },
   RUN_CANCEL_REQUESTED: {
     zh: "已提交取消请求，正在等待 Agent 停止。",
@@ -165,12 +165,12 @@ const RUN_ERROR_MESSAGES: LabelMap = {
     en: "The connection ended before the result was confirmed. OpenLinker did not retry to avoid duplicate execution.",
   },
   RUNTIME_SESSION_CONFLICT: {
-    zh: "Agent Node 的连接身份发生冲突，请关闭重复进程后重新连接。",
-    en: "This Agent Node connection conflicts with another process. Stop the duplicate process and reconnect.",
+    zh: "Runtime Worker 的连接身份发生冲突，请关闭重复进程后重新连接。",
+    en: "This Runtime Worker connection conflicts with another process. Stop the duplicate process and reconnect.",
   },
   RUNTIME_SPOOL_CORRUPT: {
-    zh: "Agent Node 的本地待发送记录无法校验，节点已停止领取新运行。",
-    en: "The Agent Node could not verify its local pending records and stopped accepting new runs.",
+    zh: "Runtime Worker 的本地待发送记录无法校验，节点已停止领取新运行。",
+    en: "The Runtime Worker could not verify its local pending records and stopped accepting new runs.",
   },
   STALE_LEASE: {
     zh: "此结果来自已经失效的执行尝试，未覆盖当前运行状态。",
@@ -263,7 +263,7 @@ const DRY_RUN_RESULT_LABELS: LabelMap = {
 const CONNECTION_MODE_LABELS: LabelMap = {
   direct_http: { zh: "HTTP 直连", en: "Direct HTTP" },
   mcp_server: { zh: "MCP Server", en: "MCP server" },
-  agent_node: { zh: "Agent Node", en: "Agent Node" },
+  runtime: { zh: "Runtime Worker", en: "Runtime Worker" },
 };
 
 const TARGET_TYPE_LABELS: LabelMap = {
@@ -285,7 +285,7 @@ const ARTIFACT_VISIBILITY_LABELS: LabelMap = {
 };
 
 const ALLOWED_BACKEND_TECH_TERMS =
-  /\b(?:Slack Incoming Webhook|User Token|Agent Token|Run ID|Agent Node|MCP Server|OpenLinker|JSON-RPC|WebSocket|Webhook|Agent|Skill|MCP|A2A|API|SDK|SSE|HTTPS|HTTP|JSON|Slack|URL|TLS|DNS|EOF)\b/giu;
+  /\b(?:Slack Incoming Webhook|User Token|Agent Token|Run ID|Runtime Worker|MCP Server|OpenLinker|JSON-RPC|WebSocket|Webhook|Agent|Skill|MCP|A2A|API|SDK|SSE|HTTPS|HTTP|JSON|Slack|URL|TLS|DNS|EOF)\b/giu;
 
 function hasUnexpectedLatinText(value: string): boolean {
   const remainder = value

@@ -6,7 +6,7 @@ import { useMemo, useRef, useState } from "react";
 import { Icon, type IconName } from "@/components/ui/icon";
 import type { Locale } from "@/lib/i18n";
 
-type Mode = "endpoint" | "mcp_server" | "agent_node" | "sdk" | "mcp";
+type Mode = "endpoint" | "mcp_server" | "runtime" | "sdk" | "mcp";
 
 interface ModeSpec {
   category: string;
@@ -63,42 +63,43 @@ const MODES: Record<Mode, ModeSpec> = {
     ].join("\n"),
     bullets: ["目标是远程 HTTP MCP Server", "必须填写 mcp_tool_name", "不是 OpenLinker /mcp 客户端配置"],
   },
-  agent_node: {
+  runtime: {
     category: "Agent connection",
-    label: "Agent Node",
-    title: "Agent Node：让本地 Agent 稳定接入",
-    blurb: "只需提供 OpenLinker 地址。Agent Node 会自动发现专用 mTLS Runtime，优先使用 WebSocket，并在网络受限时切换长轮询。",
-    bestFor: "本地 Agent · 企业内网",
+    label: "Runtime Worker",
+    title: "SDK Runtime Worker：直接运行你的 Agent",
+    blurb: "使用 Go、TypeScript 或 Python SDK 直接运行可靠 Worker；它会发现专用 mTLS Runtime，并自动管理连接、恢复与可靠提交。",
+    bestFor: "服务端 Agent · 本地与企业内网",
     icon: "bot",
     accent: "var(--ol-blue)",
     code: [
-      "# OpenLinker 接入只需配置这一个平台地址",
-      "export OPENLINKER_URL=https://openlinker.example.com",
-      "# Agent Node 通过 OPENLINKER_URL/.well-known/openlinker.json 自动发现专用 mTLS Runtime",
-      "",
-      "# 1. 将连接模式设为 agent_node；默认 auto 优先 WebSocket，受限时切换长轮询",
+      "# 1. 注册为中性的 runtime 连接模式",
       "curl -X POST $OPENLINKER_URL/api/v1/agent-registration/agents \\",
       "  -H \"Authorization: Bearer $OPENLINKER_AGENT_TOKEN\" \\",
       "  -H \"Content-Type: application/json\" \\",
-      "  -d '{\"name\":\"Local Analyst\",\"connection_mode\":\"agent_node\",\"tags\":[\"data\"]}'",
+      "  -d '{\"name\":\"Local Analyst\",\"connection_mode\":\"runtime\",\"tags\":[\"data\"]}'",
       "",
-      "# 2. 由管理员登记 Node 并安全交付证书；然后启动 Agent Node",
-      "cd openlinker-agent-node",
-      "OPENLINKER_NODE_ID=$OPENLINKER_NODE_ID \\",
-      "OPENLINKER_AGENT_ID=$OPENLINKER_AGENT_ID \\",
-      "OPENLINKER_AGENT_TOKEN=$OPENLINKER_AGENT_TOKEN \\",
-      "OPENLINKER_AGENT_NODE_TRANSPORT=auto \\",
-      "OPENLINKER_AGENT_NODE_DATA_DIR=/var/lib/openlinker-agent-node \\",
-      "OPENLINKER_AGENT_NODE_MTLS_CERT_FILE=/run/openlinker/runtime-node.crt \\",
-      "OPENLINKER_AGENT_NODE_MTLS_KEY_FILE=/run/openlinker/runtime-node.key \\",
-      "OPENLINKER_AGENT_NODE_MTLS_CA_FILE=/run/openlinker/runtime-server-ca.crt \\",
-      "OPENLINKER_AGENT_NODE_ADAPTER=http \\",
-      "OPENLINKER_AGENT_NODE_HTTP_URL=http://127.0.0.1:18080/run \\",
-      "go run ./cmd/openlinker-agent-node",
+      "# 2. 选择一种服务端 SDK；下面是各语言的真实公开入口",
+      "# Go: github.com/OpenLinker-ai/openlinker-go",
+      "worker, err := openlinker.NewRuntimeWorker(openlinker.RuntimeWorkerConfig{",
+      "  PlatformURL: platformURL, NodeID: nodeID, AgentID: agentID,",
+      "  AgentToken: agentToken, MTLS: mtlsConfig, Store: store, Handler: handler,",
+      "})",
+      "if err != nil { return err }",
+      "if err := worker.Start(ctx); err != nil { return err }",
       "",
-      "# 3. 业务后端只处理请求；Node 负责 assignment ACK、租约、取消、恢复和可靠结果提交。",
+      "# TypeScript（仅服务端）: @openlinker/sdk/runtime",
+      "import { RuntimeWorker } from '@openlinker/sdk/runtime';",
+      "const worker = new RuntimeWorker({ platformURL, nodeID, agentID, agentToken, mtls, store, handler });",
+      "await worker.start();",
+      "",
+      "# Python（异步）: openlinker.runtime",
+      "from openlinker.runtime import RuntimeWorker",
+      "worker = RuntimeWorker(platform_url=platform_url, node_id=node_id, agent_id=agent_id, agent_token=agent_token, mtls=mtls, store=store, handler=handler)",
+      "await worker.run()",
+      "",
+      "# 已有 HTTP、命令、Codex 或 A2A 服务时，可暂用 Agent Node Adapter。",
     ].join("\n"),
-    bullets: ["一个 OpenLinker 地址即可启动", "事件与结果先落盘再发送", "切换通道不会重复执行已接收的请求"],
+    bullets: ["Go / TypeScript / Python 语义一致", "生产环境必须使用持久化 Runtime Store", "Agent Node Adapter 仅用于临时兼容已有服务"],
   },
   sdk: {
     category: "Invocation",
@@ -188,7 +189,7 @@ const MODES: Record<Mode, ModeSpec> = {
   },
 };
 
-const SDKS = ["TypeScript", "Go", "cURL"];
+const SDKS = ["TypeScript", "Go", "Python", "cURL"];
 
 const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "category" | "label" | "title" | "blurb" | "bestFor" | "bullets">>> = {
   zh: {
@@ -208,13 +209,13 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "category" | "label"
       bestFor: "已有远程 MCP 工具",
       bullets: ["目标是远程 HTTP MCP Server", "必须填写 mcp_tool_name", "不是 OpenLinker /mcp 客户端配置"],
     },
-    agent_node: {
+    runtime: {
       category: "Agent 接入",
-      label: "Agent Node",
-      title: "Agent Node：让本地 Agent 稳定接入",
-      blurb: "只需提供 OpenLinker 地址。Agent Node 会自动发现专用 mTLS Runtime，优先使用 WebSocket，并在网络受限时切换长轮询。",
-      bestFor: "本地 Agent · 企业内网",
-      bullets: ["一个 OpenLinker 地址即可启动", "事件与结果先落盘再发送", "切换通道不会重复执行已接收的请求"],
+      label: "Runtime Worker",
+      title: "SDK Runtime Worker：直接运行你的 Agent",
+      blurb: "使用 Go、TypeScript 或 Python SDK 直接运行可靠 Worker；它会发现专用 mTLS Runtime，并自动管理连接、恢复与可靠提交。",
+      bestFor: "服务端 Agent · 本地与企业内网",
+      bullets: ["三种语言保持同一运行语义", "生产环境必须使用持久化 Runtime Store", "Agent Node Adapter 仅用于临时兼容已有服务"],
     },
     sdk: {
       category: "调用入口",
@@ -256,13 +257,13 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "category" | "label"
       bestFor: "Existing remote MCP tools",
       bullets: ["Target a remote HTTP MCP Server", "mcp_tool_name is required", "Not an OpenLinker /mcp client configuration"],
     },
-    agent_node: {
+    runtime: {
       category: "Agent connection",
-      label: "Agent Node",
-      title: "Agent Node: reliable local execution",
-      blurb: "Provide one OpenLinker URL. Agent Node discovers the dedicated mTLS Runtime, prefers WebSocket, and falls back to long polling on restricted networks.",
-      bestFor: "Local Agents · private networks",
-      bullets: ["One OpenLinker URL starts the connection", "Events and results are persisted before sending", "Transport switches do not repeat accepted work"],
+      label: "Runtime Worker",
+      title: "SDK Runtime Worker: run your Agent directly",
+      blurb: "Run a reliable Worker directly with the Go, TypeScript, or Python SDK. It discovers the mTLS Runtime and owns connection recovery and durable delivery.",
+      bestFor: "Server-side Agents · local and private networks",
+      bullets: ["Equivalent semantics across all three SDKs", "Production requires a durable Store", "Agent Node Adapter is temporary compatibility only"],
     },
     sdk: {
       category: "Invocation",
@@ -311,13 +312,13 @@ function codeForLocale(mode: Mode, code: string, locale: Locale) {
       .replace("// 每次新的运行意图生成一次 key；同一意图的网络重试复用整个 request。", "// Generate one key per new run intent; reuse this request for network retries.")
       .replace("检查供应商报价", "Review the supplier quote");
   }
-  if (mode === "agent_node") {
+  if (mode === "runtime") {
     return code
-      .replace("# OpenLinker 接入只需配置这一个平台地址", "# Configure this single OpenLinker platform URL")
-      .replace("# Agent Node 通过 OPENLINKER_URL/.well-known/openlinker.json 自动发现专用 mTLS Runtime", "# Agent Node discovers the dedicated mTLS Runtime through OPENLINKER_URL/.well-known/openlinker.json")
-      .replace("# 1. 将连接模式设为 agent_node；默认 auto 优先 WebSocket，受限时切换长轮询", "# 1. Use connection_mode=agent_node; auto prefers WebSocket and falls back to long polling when needed")
-      .replace("# 2. 由管理员登记 Node 并安全交付证书；然后启动 Agent Node", "# 2. Ask an operator to enroll the Node and deliver its certificates, then start Agent Node")
-      .replace("# 3. 业务后端只处理请求；Node 负责 assignment ACK、租约、取消、恢复和可靠结果提交。", "# 3. The backend handles business logic; the Node owns assignment ACKs, leases, cancellation, recovery, and reliable result delivery.");
+      .replace("# 1. 注册为中性的 runtime 连接模式", "# 1. Register with the neutral runtime connection mode")
+      .replace("# 2. 选择一种服务端 SDK；下面是各语言的真实公开入口", "# 2. Choose a server-side SDK; these are the public entry points")
+      .replace("# TypeScript（仅服务端）: @openlinker/sdk/runtime", "# TypeScript (server-only): @openlinker/sdk/runtime")
+      .replace("# Python（异步）: openlinker.runtime", "# Python (async): openlinker.runtime")
+      .replace("# 已有 HTTP、命令、Codex 或 A2A 服务时，可暂用 Agent Node Adapter。", "# Existing HTTP, command, Codex, or A2A services can temporarily use Agent Node Adapter.");
   }
   return code;
 }
@@ -340,7 +341,7 @@ export function ConnectConsole({ locale = "zh" }: { locale?: Locale }) {
           auth: "User Token 调用",
           tokenStatus: "Core 会在本地签发、校验和撤销 User Token。明文只在创建时显示一次；调用时只授予已选 permission 和资源范围。",
           agentAuth: "Agent 接入凭据",
-          agentAuthBody: "Agent Node 使用 Agent Token 完成注册并标识运行身份；direct_http 与 mcp_server 的目标端鉴权在 Agent 配置中单独设置。",
+          agentAuthBody: "Runtime Worker 使用 Agent Token 完成注册并标识运行身份；direct_http 与 mcp_server 的目标端鉴权在 Agent 配置中单独设置。",
           rate: "速率",
           rateValue: "按服务端配置",
           baseURL: "基础 URL",
@@ -366,7 +367,7 @@ export function ConnectConsole({ locale = "zh" }: { locale?: Locale }) {
           auth: "User Token calls",
           tokenStatus: "Core issues, verifies, and revokes User Tokens locally. Plaintext is shown only at creation, and each call is limited to the selected permissions and resources.",
           agentAuth: "Agent Token",
-          agentAuthBody: "Agent Node uses an Agent Token for registration and execution identity. Target authentication for direct_http and mcp_server is configured separately on the Agent.",
+          agentAuthBody: "Runtime Worker uses an Agent Token for registration and execution identity. Target authentication for direct_http and mcp_server is configured separately on the Agent.",
           rate: "Rate",
           rateValue: "Server configured",
           baseURL: "Base URL",

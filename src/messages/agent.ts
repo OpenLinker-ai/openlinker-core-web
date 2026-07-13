@@ -101,7 +101,7 @@ export const agentOnboardingMessages = {
     exampleTitlePlaceholder: "示例标题",
     adding: "添加中...",
     addExample: "添加示例",
-    tokenPolling: "用 Node 设备证书和绑定当前 Agent 的 Agent Token 启动 Agent Node。它优先使用 WebSocket，受限时切换长轮询，不需要当前实例访问你的私网地址。",
+    tokenPolling: "在 Go、TypeScript 或 Python SDK 中配置 Runtime Node 设备证书和绑定当前 Agent 的 Agent Token，再启动 Runtime Worker。它会自动选择 WebSocket 或长轮询，不需要当前实例访问你的私网地址。",
     visibility: "Agent 库展示",
     visibilityOptions: {
       public: "公开 - 在 Agent 库中展示",
@@ -126,7 +126,7 @@ export const agentOnboardingMessages = {
     checking: "检查中...",
     runHealth: "执行健康检查",
     repair: "修复建议",
-    workbenchTitle: "Agent Node 连接诊断",
+    workbenchTitle: "Runtime Worker 连接诊断",
   },
   en: {
     defaultExampleTitle: "Basic call example",
@@ -166,7 +166,7 @@ export const agentOnboardingMessages = {
     exampleTitlePlaceholder: "Example title",
     adding: "Adding...",
     addExample: "Add example",
-    tokenPolling: "Start Agent Node with the device certificate and the Agent Token bound to this Agent. It prefers WebSocket and falls back to long polling without exposing your private-network address.",
+    tokenPolling: "Configure the Runtime Node certificate and this Agent's Agent Token in the Go, TypeScript, or Python SDK, then start Runtime Worker. It selects WebSocket or long polling without exposing your private-network address.",
     visibility: "Registry visibility",
     visibilityOptions: {
       public: "Public - listed in Registry",
@@ -191,7 +191,7 @@ export const agentOnboardingMessages = {
     checking: "Checking...",
     runHealth: "Run health check",
     repair: "Repair hints",
-    workbenchTitle: "Agent Node diagnostics",
+    workbenchTitle: "Runtime Worker diagnostics",
   },
 } satisfies Record<Locale, AgentOnboardingMessages>;
 
@@ -212,22 +212,22 @@ export const runtimeDiagnosticMessages = {
   zh: {
     runtime_not_applicable: "此 Agent 通过公网端点或 MCP 接入，请用健康检查确认可用性。",
     agent_disabled: "此 Agent 当前未启用，恢复前不会接收新运行。",
-    runtime_session_offline: "当前没有在线 Agent Node 连接。请确认 Node 已登记、证书有效且进程已启动。",
-    runtime_sessions_draining: "当前 Agent Node 连接正在排空，只会完成在途运行，不会接收新运行。",
-    runtime_backlog_without_capacity: "有运行正在等待，但在线 Node 暂无可用容量。",
-    recent_dispatch_timeout: "最近有运行在被 Agent Node 接收前超时。请检查连接、容量和排空状态。",
+    runtime_session_offline: "当前没有在线 Runtime Worker 连接。请确认 Runtime Node 已登记、证书有效且进程已启动。",
+    runtime_sessions_draining: "当前 Runtime Worker 连接正在排空，只会完成在途运行，不会接收新运行。",
+    runtime_backlog_without_capacity: "有运行正在等待，但在线 Runtime Node 暂无可用容量。",
+    recent_dispatch_timeout: "最近有运行在被 Runtime Worker 接收前超时。请检查连接、容量和排空状态。",
     recent_retry_exhausted: "最近有运行已经耗尽自动重试，需要查看运行详情后决定是否回放。",
-    runtime_ready: "Agent Node 连接和近期运行未发现异常。",
+    runtime_ready: "Runtime Worker 连接和近期运行未发现异常。",
   },
   en: {
     runtime_not_applicable: "This Agent connects through a public endpoint or MCP. Use the health check to verify availability.",
     agent_disabled: "This Agent is disabled and will not receive new runs until it is restored.",
-    runtime_session_offline: "No Agent Node connection is online. Confirm Node enrollment, certificate validity, and the running process.",
-    runtime_sessions_draining: "Agent Node connections are draining. They can finish in-flight runs but will not receive new ones.",
-    runtime_backlog_without_capacity: "Runs are waiting, but the online Nodes have no available capacity.",
-    recent_dispatch_timeout: "A recent run timed out before Agent Node accepted it. Check connectivity, capacity, and drain state.",
+    runtime_session_offline: "No Runtime Worker connection is online. Confirm Runtime Node enrollment, certificate validity, and the running process.",
+    runtime_sessions_draining: "Runtime Worker connections are draining. They can finish in-flight runs but will not receive new ones.",
+    runtime_backlog_without_capacity: "Runs are waiting, but the online Runtime Nodes have no available capacity.",
+    recent_dispatch_timeout: "A recent run timed out before Runtime Worker accepted it. Check connectivity, capacity, and drain state.",
     recent_retry_exhausted: "A recent run exhausted automatic retries. Review Run detail before deciding whether to replay it.",
-    runtime_ready: "No issues found with the Agent Node connection or recent runs.",
+    runtime_ready: "No issues found with the Runtime Worker connection or recent runs.",
   },
 } as const satisfies Record<Locale, RuntimeDiagnosticMessages>;
 
