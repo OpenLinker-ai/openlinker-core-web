@@ -99,7 +99,7 @@ const MODES: Record<Mode, ModeSpec> = {
       "",
       "# 已有 HTTP、命令、Codex 或 A2A 服务时，可暂用 Agent Node Adapter。",
     ].join("\n"),
-    bullets: ["Go / TypeScript / Python 语义一致", "生产环境必须使用持久化 Runtime Store", "Agent Node Adapter 仅用于临时兼容已有服务"],
+    bullets: ["Go / TypeScript / Python 语义一致", "生产环境必须使用持久化 Runtime Store", "Agent Node Adapter 仅用于临时适配已有服务"],
   },
   sdk: {
     category: "Invocation",
@@ -215,7 +215,7 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "category" | "label"
       title: "SDK Runtime Worker：直接运行你的 Agent",
       blurb: "使用 Go、TypeScript 或 Python SDK 直接运行可靠 Worker；它会发现专用 mTLS Runtime，并自动管理连接、恢复与可靠提交。",
       bestFor: "服务端 Agent · 本地与企业内网",
-      bullets: ["三种语言保持同一运行语义", "生产环境必须使用持久化 Runtime Store", "Agent Node Adapter 仅用于临时兼容已有服务"],
+      bullets: ["三种语言保持同一运行语义", "生产环境必须使用持久化 Runtime Store", "Agent Node Adapter 仅用于临时适配已有服务"],
     },
     sdk: {
       category: "调用入口",
@@ -263,7 +263,7 @@ const MODE_COPY: Record<Locale, Record<Mode, Pick<ModeSpec, "category" | "label"
       title: "SDK Runtime Worker: run your Agent directly",
       blurb: "Run a reliable Worker directly with the Go, TypeScript, or Python SDK. It discovers the mTLS Runtime and owns connection recovery and durable delivery.",
       bestFor: "Server-side Agents · local and private networks",
-      bullets: ["Equivalent semantics across all three SDKs", "Production requires a durable Store", "Agent Node Adapter is temporary compatibility only"],
+      bullets: ["Equivalent semantics across all three SDKs", "Production requires a durable Store", "Agent Node Adapter only adapts existing services temporarily"],
     },
     sdk: {
       category: "Invocation",
