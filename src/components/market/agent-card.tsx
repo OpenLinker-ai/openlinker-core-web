@@ -102,7 +102,7 @@ export function AgentCard({ agent, active = false, locale = "zh" }: AgentCardPro
           referenceHint: "Optional compatibility metadata; Core does not use it for billing",
           callUnit: { one: "call", other: "calls" },
           detail: "View details",
-          try: "Run",
+          try: "Invoke",
           waiting: "Not callable",
         };
   const referencePriceLabel = referencePrice

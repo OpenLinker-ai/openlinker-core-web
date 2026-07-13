@@ -36,6 +36,7 @@ describe("Agent library card contract", () => {
     assert.match(component, /noReferencePrice: "未标注参考价"/);
     assert.match(component, /detail: "查看详情"/);
     assert.match(component, /try: "调用"/);
+    assert.match(component, /try: "Invoke"/);
     assert.match(component, /referenceHint: "可选兼容元数据，Core 不据此扣费"/);
     assert.match(component, /aria-label=\{`\$\{referencePriceLabel\}\. \$\{copy\.referenceHint\}`\}/);
     assert.doesNotMatch(component, /\{copy\.referenceHint\}\s*·/);
@@ -44,7 +45,7 @@ describe("Agent library card contract", () => {
 
   it("preserves full Skill and tag values outside the clipped chip label", () => {
     assert.match(component, /className="ol-chip ol-chip-mint ol-agent-tag"/);
-    assert.match(component, /title=\{skill\.description \? `\$\{skill\.name\} — \$\{skill\.description\}` : skill\.name\}/);
+    assert.match(component, /title=\{display\.description \? `\$\{display\.name\} — \$\{display\.description\}` : display\.name\}/);
     assert.match(component, /className=\{`ol-chip ol-agent-tag \$\{tagColor\(tag, i\)\}`\}/);
     assert.match(component, /title=\{tag\}/);
     assert.match(component, /className="ol-agent-tag-label"/);
