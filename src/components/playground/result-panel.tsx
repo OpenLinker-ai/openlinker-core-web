@@ -13,6 +13,11 @@ import { toast } from "sonner";
 import { useApi } from "@/hooks/use-api";
 import type { Locale } from "@/lib/i18n";
 import { runErrorMessage } from "@/lib/i18n-labels";
+import {
+  formatRuntimeTransportEvidenceTime,
+  runtimeTransportLabel,
+  runtimeTransportReasonLabel,
+} from "@/lib/runtime-transport-evidence";
 import { summarizeOutput } from "./output-summary";
 import type { RunResult, RunStatus } from "./types";
 
@@ -69,7 +74,7 @@ export function ResultPanel({ status, result, locale = "zh" }: ResultPanelProps)
   );
 }
 
-function ExecutionPathBox({ result, locale = "zh" }: { result: RunResult | null; locale?: Locale }) {
+export function ExecutionPathBox({ result, locale = "zh" }: { result: RunResult | null; locale?: Locale }) {
   if (!result) return null;
 
   const copy =
@@ -107,18 +112,15 @@ function ExecutionPathBox({ result, locale = "zh" }: { result: RunResult | null;
         : mode === "runtime"
           ? "Runtime"
           : mode;
+  const observedTransport = runtimeTransportLabel(result.runtime_transport, locale);
   const transportLabel =
     mode === "direct_http"
       ? "HTTP endpoint"
       : mode === "mcp_server"
         ? "MCP"
-        : result.runtime_transport === "websocket"
-          ? "WebSocket"
-          : result.runtime_transport === "long_poll"
-            ? "Long Poll / Runtime Pull"
-            : result.status === "running"
-              ? copy.waiting
-              : copy.unavailable;
+        : observedTransport || (result.status === "running" ? copy.waiting : copy.unavailable);
+  const reasonLabel = runtimeTransportReasonLabel(result.runtime_transport_reason, locale);
+  const changedAtLabel = formatRuntimeTransportEvidenceTime(result.runtime_transport_changed_at, locale);
 
   const rows = [
     [copy.mode, modeLabel],
@@ -138,11 +140,11 @@ function ExecutionPathBox({ result, locale = "zh" }: { result: RunResult | null;
           </div>
         ))}
       </dl>
-      {result.runtime_transport_reason || result.runtime_transport_changed_at ? (
+      {reasonLabel || changedAtLabel ? (
         <details className="mt-3 border-t border-[color:var(--ol-line)] pt-2 text-[11.5px] text-[color:var(--ol-muted)]">
           <summary className="cursor-pointer font-black text-[color:var(--ol-primary-dark)]">{copy.evidence}</summary>
-          {result.runtime_transport_reason ? <p className="mt-2">{copy.reason}: {result.runtime_transport_reason}</p> : null}
-          {result.runtime_transport_changed_at ? <p className="mt-1">{copy.changedAt}: {result.runtime_transport_changed_at}</p> : null}
+          {reasonLabel ? <p className="mt-2">{copy.reason}: {reasonLabel}</p> : null}
+          {changedAtLabel ? <p className="mt-1">{copy.changedAt}: {changedAtLabel}</p> : null}
         </details>
       ) : null}
     </div>
