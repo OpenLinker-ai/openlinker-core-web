@@ -103,6 +103,9 @@ npm run dev
 - Core API: `http://localhost:8080`
 - Core Web: `http://localhost:3000`
 
+从父工作区使用 `make dev-core-web` 启动时，devctl 脚本改用 `3001` 端口，
+避免与 `3000` 上的 Hosted 前端冲突。
+
 ## 环境变量
 
 常见本地配置：

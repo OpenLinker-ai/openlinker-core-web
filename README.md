@@ -117,6 +117,10 @@ Default local endpoints:
 - Core API: `http://localhost:8080`
 - Core Web: `http://localhost:3000`
 
+When started from the parent workspace with `make dev-core-web`, the devctl
+script uses port `3001` instead so Core Web does not collide with the hosted
+frontend on `3000`.
+
 ## Environment
 
 Common local values:
