@@ -46,6 +46,9 @@ export type RunDetailData = {
   dead_lettered_at?: string | null;
   replay_of_run_id?: string | null;
   runtime_contract_id?: string;
+  runtime_transport?: string;
+  runtime_transport_reason?: string;
+  runtime_transport_changed_at?: string | null;
   input?: Record<string, unknown>;
   output?: Record<string, unknown>;
   error_code?: string;
@@ -147,6 +150,9 @@ type ViewRun = {
   deadLetteredAt?: string;
   replayOfRunId?: string;
   runtimeContractId?: string;
+  runtimeTransport?: string;
+  runtimeTransportReason?: string;
+  runtimeTransportChangedAt?: string;
   input: Record<string, unknown>;
   costCents: number;
   durationMs: number;
@@ -182,6 +188,9 @@ function normalizeRun(run: RunDetailData, locale: Locale): ViewRun {
     deadLetteredAt: run.dead_lettered_at ?? undefined,
     replayOfRunId: run.replay_of_run_id ?? undefined,
     runtimeContractId: run.runtime_contract_id,
+    runtimeTransport: run.runtime_transport,
+    runtimeTransportReason: run.runtime_transport_reason,
+    runtimeTransportChangedAt: run.runtime_transport_changed_at ?? undefined,
     input: run.input ?? {},
     costCents: run.cost_cents,
     durationMs: run.duration_ms,
@@ -543,7 +552,9 @@ function RuntimeProgressPanel({ locale, run }: { locale: Locale; run: ViewRun })
       run.cancelState ||
       run.activeAttemptId ||
       run.latestAttemptId ||
+      run.agentConnectionMode ||
       run.runtimeContractId ||
+      run.runtimeTransport ||
       run.replayOfRunId,
   );
 
@@ -626,6 +637,10 @@ function RuntimeProgressPanel({ locale, run }: { locale: Locale; run: ViewRun })
           <OperationsDatum label={copy.dispatchStateTechnical} value={run.dispatchState} />
           <OperationsDatum label={copy.activeAttempt} value={run.activeAttemptId} mono />
           <OperationsDatum label={copy.latestAttempt} value={run.latestAttemptId} mono />
+          <OperationsDatum label={copy.connectionModeTechnical} value={run.agentConnectionMode} />
+          <OperationsDatum label={copy.runtimeTransportTechnical} value={run.runtimeTransport} />
+          <OperationsDatum label={copy.runtimeTransportReasonTechnical} value={run.runtimeTransportReason} />
+          <OperationsDatum label={copy.runtimeTransportChangedTechnical} value={run.runtimeTransportChangedAt} mono />
           <OperationsDatum label={copy.runtimeContract} value={run.runtimeContractId} mono />
           <OperationsDatum label={copy.cancelStateTechnical} value={run.cancelState} />
           <OperationsDatum label={copy.cancelRequestedTechnical} value={run.cancelRequestedAt} mono />

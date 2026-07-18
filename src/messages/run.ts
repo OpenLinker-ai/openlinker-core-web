@@ -70,6 +70,10 @@ type RunDetailMessages = {
   cancelAcknowledgedTechnical: string;
   activeAttempt: string;
   latestAttempt: string;
+  connectionModeTechnical: string;
+  runtimeTransportTechnical: string;
+  runtimeTransportReasonTechnical: string;
+  runtimeTransportChangedTechnical: string;
   runtimeContract: string;
   replaySource: string;
   openOriginal: string;
@@ -156,6 +160,10 @@ export const runDetailMessages = {
     cancelAcknowledgedTechnical: "cancel_acknowledged_at",
     activeAttempt: "当前 Attempt",
     latestAttempt: "最近 Attempt",
+    connectionModeTechnical: "agent_connection_mode",
+    runtimeTransportTechnical: "runtime_transport",
+    runtimeTransportReasonTechnical: "runtime_transport_reason",
+    runtimeTransportChangedTechnical: "runtime_transport_changed_at",
     runtimeContract: "Runtime 契约",
     replaySource: "重放来源",
     openOriginal: "查看原运行",
@@ -240,6 +248,10 @@ export const runDetailMessages = {
     cancelAcknowledgedTechnical: "cancel_acknowledged_at",
     activeAttempt: "Active attempt",
     latestAttempt: "Latest attempt",
+    connectionModeTechnical: "agent_connection_mode",
+    runtimeTransportTechnical: "runtime_transport",
+    runtimeTransportReasonTechnical: "runtime_transport_reason",
+    runtimeTransportChangedTechnical: "runtime_transport_changed_at",
     runtimeContract: "Runtime contract",
     replaySource: "Replay source",
     openOriginal: "View original run",

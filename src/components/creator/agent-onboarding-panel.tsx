@@ -117,6 +117,10 @@ type RuntimeWorkbench = {
     transport_policy: "ws_primary_long_poll_fallback" | string;
     primary_transport: "websocket" | string;
     fallback_transport: "long_poll" | string;
+    current_transport: "websocket" | "long_poll" | "not_applicable" | string;
+    transport_counts: Record<string, number>;
+    transport_changed_at?: string;
+    fallback_reason?: string;
     connection_status: "online" | "draining" | "offline" | "not_applicable" | string;
     active_node_count: number;
     active_session_count: number;
@@ -861,6 +865,10 @@ function RuntimeWorkbenchPanel({
           transportPolicy: "通道策略",
           primaryTransport: "主通道",
           fallbackTransport: "降级通道",
+          currentTransport: "当前实际通道",
+          transportCounts: "在线通道分布",
+          transportChangedAt: "通道状态更新时间",
+          fallbackReason: "降级原因",
           contractId: "runtime_contract_id",
           contractDigest: "runtime_contract_digest",
           drainingSessions: "排空中的 Session",
@@ -890,6 +898,10 @@ function RuntimeWorkbenchPanel({
           transportPolicy: "Transport policy",
           primaryTransport: "Primary",
           fallbackTransport: "Fallback",
+          currentTransport: "Current observed transport",
+          transportCounts: "Live transport split",
+          transportChangedAt: "Transport state changed",
+          fallbackReason: "Fallback reason",
           contractId: "runtime_contract_id",
           contractDigest: "runtime_contract_digest",
           drainingSessions: "Draining sessions",
@@ -986,6 +998,17 @@ function RuntimeWorkbenchPanel({
           <WorkbenchTechnicalDatum label={copy.transportPolicy} value={runtime.transport_policy || "—"} />
           <WorkbenchTechnicalDatum label={copy.primaryTransport} value={runtime.primary_transport || "—"} />
           <WorkbenchTechnicalDatum label={copy.fallbackTransport} value={runtime.fallback_transport || "—"} />
+          <WorkbenchTechnicalDatum label={copy.currentTransport} value={runtime.current_transport || "—"} />
+          <WorkbenchTechnicalDatum
+            label={copy.transportCounts}
+            value={`websocket ${runtime.transport_counts?.websocket ?? 0} · long_poll ${runtime.transport_counts?.long_poll ?? 0}`}
+          />
+          <WorkbenchTechnicalDatum
+            label={copy.transportChangedAt}
+            value={formatDate(runtime.transport_changed_at, locale)}
+            mono={false}
+          />
+          <WorkbenchTechnicalDatum label={copy.fallbackReason} value={runtime.fallback_reason || "—"} />
           <WorkbenchTechnicalDatum
             label={copy.drainingSessions}
             value={String(runtime.draining_session_count ?? 0)}
