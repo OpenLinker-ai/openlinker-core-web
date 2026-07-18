@@ -56,6 +56,7 @@ export function ResultPanel({ status, result, locale = "zh" }: ResultPanelProps)
   return (
     <aside className="flex flex-col gap-3.5">
       <CallResultBox status={status} result={result} locale={locale} />
+      <ExecutionPathBox result={result} locale={locale} />
       <CostBox status={status} result={result} locale={locale} />
       <NextStepBox locale={locale} />
       <DeveloperApiBox
@@ -65,6 +66,86 @@ export function ResultPanel({ status, result, locale = "zh" }: ResultPanelProps)
       />
       <BottomActions runId={runId} locale={locale} />
     </aside>
+  );
+}
+
+function ExecutionPathBox({ result, locale = "zh" }: { result: RunResult | null; locale?: Locale }) {
+  if (!result) return null;
+
+  const copy =
+    locale === "zh"
+      ? {
+          title: "实际执行路径",
+          mode: "连接模式",
+          transport: "实际传输",
+          dispatch: "调度状态",
+          attempts: "尝试次数",
+          waiting: "等待 Runtime 接受任务",
+          unavailable: "此 Run 没有可验证的传输证据",
+          evidence: "传输证据",
+          changedAt: "传输证据时间",
+          reason: "切换原因",
+        }
+      : {
+          title: "Observed execution path",
+          mode: "Connection mode",
+          transport: "Observed transport",
+          dispatch: "Dispatch state",
+          attempts: "Attempts",
+          waiting: "Waiting for Runtime acceptance",
+          unavailable: "No verifiable transport evidence for this Run",
+          evidence: "Runtime evidence",
+          changedAt: "Transport evidence time",
+          reason: "Transition reason",
+        };
+  const mode = result.agent_connection_mode ?? "—";
+  const modeLabel =
+    mode === "direct_http"
+      ? "Direct HTTP"
+      : mode === "mcp_server"
+        ? "MCP Server"
+        : mode === "runtime"
+          ? "Runtime"
+          : mode;
+  const transportLabel =
+    mode === "direct_http"
+      ? "HTTP endpoint"
+      : mode === "mcp_server"
+        ? "MCP"
+        : result.runtime_transport === "websocket"
+          ? "WebSocket"
+          : result.runtime_transport === "long_poll"
+            ? "Long Poll / Runtime Pull"
+            : result.status === "running"
+              ? copy.waiting
+              : copy.unavailable;
+
+  const rows = [
+    [copy.mode, modeLabel],
+    [copy.transport, transportLabel],
+    [copy.dispatch, result.dispatch_state ?? "—"],
+    [copy.attempts, `${result.attempt_count ?? 0} / ${result.max_attempts ?? "—"}`],
+  ];
+
+  return (
+    <div className="rounded-[18px] border border-[color:var(--ol-line)] bg-white p-4">
+      <strong className="block text-[14px] font-black text-[color:var(--ol-ink)]">{copy.title}</strong>
+      <dl className="mt-3 grid gap-2">
+        {rows.map(([label, value]) => (
+          <div key={label} className="grid grid-cols-[92px_minmax(0,1fr)] gap-2 text-[12px] leading-5">
+            <dt className="font-black text-[color:var(--ol-subtle)]">{label}</dt>
+            <dd className="min-w-0 break-words font-mono font-bold text-[color:var(--ol-ink)]">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      {result.runtime_transport_reason || result.runtime_transport_changed_at ? (
+        <details className="mt-3 border-t border-[color:var(--ol-line)] pt-2 text-[11.5px] text-[color:var(--ol-muted)]">
+          <summary className="cursor-pointer font-black text-[color:var(--ol-primary-dark)]">{copy.evidence}</summary>
+          {result.runtime_transport_reason ? <p className="mt-2">{copy.reason}: {result.runtime_transport_reason}</p> : null}
+          {result.runtime_transport_changed_at ? <p className="mt-1">{copy.changedAt}: {result.runtime_transport_changed_at}</p> : null}
+        </details>
+      ) : null}
+    </div>
   );
 }
 
