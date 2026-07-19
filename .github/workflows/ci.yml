@@ -34,6 +34,9 @@ jobs:
       - name: Check Agent library card contract
         run: npm run test:agent-library-card
 
+      - name: Check A2A session compatibility
+        run: npm run test:a2a-session
+
       - name: Type check
         run: npx tsc --noEmit
 
