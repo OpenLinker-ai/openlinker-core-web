@@ -18,7 +18,10 @@ const RUNTIME_TRANSPORT_REASON_LABEL: Record<string, Record<Locale, string>> = {
 export function runtimeTransportLabel(value: string | undefined, locale: Locale): string {
   const normalized = value?.trim() ?? "";
   if (!normalized) return "";
-  return RUNTIME_TRANSPORT_LABEL[normalized]?.[locale] ?? normalized;
+  return (
+    RUNTIME_TRANSPORT_LABEL[normalized]?.[locale] ??
+    (locale === "zh" ? `未知传输（${normalized}）` : `Unknown transport (${normalized})`)
+  );
 }
 
 export function runtimeTransportReasonLabel(value: string | undefined, locale: Locale): string {

@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { avatarFromSlug } from "@/components/market/avatar";
 import type { Locale } from "@/lib/i18n";
 import { runCancelStateLabel, runDispatchStateLabel } from "@/lib/i18n-labels";
 import {
@@ -92,6 +91,18 @@ interface Props {
   source?: CallRecordSourceFilter;
   relation?: CallRecordRelationFilter;
   locale?: Locale;
+  recordsPath: string;
+  emptyHref: string;
+  emptyActionLabel: string;
+  sideColumnClassName: string;
+  selectLabelClassName?: string;
+  formatCost: (record: CallRecord, locale: Locale) => string;
+  avatarFromSlug: (slug: string) => CallRecordAvatar;
+}
+
+export interface CallRecordAvatar {
+  initials: string;
+  color: string;
 }
 
 const STATUS_LABEL: Record<Locale, Record<string, string>> = {
@@ -130,43 +141,38 @@ const RUNTIME_TRANSPORT_CHIP: Record<string, string> = {
   long_poll: "ol-chip-blue",
 };
 
+const EXECUTION_EVIDENCE_COPY: Record<Locale, { evidence: string; missingTransport: string }> = {
+  zh: { evidence: "传输证据", missingTransport: "暂无传输证据" },
+  en: { evidence: "Transport evidence", missingTransport: "No transport evidence" },
+};
+
 function formatRelative(iso: string, locale: Locale): string {
-  const time = new Date(iso).getTime();
-  if (!Number.isFinite(time)) return "";
-  const minutes = Math.round((Date.now() - time) / 60_000);
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return "";
+  const min = Math.round((Date.now() - t) / 60_000);
   if (locale === "en") {
-    if (minutes < 1) return "Just now";
-    if (minutes < 60) return `${minutes} min ago`;
-    const hours = Math.round(minutes / 60);
-    if (hours < 24) return `${hours} hr ago`;
-    const days = Math.round(hours / 24);
-    if (days === 1) return "Yesterday";
-    if (days < 7) return `${days} days ago`;
+    if (min < 1) return "Just now";
+    if (min < 60) return `${min} min ago`;
+    const hr = Math.round(min / 60);
+    if (hr < 24) return `${hr} hr ago`;
+    const day = Math.round(hr / 24);
+    if (day === 1) return "Yesterday";
+    if (day < 7) return `${day} days ago`;
     return new Date(iso).toLocaleDateString("en-US");
   }
-  if (minutes < 1) return "刚刚";
-  if (minutes < 60) return `${minutes} 分钟前`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours} 小时前`;
-  const days = Math.round(hours / 24);
-  if (days === 1) return "昨天";
-  if (days < 7) return `${days} 天前`;
+  if (min < 1) return "刚刚";
+  if (min < 60) return `${min} 分钟前`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr} 小时前`;
+  const day = Math.round(hr / 24);
+  if (day === 1) return "昨天";
+  if (day < 7) return `${day} 天前`;
   return new Date(iso).toLocaleDateString("zh-CN");
 }
 
-function formatExternalCost(record: CallRecord, locale: Locale): string {
-  if (locale === "en") {
-    return record.cost_cents > 0
-      ? `External cost record $${(record.cost_cents / 100).toFixed(2)}`
-      : "No external cost recorded";
-  }
-  return record.cost_cents > 0
-    ? `外部费用记录 $${(record.cost_cents / 100).toFixed(2)}`
-    : "未记录外部费用";
-}
-
 function shortID(value?: string): string {
-  if (!value || value.length <= 18) return value ?? "";
+  if (!value) return "";
+  if (value.length <= 18) return value;
   return `${value.slice(0, 8)}...${value.slice(-6)}`;
 }
 
@@ -174,7 +180,10 @@ function idRows(record: CallRecord, locale: Locale): Array<{ label: string; valu
   const ctx = record.a2a_context;
   const attemptID = record.active_attempt_id || record.latest_attempt_id;
   return [
-    { label: locale === "zh" ? "会话" : "Session", value: ctx?.session_id },
+    {
+      label: locale === "zh" ? "会话" : "Session",
+      value: ctx?.session_id,
+    },
     {
       label: locale === "zh" ? "协议上下文" : "Protocol context",
       value: ctx?.protocol_context_id,
@@ -204,7 +213,10 @@ function idRows(record: CallRecord, locale: Locale): Array<{ label: string; valu
       label: locale === "zh" ? "Runtime 契约" : "Runtime contract",
       value: record.runtime_contract_id,
     },
-    { label: locale === "zh" ? "执行尝试" : "Attempt", value: attemptID },
+    {
+      label: locale === "zh" ? "执行尝试" : "Attempt",
+      value: attemptID,
+    },
   ].filter((row) => Boolean(row.value));
 }
 
@@ -233,6 +245,7 @@ function relationLabel(record: CallRecord, locale: Locale): string {
 }
 
 function recordsHref({
+  recordsPath,
   view,
   page,
   query,
@@ -241,6 +254,7 @@ function recordsHref({
   source,
   relation,
 }: {
+  recordsPath: string;
   view: CallRecordView;
   page?: number;
   query?: string;
@@ -249,13 +263,41 @@ function recordsHref({
   source?: CallRecordSourceFilter;
   relation?: CallRecordRelationFilter;
 }): string {
-  const params = new URLSearchParams({ call_view: view, sort });
+  const params = new URLSearchParams({
+    call_view: view,
+    sort,
+  });
   if (page && page > 1) params.set("page", String(page));
   if (query?.trim()) params.set("q", query.trim());
   if (status) params.set("status", status);
   if (source) params.set("source", source);
   if (relation) params.set("relation", relation);
-  return `/runs?${params.toString()}`;
+  return `${recordsPath}?${params.toString()}`;
+}
+
+function viewHref(
+  recordsPath: string,
+  view: CallRecordView,
+  query: string | undefined,
+  sort: CallRecordSort,
+  status?: CallRecordStatusFilter,
+  source?: CallRecordSourceFilter,
+  relation?: CallRecordRelationFilter,
+): string {
+  return recordsHref({ recordsPath, view, query, sort, status, source, relation });
+}
+
+function pageHref(
+  recordsPath: string,
+  view: CallRecordView,
+  page: number,
+  query: string | undefined,
+  sort: CallRecordSort,
+  status?: CallRecordStatusFilter,
+  source?: CallRecordSourceFilter,
+  relation?: CallRecordRelationFilter,
+): string {
+  return recordsHref({ recordsPath, view, page, query, sort, status, source, relation });
 }
 
 export function CallRecordHistory({
@@ -270,6 +312,13 @@ export function CallRecordHistory({
   source = "",
   relation = "",
   locale = "zh",
+  recordsPath,
+  emptyHref,
+  emptyActionLabel,
+  sideColumnClassName,
+  selectLabelClassName,
+  formatCost,
+  avatarFromSlug,
 }: Props) {
   const totalPages = Math.max(1, Math.ceil(total / size));
   const visibleSort = sort === "amount_desc" || sort === "amount_asc" ? "started_desc" : sort;
@@ -287,7 +336,6 @@ export function CallRecordHistory({
           apply: "应用",
           reset: "重置",
           empty: "还没有调用记录。",
-          browse: "打开 Agent 库",
           prev: "上一页",
           next: "下一页",
           page: `第 ${page} / ${totalPages} 页`,
@@ -337,7 +385,6 @@ export function CallRecordHistory({
           apply: "Apply",
           reset: "Reset",
           empty: "No call records yet.",
-          browse: "Open Registry",
           prev: "Previous",
           next: "Next",
           page: `Page ${page} / ${totalPages}`,
@@ -376,17 +423,6 @@ export function CallRecordHistory({
           ] as Array<[CallRecordRelationFilter, string]>,
         };
 
-  const href = (next: Partial<{ view: CallRecordView; page: number }> = {}) =>
-    recordsHref({
-      view: next.view ?? view,
-      page: next.page,
-      query,
-      sort: visibleSort,
-      status,
-      source,
-      relation,
-    });
-
   return (
     <div className="ol-panel">
       <div className="ol-panel-head flex-wrap gap-3">
@@ -403,7 +439,7 @@ export function CallRecordHistory({
           {copy.views.map(([key, label]) => (
             <Link
               key={key}
-              href={href({ view: key })}
+              href={viewHref(recordsPath, key, query, visibleSort, status, source, relation)}
               aria-current={key === view ? "page" : undefined}
               className={`rounded-[10px] border px-2.5 py-1 text-[12px] font-black ${
                 key === view
@@ -419,12 +455,15 @@ export function CallRecordHistory({
 
       <div className="p-[14px]">
         <form
-          action="/runs"
+          action={recordsPath}
           method="get"
           className="mb-3 grid gap-2 rounded-[12px] border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] p-3 lg:grid-cols-[minmax(0,1fr)_150px_150px_150px_220px_auto_auto]"
         >
           <input type="hidden" name="call_view" value={view} />
-          <FilterField label={copy.search}>
+          <label className="min-w-0">
+            <span className="mb-1 block text-[11px] font-black uppercase tracking-[0] text-[color:var(--ol-muted)]">
+              {copy.search}
+            </span>
             <input
               name="q"
               defaultValue={query ?? ""}
@@ -432,16 +471,71 @@ export function CallRecordHistory({
               placeholder={copy.searchPlaceholder}
               className="h-10 w-full rounded-[10px] border border-[color:var(--ol-line)] bg-white px-3 text-[13px] font-bold text-[color:var(--ol-ink)] outline-none focus:border-[color:var(--ol-primary)]"
             />
-          </FilterField>
-          <FilterSelect label={copy.status} name="status" value={status} options={copy.statuses} />
-          <FilterSelect label={copy.source} name="source" value={source} options={copy.sources} />
-          <FilterSelect
-            label={copy.relation}
-            name="relation"
-            value={relation}
-            options={copy.relations}
-          />
-          <FilterSelect label={copy.sort} name="sort" value={visibleSort} options={copy.sorts} />
+          </label>
+          <label className={selectLabelClassName}>
+            <span className="mb-1 block text-[11px] font-black uppercase tracking-[0] text-[color:var(--ol-muted)]">
+              {copy.status}
+            </span>
+            <select
+              name="status"
+              defaultValue={status}
+              className="h-10 w-full rounded-[10px] border border-[color:var(--ol-line)] bg-white px-3 text-[13px] font-bold text-[color:var(--ol-ink)] outline-none focus:border-[color:var(--ol-primary)]"
+            >
+              {copy.statuses.map(([key, label]) => (
+                <option key={key || "all"} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={selectLabelClassName}>
+            <span className="mb-1 block text-[11px] font-black uppercase tracking-[0] text-[color:var(--ol-muted)]">
+              {copy.source}
+            </span>
+            <select
+              name="source"
+              defaultValue={source}
+              className="h-10 w-full rounded-[10px] border border-[color:var(--ol-line)] bg-white px-3 text-[13px] font-bold text-[color:var(--ol-ink)] outline-none focus:border-[color:var(--ol-primary)]"
+            >
+              {copy.sources.map(([key, label]) => (
+                <option key={key || "all"} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={selectLabelClassName}>
+            <span className="mb-1 block text-[11px] font-black uppercase tracking-[0] text-[color:var(--ol-muted)]">
+              {copy.relation}
+            </span>
+            <select
+              name="relation"
+              defaultValue={relation}
+              className="h-10 w-full rounded-[10px] border border-[color:var(--ol-line)] bg-white px-3 text-[13px] font-bold text-[color:var(--ol-ink)] outline-none focus:border-[color:var(--ol-primary)]"
+            >
+              {copy.relations.map(([key, label]) => (
+                <option key={key || "all"} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={selectLabelClassName}>
+            <span className="mb-1 block text-[11px] font-black uppercase tracking-[0] text-[color:var(--ol-muted)]">
+              {copy.sort}
+            </span>
+            <select
+              name="sort"
+              defaultValue={visibleSort}
+              className="h-10 w-full rounded-[10px] border border-[color:var(--ol-line)] bg-white px-3 text-[13px] font-bold text-[color:var(--ol-ink)] outline-none focus:border-[color:var(--ol-primary)]"
+            >
+              {copy.sorts.map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             type="submit"
             className="self-end rounded-[10px] bg-[color:var(--ol-primary)] px-4 py-2 text-[13px] font-black text-white hover:bg-[color:var(--ol-primary-dark)]"
@@ -449,7 +543,7 @@ export function CallRecordHistory({
             {copy.apply}
           </button>
           <Link
-            href="/runs"
+            href={recordsPath}
             className="self-end rounded-[10px] border border-[color:var(--ol-line)] bg-white px-4 py-2 text-center text-[13px] font-black text-[color:var(--ol-muted)] hover:border-[color:var(--ol-primary)]/40"
           >
             {copy.reset}
@@ -460,16 +554,23 @@ export function CallRecordHistory({
           <div className="px-2 py-10 text-center text-[13px] text-[color:var(--ol-muted)]">
             {copy.empty}
             <Link
-              href="/registry"
+              href={emptyHref}
               className="ml-2 font-[900] text-[color:var(--ol-primary-dark)] underline"
             >
-              {copy.browse}
+              {emptyActionLabel}
             </Link>
           </div>
         ) : (
           <div className="grid gap-3">
             {items.map((record) => (
-              <CallRecordRow key={`${record.run_id}-${record.direction}`} record={record} locale={locale} />
+              <CallRecordRow
+                key={`${record.run_id}-${record.direction}`}
+                record={record}
+                locale={locale}
+                sideColumnClassName={sideColumnClassName}
+                formatCost={formatCost}
+                avatarFromSlug={avatarFromSlug}
+              />
             ))}
           </div>
         )}
@@ -481,7 +582,16 @@ export function CallRecordHistory({
           >
             {page > 1 ? (
               <Link
-                href={href({ page: page - 1 })}
+                href={pageHref(
+                  recordsPath,
+                  view,
+                  page - 1,
+                  query,
+                  visibleSort,
+                  status,
+                  source,
+                  relation,
+                )}
                 className="rounded-[10px] border border-[color:var(--ol-line)] bg-white px-3 py-1.5 font-bold text-[color:var(--ol-muted)] hover:bg-[color:var(--ol-soft)]"
               >
                 {copy.prev}
@@ -490,7 +600,16 @@ export function CallRecordHistory({
             <span className="font-bold text-[color:var(--ol-muted)]">{copy.page}</span>
             {page < totalPages ? (
               <Link
-                href={href({ page: page + 1 })}
+                href={pageHref(
+                  recordsPath,
+                  view,
+                  page + 1,
+                  query,
+                  visibleSort,
+                  status,
+                  source,
+                  relation,
+                )}
                 className="rounded-[10px] border border-[color:var(--ol-line)] bg-white px-3 py-1.5 font-bold text-[color:var(--ol-muted)] hover:bg-[color:var(--ol-soft)]"
               >
                 {copy.next}
@@ -503,46 +622,19 @@ export function CallRecordHistory({
   );
 }
 
-function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="min-w-0">
-      <span className="mb-1 block text-[11px] font-black uppercase tracking-[0] text-[color:var(--ol-muted)]">
-        {label}
-      </span>
-      {children}
-    </label>
-  );
-}
-
-function FilterSelect<T extends string>({
-  label,
-  name,
-  value,
-  options,
+export function CallRecordRow({
+  record,
+  locale,
+  sideColumnClassName,
+  formatCost,
+  avatarFromSlug,
 }: {
-  label: string;
-  name: string;
-  value: T;
-  options: Array<[T, string]>;
+  record: CallRecord;
+  locale: Locale;
+  sideColumnClassName: string;
+  formatCost: (record: CallRecord, locale: Locale) => string;
+  avatarFromSlug: (slug: string) => CallRecordAvatar;
 }) {
-  return (
-    <FilterField label={label}>
-      <select
-        name={name}
-        defaultValue={value}
-        className="h-10 w-full rounded-[10px] border border-[color:var(--ol-line)] bg-white px-3 text-[13px] font-bold text-[color:var(--ol-ink)] outline-none focus:border-[color:var(--ol-primary)]"
-      >
-        {options.map(([key, optionLabel]) => (
-          <option key={key || "all"} value={key}>
-            {optionLabel}
-          </option>
-        ))}
-      </select>
-    </FilterField>
-  );
-}
-
-function CallRecordRow({ record, locale }: { record: CallRecord; locale: Locale }) {
   const target = record.target_agent ?? {
     id: record.agent_id,
     slug: record.agent_slug,
@@ -563,10 +655,7 @@ function CallRecordRow({ record, locale }: { record: CallRecord; locale: Locale 
     ? RUNTIME_TRANSPORT_CHIP[record.runtime_transport]
     : undefined;
   const runtimeTransport = runtimeTransportLabel(record.runtime_transport, locale);
-  const evidenceCopy =
-    locale === "zh"
-      ? { evidence: "传输证据", missing: "暂无传输证据" }
-      : { evidence: "Transport evidence", missing: "No transport evidence" };
+  const evidenceCopy = EXECUTION_EVIDENCE_COPY[locale];
   const runtimeEvidence = [
     runtimeTransportReasonLabel(record.runtime_transport_reason, locale),
     formatRuntimeTransportEvidenceTime(record.runtime_transport_changed_at, locale),
@@ -585,7 +674,7 @@ function CallRecordRow({ record, locale }: { record: CallRecord; locale: Locale 
 
   return (
     <div className="rounded-[12px] border border-[color:var(--ol-line)] bg-white p-3">
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_210px]">
+      <div className={`grid gap-3 ${sideColumnClassName}`}>
         <div className="min-w-0">
           <div className="flex min-w-0 gap-3">
             <div className="ol-dash-icon shrink-0" style={{ background: avatar.color }}>
@@ -617,7 +706,7 @@ function CallRecordRow({ record, locale }: { record: CallRecord; locale: Locale 
                 ) : null}
                 {record.agent_connection_mode === "runtime" ? (
                   <span className={`ol-chip h-5 px-1.5 text-[10px] ${runtimeTransportChip ?? ""}`}>
-                    {runtimeTransport || evidenceCopy.missing}
+                    {runtimeTransport || evidenceCopy.missingTransport}
                   </span>
                 ) : null}
               </div>
@@ -668,15 +757,16 @@ function CallRecordRow({ record, locale }: { record: CallRecord; locale: Locale 
 
         <div className="flex flex-col items-start justify-between gap-2 lg:items-end">
           <div className="lg:text-right">
-            <b className="text-[13px] text-[color:var(--ol-ink)]">
-              {formatExternalCost(record, locale)}
-            </b>
+            <b className="text-[13px] text-[color:var(--ol-ink)]">{formatCost(record, locale)}</b>
             <div className="mt-1 text-[12px] font-bold text-[color:var(--ol-muted)]">
               {formatRelative(record.started_at, locale)}
             </div>
           </div>
           <div className="flex flex-wrap gap-1.5 lg:justify-end">
-            <Link href={`/run/${encodeURIComponent(record.run_id)}`} className="ol-mini-btn">
+            <Link
+              href={`/run/${encodeURIComponent(record.run_id)}`}
+              className="ol-mini-btn"
+            >
               {locale === "zh" ? "运行详情" : "Run details"}
             </Link>
             {record.relation !== "direct" ? (
