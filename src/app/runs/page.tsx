@@ -3,7 +3,15 @@ import { redirect } from "next/navigation";
 
 import { Topbar } from "@/components/layout/topbar";
 import { MyWorkspaceSwitcher } from "@/components/my/workspace-switcher";
-import { RunHistory, type Run } from "@/components/runs/run-history";
+import {
+  CallRecordHistory,
+  type CallRecord,
+  type CallRecordRelationFilter,
+  type CallRecordSort,
+  type CallRecordSourceFilter,
+  type CallRecordStatusFilter,
+  type CallRecordView,
+} from "@/components/runs/call-record-history";
 import { apiFetchAuthed, apiFetchAuthedWithFallback } from "@/lib/api";
 import { auth } from "@/lib/auth";
 import { getLocale } from "@/lib/i18n-server";
@@ -16,11 +24,17 @@ interface DashboardData {
   };
 }
 
-interface RunListResp {
-  items: Run[];
+interface CallRecordListResp {
+  items: CallRecord[];
   total: number;
   page: number;
   size: number;
+  view: CallRecordView;
+  query?: string;
+  sort: CallRecordSort;
+  status_filter?: CallRecordStatusFilter;
+  source_filter?: CallRecordSourceFilter;
+  relation_filter?: CallRecordRelationFilter;
 }
 
 const EMPTY_DASHBOARD: DashboardData = {
@@ -35,19 +49,71 @@ export async function generateMetadata() {
   const locale = await getLocale();
   return locale === "zh"
     ? {
-        title: "运行记录",
-        description: "当前 OpenLinker Core 实例的运行历史、事件和结果",
+        title: "调用记录",
+        description: "当前 OpenLinker Core 实例中调用和被调用的完整记录",
       }
     : {
-        title: "Runs",
-        description: "Run history, events, and results for this OpenLinker Core instance",
+        title: "Call records",
+        description: "Complete made and received call records for this OpenLinker Core instance",
       };
+}
+
+function normalizeCallView(raw?: string): CallRecordView {
+  if (raw === "made" || raw === "received" || raw === "all") return raw;
+  return "all";
+}
+
+function normalizeCallSort(raw?: string): CallRecordSort {
+  if (
+    raw === "started_desc" ||
+    raw === "started_asc" ||
+    raw === "amount_desc" ||
+    raw === "amount_asc" ||
+    raw === "duration_desc" ||
+    raw === "duration_asc"
+  ) {
+    return raw;
+  }
+  return "started_desc";
+}
+
+function normalizeCallStatus(raw?: string): CallRecordStatusFilter {
+  if (
+    raw === "running" ||
+    raw === "success" ||
+    raw === "failed" ||
+    raw === "timeout" ||
+    raw === "canceled"
+  ) {
+    return raw;
+  }
+  return "";
+}
+
+function normalizeCallSource(raw?: string): CallRecordSourceFilter {
+  if (raw === "web" || raw === "api" || raw === "mcp" || raw === "runtime" || raw === "a2a") {
+    return raw;
+  }
+  return "";
+}
+
+function normalizeCallRelation(raw?: string): CallRecordRelationFilter {
+  if (raw === "direct" || raw === "a2a_parent" || raw === "a2a_child") return raw;
+  return "";
 }
 
 export default async function RunsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    call_view?: string;
+    q?: string;
+    sort?: string;
+    status?: string;
+    source?: string;
+    relation?: string;
+  }>;
 }) {
   const session = await auth();
   if (!session) redirect("/login?callbackUrl=/runs");
@@ -55,56 +121,81 @@ export default async function RunsPage({
   const locale = await getLocale();
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page ?? "1") || 1);
+  const callView = normalizeCallView(sp.call_view);
+  const query = (sp.q ?? "").trim().slice(0, 200);
+  const sort = normalizeCallSort(sp.sort);
+  const status = normalizeCallStatus(sp.status);
+  const source = normalizeCallSource(sp.source);
+  const relation = normalizeCallRelation(sp.relation);
   const size = 20;
   const copy =
     locale === "zh"
       ? {
-          my: "我的",
-          current: "运行记录",
-          kicker: "运行中心",
-          heading: "每次 Agent 调用，都有记录可查",
-          lead: "集中查看由网页、API、MCP、A2A 和工作流发起的运行。通过 Run ID 进入详情，核对状态、事件和最终结果。",
+          kicker: "调用中心",
+          heading: "调用和被调用，一处可查",
+          lead: "查看我发起的调用，以及我的 Agent 收到的调用。方向、A2A 父子关系、Run/Call ID、连接模式和 Runtime 实际传输证据会保留在同一条记录里。",
           callsMonth: "本月调用",
           callsTotal: "累计调用",
           mode: "记录来源",
           coreOnly: "当前 Core 实例",
-          unavailable: "运行概览暂时不可用，列表仍会尽量加载。",
-          runTitle: "最近运行",
-          emptyText: "还没有运行记录。",
-          emptyAction: "打开 Agent 库 ->",
+          dashboardUnavailable: "调用概览暂时不可用，记录列表仍会尽量加载。",
+          recordsUnavailable: "调用记录暂时不可用，请稍后重试。筛选条件已保留。",
           connect: "接入 Agent",
           connectBody: "如果你是 Agent 所有者，可以通过 HTTP、MCP 或可靠 Runtime Worker 接入；Runtime Worker 优先使用 WebSocket，受限时切换长轮询。",
           connectAction: "接入新 Agent",
         }
       : {
-          my: "My",
-          current: "Runs",
-          kicker: "Run center",
-          heading: "A record for every Agent call",
-          lead: "Review runs started from the web, API, MCP, A2A, and workflows. Open a Run ID to inspect its status, events, and final result.",
+          kicker: "Call center",
+          heading: "Made and received calls, together",
+          lead: "Review calls you made and calls received by your Agents. Direction, A2A parent-child relations, Run/Call IDs, connection mode, and actual Runtime transport evidence stay with each record.",
           callsMonth: "Calls this month",
           callsTotal: "Total calls",
           mode: "Record source",
           coreOnly: "This Core instance",
-          unavailable: "Run overview is temporarily unavailable; the list will still try to load.",
-          runTitle: "Recent Runs",
-          emptyText: "No run records yet.",
-          emptyAction: "Open Registry ->",
+          dashboardUnavailable: "The call overview is temporarily unavailable; the record list will still try to load.",
+          recordsUnavailable: "Call records are temporarily unavailable. Try again later; your filters have been preserved.",
           connect: "Connect an Agent",
           connectBody: "Agent owners can connect over HTTP, MCP, or the reliable Runtime Worker, which prefers WebSocket and falls back to long polling when needed.",
           connectAction: "Connect a new Agent",
         };
 
-  const [dashboard, runs] = await Promise.all([
+  const params = new URLSearchParams({
+    view: callView,
+    sort,
+    page: String(page),
+    size: String(size),
+  });
+  if (query) params.set("q", query);
+  if (status) params.set("status", status);
+  if (source) params.set("source", source);
+  if (relation) params.set("relation", relation);
+
+  const [dashboard, recordsResult] = await Promise.all([
     apiFetchAuthedWithFallback<DashboardData | null>("/api/v1/dashboard", null, {
       timeoutMs: 2500,
     }),
-    apiFetchAuthed<RunListResp>(`/api/v1/runs?page=${page}&size=${size}`).catch(
-      () => ({ items: [], total: 0, page, size }) satisfies RunListResp,
-    ),
+    apiFetchAuthed<CallRecordListResp>(`/api/v1/call-records?${params.toString()}`)
+      .then((data) => ({ data, unavailable: false }))
+      .catch(() => ({
+        data: {
+          items: [],
+          total: 0,
+          page,
+          size,
+          view: callView,
+          query,
+          sort,
+          status_filter: status,
+          source_filter: source,
+          relation_filter: relation,
+        } satisfies CallRecordListResp,
+        unavailable: true,
+      })),
   ]);
 
   const stats = dashboard ?? EMPTY_DASHBOARD;
+  const records = recordsResult.data;
+  const recordsUnavailable = recordsResult.unavailable;
 
   return (
     <>
@@ -122,7 +213,16 @@ export default async function RunsPage({
 
         {!dashboard ? (
           <div className="mt-4 rounded-[14px] border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
-            {copy.unavailable}
+            {copy.dashboardUnavailable}
+          </div>
+        ) : null}
+
+        {recordsUnavailable ? (
+          <div
+            role="alert"
+            className="mt-4 rounded-[14px] border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm font-bold text-yellow-800"
+          >
+            {copy.recordsUnavailable}
           </div>
         ) : null}
 
@@ -134,14 +234,17 @@ export default async function RunsPage({
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_310px]">
           <section className="min-w-0">
-            <RunHistory
-              items={runs.items}
-              total={runs.total}
-              page={runs.page}
-              size={runs.size}
-              title={copy.runTitle}
-              emptyText={copy.emptyText}
-              emptyActionLabel={copy.emptyAction}
+            <CallRecordHistory
+              items={records.items}
+              total={records.total}
+              page={records.page}
+              size={records.size}
+              view={records.view}
+              query={records.query ?? query}
+              sort={records.sort ?? sort}
+              status={records.status_filter ?? status}
+              source={records.source_filter ?? source}
+              relation={records.relation_filter ?? relation}
               locale={locale}
             />
           </section>
