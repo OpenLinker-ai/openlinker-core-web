@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { Topbar } from "@/components/layout/topbar";
+import { avatarFromSlug } from "@/components/market/avatar";
 import { MyWorkspaceSwitcher } from "@/components/my/workspace-switcher";
 import {
   CallRecordHistory,
@@ -11,9 +12,10 @@ import {
   type CallRecordSourceFilter,
   type CallRecordStatusFilter,
   type CallRecordView,
-} from "@/components/runs/call-record-history";
+} from "@/components/usage/call-record-history";
 import { apiFetchAuthed, apiFetchAuthedWithFallback } from "@/lib/api";
 import { auth } from "@/lib/auth";
+import type { Locale } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n-server";
 
 interface DashboardData {
@@ -102,6 +104,17 @@ function normalizeCallRelation(raw?: string): CallRecordRelationFilter {
   return "";
 }
 
+function formatExternalCost(record: CallRecord, locale: Locale): string {
+  if (locale === "en") {
+    return record.cost_cents > 0
+      ? `External cost record $${(record.cost_cents / 100).toFixed(2)}`
+      : "No external cost recorded";
+  }
+  return record.cost_cents > 0
+    ? `外部费用记录 $${(record.cost_cents / 100).toFixed(2)}`
+    : "未记录外部费用";
+}
+
 export default async function RunsPage({
   searchParams,
 }: {
@@ -143,6 +156,7 @@ export default async function RunsPage({
           connect: "接入 Agent",
           connectBody: "如果你是 Agent 所有者，可以通过 HTTP、MCP 或可靠 Runtime Worker 接入；Runtime Worker 优先使用 WebSocket，受限时切换长轮询。",
           connectAction: "接入新 Agent",
+          emptyAction: "打开 Agent 库",
         }
       : {
           kicker: "Call center",
@@ -157,6 +171,7 @@ export default async function RunsPage({
           connect: "Connect an Agent",
           connectBody: "Agent owners can connect over HTTP, MCP, or the reliable Runtime Worker, which prefers WebSocket and falls back to long polling when needed.",
           connectAction: "Connect a new Agent",
+          emptyAction: "Open Registry",
         };
 
   const params = new URLSearchParams({
@@ -246,6 +261,13 @@ export default async function RunsPage({
               source={records.source_filter ?? source}
               relation={records.relation_filter ?? relation}
               locale={locale}
+              recordsPath="/runs"
+              emptyHref="/registry"
+              emptyActionLabel={copy.emptyAction}
+              sideColumnClassName="lg:grid-cols-[minmax(0,1fr)_210px]"
+              selectLabelClassName="min-w-0"
+              formatCost={formatExternalCost}
+              avatarFromSlug={avatarFromSlug}
             />
           </section>
 
