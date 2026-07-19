@@ -69,3 +69,14 @@ export function getApiBaseUrl(): string {
   }
   return `http://localhost:${DEFAULT_CORE_API_PORT}`;
 }
+
+// User-facing examples must not inherit the private Core address used by
+// Server Components. Empty means a portable same-origin relative URL.
+export function getPublicApiBaseUrl(): string {
+  const explicit = process.env.PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_URL;
+  if (explicit) return stripTrailingSlash(explicit);
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return stripTrailingSlash(window.location.origin);
+  }
+  return "";
+}

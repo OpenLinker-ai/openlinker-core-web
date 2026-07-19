@@ -4,6 +4,14 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useApi } from "@/hooks/use-api";
 import { useClientLocale } from "@/hooks/use-client-locale";
 import { localizedErrorMessage } from "@/lib/api";
@@ -65,6 +73,33 @@ export function AutomationAccessPanel({
 }) {
   const locale = useClientLocale();
   const copy = automationAccessMessages[locale];
+  const issueCopy = locale === "zh"
+    ? {
+        title: "确认签发 Agent Token",
+        description: "签发后明文只显示一次，取消不会创建 Token。",
+        name: "Token 名称",
+        placeholder: "例如：数据分析 Agent",
+        required: "请填写 Token 名称",
+        purposeLabel: "用途",
+        purpose: "供本地脚本、CLI 或外部 Agent 自注册并持续连接",
+        expiryLabel: "首次注册窗口",
+        expiry: "30 分钟",
+        cancel: "取消",
+        confirm: "确认签发",
+      }
+    : {
+        title: "Confirm Agent Token issuance",
+        description: "The plaintext is shown once after issuance. Canceling does not create a Token.",
+        name: "Token name",
+        placeholder: "For example: Data analysis Agent",
+        required: "Enter a Token name",
+        purposeLabel: "Purpose",
+        purpose: "Let a local script, CLI, or external Agent self-register and stay connected",
+        expiryLabel: "First-registration window",
+        expiry: "30 minutes",
+        cancel: "Cancel",
+        confirm: "Confirm issuance",
+      };
   const { fetch: apiFetch, isAuthenticated, isLoading: sessionLoading } = useApi();
   const [tokens, setTokens] = useState<BootstrapToken[]>([]);
   const [tokenTotal, setTokenTotal] = useState(0);
@@ -77,6 +112,8 @@ export function AutomationAccessPanel({
   const [copiedKind, setCopiedKind] = useState<"prompt" | "token" | null>(null);
   const [revokingTokenId, setRevokingTokenId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [issueOpen, setIssueOpen] = useState(false);
+  const [tokenName, setTokenName] = useState("");
   const showCreate = section === "all" || section === "create";
   const showTokens = section === "all" || section === "tokens";
   const showApprovals = section === "all" || section === "approvals";
@@ -147,7 +184,12 @@ export function AutomationAccessPanel({
     };
   }, [copy.loadFailed, load, locale]);
 
-  const mintToken = async () => {
+  const mintToken = async (name: string) => {
+    const normalizedName = name.trim();
+    if (!normalizedName) {
+      toast.error(issueCopy.required);
+      return;
+    }
     if (sessionLoading) {
       toast.error(copy.sessionLoading);
       return;
@@ -161,7 +203,7 @@ export function AutomationAccessPanel({
       const token = await apiFetch<BootstrapToken>("/api/v1/creator/agent-tokens", {
         method: "POST",
         body: {
-          name: locale === "zh" ? "Agent 自注册" : "Agent self-registration",
+          name: normalizedName,
           expires_in_minutes: 30,
         },
       });
@@ -173,6 +215,8 @@ export function AutomationAccessPanel({
       } else {
         setTokenOffset(0);
       }
+      setIssueOpen(false);
+      setTokenName("");
       toast.success(copy.created);
     } catch (error) {
       toast.error(localizedErrorMessage(error, locale, copy.createFailed));
@@ -244,11 +288,55 @@ export function AutomationAccessPanel({
               {copy.bodySuffix}
             </p>
           </div>
-          <button type="button" onClick={mintToken} disabled={busy || sessionLoading} className="ol-mini-btn ol-mini-btn-primary">
+          <button
+            type="button"
+            onClick={() => {
+              setTokenName(locale === "zh" ? "Agent 自注册" : "Agent self-registration");
+              setIssueOpen(true);
+            }}
+            disabled={busy || sessionLoading}
+            className="ol-mini-btn ol-mini-btn-primary"
+          >
             {busy ? copy.creating : copy.create}
           </button>
         </div>
       ) : null}
+
+      <Dialog open={issueOpen} onOpenChange={(open) => !busy && setIssueOpen(open)}>
+        <DialogContent closeLabel={issueCopy.cancel} className="border-[color:var(--ol-line)] bg-white sm:max-w-md">
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void mintToken(tokenName);
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle>{issueCopy.title}</DialogTitle>
+              <DialogDescription>{issueCopy.description}</DialogDescription>
+            </DialogHeader>
+            <label className="mt-5 block text-[12.5px] font-black text-[color:var(--ol-ink)]">
+              <span>{issueCopy.name}</span>
+              <input
+                autoFocus
+                value={tokenName}
+                onChange={(event) => setTokenName(event.target.value)}
+                placeholder={issueCopy.placeholder}
+                maxLength={120}
+                required
+                className="mt-2 h-11 w-full rounded-[12px] border border-[color:var(--ol-line)] bg-white px-3 text-[13px] font-semibold outline-none focus:border-[color:var(--ol-primary)] focus:ring-2 focus:ring-[color:var(--ol-primary)]/20"
+              />
+            </label>
+            <dl className="mt-4 grid gap-2 rounded-[12px] bg-[color:var(--ol-soft)] p-3 text-[12px]">
+              <div><dt className="font-black text-[color:var(--ol-muted)]">{issueCopy.purposeLabel}</dt><dd className="mt-0.5 font-semibold text-[color:var(--ol-ink)]">{issueCopy.purpose}</dd></div>
+              <div><dt className="font-black text-[color:var(--ol-muted)]">{issueCopy.expiryLabel}</dt><dd className="mt-0.5 font-semibold text-[color:var(--ol-ink)]">{issueCopy.expiry}</dd></div>
+            </dl>
+            <DialogFooter className="mt-5 gap-2 sm:space-x-0">
+              <button type="button" disabled={busy} onClick={() => setIssueOpen(false)} className="ol-mini-btn bg-white text-[color:var(--ol-ink)] hover:bg-[color:var(--ol-soft)]">{issueCopy.cancel}</button>
+              <button type="submit" disabled={busy || !tokenName.trim()} className="ol-mini-btn ol-mini-btn-primary">{busy ? copy.creating : issueCopy.confirm}</button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {showCreate && revealed ? (
         <div className="rounded-xl border border-[color:var(--ol-primary)]/25 bg-[color:var(--ol-soft)] p-3">

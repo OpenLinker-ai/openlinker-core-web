@@ -16,7 +16,7 @@ import Link from "next/link";
 import { ApiSnippet } from "./api-snippet";
 import { TryButton } from "./try-button";
 import type { Locale } from "@/lib/i18n";
-import { getApiBaseUrl } from "@/lib/api-root";
+import { getPublicApiBaseUrl } from "@/lib/api-root";
 
 interface ActionPanelProps {
   agentID: string;
@@ -38,7 +38,7 @@ export function ActionPanel({
   locale = "zh",
 }: ActionPanelProps) {
   const registryPrice = formatRegistryPrice(pricePerCallCents, locale);
-  const apiBaseUrl = getApiBaseUrl();
+  const apiBaseUrl = getPublicApiBaseUrl();
   const copy =
     locale === "zh"
       ? {
