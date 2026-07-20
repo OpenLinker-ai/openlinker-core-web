@@ -86,9 +86,9 @@ export function ExecutionPathBox({ result, locale = "zh" }: { result: RunResult 
           dispatch: "调度状态",
           attempts: "尝试次数",
           waiting: "等待 Runtime 接受任务",
-          unavailable: "此 Run 没有可验证的传输证据",
-          evidence: "传输证据",
-          changedAt: "传输证据时间",
+          unavailable: "此 Run 没有记录到可验证的连接方式",
+          evidence: "实际连接方式",
+          changedAt: "连接方式记录时间",
           reason: "切换原因",
         }
       : {
@@ -98,9 +98,9 @@ export function ExecutionPathBox({ result, locale = "zh" }: { result: RunResult 
           dispatch: "Dispatch state",
           attempts: "Attempts",
           waiting: "Waiting for Runtime acceptance",
-          unavailable: "No verifiable transport evidence for this Run",
-          evidence: "Runtime evidence",
-          changedAt: "Transport evidence time",
+          unavailable: "No verified connection details were recorded for this Run",
+          evidence: "Actual connection used",
+          changedAt: "Connection recorded at",
           reason: "Transition reason",
         };
   const mode = result.agent_connection_mode ?? "—";
@@ -325,7 +325,7 @@ function NextStepBox({ locale = "zh" }: { locale?: Locale }) {
         }
       : {
           title: "Next Step",
-          body: "After the run finishes, open Run detail to inspect events, messages, and artifacts. If A2A delegation occurs, a handoff-chain link appears here.",
+          body: "After the run finishes, open Run detail to inspect events, messages, and artifacts. If one Agent calls another, an Agent call-chain link appears here.",
         };
 
   return (
@@ -368,15 +368,15 @@ function DeveloperApiBox({
           empty: "运行后这里会出现 Run ID，可通过 API 查询运行状态、事件和结果。",
         }
       : {
-          delegationTitle: "Parent Run and Handoff Chain",
+          delegationTitle: "Parent Run and Agent Call Chain",
           apiTitle: "Developer API",
-          delegated: "This Run includes child-Agent calls. Open the handoff chain to inspect parent-child relationships.",
+          delegated: "This Run includes child-Agent calls. Open the Agent call chain to inspect parent-child relationships.",
           copyDoneToast: "Run ID copied",
           copyFailToast: "Copy failed. Select it manually.",
           copied: "Copied",
           copy: "Copy",
           parentRun: "View Parent Run",
-          collaboration: "View Handoff Chain",
+          collaboration: "View Agent Call Chain",
           empty: "After running, the Run ID appears here and can be used to query status, events, and results through the API.",
         };
 

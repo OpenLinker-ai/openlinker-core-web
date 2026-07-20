@@ -12,6 +12,32 @@ const ts = require(path.join(root, "node_modules/typescript/lib/typescript.js"))
 
 const checks = [];
 
+const forbiddenPlainLanguageTerms = [
+  "委派运行",
+  "覆盖状态",
+  "运维详情",
+  "重放来源",
+  "创建新的回放运行",
+  "仅 owner 可见",
+  "当前 Attempt",
+  "传输证据",
+  "运行证据",
+  "开始排空",
+  "正在排空",
+  "Runtime 契约",
+  "Hosted 增量权限",
+  "run evidence",
+  "Run evidence",
+  "transport evidence",
+  "Transport evidence",
+  "replay run",
+  "Replay run",
+  "handoff chain",
+  "Handoff Chain",
+  "invocation policy",
+  "Runtime contract",
+];
+
 const failures = [];
 const sourceRoots = ["src"];
 const visibleStringAttrs = new Set(["aria-label", "title", "placeholder", "alt", "label"]);
@@ -568,6 +594,11 @@ export function runRepositoryChecks() {
     for (const file of walkSourceFiles(path.join(root, sourceRoot))) {
       const relative = path.relative(root, file);
       const content = fs.readFileSync(file, "utf8");
+      for (const term of forbiddenPlainLanguageTerms) {
+        if (content.includes(term)) {
+          repositoryFailures.push(`${relative}: visible copy still contains the retired term "${term}"`);
+        }
+      }
       repositoryFailures.push(...analyzeSource(relative, content));
     }
   }

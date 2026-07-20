@@ -129,8 +129,8 @@ const RUN_ERROR_MESSAGES: LabelMap = {
     en: "The Agent is at capacity. This run will continue when a slot is available.",
   },
   NODE_DRAINING: {
-    zh: "Runtime Worker 正在下线，不再接收新运行。",
-    en: "The Runtime Worker is draining and is not accepting new runs.",
+    zh: "Runtime Worker 正在停止接收新任务，已有任务仍会继续完成。",
+    en: "The Runtime Worker is stopping new work. Runs already in progress can still finish.",
   },
   RUN_CANCEL_REQUESTED: {
     zh: "已提交取消请求，正在等待 Agent 停止。",

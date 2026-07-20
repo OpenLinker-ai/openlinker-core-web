@@ -142,8 +142,8 @@ const RUNTIME_TRANSPORT_CHIP: Record<string, string> = {
 };
 
 const EXECUTION_EVIDENCE_COPY: Record<Locale, { evidence: string; missingTransport: string }> = {
-  zh: { evidence: "传输证据", missingTransport: "暂无传输证据" },
-  en: { evidence: "Transport evidence", missingTransport: "No transport evidence" },
+  zh: { evidence: "实际连接方式", missingTransport: "暂无连接方式记录" },
+  en: { evidence: "Actual connection used", missingTransport: "No connection details recorded" },
 };
 
 function formatRelative(iso: string, locale: Locale): string {
@@ -203,14 +203,14 @@ function idRows(record: CallRecord, locale: Locale): Array<{ label: string; valu
       href: record.parent_run_id ? `/run/${encodeURIComponent(record.parent_run_id)}` : undefined,
     },
     {
-      label: locale === "zh" ? "重放来源" : "Replay source",
+      label: locale === "zh" ? "原运行" : "Original run",
       value: record.replay_of_run_id,
       href: record.replay_of_run_id
         ? `/run/${encodeURIComponent(record.replay_of_run_id)}`
         : undefined,
     },
     {
-      label: locale === "zh" ? "Runtime 契约" : "Runtime contract",
+      label: locale === "zh" ? "Runtime 协议版本" : "Runtime protocol version",
       value: record.runtime_contract_id,
     },
     {

@@ -563,8 +563,8 @@ function eventMeta(event: RunEvent, locale: Locale): {
       return {
         title: isZh ? "任务要求快照" : "Requirement snapshot",
         detail: isZh
-          ? `Skill/MCP 覆盖状态：${coverageStatusLabel(String(event.payload.coverage_status ?? ""), locale)}`
-          : `Skill/MCP coverage: ${coverageStatusLabel(String(event.payload.coverage_status ?? ""), locale)}`,
+          ? `Skill/MCP 需求是否满足：${coverageStatusLabel(String(event.payload.coverage_status ?? ""), locale)}`
+          : `Skill/MCP requirements met: ${coverageStatusLabel(String(event.payload.coverage_status ?? ""), locale)}`,
         icon: "target",
         tone: "bg-[#EAF1FF] text-[#2952A3]",
       };
