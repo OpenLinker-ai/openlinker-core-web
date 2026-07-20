@@ -53,7 +53,7 @@ const API_ERROR_STATUS_COPY: Record<number, Record<Locale, string>> = {
 };
 
 const API_ERROR_CODE_COPY: Record<string, Record<Locale, string>> = {
-  INSUFFICIENT_BALANCE: { zh: "当前调用未获执行授权，请联系实例运营方检查调用策略。", en: "This invocation was not authorized. Ask the instance operator to review the invocation policy." },
+  INSUFFICIENT_BALANCE: { zh: "当前调用未获执行权限，请联系实例运营方检查调用权限或设置。", en: "This call was not authorized. Ask the instance operator to review the call permissions or settings." },
   RATE_LIMITED: { zh: "请求过于频繁，请稍后再试。", en: "Too many requests. Try again later." },
   TOO_MANY_KEYS: { zh: "User Token 数量已达上限，请通过签发该 Token 的管理入口处理旧 Token，或联系实例运营方。", en: "The User Token limit has been reached. Manage older tokens through the issuing system or contact the instance operator." },
   VALIDATION_ERROR: { zh: "提交内容不符合要求，请检查后重试。", en: "The submitted content is invalid. Check it and try again." },

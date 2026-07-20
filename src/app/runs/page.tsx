@@ -146,7 +146,7 @@ export default async function RunsPage({
       ? {
           kicker: "调用中心",
           heading: "调用和被调用，一处可查",
-          lead: "查看我发起的调用，以及我的 Agent 收到的调用。方向、A2A 父子关系、Run/Call ID、连接模式和 Runtime 实际传输证据会保留在同一条记录里。",
+          lead: "查看我发起的调用，以及我的 Agent 收到的调用。方向、A2A 父子关系、Run/Call ID、连接模式和 Runtime 实际连接方式会保留在同一条记录里。",
           callsMonth: "本月调用",
           callsTotal: "累计调用",
           mode: "记录来源",
@@ -161,7 +161,7 @@ export default async function RunsPage({
       : {
           kicker: "Call center",
           heading: "Made and received calls, together",
-          lead: "Review calls you made and calls received by your Agents. Direction, A2A parent-child relations, Run/Call IDs, connection mode, and actual Runtime transport evidence stay with each record.",
+          lead: "Review calls you made and calls received by your Agents. Direction, A2A parent-child relations, Run/Call IDs, connection mode, and the actual Runtime connection used stay with each record.",
           callsMonth: "Calls this month",
           callsTotal: "Total calls",
           mode: "Record source",

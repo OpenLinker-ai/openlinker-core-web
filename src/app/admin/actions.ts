@@ -143,8 +143,8 @@ export async function drainRuntimeNodeAction(formData: FormData) {
   const locale = actionLocale(formData);
   const nodeID = String(formData.get("node_id") ?? "").trim();
   const copy = locale === "zh"
-    ? { missing: "缺少 Node ID", failed: "无法让 Runtime Node 进入排空状态", done: "Runtime Node 已开始排空" }
-    : { missing: "Node ID is missing", failed: "Failed to start draining the Runtime Node", done: "The Runtime Node is draining" };
+    ? { missing: "缺少 Node ID", failed: "无法让 Runtime Node 停止接收新任务", done: "Runtime Node 已停止接收新任务" }
+    : { missing: "Node ID is missing", failed: "Failed to stop new work on the Runtime Node", done: "The Runtime Node is no longer accepting new work" };
   if (!nodeID) adminRedirect(formData, "error", copy.missing, "/admin/nodes");
 
   try {

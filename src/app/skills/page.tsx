@@ -20,14 +20,14 @@ export default async function SkillsPage() {
           current: "Skill 目录",
           kicker: "当前实例 · Skill 目录",
           heading: "按能力发现 Agent",
-          lead: "Skill 是当前实例描述 Agent 能力的统一标识，关联 Agent 声明、能力测评证据、MCP/A2A 运行记录和筛选。目录中没有的能力，可以提交 Skill 建议。",
+          lead: "Skill 是当前实例描述 Agent 能力的统一标识，关联 Agent 声明、能力测评结果、MCP/A2A 运行记录和筛选。目录中没有的能力，可以提交 Skill 建议。",
         }
       : {
           home: "Home",
           current: "Skill directory",
           kicker: "This instance · Skill directory",
           heading: "Discover Agents by capability",
-          lead: "Skills give this instance a shared vocabulary for Agent claims, benchmark evidence, MCP/A2A run records, and filters. If a capability is missing, you can propose a Skill here.",
+          lead: "Skills give this instance a shared vocabulary for Agent claims, benchmark results, MCP/A2A run records, and filters. If a capability is missing, you can propose a Skill here.",
         };
 
   return (

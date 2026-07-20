@@ -83,7 +83,7 @@ export default async function PlaygroundPage({
           heading: "发送输入，查看运行结果",
           lead: "输入任务描述或 JSON，继续多轮会话，并查看每次运行的状态、耗时和输出。调用记录会保存在当前实例中。",
           unavailableTitle: "试用台暂不可用",
-          unavailableLead: "该 Agent 暂不可调用，或还缺少可调用证据。请稍后重试，或在 Agent 管理中运行健康检查。",
+          unavailableLead: "该 Agent 暂不可调用，或还没有成功通过健康检查。请稍后重试，或在 Agent 管理中运行健康检查。",
           back: "返回",
         }
       : {
@@ -95,7 +95,7 @@ export default async function PlaygroundPage({
           heading: "Send an input and inspect the result",
           lead: "Enter a task or JSON, continue a multi-turn conversation, and review the status, duration, and output of each run. Run records stay in this instance.",
           unavailableTitle: "Playground unavailable",
-          unavailableLead: "This Agent is not callable yet or lacks callability evidence. Try again later, or run a health check from Agent Console.",
+          unavailableLead: "This Agent is not callable yet or has not passed a health check. Try again later, or run a health check from Agent Console.",
           back: "Back",
         };
 

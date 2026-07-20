@@ -88,8 +88,8 @@ export default async function AdminOverviewPage({
       title: copy.nodes,
       body:
         locale === "zh"
-          ? "查看私有 Agent 的 Runtime Node、当前连接、容量和 Runtime 契约是否一致。"
-          : "Review private-Agent nodes, live sessions, capacity, and Runtime contract alignment.",
+          ? "查看私有 Agent 的 Runtime Node、当前连接、容量和 Runtime 协议版本是否一致。"
+          : "Review private-Agent Nodes, live sessions, capacity, and whether their Runtime protocol versions match.",
       metric: null,
     },
     {
@@ -97,8 +97,8 @@ export default async function AdminOverviewPage({
       title: copy.deadLetters,
       body:
         locale === "zh"
-          ? "查看自动重试已经耗尽的运行证据；回放仍由任务所有者从运行详情发起。"
-          : "Inspect runs that exhausted automatic retries; owners still initiate replays from Run detail.",
+          ? "查看已经用完自动重试次数的运行记录；是否重新运行仍由所有者在运行详情中决定。"
+          : "Review runs that exhausted automatic retries. Only the owner can run them again from Run detail.",
       metric: null,
     },
     {
@@ -106,8 +106,8 @@ export default async function AdminOverviewPage({
       title: copy.maintenance,
       body:
         locale === "zh"
-          ? "确认 Core 实例、数据库结构、发布版本、Runtime 契约和唤醒通道是否可以开放新任务。"
-          : "Verify Core membership, schema, release, Runtime contract, and wake-up health before opening new runs.",
+          ? "确认 Core 实例、数据库结构、发布版本、Runtime 协议版本和唤醒通道都允许接收新任务。"
+          : "Verify Core membership, database schema, release, Runtime protocol version, and wake-up health before accepting new runs.",
       metric: null,
     },
   ];
