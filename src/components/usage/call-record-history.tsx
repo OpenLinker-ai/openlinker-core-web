@@ -336,6 +336,8 @@ export function CallRecordHistory({
           apply: "应用",
           reset: "重置",
           empty: "还没有调用记录。",
+          noMatches: "没有符合当前筛选条件的调用记录。",
+          clearFilters: "清除筛选",
           prev: "上一页",
           next: "下一页",
           page: `第 ${page} / ${totalPages} 页`,
@@ -385,6 +387,8 @@ export function CallRecordHistory({
           apply: "Apply",
           reset: "Reset",
           empty: "No call records yet.",
+          noMatches: "No call records match the current filters.",
+          clearFilters: "Clear filters",
           prev: "Previous",
           next: "Next",
           page: `Page ${page} / ${totalPages}`,
@@ -422,6 +426,8 @@ export function CallRecordHistory({
             ["a2a_child", "A2A child"],
           ] as Array<[CallRecordRelationFilter, string]>,
         };
+  const hasActiveFilters =
+    view !== "all" || Boolean(query?.trim() || status || source || relation);
 
   return (
     <div className="ol-panel">
@@ -552,12 +558,12 @@ export function CallRecordHistory({
 
         {items.length === 0 ? (
           <div className="px-2 py-10 text-center text-[13px] text-[color:var(--ol-muted)]">
-            {copy.empty}
+            {hasActiveFilters ? copy.noMatches : copy.empty}
             <Link
-              href={emptyHref}
+              href={hasActiveFilters ? recordsPath : emptyHref}
               className="ml-2 font-[900] text-[color:var(--ol-primary-dark)] underline"
             >
-              {emptyActionLabel}
+              {hasActiveFilters ? copy.clearFilters : emptyActionLabel}
             </Link>
           </div>
         ) : (

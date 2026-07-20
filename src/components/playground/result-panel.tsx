@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { AgentMarkdown } from "@/components/ui/agent-markdown";
 import { useApi } from "@/hooks/use-api";
 import type { Locale } from "@/lib/i18n";
 import { runErrorMessage } from "@/lib/i18n-labels";
@@ -205,9 +206,9 @@ function CallResultBox({ status, result, locale = "zh" }: Props & { locale?: Loc
           <div className="text-[12px] font-black uppercase text-[color:var(--ol-primary-dark)]">
             {outputSummary.title}
           </div>
-          <p className="mt-1 break-words text-[color:var(--ol-muted)]">
+          <AgentMarkdown className="mt-1 text-[color:var(--ol-muted)]">
             {outputSummary.body}
-          </p>
+          </AgentMarkdown>
           {outputSummary.rows.length > 0 ? (
             <dl className="mt-3 grid min-w-0 gap-1.5">
               {outputSummary.rows.map((row) => (

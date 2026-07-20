@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { RunEventStream } from "@/components/run/run-event-stream";
 import { TaskCallbackSection } from "@/components/run/task-callback-section";
+import { AgentMarkdown } from "@/components/ui/agent-markdown";
 import { Icon } from "@/components/ui/icon";
 import { useApi } from "@/hooks/use-api";
 import { localizedErrorMessage } from "@/lib/api";
@@ -944,9 +945,9 @@ function RunMessagesPanel({
                   </span>
                   {message.synthetic ? <span className="ol-chip">{copy.synthetic}</span> : null}
                 </div>
-                <p className="mt-3 whitespace-pre-wrap break-words text-[13px] leading-[1.65] text-[color:var(--ol-ink)]">
+                <AgentMarkdown className="mt-3">
                   {message.content || copy.emptyMessage}
-                </p>
+                </AgentMarkdown>
                 {hasPayload ? (
                   <details className="mt-3 rounded-[12px] border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] p-3">
                     <summary className="cursor-pointer text-[11.5px] font-black text-[color:var(--ol-muted)]">
@@ -999,7 +1000,7 @@ function buildReplayMessages(
       synthetic: true,
     });
   }
-  if (run.status !== "success" && run.error) {
+  if (["failed", "timeout", "canceled"].includes(run.status) && run.error) {
     items.push({
       id: `${run.id}:error`,
       role: "error",

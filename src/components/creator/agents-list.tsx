@@ -362,14 +362,16 @@ export function AgentsList({ locale, agentPage, controls }: Props) {
       </div>
       <div className="border-b border-[color:var(--ol-line)] px-[18px] py-4">
         <div className="grid gap-3 lg:grid-cols-[minmax(260px,0.9fr)_minmax(520px,1.1fr)] lg:items-end">
-          <label className="block">
-            <span className="sr-only">{copy.searchLabel}</span>
+          <div className="block">
+            <label htmlFor="creator-agent-search" className="sr-only">{copy.searchLabel}</label>
             <span className="relative block">
               <Search
                 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[color:var(--ol-subtle)]"
                 aria-hidden="true"
               />
               <input
+                id="creator-agent-search"
+                type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder={copy.searchPlaceholder}
@@ -389,7 +391,7 @@ export function AgentsList({ locale, agentPage, controls }: Props) {
                 </button>
               ) : null}
             </span>
-          </label>
+          </div>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
             <FilterSelect
               label={copy.filterStatus}

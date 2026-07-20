@@ -33,6 +33,7 @@ const CHECK_IDS = [
   "public-card",
   "extended-card",
   "jsonrpc-extended-card",
+  "jsonrpc-send-sync",
   "jsonrpc-send",
   "task-get",
   "jsonrpc-list-tasks",
@@ -112,19 +113,37 @@ export function A2AConformancePanel({
     }
     setBusy(true);
     try {
-      await checkPublicCard(cleanSlug, setCheck);
-      await checkExtendedCard(cleanSlug, token, setCheck);
-      await checkJSONRPCExtendedCard(cleanSlug, token, setCheck);
-      const run = await checkJSONRPCSend(cleanSlug, token, sample, setCheck);
-      await checkTaskGet(cleanSlug, token, run.taskId, setCheck);
-      await checkJSONRPCListTasks(cleanSlug, token, setCheck, run.contextId);
-      await checkHTTPListTasks(cleanSlug, token, setCheck, run.contextId);
-      await checkPushConfig(cleanSlug, token, run.taskId, setCheck);
-      setSummary(locale === "zh" ? "A2A 标准面校验完成。" : "A2A standard checks completed.");
-    } catch (err) {
-      const message = localizedCheckError(err, locale, copy.fail);
-      setChecks((items) => items.map((item) => (item.state === "running" ? { ...item, state: "fail", detail: message } : item)));
-      setSummary(message);
+      let failed = 0;
+      const capture = async <T,>(id: string, action: () => Promise<T>): Promise<T | null> => {
+        try {
+          return await action();
+        } catch (err) {
+          failed += 1;
+          setCheck(id, { state: "fail", detail: localizedCheckError(err, locale, copy.fail) });
+          return null;
+        }
+      };
+      await capture("public-card", () => checkPublicCard(cleanSlug, setCheck));
+      await capture("extended-card", () => checkExtendedCard(cleanSlug, token, setCheck));
+      await capture("jsonrpc-extended-card", () => checkJSONRPCExtendedCard(cleanSlug, token, setCheck));
+      await capture("jsonrpc-send-sync", () => checkJSONRPCSendSync(cleanSlug, token, sample, setCheck));
+      const run = await capture("jsonrpc-send", () => checkJSONRPCSend(cleanSlug, token, sample, setCheck));
+      await capture("jsonrpc-list-tasks", () => checkJSONRPCListTasks(cleanSlug, token, setCheck, run?.contextId));
+      await capture("http-list-tasks", () => checkHTTPListTasks(cleanSlug, token, setCheck, run?.contextId));
+      if (run) {
+        await capture("task-get", () => checkTaskGet(cleanSlug, token, run.taskId, setCheck));
+        await capture("push-config", () => checkPushConfig(cleanSlug, token, run.taskId, setCheck));
+      } else {
+        failed += 2;
+        const dependency = locale === "zh" ? "未获得测试 Task，无法执行此依赖检查。" : "No test Task was available for this dependent check.";
+        setCheck("task-get", { state: "fail", detail: dependency });
+        setCheck("push-config", { state: "fail", detail: dependency });
+      }
+      setSummary(
+        failed === 0
+          ? locale === "zh" ? "A2A 协议兼容性基础校验全部通过。" : "All A2A protocol conformance base checks passed."
+          : locale === "zh" ? `A2A 基础校验完成，${failed} 项未通过；请查看每项详情。` : `A2A base checks completed with ${failed} failure(s); review each result.`,
+      );
     } finally {
       setBusy(false);
     }
@@ -253,7 +272,8 @@ function createChecks(locale: Locale): CheckItem[] {
           public: "公开 Agent Card",
           extended: "扩展 Agent Card",
           rpcCard: "JSON-RPC 扩展卡",
-          rpcSend: "JSON-RPC SendMessage",
+          rpcSendSync: "SendMessage 同步结果",
+          rpcSend: "SendMessage 非阻塞 Task",
           taskGet: "GetTask",
           rpcList: "JSON-RPC ListTasks",
           httpList: "HTTP+JSON ListTasks",
@@ -266,7 +286,8 @@ function createChecks(locale: Locale): CheckItem[] {
           public: "Public Agent Card",
           extended: "Extended Agent Card",
           rpcCard: "JSON-RPC extended card",
-          rpcSend: "JSON-RPC SendMessage",
+          rpcSendSync: "SendMessage synchronous result",
+          rpcSend: "SendMessage non-blocking Task",
           taskGet: "GetTask",
           rpcList: "JSON-RPC ListTasks",
           httpList: "HTTP+JSON ListTasks",
@@ -279,17 +300,25 @@ function createChecks(locale: Locale): CheckItem[] {
     { id: CHECK_IDS[0], label: labels.public, detail: labels.pending, state: "idle" },
     { id: CHECK_IDS[1], label: labels.extended, detail: labels.pending, state: "idle" },
     { id: CHECK_IDS[2], label: labels.rpcCard, detail: labels.pending, state: "idle" },
-    { id: CHECK_IDS[3], label: labels.rpcSend, detail: labels.pending, state: "idle" },
-    { id: CHECK_IDS[4], label: labels.taskGet, detail: labels.pending, state: "idle" },
-    { id: CHECK_IDS[5], label: labels.rpcList, detail: labels.pending, state: "idle" },
-    { id: CHECK_IDS[6], label: labels.httpList, detail: labels.pending, state: "idle" },
-    { id: CHECK_IDS[7], label: labels.push, detail: labels.pending, state: "idle" },
-    { id: CHECK_IDS[8], label: labels.stream, detail: labels.pending, state: "idle" },
-    { id: CHECK_IDS[9], label: labels.long, detail: labels.pending, state: "idle" },
+    { id: CHECK_IDS[3], label: labels.rpcSendSync, detail: labels.pending, state: "idle" },
+    { id: CHECK_IDS[4], label: labels.rpcSend, detail: labels.pending, state: "idle" },
+    { id: CHECK_IDS[5], label: labels.taskGet, detail: labels.pending, state: "idle" },
+    { id: CHECK_IDS[6], label: labels.rpcList, detail: labels.pending, state: "idle" },
+    { id: CHECK_IDS[7], label: labels.httpList, detail: labels.pending, state: "idle" },
+    { id: CHECK_IDS[8], label: labels.push, detail: labels.pending, state: "idle" },
+    { id: CHECK_IDS[9], label: labels.stream, detail: labels.pending, state: "idle" },
+    { id: CHECK_IDS[10], label: labels.long, detail: labels.pending, state: "idle" },
   ];
 }
 
 function localizedCheckError(err: unknown, locale: Locale, fallback: string): string {
+  if (locale === "zh" && err instanceof Error && !(err instanceof TypeError)) {
+    const detail = err.message.trim();
+    if (detail.includes("extended card variant required")) return "扩展 Agent Card 缺少 openlinker.card_variant=extended。";
+    if (detail.includes("synchronous SendMessage must return")) return "同步 SendMessage 必须返回 Task 或 Message。";
+    if (detail.includes("non-blocking SendMessage must return a Task")) return "非阻塞 SendMessage 必须返回带 id 的 Task。";
+    if (detail) return `协议校验失败：${detail}`;
+  }
   return localizedErrorMessage(err instanceof Error ? err : new Error(String(err)), locale, fallback);
 }
 
@@ -343,6 +372,41 @@ async function checkJSONRPCExtendedCard(slug: string, token: string, setCheck: (
   setCheck("jsonrpc-extended-card", { state: "pass", detail: "JSON-RPC method returned Agent Card" });
 }
 
+async function checkJSONRPCSendSync(
+  slug: string,
+  token: string,
+  sample: string,
+  setCheck: (id: string, patch: Partial<CheckItem>) => void,
+) {
+  setCheck("jsonrpc-send-sync", { state: "running", detail: "POST SendMessage returnImmediately=false" });
+  const { json } = await requestJSON(`/api/v1/a2a/agents/${encodeURIComponent(slug)}`, "POST", {
+    jsonrpc: "2.0",
+    id: "page-send-message-sync",
+    method: "SendMessage",
+    params: {
+      message: {
+        messageId: `page-message-sync-${Date.now()}`,
+        contextId: `page-a2a-sync-${Date.now()}`,
+        role: "ROLE_USER",
+        parts: [{ text: sample.trim() || "A2A synchronous standard check" }],
+      },
+      configuration: { acceptedOutputModes: ["application/json", "text/plain"], returnImmediately: false },
+      metadata: { client: "openlinker-a2a-conformance" },
+    },
+  }, token, { "A2A-Version": "1.0" });
+  const body = asRecord(json);
+  assertNoRPCError(body);
+  const result = a2aSendResult(body.result);
+  const taskId = String(result.task.id ?? "");
+  const messageId = String(result.message.messageId ?? "");
+  if (taskId) assertTaskState(asRecord(result.task.status).state);
+  if (!taskId && !messageId) throw new Error("synchronous SendMessage must return a Task or Message");
+  setCheck("jsonrpc-send-sync", {
+    state: "pass",
+    detail: taskId ? `Task ${shortID(taskId)} returned` : `Message ${shortID(messageId)} returned`,
+  });
+}
+
 async function checkJSONRPCSend(
   slug: string,
   token: string,
@@ -362,16 +426,16 @@ async function checkJSONRPCSend(
           role: "ROLE_USER",
           parts: [{ text: sample.trim() || "A2A standard check" }],
         },
-      configuration: { acceptedOutputModes: ["application/json", "text/plain"], returnImmediately: false },
+      configuration: { acceptedOutputModes: ["application/json", "text/plain"], returnImmediately: true },
       metadata: { client: "openlinker-a2a-conformance" },
     },
   }, token, { "A2A-Version": "1.0" });
   const body = asRecord(json);
   assertNoRPCError(body);
-  const result = asRecord(asRecord(body.result).task);
-  const taskId = String(result.id ?? "");
-  if (!taskId) throw new Error("SendMessage result must include task id");
-  assertTaskState(asRecord(result.status).state);
+  const result = a2aSendResult(body.result);
+  const taskId = String(result.task.id ?? "");
+  if (!taskId) throw new Error("non-blocking SendMessage must return a Task with id");
+  assertTaskState(asRecord(result.task.status).state);
   setCheck("jsonrpc-send", { state: "pass", detail: `task ${shortID(taskId)} created` });
   return { taskId, contextId };
 }
@@ -529,9 +593,9 @@ async function checkLongOnline(
     }, token, { "A2A-Version": "1.0" });
     const body = asRecord(start.json);
     assertNoRPCError(body);
-    const task = asRecord(asRecord(body.result).task);
+    const task = a2aSendResult(body.result).task;
     taskId = String(task.id ?? "");
-    if (!taskId) throw new Error("SendMessage result must include task id");
+    if (!taskId) throw new Error("non-blocking SendMessage must return a Task with id");
     const state = String(asRecord(task.status).state ?? "");
     assertTaskState(state);
     if (state !== "TASK_STATE_WORKING") {
@@ -746,6 +810,18 @@ function assertSomeTransport(items: unknown[], transport: string) {
 
 function assertNoRPCError(body: Record<string, unknown>) {
   if (body.error) throw new Error(JSON.stringify(body.error).slice(0, 240));
+}
+
+function a2aSendResult(value: unknown): { task: Record<string, unknown>; message: Record<string, unknown> } {
+  const result = asRecord(value);
+  const wrappedTask = asRecord(result.task);
+  const directTask = result.id && result.status ? result : {};
+  const wrappedMessage = asRecord(result.message);
+  const directMessage = result.messageId && result.parts ? result : {};
+  return {
+    task: Object.keys(wrappedTask).length > 0 ? wrappedTask : directTask,
+    message: Object.keys(wrappedMessage).length > 0 ? wrappedMessage : directMessage,
+  };
 }
 
 function assertEqual(actual: unknown, expected: unknown, message: string) {

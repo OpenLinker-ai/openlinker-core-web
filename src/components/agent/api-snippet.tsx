@@ -14,7 +14,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { getApiBaseUrl } from "@/lib/api-root";
+import { getPublicApiBaseUrl } from "@/lib/api-root";
 import type { Locale } from "@/lib/i18n";
 
 type Tab = "curl" | "typescript" | "go";
@@ -77,7 +77,7 @@ export function ApiSnippet({
           ),
         };
 
-  const apiURL = apiBaseUrl ?? getApiBaseUrl();
+  const apiURL = apiBaseUrl ?? getPublicApiBaseUrl();
   const requestBody = {
     agent_id: agentID,
     input: sampleInput ?? { your_field: "your_value" },

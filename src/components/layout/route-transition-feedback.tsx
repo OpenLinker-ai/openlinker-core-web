@@ -99,7 +99,9 @@ export function RouteTransitionFeedback({ locale = "en" }: { locale?: Locale }) 
 
   useEffect(() => {
     routeKeyRef.current = routeKey;
-  }, [routeKey]);
+    const frame = window.requestAnimationFrame(reset);
+    return () => window.cancelAnimationFrame(frame);
+  }, [reset, routeKey]);
 
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
@@ -138,10 +140,6 @@ export function RouteTransitionFeedback({ locale = "en" }: { locale?: Locale }) 
       document.documentElement.classList.remove("ol-route-busy");
     };
   }, [clearTimers, reset, start]);
-
-  useEffect(() => {
-    clearTimers();
-  }, [clearTimers, routeKey]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("ol-route-busy", visible);
