@@ -149,38 +149,6 @@ export interface AdminTaskList {
   offset: number;
 }
 
-export interface AdminRuntimeNode {
-  node_id: string;
-  display_name: string;
-  node_version: string;
-  protocol_version: number;
-  runtime_contract_id: string;
-  runtime_contract_digest: string;
-  contract_match: boolean;
-  features: string[];
-  capacity: number;
-  inflight: number;
-  status: "active" | "draining" | "revoked" | string;
-  last_seen_at?: string | null;
-  draining_at?: string | null;
-  revoked_at?: string | null;
-  revoke_reason?: string | null;
-  created_at: string;
-  updated_at: string;
-  active_session_count: number;
-  active_agent_count: number;
-}
-
-export interface AdminRuntimeNodeList {
-  items: AdminRuntimeNode[];
-  total: number;
-  limit: number;
-  offset: number;
-  current_contract_id: string;
-  current_contract_digest: string;
-  database_time: string;
-}
-
 export interface AdminRuntimeDeadLetter {
   dead_letter_id: string;
   run_id: string;

@@ -159,6 +159,34 @@ export async function drainRuntimeNodeAction(formData: FormData) {
   adminRedirect(formData, "status", copy.done, "/admin/nodes");
 }
 
+export async function activateRuntimeNodeAction(formData: FormData) {
+  const locale = actionLocale(formData);
+  const nodeID = String(formData.get("node_id") ?? "").trim();
+  const copy = locale === "zh"
+    ? {
+        missing: "缺少 Node ID",
+        failed: "无法恢复 Runtime Node；请确认没有在途任务，并且在线 Session、证书身份和协议仍有效",
+        done: "Runtime Node 已恢复接收新任务",
+      }
+    : {
+        missing: "Node ID is missing",
+        failed: "Failed to resume the Runtime Node; confirm that no work is in flight and its online Session, certificate identity, and protocol remain valid",
+        done: "The Runtime Node is accepting new work again",
+      };
+  if (!nodeID) adminRedirect(formData, "error", copy.missing, "/admin/nodes");
+
+  try {
+    await apiFetchAuthed(`/api/v1/admin/runtime/nodes/${encodeURIComponent(nodeID)}/activate`, {
+      method: "POST",
+    });
+    revalidateAdmin();
+  } catch {
+    adminRedirect(formData, "error", copy.failed, "/admin/nodes");
+  }
+
+  adminRedirect(formData, "status", copy.done, "/admin/nodes");
+}
+
 export async function revokeRuntimeNodeAction(formData: FormData) {
   const locale = actionLocale(formData);
   const nodeID = String(formData.get("node_id") ?? "").trim();
