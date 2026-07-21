@@ -24,17 +24,17 @@ const ITEMS: ReadonlyArray<WorkspaceItem> = [
     match: (p) => p === "/my",
   },
   {
-    label: { zh: "运行记录", en: "Runs" },
+    label: { zh: "调用记录", en: "Call Records" },
     desc: { zh: "调用 / 事件", en: "Calls / events" },
-    href: "/runs",
+    href: "/usage/records",
     icon: "chart",
     match: (p) =>
-      p.startsWith("/runs") || p.startsWith("/run"),
+      p.startsWith("/usage/records") || p.startsWith("/runs") || p.startsWith("/run"),
   },
   {
     label: { zh: "Agent 管理", en: "Agent Console" },
     desc: { zh: "所有者工具", en: "Owner tools" },
-    href: "/hub",
+    href: "/hub/agents",
     icon: "bot",
     match: (p) => p.startsWith("/hub"),
   },
