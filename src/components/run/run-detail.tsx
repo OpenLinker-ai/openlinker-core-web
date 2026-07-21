@@ -308,7 +308,7 @@ export function RunDetail({
               <RunCancelButton locale={locale} runId={view.id} />
             ) : null}
             <Link
-              href="/runs"
+              href="/usage/records"
               className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12.5px] font-[900] text-[color:var(--ol-ink)] hover:border-[color:var(--ol-primary)]/40"
             >
               {copy.back}

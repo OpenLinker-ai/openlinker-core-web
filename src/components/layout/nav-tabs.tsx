@@ -2,7 +2,7 @@
  * <NavTabs /> —— 顶部胶囊式导航条。
  *
  * 来自 prototype 的 .flow-tabs。
- *   首页 / Registry / 接入 / A2A / 运行
+ *   首页 / Registry / 接入 / A2A / Agent 管理 / 调用记录
  */
 
 "use client";
@@ -30,7 +30,6 @@ const ITEMS: NavItem[] = [
     href: "/connect",
     match: (p) =>
       p.startsWith("/connect") ||
-      p.startsWith("/hub") ||
       p.startsWith("/publish") ||
       p.startsWith("/skills"),
   },
@@ -40,9 +39,15 @@ const ITEMS: NavItem[] = [
     match: (p) => p.startsWith("/a2a"),
   },
   {
-    label: { zh: "运行", en: "Runs" },
-    href: "/runs",
+    label: { zh: "Agent 管理", en: "Agent Console" },
+    href: "/hub/agents",
+    match: (p) => p.startsWith("/hub"),
+  },
+  {
+    label: { zh: "调用记录", en: "Call Records" },
+    href: "/usage/records",
     match: (p) =>
+      p.startsWith("/usage/records") ||
       p.startsWith("/runs") ||
       p.startsWith("/run"),
   },
