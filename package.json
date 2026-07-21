@@ -39,6 +39,7 @@
     "test:a2a-session": "node --test scripts/a2a-session-compat.test.mjs",
     "test:agent-library-card": "node --test scripts/agent-library-card-contract.test.mjs",
     "test:core-navigation-routes": "node --test scripts/core-navigation-routes.test.mjs",
+    "test:runtime-node-admin": "node --test scripts/runtime-node-admin-contract.test.mjs",
     "test:platform-audit": "node --test scripts/platform-audit-remediation.test.mjs"
   },
   "dependencies": {
