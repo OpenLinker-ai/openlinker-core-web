@@ -74,7 +74,7 @@ export default async function AdminRuntimeNodesPage({
         capacity: "总容量",
         inflight: "执行中",
         noData: "还没有登记 Runtime Node",
-        noDataBody: "使用 Core 的 runtime-node issue 命令签发并登记第一台 Node。",
+        noDataBody: "启动使用 Agent Token 的 Runtime Worker 后，SDK 会自动生成密钥、签发证书并登记 Node。",
         identity: "节点",
         state: "状态与容量",
         runtime: "Runtime",
@@ -90,7 +90,7 @@ export default async function AdminRuntimeNodesPage({
         features: "能力",
         contractMatch: "协议版本一致",
         contractMismatch: "协议版本不一致",
-        contractMismatchBody: "这台 Node 的 Runtime 协议版本与当前 Core 不一致。升级 Node 后重新签发或重新连接，不要继续派发新运行。",
+        contractMismatchBody: "这台 Node 的 Runtime 协议版本与当前 Core 不一致。升级并重新连接 Node，不要继续派发新运行。",
         drain: "停止接收新任务",
         drainingDone: "已停止接收新任务，只会完成正在执行的运行。",
         revoke: "撤销节点",
@@ -100,7 +100,7 @@ export default async function AdminRuntimeNodesPage({
         neverSeen: "尚未连接",
         registered: "登记时间",
         inspect: "查看完整身份",
-        openRunbook: "查看签发说明",
+        openRunbook: "查看自动凭据说明",
         confirmRevoke: "撤销后设备证书和现有 Session 都会失效。请确认原因无误。",
       }
     : {
@@ -113,7 +113,7 @@ export default async function AdminRuntimeNodesPage({
         capacity: "Total capacity",
         inflight: "In flight",
         noData: "No Runtime Nodes are enrolled",
-        noDataBody: "Use Core's runtime-node issue command to enroll the first Node.",
+        noDataBody: "Start a Runtime Worker with an Agent Token; the SDK generates its key, obtains a certificate, and enrolls the Node automatically.",
         identity: "Node",
         state: "State and capacity",
         runtime: "Runtime",
@@ -129,7 +129,7 @@ export default async function AdminRuntimeNodesPage({
         features: "Features",
         contractMatch: "Protocol version matches",
         contractMismatch: "Protocol version mismatch",
-        contractMismatchBody: "This Node's Runtime protocol version does not match the current Core. Upgrade the Node and re-enroll or reconnect it before dispatching more runs.",
+        contractMismatchBody: "This Node's Runtime protocol version does not match the current Core. Upgrade and reconnect it before dispatching more runs.",
         drain: "Stop accepting new work",
         drainingDone: "No new runs will be assigned; work already in progress can finish.",
         revoke: "Revoke Node",
@@ -139,7 +139,7 @@ export default async function AdminRuntimeNodesPage({
         neverSeen: "Never connected",
         registered: "Enrolled",
         inspect: "View full identity",
-        openRunbook: "Open enrollment guide",
+        openRunbook: "Open automatic credential guide",
         confirmRevoke: "Revocation invalidates the device certificate and every existing session. Confirm the reason before continuing.",
       };
 
@@ -160,7 +160,7 @@ export default async function AdminRuntimeNodesPage({
             <strong className="text-[18px] font-black text-[color:var(--ol-ink)]">{copy.title}</strong>
             <p className="mt-1 max-w-3xl text-[13px] leading-6 text-[color:var(--ol-muted)]">{copy.lead}</p>
           </div>
-          <Link className="ol-mini-btn" href="https://github.com/OpenLinker-ai/openlinker-core#runtime-node-certificate-provisioning">
+          <Link className="ol-mini-btn" href="https://github.com/OpenLinker-ai/openlinker/blob/main/docs/36-runtime-worker.md#%E8%BA%AB%E4%BB%BD%E5%8F%91%E7%8E%B0%E4%B8%8E%E8%AF%81%E4%B9%A6">
             {copy.openRunbook}
           </Link>
         </div>
