@@ -37,6 +37,9 @@ jobs:
       - name: Check A2A session compatibility
         run: npm run test:a2a-session
 
+      - name: Check Core navigation route contract
+        run: npm run test:core-navigation-routes
+
       - name: Type check
         run: npx tsc --noEmit
 
