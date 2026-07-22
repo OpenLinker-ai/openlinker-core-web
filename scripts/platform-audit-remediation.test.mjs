@@ -64,6 +64,17 @@ test("Run replay synthesizes errors only for terminal failures", async () => {
   assert.doesNotMatch(runDetail, /run\.status !== "success" && run\.error/);
 });
 
+test("Run event streams stop retrying permanent client errors", async () => {
+  const stream = await source("src/components/run/run-event-stream.tsx");
+  assert.match(stream, /onError\(\{ kind: "http", status: res\.status \}\)/);
+  assert.match(stream, /shouldStopRunStreamRetry\(error, fallbackStatus\)/);
+  assert.match(stream, /error\.kind === "http" && error\.status === 404 && isTerminalRunStatus\(fallbackStatus\)/);
+  assert.match(stream, /运行已结束，无可用事件/);
+  assert.match(stream, /error\.status === 404 && !isTerminalRunStatus\(fallbackStatus\)/);
+  assert.match(stream, /error\.status === 408 \|\| error\.status === 429/);
+  assert.match(stream, /\[enabled, fallbackStatus, runId, token\]/);
+});
+
 test("A2A checks synchronous union and non-blocking Task independently", async () => {
   const panel = await source("src/components/a2a/a2a-conformance-panel.tsx");
   assert.match(panel, /capture\("jsonrpc-send-sync"/);
