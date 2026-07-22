@@ -21,6 +21,7 @@ type UserTokenMessages = {
   recordCount: (count: number) => string;
   create: string;
   loadError: string;
+  refresh: string;
   loading: string;
   emptyTitle: string;
   emptyBody: string;
@@ -109,6 +110,7 @@ export const coreUserTokenMessages = {
     recordCount: (count) => `共 ${count} 条记录`,
     create: "创建 Token",
     loadError: "暂时无法读取 Token 列表，请检查 Core API 后重试。",
+    refresh: "刷新",
     loading: "加载中…",
     emptyTitle: "还没有 User Token",
     emptyBody: "创建后即可从 MCP 客户端、服务器或自动化脚本访问当前 Core 实例。",
@@ -221,6 +223,7 @@ export const coreUserTokenMessages = {
     recordCount: (count) => `${count} records`,
     create: "Create token",
     loadError: "The token list is unavailable. Check the Core API and try again.",
+    refresh: "Refresh",
     loading: "Loading…",
     emptyTitle: "No User Tokens yet",
     emptyBody: "Create one to access this Core instance from an MCP client, server, or automation script.",

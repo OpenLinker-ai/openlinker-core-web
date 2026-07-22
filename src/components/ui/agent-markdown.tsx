@@ -2,14 +2,14 @@ import type { ComponentPropsWithoutRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import { safeMarkdownURL } from "@/lib/markdown-url.mjs";
+import { remarkJSONAutolinkBoundaries, safeMarkdownURL } from "@/lib/markdown-url.mjs";
 
 export function AgentMarkdown({ children, className = "" }: { children: string; className?: string }) {
   return (
     <div className={`min-w-0 break-words text-[13px] leading-[1.65] text-[color:var(--ol-ink)] ${className}`}>
       <ReactMarkdown
         skipHtml
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkJSONAutolinkBoundaries]}
         urlTransform={safeMarkdownURL}
         components={{
           a: SafeLink,

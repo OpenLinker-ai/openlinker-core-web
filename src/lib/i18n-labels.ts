@@ -281,6 +281,8 @@ const DELIVERY_EVENT_LABELS: LabelMap = {
 const ARTIFACT_VISIBILITY_LABELS: LabelMap = {
   public: { zh: "公开", en: "Public" },
   private: { zh: "私有", en: "Private" },
+  shared: { zh: "共享", en: "Shared" },
+  public_example: { zh: "公开示例", en: "Public example" },
   owner_only: { zh: "仅 Agent 所有者可见", en: "Agent owner only" },
 };
 
@@ -449,5 +451,9 @@ export function deliveryEventLabel(value: string | null | undefined, locale: Loc
 }
 
 export function artifactVisibilityLabel(value: string | null | undefined, locale: Locale): string {
-  return labelFrom(ARTIFACT_VISIBILITY_LABELS, value, locale);
+  const key = value?.trim() ?? "";
+  if (!key) return UNKNOWN_LABEL[locale];
+  const known = ARTIFACT_VISIBILITY_LABELS[key]?.[locale];
+  if (known) return known;
+  return locale === "zh" ? `未知（${key}）` : `Unknown (${key})`;
 }

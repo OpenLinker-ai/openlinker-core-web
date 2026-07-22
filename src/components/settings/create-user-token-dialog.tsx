@@ -68,6 +68,7 @@ export function CreateUserTokenDialog({
   );
   const [plaintext, setPlaintext] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const selectedPreset = useMemo(
     () =>
@@ -82,6 +83,7 @@ export function CreateUserTokenDialog({
   );
 
   const applyPreset = (preset: (typeof USER_TOKEN_PRESETS)[number]) => {
+    setSubmitError("");
     const next = selectionForPermissions(preset.permissions);
     next.unknownGrants = selection.unknownGrants;
     for (const permission of preset.permissions) {
@@ -97,19 +99,24 @@ export function CreateUserTokenDialog({
   const updateSelection = (next: GrantSelection) => {
     setSelection(next);
     setActivePreset("custom");
+    setSubmitError("");
   };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSubmitError("");
     if (sessionLoading) {
+      setSubmitError(copy.sessionLoading);
       toast.error(copy.sessionLoading);
       return;
     }
     if (!isAuthenticated) {
+      setSubmitError(copy.sessionMissing);
       toast.error(copy.sessionMissing);
       return;
     }
     if (!name.trim() || !selectionIsValid(selection)) {
+      setSubmitError(copy.atLeastOne);
       toast.error(copy.atLeastOne);
       return;
     }
@@ -126,7 +133,9 @@ export function CreateUserTokenDialog({
       if (!response.plaintext_token) throw new Error(copy.createFailed);
       setPlaintext(response.plaintext_token);
     } catch (error) {
-      toast.error(localizedErrorMessage(error, locale, copy.createFailed));
+      const message = localizedErrorMessage(error, locale, copy.createFailed);
+      setSubmitError(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
@@ -143,6 +152,7 @@ export function CreateUserTokenDialog({
 
   const handleOpenChange = (next: boolean) => {
     if (!next && plaintext) onCreated();
+    setSubmitError("");
     onOpenChange(next);
   };
 
@@ -191,7 +201,10 @@ export function CreateUserTokenDialog({
               <Input
                 id="user-token-name"
                 value={name}
-                onChange={(event) => setName(event.target.value)}
+                onChange={(event) => {
+                  setName(event.target.value);
+                  setSubmitError("");
+                }}
                 placeholder={copy.namePlaceholder}
                 maxLength={80}
                 required
@@ -244,7 +257,10 @@ export function CreateUserTokenDialog({
               <select
                 id="user-token-expiry"
                 value={expiration}
-                onChange={(event) => setExpiration(event.target.value as ExpirationChoice)}
+                onChange={(event) => {
+                  setExpiration(event.target.value as ExpirationChoice);
+                  setSubmitError("");
+                }}
                 className="ol-publish-input"
               >
                 <option value="30">{copy.expiry30}</option>
@@ -257,6 +273,16 @@ export function CreateUserTokenDialog({
             {!selectionIsValid(selection) ? (
               <p className="rounded-lg bg-red-50 px-3 py-2 text-[12px] font-bold text-red-700" aria-live="polite">
                 {copy.atLeastOne}
+              </p>
+            ) : null}
+
+            {submitError ? (
+              <p
+                role="alert"
+                aria-live="assertive"
+                className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] font-bold text-red-700"
+              >
+                {submitError}
               </p>
             ) : null}
 

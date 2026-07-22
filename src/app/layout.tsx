@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { IconSprite } from "@/components/ui/icon";
+import { auth } from "@/lib/auth";
 import { getLocale } from "@/lib/i18n-server";
 import { Providers } from "./providers";
 import "./globals.css";
@@ -28,7 +29,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
-  const locale = await getLocale();
+  const [locale, session] = await Promise.all([getLocale(), auth()]);
   const copy =
     locale === "zh"
       ? { terms: "实例使用说明", privacy: "数据与隐私", status: "实例状态" }
@@ -42,7 +43,7 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col">
         <IconSprite />
         <div className="flex min-h-screen flex-1 flex-col">
-          <Providers locale={locale}>{children}</Providers>
+          <Providers locale={locale} session={session}>{children}</Providers>
         </div>
         <footer className="shrink-0 border-t border-slate-200/70 bg-white/80 px-6 py-5 text-center text-xs text-slate-500">
           <span>OpenLinker</span>

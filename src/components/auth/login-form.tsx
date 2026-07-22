@@ -46,6 +46,7 @@ export function LoginForm({ locale = "zh" }: { locale?: Locale }) {
     searchParams.get("callbackUrl") || searchParams.get("from"),
   );
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const copy =
     locale === "zh"
       ? {
@@ -77,6 +78,7 @@ export function LoginForm({ locale = "zh" }: { locale?: Locale }) {
   });
 
   const onSubmit = async (values: LoginValues) => {
+    setSubmitError("");
     setSubmitting(true);
     try {
       const res = await signIn("credentials", {
@@ -86,6 +88,7 @@ export function LoginForm({ locale = "zh" }: { locale?: Locale }) {
       });
 
       if (!res || res.error) {
+        setSubmitError(copy.invalid);
         toast.error(copy.invalid);
         return;
       }
@@ -94,6 +97,7 @@ export function LoginForm({ locale = "zh" }: { locale?: Locale }) {
       router.push(callbackUrl);
       router.refresh();
     } catch {
+      setSubmitError(copy.failed);
       toast.error(copy.failed);
     } finally {
       setSubmitting(false);
@@ -120,6 +124,10 @@ export function LoginForm({ locale = "zh" }: { locale?: Locale }) {
                   disabled={submitting}
                   className="ol-auth-input"
                   {...field}
+                  onChange={(event) => {
+                    field.onChange(event);
+                    setSubmitError("");
+                  }}
                 />
               </FormControl>
               <FormMessage />
@@ -144,6 +152,10 @@ export function LoginForm({ locale = "zh" }: { locale?: Locale }) {
                   disabled={submitting}
                   className="ol-auth-input"
                   {...field}
+                  onChange={(event) => {
+                    field.onChange(event);
+                    setSubmitError("");
+                  }}
                 />
               </FormControl>
               <FormMessage />
@@ -157,6 +169,16 @@ export function LoginForm({ locale = "zh" }: { locale?: Locale }) {
             <Link href={authHref("/register", callbackUrl)}>{copy.register}</Link>
           </span>
         </div>
+
+        {submitError ? (
+          <p
+            role="alert"
+            aria-live="assertive"
+            className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12.5px] font-bold text-red-700"
+          >
+            {submitError}
+          </p>
+        ) : null}
 
         <button
           type="submit"
