@@ -75,6 +75,16 @@ test("Run event streams stop retrying permanent client errors", async () => {
   assert.match(stream, /\[enabled, fallbackStatus, runId, token\]/);
 });
 
+test("Run detail defers browser-local timestamps until hydration", async () => {
+  const detail = await source("src/components/run/run-detail.tsx");
+  assert.match(detail, /useSyncExternalStore\(subscribeHydration, clientHydrated, serverHydrated\)/);
+  assert.match(detail, /value=\{<ClientRunTime value=\{run\.nextAttemptAt\} locale=\{locale\} kind="runtime" \/>\}/);
+  assert.match(detail, /<ClientRunTime[\s\S]*kind="message"/);
+  assert.match(detail, /function clientHydrated\(\) \{\s*return true;/);
+  assert.match(detail, /function serverHydrated\(\) \{\s*return false;/);
+  assert.doesNotMatch(detail, /\{formatMessageTime\(message\.created_at/);
+});
+
 test("A2A checks synchronous union and non-blocking Task independently", async () => {
   const panel = await source("src/components/a2a/a2a-conformance-panel.tsx");
   assert.match(panel, /capture\("jsonrpc-send-sync"/);
