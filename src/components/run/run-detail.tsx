@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useSyncExternalStore, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { RunEventStream } from "@/components/run/run-event-stream";
@@ -616,7 +616,10 @@ function RuntimeProgressPanel({ locale, run }: { locale: Locale; run: ViewRun })
         <div className="grid content-start gap-2.5">
           <EvidenceStat label={copy.attempts} value={attemptValue} />
           {run.nextAttemptAt ? (
-            <EvidenceStat label={copy.nextRetry} value={formatRuntimeTime(run.nextAttemptAt, locale)} />
+            <EvidenceStat
+              label={copy.nextRetry}
+              value={<ClientRunTime value={run.nextAttemptAt} locale={locale} kind="runtime" />}
+            />
           ) : null}
           {run.replayOfRunId ? (
             <Link
@@ -823,7 +826,7 @@ function RequirementEvidencePanel({ locale, evidence }: { locale: Locale; eviden
   );
 }
 
-function EvidenceStat({ label, value }: { label: string; value: string }) {
+function EvidenceStat({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="rounded-[12px] border border-[color:var(--ol-line)] bg-white p-3">
       <div className="text-[11px] font-black uppercase tracking-[0.06em] text-[color:var(--ol-subtle)]">
@@ -941,7 +944,11 @@ function RunMessagesPanel({
                     </span>
                   ) : null}
                   <span className="text-[11.5px] font-bold text-[color:var(--ol-subtle)]">
-                    {formatMessageTime(message.created_at ?? "", locale)}
+                    <ClientRunTime
+                      value={message.created_at ?? ""}
+                      locale={locale}
+                      kind="message"
+                    />
                   </span>
                   {message.synthetic ? <span className="ol-chip">{copy.synthetic}</span> : null}
                 </div>
@@ -1060,6 +1067,38 @@ function formatMessageTime(value: string, locale: Locale): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function ClientRunTime({
+  value,
+  locale,
+  kind,
+}: {
+  value: string;
+  locale: Locale;
+  kind: "runtime" | "message";
+}) {
+  const hydrated = useSyncExternalStore(subscribeHydration, clientHydrated, serverHydrated);
+  const formatted = hydrated
+    ? kind === "runtime"
+      ? formatRuntimeTime(value, locale)
+      : formatMessageTime(value, locale)
+    : value
+      ? "—"
+      : "";
+  return <time dateTime={value || undefined}>{formatted}</time>;
+}
+
+function subscribeHydration() {
+  return () => {};
+}
+
+function clientHydrated() {
+  return true;
+}
+
+function serverHydrated() {
+  return false;
 }
 
 function StatCell({
