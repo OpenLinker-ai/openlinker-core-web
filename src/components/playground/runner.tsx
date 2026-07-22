@@ -60,7 +60,9 @@ interface ConversationHistoryItem {
 
 const DEFAULT_INPUT = "这里写你的任务描述";
 const DEFAULT_INPUT_EN = "Write your task description here";
-const pollDelayMs = 900;
+const runWaitSeconds = 30;
+const minimumWaitResponseMs = 1000;
+const waitRetryDelaysMs = [2000, 4000, 8000, 15000] as const;
 
 function buildInitialInput(
   prefill: string | undefined,
@@ -259,7 +261,7 @@ export function PlaygroundRunner({
         method: "POST",
         headers: {
           "Idempotency-Key": intent.idempotencyKey,
-          Prefer: "wait=0",
+          Prefer: `wait=${runWaitSeconds}`,
         },
         body: {
           agent_id: agent.id,
@@ -328,21 +330,36 @@ export function PlaygroundRunner({
 
   useEffect(() => {
     if (!pollingTurnId || !pollingRunId) return;
+    const turnId = pollingTurnId;
+    const runId = pollingRunId;
 
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
+    let controller: AbortController | null = null;
+    let retryIndex = 0;
 
-    const poll = async () => {
+    function schedule(delayMs: number) {
+      if (stopped) return;
+      timer = setTimeout(waitForUpdate, delayMs);
+    }
+
+    async function waitForUpdate() {
+      controller = new AbortController();
+      const startedAt = Date.now();
       try {
         const latest = await apiFetch<RunResult>(
-          `/api/v1/runs/${encodeURIComponent(pollingRunId)}`,
+          `/api/v1/runs/${encodeURIComponent(runId)}`,
+          {
+            headers: { Prefer: `wait=${runWaitSeconds}` },
+            signal: controller.signal,
+          },
         );
         if (stopped) return;
 
         const nextStatus = runStatusFromResult(latest);
         setTurns((items) =>
           items.map((item) =>
-            item.id === pollingTurnId
+            item.id === turnId
               ? {
                   ...item,
                   status: nextStatus,
@@ -357,7 +374,9 @@ export function PlaygroundRunner({
         );
 
         if (latest.status === "running") {
-          timer = setTimeout(poll, pollDelayMs);
+          retryIndex = 0;
+          const elapsedMs = Date.now() - startedAt;
+          schedule(Math.max(0, minimumWaitResponseMs - elapsedMs));
           return;
         }
 
@@ -369,15 +388,18 @@ export function PlaygroundRunner({
         const verb = latest.status === "canceled" ? copy.canceled : copy.failed;
         toast.error(`${verb}: ${runErrorMessage(latest.error_code, latest.error_message, locale)}`);
       } catch {
-        if (stopped) return;
-        timer = setTimeout(poll, pollDelayMs);
+        if (stopped || controller.signal.aborted) return;
+        const delay = waitRetryDelaysMs[Math.min(retryIndex, waitRetryDelaysMs.length - 1)];
+        retryIndex += 1;
+        schedule(delay);
       }
-    };
+    }
 
-    timer = setTimeout(poll, pollDelayMs);
+    void waitForUpdate();
 
     return () => {
       stopped = true;
+      controller?.abort();
       if (timer) clearTimeout(timer);
     };
   }, [apiFetch, copy, locale, pollingRunId, pollingTurnId]);
