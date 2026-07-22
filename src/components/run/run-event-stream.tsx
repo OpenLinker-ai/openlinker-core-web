@@ -38,6 +38,11 @@ type RunStreamMessage =
   | { kind: "event"; event: RunEvent }
   | { kind: "gap"; gap: RunStreamGap };
 
+type RunStreamError =
+  | { kind: "http"; status: number }
+  | { kind: "network" }
+  | { kind: "protocol" };
+
 type StreamState = "idle" | "connecting" | "open" | "reconnecting" | "closed" | "error";
 
 const reconnectDelayMs = 1200;
@@ -137,8 +142,17 @@ export function RunEventStream({
           }
           scheduleReconnect();
         },
-        onError: () => {
+        onError: (error) => {
           if (stopped) return;
+          if (shouldStopRunStreamRetry(error, fallbackStatus)) {
+            if (error.kind === "http" && error.status === 404 && isTerminalRunStatus(fallbackStatus)) {
+              terminalRef.current = true;
+              setState("closed");
+            } else {
+              setState("error");
+            }
+            return;
+          }
           scheduleReconnect();
         },
       });
@@ -151,7 +165,7 @@ export function RunEventStream({
       activeController?.abort();
       if (reconnectTimer) clearTimeout(reconnectTimer);
     };
-  }, [enabled, runId, token]);
+  }, [enabled, fallbackStatus, runId, token]);
 
   const visibleEvents = useMemo(() => {
     if (enabled) return events.filter((event) => event.run_id === runId);
@@ -207,7 +221,7 @@ async function readRunEventStream({
   onGap: (gap: RunStreamGap) => void;
   onEvent: (event: RunEvent) => void;
   onClose: () => void;
-  onError: () => void;
+  onError: (error: RunStreamError) => void;
 }) {
   try {
     const res = await fetch(
@@ -221,8 +235,12 @@ async function readRunEventStream({
         signal,
       },
     );
-    if (!res.ok || !res.body) {
-      onError();
+    if (!res.ok) {
+      onError({ kind: "http", status: res.status });
+      return;
+    }
+    if (!res.body) {
+      onError({ kind: "protocol" });
       return;
     }
 
@@ -244,7 +262,7 @@ async function readRunEventStream({
     dispatchStreamMessages(tail.messages, onEvent, onGap);
     onClose();
   } catch {
-    if (!signal.aborted) onError();
+    if (!signal.aborted) onError({ kind: "network" });
   }
 }
 
@@ -509,7 +527,9 @@ function TracePlaceholder({ locale, state }: { locale: Locale; state: StreamStat
         ? locale === "zh" ? "事件流暂时不可用" : "Event stream is temporarily unavailable"
         : state === "reconnecting"
           ? locale === "zh" ? "正在重新连接事件流" : "Reconnecting event stream"
-          : locale === "zh" ? "正在等待事件" : "Waiting for events"}
+          : state === "closed"
+            ? locale === "zh" ? "运行已结束，无可用事件" : "Run finished; no events are available"
+            : locale === "zh" ? "正在等待事件" : "Waiting for events"}
     </div>
   );
 }
@@ -777,4 +797,15 @@ function stateLabel(state: StreamState, count: number, locale: Locale) {
 
 function isTerminalEvent(eventType: string) {
   return eventType === "run.completed" || eventType === "run.failed" || eventType === "run.canceled";
+}
+
+function isTerminalRunStatus(status: string) {
+  return status === "success" || status === "failed" || status === "timeout" || status === "canceled";
+}
+
+function shouldStopRunStreamRetry(error: RunStreamError, fallbackStatus: string) {
+  if (error.kind === "protocol") return true;
+  if (error.kind !== "http" || error.status === 408 || error.status === 429) return false;
+  if (error.status === 404 && !isTerminalRunStatus(fallbackStatus)) return false;
+  return error.status >= 400 && error.status < 500;
 }
