@@ -53,6 +53,22 @@ const SERVICE_COPY: Record<Locale, ServiceCopy> = {
       detail: "异常时，客户端可能无法发现 API、MCP 和 A2A 入口。",
       path: "/.well-known/openlinker.json",
     },
+    {
+      id: "readiness",
+      name: "Core 就绪状态",
+      signal: "依赖与 Runtime 集群",
+      evidence: "/readyz",
+      detail: "异常时，Core 依赖或内部 Runtime 集群尚未达到可接收流量的状态。",
+      path: "/readyz",
+    },
+    {
+      id: "runtime",
+      name: "Runtime 公网入口",
+      signal: "Discovery 地址可达性",
+      evidence: "base_urls.runtime",
+      detail: "异常时，外部 Runtime Worker 可能无法连接 discovery 公布的入口。",
+      path: "/api/status/runtime-ingress",
+    },
   ],
   en: [
     {
@@ -86,6 +102,22 @@ const SERVICE_COPY: Record<Locale, ServiceCopy> = {
       evidence: "/.well-known/openlinker.json",
       detail: "Clients may be unable to discover API, MCP, and A2A entry points when this is unavailable.",
       path: "/.well-known/openlinker.json",
+    },
+    {
+      id: "readiness",
+      name: "Core Readiness",
+      signal: "Dependencies and Runtime cluster",
+      evidence: "/readyz",
+      detail: "Core dependencies or the internal Runtime cluster may not be ready to receive traffic.",
+      path: "/readyz",
+    },
+    {
+      id: "runtime",
+      name: "Public Runtime ingress",
+      signal: "Discovery endpoint reachability",
+      evidence: "base_urls.runtime",
+      detail: "External Runtime Workers may be unable to reach the ingress advertised by discovery.",
+      path: "/api/status/runtime-ingress",
     },
   ],
 };
@@ -170,12 +202,17 @@ export function StatusDashboard({ locale = "zh" }: { locale?: Locale }) {
 
   useEffect(() => {
     let canceled = false;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 5_000);
 
     async function probe() {
       const results = await Promise.all(
         services.map(async (service) => {
           try {
-            const response = await fetch(service.path, { cache: "no-store" });
+            const response = await fetch(service.path, {
+              cache: "no-store",
+              signal: controller.signal,
+            });
             return [service.id, response.ok ? "operational" : "degraded"] as const;
           } catch {
             return [service.id, "degraded"] as const;
@@ -185,11 +222,14 @@ export function StatusDashboard({ locale = "zh" }: { locale?: Locale }) {
       if (!canceled) {
         setStates(Object.fromEntries(results) as ProbeState);
       }
+      window.clearTimeout(timeout);
     }
 
     void probe();
     return () => {
       canceled = true;
+      window.clearTimeout(timeout);
+      controller.abort();
     };
   }, [services]);
 
@@ -238,7 +278,7 @@ export function StatusDashboard({ locale = "zh" }: { locale?: Locale }) {
                 : STATE_LABEL[locale].degraded}
             </span>
           </div>
-          <div className="mt-5 grid gap-3 md:grid-cols-4">
+          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {services.map((service) => {
               const state = states[service.id] ?? "checking";
               return (

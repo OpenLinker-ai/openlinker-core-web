@@ -152,7 +152,7 @@ export function UserTokensContent({
               className="ol-mini-btn"
               onClick={() => void loadPage(offset)}
               disabled={loading}
-              aria-label={copy.loading}
+              aria-label={copy.refresh}
             >
               <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
             </button>

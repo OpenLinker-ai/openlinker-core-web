@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { safeMarkdownURL } from "../src/lib/markdown-url.mjs";
+import { safeMarkdownURL, splitJSONAutolink } from "../src/lib/markdown-url.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const source = (path) => readFile(join(root, path), "utf8");
@@ -18,6 +18,31 @@ test("agent Markdown keeps safe links and rejects executable URLs", () => {
   }
 });
 
+test("agent Markdown keeps JSON delimiters outside GFM autolinks", () => {
+  assert.deepEqual(
+    splitJSONAutolink(
+      'https://example.com/openlinker-sdk-proof","topic":"Persistent"}',
+      '{"source_url":"',
+    ),
+    {
+      url: "https://example.com/openlinker-sdk-proof",
+      suffix: '","topic":"Persistent"}',
+    },
+  );
+  assert.deepEqual(
+    splitJSONAutolink('https://example.com/proof"}', '{"source_url":"'),
+    { url: "https://example.com/proof", suffix: '"}' },
+  );
+  assert.equal(
+    splitJSONAutolink('https://example.com/proof","topic":"Persistent"}', "ordinary text "),
+    null,
+  );
+  assert.equal(
+    splitJSONAutolink("https://example.com/proof?topic=Persistent#result", '{"source_url":"'),
+    null,
+  );
+});
+
 test("agent Markdown disables raw HTML and preserves raw JSON views", async () => {
   const [markdown, runDetail, resultPanel] = await Promise.all([
     source("src/components/ui/agent-markdown.tsx"),
@@ -25,6 +50,7 @@ test("agent Markdown disables raw HTML and preserves raw JSON views", async () =
     source("src/components/playground/result-panel.tsx"),
   ]);
   assert.match(markdown, /skipHtml/);
+  assert.match(markdown, /remarkJSONAutolinkBoundaries/);
   assert.doesNotMatch(markdown, /rehypeRaw/);
   assert.match(runDetail, /<AgentMarkdown/);
   assert.match(runDetail, /JSON\.stringify\(message\.payload/);
