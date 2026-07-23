@@ -10,6 +10,7 @@ import { useApi } from "@/hooks/use-api";
 import { localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
 import { runDispatchStateLabel, runErrorMessage } from "@/lib/i18n-labels";
+import { isPlaygroundSubmitKey } from "@/lib/playground-keyboard.mjs";
 import {
   acquireRunCreationIntent,
   completeRunCreationIntent,
@@ -108,6 +109,7 @@ export function PlaygroundRunner({
             noReferencePrice: "未提供外部参考价格 · 可选兼容元数据",
             free: "OpenLinker Core 不据此扣费",
             placeholder: "输入问题，或粘贴 JSON input",
+            sendHint: "Enter 发送 · Shift+Enter 换行",
             running: "运行中…",
             syncing: "登录状态同步中…",
             run: "发送并调用",
@@ -145,6 +147,7 @@ export function PlaygroundRunner({
             noReferencePrice: "No external reference price provided · optional compatibility metadata",
             free: "Not used for OpenLinker Core billing",
             placeholder: "Enter a message, or paste JSON input",
+            sendHint: "Enter to send · Shift+Enter for a new line",
             running: "Running…",
             syncing: "Syncing sign-in state…",
             run: "Send and invoke",
@@ -261,7 +264,7 @@ export function PlaygroundRunner({
         method: "POST",
         headers: {
           "Idempotency-Key": intent.idempotencyKey,
-          Prefer: `wait=${runWaitSeconds}`,
+          Prefer: "wait=0",
         },
         body: {
           agent_id: agent.id,
@@ -423,21 +426,27 @@ export function PlaygroundRunner({
   }, [turns.length, activeTurn?.status, activeTurn?.result?.run_id]);
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-      <section className="ol-panel min-w-0 overflow-hidden">
-        <div className="ol-panel-head items-start">
-          <div className="min-w-0">
-            <strong>{copy.threadTitle}</strong>
-            <p className="mt-1 max-w-xl text-[12.5px] font-bold leading-5 text-[color:var(--ol-muted)]">
+    <div className="grid gap-4 xl:h-full xl:min-h-0 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <section className="ol-panel min-w-0 overflow-hidden xl:grid xl:h-full xl:min-h-0 xl:grid-rows-[auto_minmax(0,1fr)_auto]">
+        <div className="ol-panel-head">
+          <div className="flex min-w-0 items-center gap-2">
+            <strong title={copy.threadLead}>{copy.threadTitle}</strong>
+            <span className="hidden min-w-0 truncate text-[12px] font-bold text-[color:var(--ol-muted)] 2xl:inline">
               {copy.threadLead}
-            </p>
+            </span>
           </div>
-          <span className="ol-chip ol-chip-blue shrink-0">
-            {copy.turnCount(turns.length)}
-          </span>
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] px-2.5 py-1 text-[12px] font-extrabold text-[color:var(--ol-muted)]">
+              <Icon name="bot" size="sm" />
+              <span className="max-w-44 truncate">{agent.name}</span>
+            </span>
+            <span className="ol-chip ol-chip-blue shrink-0">
+              {copy.turnCount(turns.length)}
+            </span>
+          </div>
         </div>
 
-        <div className="max-h-[620px] min-h-[360px] overflow-y-auto bg-[linear-gradient(180deg,#fbfdfd_0%,#f6fbfa_100%)] p-4">
+        <div className="max-h-[620px] min-h-[320px] overflow-y-auto bg-[linear-gradient(180deg,#fbfdfd_0%,#f6fbfa_100%)] p-4 xl:max-h-none xl:min-h-0">
           {turns.length === 0 ? (
             <EmptyThread title={copy.emptyTitle} body={copy.emptyBody} />
           ) : (
@@ -462,7 +471,7 @@ export function PlaygroundRunner({
           )}
         </div>
 
-        <div className="border-t border-[color:var(--ol-line)] bg-white p-4">
+        <div className="border-t border-[color:var(--ol-line)] bg-white p-3.5">
           <label className="block">
             <span className="text-[11px] font-black uppercase tracking-[0.08em] text-[color:var(--ol-primary-dark)]">
               {copy.inputTitle}
@@ -474,10 +483,15 @@ export function PlaygroundRunner({
               onChange={(event) => setInput(event.target.value)}
               spellCheck={false}
               placeholder={copy.placeholder}
-              rows={3}
-              className="mt-2 min-h-[96px] max-h-[180px] w-full resize-none rounded-[14px] border border-[color:var(--ol-line)] bg-white p-3.5 text-[13px] leading-[1.6] text-[color:var(--ol-ink)] outline-none transition focus:border-[color:var(--ol-primary)] focus:ring-2 focus:ring-[color:var(--ol-primary)]/20"
+              rows={2}
+              className="mt-2 min-h-[64px] max-h-[128px] w-full resize-none rounded-[14px] border border-[color:var(--ol-line)] bg-white px-3.5 py-2.5 text-[13px] leading-[1.6] text-[color:var(--ol-ink)] outline-none transition focus:border-[color:var(--ol-primary)] focus:ring-2 focus:ring-[color:var(--ol-primary)]/20"
               onKeyDown={(event) => {
-                if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                if (isPlaygroundSubmitKey({
+                  key: event.key,
+                  shiftKey: event.shiftKey,
+                  isComposing: event.nativeEvent.isComposing,
+                  keyCode: event.nativeEvent.keyCode,
+                })) {
                   event.preventDefault();
                   if (!running && !authLoading) void handleRun();
                 }
@@ -485,18 +499,12 @@ export function PlaygroundRunner({
             />
           </label>
 
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex min-w-0 flex-wrap items-center gap-2 text-[12px] font-extrabold text-[color:var(--ol-muted)]">
-              <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] px-2.5 py-1">
-                <Icon name="bot" size="sm" />
-                <span className="truncate">{agent.name}</span>
-              </span>
-              <span className="rounded-full border border-[color:var(--ol-mint-2)] bg-[color:var(--ol-mint)] px-2.5 py-1 text-[color:var(--ol-primary-dark)]">
-                {copy.free}
-              </span>
-              <span className="text-[color:var(--ol-subtle)]">
-                {priceUSD ? copy.price(priceUSD) : copy.noReferencePrice}
-              </span>
+          <div className="mt-2.5 flex flex-wrap items-end justify-between gap-2.5">
+            <div className="min-w-0 text-[11.5px] font-extrabold leading-5 text-[color:var(--ol-muted)]">
+              <div>{copy.sendHint}</div>
+              <div className="truncate text-[color:var(--ol-subtle)]">
+                {copy.free} · {priceUSD ? copy.price(priceUSD) : copy.noReferencePrice}
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -536,7 +544,7 @@ export function PlaygroundRunner({
         </div>
       </section>
 
-      <aside className="grid auto-rows-max gap-4 xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
+      <aside className="grid auto-rows-max gap-4 xl:h-full xl:min-h-0 xl:overflow-y-auto">
         <ActiveTurnSummary
           turn={activeTurn}
           locale={locale}
@@ -584,7 +592,7 @@ export function PlaygroundRunner({
 
 function EmptyThread({ title, body }: { title: string; body: string }) {
   return (
-    <div className="grid min-h-[320px] place-items-center rounded-[16px] border border-dashed border-[color:var(--ol-line)] bg-white">
+    <div className="grid min-h-[260px] place-items-center rounded-[16px] border border-dashed border-[color:var(--ol-line)] bg-white xl:h-full xl:min-h-0">
       <div className="max-w-sm px-6 text-center">
         <div className="mx-auto grid h-12 w-12 place-items-center rounded-[16px] bg-[color:var(--ol-mint)] text-[color:var(--ol-primary-dark)]">
           <Icon name="message" size="lg" />

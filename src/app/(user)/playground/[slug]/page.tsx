@@ -156,7 +156,7 @@ export default async function PlaygroundPage({
   return (
     <>
       <Topbar />
-      <main className="mx-auto w-full max-w-7xl px-6 py-6">
+      <main className="mx-auto grid w-full max-w-7xl gap-4 px-4 py-4 sm:px-6 xl:h-[calc(100dvh-84px)] xl:grid-rows-[auto_auto_minmax(0,1fr)] xl:overflow-hidden">
         {/* 面包屑 */}
         <nav className="flex items-center gap-1.5 text-[13px] font-bold text-[color:var(--ol-muted)]">
           <Link href="/" className="hover:text-[color:var(--ol-ink)]">
@@ -182,19 +182,19 @@ export default async function PlaygroundPage({
         </nav>
 
         {/* page-head */}
-        <header className="mt-6">
+        <header>
           <div className="text-[11px] font-black uppercase tracking-[0.08em] text-[color:var(--ol-primary-dark)]">
             {copy.kicker}
           </div>
-          <h1 className="mt-2 text-[34px] font-black leading-[1.15] text-[color:var(--ol-ink)] sm:text-[40px]">
+          <h1 className="mt-1.5 text-[30px] font-black leading-[1.15] text-[color:var(--ol-ink)] sm:text-[36px]">
             {copy.heading}
           </h1>
-          <p className="mt-2.5 max-w-2xl text-[15px] leading-[1.55] text-[color:var(--ol-muted)]">
+          <p className="mt-1.5 max-w-2xl text-[14px] leading-[1.45] text-[color:var(--ol-muted)]">
             {copy.lead}
           </p>
         </header>
 
-        <div className="mt-6">
+        <div className="min-h-0">
           <PlaygroundRunner
             agent={agent}
             prefill={prefill}
