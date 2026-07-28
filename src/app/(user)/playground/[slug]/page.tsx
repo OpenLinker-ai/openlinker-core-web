@@ -196,6 +196,7 @@ export default async function PlaygroundPage({
 
         <div className="min-h-0">
           <PlaygroundRunner
+            key={agent.id}
             agent={agent}
             prefill={prefill}
             initialInput={selectedExample?.input_json}
