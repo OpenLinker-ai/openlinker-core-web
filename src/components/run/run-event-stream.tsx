@@ -5,6 +5,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon, type IconName } from "@/components/ui/icon";
 import { useApi } from "@/hooks/use-api";
 import { API_BASE_URL } from "@/lib/api";
+import {
+  browserLifecyclePresentation,
+  displayBrowserLifecyclePayload,
+} from "@/lib/browser-lifecycle.mjs";
 import type { Locale } from "@/lib/i18n";
 import {
   coverageStatusLabel,
@@ -132,6 +136,16 @@ export function RunEventStream({
           ) return;
           seenSequencesRef.current.add(event.sequence);
           seenEventIdsRef.current.add(event.event_id);
+          if (
+            event.event_type === "run.browser.lifecycle" &&
+            typeof window !== "undefined"
+          ) {
+            window.dispatchEvent(
+              new CustomEvent("openlinker:browser-control", {
+                detail: { runId: event.run_id, payload: event.payload },
+              }),
+            );
+          }
           setEvents((current) => [...current, event].sort((a, b) => a.sequence - b.sequence));
         },
         onClose: () => {
@@ -455,7 +469,10 @@ function EventStep({
   onToggle: () => void;
 }) {
   const meta = eventMeta(event, locale);
-  const displayPayload = event.payload;
+  const displayPayload =
+    event.event_type === "run.browser.lifecycle"
+      ? displayBrowserLifecyclePayload(event.payload)
+      : event.payload;
   const hasPayload = Object.keys(displayPayload).length > 0;
   const time = formatTime(event.created_at, locale);
   return (
@@ -588,6 +605,8 @@ function eventMeta(event: RunEvent, locale: Locale): {
         icon: "target",
         tone: "bg-[#EAF1FF] text-[#2952A3]",
       };
+    case "run.browser.lifecycle":
+      return browserLifecyclePresentation(event.payload, locale);
     case "run.completed":
       return {
         title: isZh ? "运行完成" : "Run completed",
@@ -693,13 +712,11 @@ function providerToolEventMeta(
         web_search: "联网搜索",
         command: "运行工具",
         mcp_tool: "MCP 工具",
-        browser: "浏览网页",
       } as Record<string, string>)[toolKind]
     : ({
         web_search: "Web search",
         command: "Tool command",
         mcp_tool: "MCP tool",
-        browser: "Browser",
       } as Record<string, string>)[toolKind];
   if (!tool) return null;
   if (phase === "failed") {
@@ -723,7 +740,7 @@ function providerToolEventMeta(
   return {
     title: isZh ? `正在${tool}` : `${tool} in progress`,
     detail: isZh ? "Codex 已启动工具，正在等待结果。" : "Codex started the tool and is waiting for its result.",
-    icon: toolKind === "web_search" || toolKind === "browser" ? "globe" : "refresh",
+    icon: toolKind === "web_search" ? "globe" : "refresh",
     tone: "bg-[#EAF1FF] text-[#2952A3]",
   };
 }
@@ -837,7 +854,12 @@ function demoEvents(runId: string, fallbackStatus: string): RunEvent[] {
       event_id: "demo-3",
       run_id: runId,
       sequence: 3,
-      event_type: fallbackStatus === "success" ? "run.completed" : fallbackStatus === "canceled" ? "run.canceled" : "run.failed",
+      event_type:
+        fallbackStatus === "success"
+          ? "run.completed"
+          : fallbackStatus === "canceled"
+            ? "run.canceled"
+            : "run.failed",
       payload: { status: fallbackStatus, duration_ms: 1840 },
       created_at: now,
     },

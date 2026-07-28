@@ -12,6 +12,10 @@ import type { Locale } from "@/lib/i18n";
 import { runDispatchStateLabel, runErrorMessage } from "@/lib/i18n-labels";
 import { isPlaygroundSubmitKey } from "@/lib/playground-keyboard.mjs";
 import {
+  playgroundA2AContext,
+  playgroundRunInput,
+} from "@/lib/playground-conversation.mjs";
+import {
   acquireRunCreationIntent,
   completeRunCreationIntent,
 } from "@/lib/run-idempotency";
@@ -182,6 +186,7 @@ export function PlaygroundRunner({
   const creationInFlight = useRef(false);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
+  const [conversationID] = useState(() => localID("conversation"));
 
   const running = turns.some((turn) => turn.status === "running");
   const activeTurn =
@@ -222,7 +227,7 @@ export function PlaygroundRunner({
 
     const previousTurns = turns;
     const history = conversationHistoryFromTurns(previousTurns, locale);
-    const runInput = withConversationHistory(parsedInput, history);
+    const runInput = playgroundRunInput(parsedInput, history, false);
     if (creationInFlight.current) return;
     creationInFlight.current = true;
 
@@ -236,6 +241,7 @@ export function PlaygroundRunner({
         agent_id: agent.id,
         input: runInput,
         metadata: requestMetadata,
+        conversation_context_id: conversationID,
       });
       turnId = intent.intentId;
       const now = new Date().toISOString();
@@ -269,6 +275,7 @@ export function PlaygroundRunner({
         body: {
           agent_id: agent.id,
           input: runInput,
+          a2a_context: playgroundA2AContext(conversationID, turnId),
           metadata: {
             ...requestMetadata,
             intent_id: turnId,
@@ -325,6 +332,7 @@ export function PlaygroundRunner({
     apiFetch,
     authLoading,
     copy,
+    conversationID,
     input,
     isAuthenticated,
     locale,
@@ -879,18 +887,6 @@ function inputTextForDisplay(input: unknown): string {
     return input.text;
   }
   return stringifyShort(input);
-}
-
-function withConversationHistory(
-  input: unknown,
-  history: ConversationHistoryItem[],
-): unknown {
-  if (history.length === 0) return input;
-  if (isPlainRecord(input)) {
-    if ("conversation_history" in input || "messages" in input) return input;
-    return { ...input, conversation_history: history };
-  }
-  return { input, conversation_history: history };
 }
 
 function conversationHistoryFromTurns(
