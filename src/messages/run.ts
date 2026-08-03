@@ -75,6 +75,14 @@ type RunDetailMessages = {
   runtimeTransportReasonTechnical: string;
   runtimeTransportChangedTechnical: string;
   runtimeContract: string;
+  browserPolicy: string;
+  browserPolicyRestricted: string;
+  browserPolicyFull: string;
+  browserPolicyTechnical: string;
+  browserPolicyGenerationTechnical: string;
+  browserMutationOriginsTechnical: string;
+  browserMutationOriginsDigestTechnical: string;
+  browserContractTechnical: string;
   replaySource: string;
   openOriginal: string;
   deadLetterTitle: string;
@@ -165,6 +173,14 @@ export const runDetailMessages = {
     runtimeTransportReasonTechnical: "runtime_transport_reason",
     runtimeTransportChangedTechnical: "runtime_transport_changed_at",
     runtimeContract: "Runtime 协议版本",
+    browserPolicy: "浏览器交互权限",
+    browserPolicyRestricted: "受限",
+    browserPolicyFull: "完整交互",
+    browserPolicyTechnical: "browser_interaction_policy",
+    browserPolicyGenerationTechnical: "browser_interaction_policy_generation",
+    browserMutationOriginsTechnical: "browser_mutation_origins",
+    browserMutationOriginsDigestTechnical: "browser_mutation_origins_sha256",
+    browserContractTechnical: "browser_contract_id",
     replaySource: "原运行",
     openOriginal: "查看原运行",
     deadLetterTitle: "这次运行需要人工处理",
@@ -253,6 +269,14 @@ export const runDetailMessages = {
     runtimeTransportReasonTechnical: "runtime_transport_reason",
     runtimeTransportChangedTechnical: "runtime_transport_changed_at",
     runtimeContract: "Runtime protocol version",
+    browserPolicy: "Browser interaction authority",
+    browserPolicyRestricted: "Restricted",
+    browserPolicyFull: "Full interaction",
+    browserPolicyTechnical: "browser_interaction_policy",
+    browserPolicyGenerationTechnical: "browser_interaction_policy_generation",
+    browserMutationOriginsTechnical: "browser_mutation_origins",
+    browserMutationOriginsDigestTechnical: "browser_mutation_origins_sha256",
+    browserContractTechnical: "browser_contract_id",
     replaySource: "Original run",
     openOriginal: "View original run",
     deadLetterTitle: "This run needs attention",

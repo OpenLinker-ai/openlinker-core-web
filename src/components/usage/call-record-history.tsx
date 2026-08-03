@@ -61,6 +61,11 @@ export interface CallRecord {
   runtime_transport?: "websocket" | "long_poll" | string;
   runtime_transport_reason?: string;
   runtime_transport_changed_at?: string;
+  browser_interaction_policy?: "restricted" | "full" | string;
+  browser_interaction_policy_generation?: number;
+  browser_mutation_origins?: string[];
+  browser_mutation_origins_sha256?: string;
+  browser_contract_id?: string;
   dispatch_state: string;
   attempt_count: number;
   max_attempts: number;
@@ -141,9 +146,9 @@ const RUNTIME_TRANSPORT_CHIP: Record<string, string> = {
   long_poll: "ol-chip-blue",
 };
 
-const EXECUTION_EVIDENCE_COPY: Record<Locale, { evidence: string; missingTransport: string }> = {
-  zh: { evidence: "实际连接方式", missingTransport: "暂无连接方式记录" },
-  en: { evidence: "Actual connection used", missingTransport: "No connection details recorded" },
+const EXECUTION_EVIDENCE_COPY: Record<Locale, { evidence: string; missingTransport: string; restricted: string; full: string; origins: string; none: string; generation: string }> = {
+  zh: { evidence: "实际连接方式", missingTransport: "暂无连接方式记录", restricted: "浏览器受限", full: "浏览器完整交互", origins: "可变更站点", none: "无", generation: "权限代际" },
+  en: { evidence: "Actual connection used", missingTransport: "No connection details recorded", restricted: "Browser restricted", full: "Browser full interaction", origins: "Mutation origins", none: "None", generation: "Policy generation" },
 };
 
 function formatRelative(iso: string, locale: Locale): string {
@@ -666,6 +671,12 @@ export function CallRecordRow({
     runtimeTransportReasonLabel(record.runtime_transport_reason, locale),
     formatRuntimeTransportEvidenceTime(record.runtime_transport_changed_at, locale),
   ].filter(Boolean);
+  const browserPolicyLabel =
+    record.browser_interaction_policy === "full"
+      ? evidenceCopy.full
+      : record.browser_interaction_policy === "restricted"
+        ? evidenceCopy.restricted
+        : record.browser_interaction_policy;
   const rows = idRows(record, locale);
   const duration = record.duration_ms != null ? ` · ${record.duration_ms}ms` : "";
   const attemptSummary =
@@ -715,6 +726,11 @@ export function CallRecordRow({
                     {runtimeTransport || evidenceCopy.missingTransport}
                   </span>
                 ) : null}
+                {browserPolicyLabel ? (
+                  <span className={`ol-chip h-5 px-1.5 text-[10px] ${record.browser_interaction_policy === "full" ? "ol-chip-amber" : "ol-chip-mint"}`}>
+                    {browserPolicyLabel}
+                  </span>
+                ) : null}
               </div>
               <p className="mt-1 truncate text-[12.5px] font-bold text-[color:var(--ol-muted)]">
                 {progressLabel}
@@ -727,6 +743,12 @@ export function CallRecordRow({
               {runtimeEvidence.length > 0 ? (
                 <p className="mt-1 break-words text-[11.5px] font-bold text-[color:var(--ol-muted)]">
                   {evidenceCopy.evidence}: {runtimeEvidence.join(" · ")}
+                </p>
+              ) : null}
+              {record.browser_interaction_policy ? (
+                <p className="mt-1 break-words text-[11.5px] font-bold text-[color:var(--ol-muted)]">
+                  {evidenceCopy.origins}: {record.browser_mutation_origins?.join(", ") || evidenceCopy.none}
+                  {record.browser_interaction_policy_generation ? ` · ${evidenceCopy.generation}: ${record.browser_interaction_policy_generation}` : ""}
                 </p>
               ) : null}
             </div>

@@ -91,6 +91,14 @@ export function ExecutionPathBox({ result, locale = "zh" }: { result: RunResult 
           evidence: "实际连接方式",
           changedAt: "连接方式记录时间",
           reason: "切换原因",
+          browserPolicy: "浏览器权限",
+          restricted: "受限",
+          full: "完整交互",
+          mutationOrigins: "可变更站点",
+          none: "无",
+          policyGeneration: "权限代际",
+          browserContract: "Browser 协议",
+          originDigest: "Origin 摘要",
         }
       : {
           title: "Observed execution path",
@@ -103,6 +111,14 @@ export function ExecutionPathBox({ result, locale = "zh" }: { result: RunResult 
           evidence: "Actual connection used",
           changedAt: "Connection recorded at",
           reason: "Transition reason",
+          browserPolicy: "Browser authority",
+          restricted: "Restricted",
+          full: "Full interaction",
+          mutationOrigins: "Mutation origins",
+          none: "None",
+          policyGeneration: "Policy generation",
+          browserContract: "Browser contract",
+          originDigest: "Origin digest",
         };
   const mode = result.agent_connection_mode ?? "—";
   const modeLabel =
@@ -122,12 +138,27 @@ export function ExecutionPathBox({ result, locale = "zh" }: { result: RunResult 
         : observedTransport || (result.status === "running" ? copy.waiting : copy.unavailable);
   const reasonLabel = runtimeTransportReasonLabel(result.runtime_transport_reason, locale);
   const changedAtLabel = formatRuntimeTransportEvidenceTime(result.runtime_transport_changed_at, locale);
+  const browserPolicyLabel =
+    result.browser_interaction_policy === "restricted"
+      ? copy.restricted
+      : result.browser_interaction_policy === "full"
+        ? copy.full
+        : result.browser_interaction_policy;
 
   const rows = [
     [copy.mode, modeLabel],
     [copy.transport, transportLabel],
     [copy.dispatch, result.dispatch_state ?? "—"],
     [copy.attempts, `${result.attempt_count ?? 0} / ${result.max_attempts ?? "—"}`],
+    ...(browserPolicyLabel
+      ? [[copy.browserPolicy, browserPolicyLabel]]
+      : []),
+    ...(result.browser_interaction_policy_generation
+      ? [[copy.policyGeneration, String(result.browser_interaction_policy_generation)]]
+      : []),
+    ...(result.browser_interaction_policy
+      ? [[copy.mutationOrigins, result.browser_mutation_origins?.join(", ") || copy.none]]
+      : []),
   ];
 
   return (
@@ -141,11 +172,13 @@ export function ExecutionPathBox({ result, locale = "zh" }: { result: RunResult 
           </div>
         ))}
       </dl>
-      {reasonLabel || changedAtLabel ? (
+      {reasonLabel || changedAtLabel || result.browser_contract_id || result.browser_mutation_origins_sha256 ? (
         <details className="mt-3 border-t border-[color:var(--ol-line)] pt-2 text-[11.5px] text-[color:var(--ol-muted)]">
           <summary className="cursor-pointer font-black text-[color:var(--ol-primary-dark)]">{copy.evidence}</summary>
           {reasonLabel ? <p className="mt-2">{copy.reason}: {reasonLabel}</p> : null}
           {changedAtLabel ? <p className="mt-1">{copy.changedAt}: {changedAtLabel}</p> : null}
+          {result.browser_contract_id ? <p className="mt-1">{copy.browserContract}: {result.browser_contract_id}</p> : null}
+          {result.browser_mutation_origins_sha256 ? <p className="mt-1 break-all">{copy.originDigest}: {result.browser_mutation_origins_sha256}</p> : null}
         </details>
       ) : null}
     </div>

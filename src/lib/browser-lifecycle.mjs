@@ -159,5 +159,119 @@ export function displayBrowserLifecyclePayload(payload) {
       visible[key] = value;
     }
   }
+  if (
+    payload.browser_interaction_policy === "restricted" ||
+    payload.browser_interaction_policy === "full"
+  ) {
+    visible.browser_interaction_policy = payload.browser_interaction_policy;
+  }
+  if (
+    Number.isSafeInteger(payload.browser_interaction_policy_generation) &&
+    payload.browser_interaction_policy_generation > 0
+  ) {
+    visible.browser_interaction_policy_generation =
+      payload.browser_interaction_policy_generation;
+  }
+  const origins = sanitizedMutationOrigins(payload.browser_mutation_origins);
+  if (origins !== undefined) {
+    visible.browser_mutation_origins = origins;
+  }
+  if (isSHA256(payload.browser_mutation_origins_sha256)) {
+    visible.browser_mutation_origins_sha256 =
+      payload.browser_mutation_origins_sha256;
+  }
+  if (payload.browser_contract_id === "openlinker.browser.v2") {
+    visible.browser_contract_id = payload.browser_contract_id;
+  }
+  const summary = sanitizedMutationSummary(payload.browser_mutation_summary);
+  if (summary !== undefined) {
+    visible.browser_mutation_summary = summary;
+  }
+  return visible;
+}
+
+function isSHA256(value) {
+  return typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+}
+
+function sanitizedMutationOrigins(value) {
+  if (!Array.isArray(value) || value.length > 32) {
+    return undefined;
+  }
+  const origins = [];
+  let previous = "";
+  for (const raw of value) {
+    if (typeof raw !== "string" || raw.length > 512) {
+      return undefined;
+    }
+    try {
+      const parsed = new URL(raw);
+      if (
+        parsed.protocol !== "https:" ||
+        parsed.username !== "" ||
+        parsed.password !== "" ||
+        parsed.pathname !== "/" ||
+        parsed.search !== "" ||
+        parsed.hash !== "" ||
+        parsed.origin !== raw ||
+        !canonicalMutationHostname(parsed.hostname) ||
+        raw <= previous
+      ) {
+        return undefined;
+      }
+    } catch {
+      return undefined;
+    }
+    origins.push(raw);
+    previous = raw;
+  }
+  return origins;
+}
+
+function canonicalMutationHostname(hostname) {
+  if (hostname.startsWith("[") && hostname.endsWith("]")) {
+    return !/^\[::ffff:[0-9a-f]{1,4}:[0-9a-f]{1,4}\]$/u.test(hostname);
+  }
+  if (/^[0-9]+(?:\.[0-9]+){3}$/u.test(hostname)) {
+    return true;
+  }
+  if (hostname.length === 0 || hostname.length > 253) {
+    return false;
+  }
+  return hostname.split(".").every(
+    (label) =>
+      label.length > 0 &&
+      label.length <= 63 &&
+      /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/u.test(label),
+  );
+}
+
+function sanitizedMutationSummary(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+  const visible = {};
+  for (const key of [
+    "completed",
+    "failed",
+    "outcome_unknown",
+    "origin_blocked",
+    "mutation_requests_observed",
+    "journal_entries",
+    "journal_entries_dropped",
+    "journal_plaintext_bytes",
+  ]) {
+    const count = value[key];
+    if (Number.isSafeInteger(count) && count >= 0 && count <= 1_000_000) {
+      visible[key] = count;
+    }
+  }
+  if (isSHA256(value.browser_mutation_origins_sha256)) {
+    visible.browser_mutation_origins_sha256 =
+      value.browser_mutation_origins_sha256;
+  }
+  if (value.terminal_outcome === "success" || value.terminal_outcome === "failed") {
+    visible.terminal_outcome = value.terminal_outcome;
+  }
   return visible;
 }

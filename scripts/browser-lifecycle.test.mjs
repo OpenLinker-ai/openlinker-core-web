@@ -59,3 +59,73 @@ test("Browser lifecycle display never exposes action or identity payloads", () =
     {},
   );
 });
+
+test("Browser lifecycle display exposes only bounded policy evidence", () => {
+  const digest = "a".repeat(64);
+  assert.deepEqual(
+    displayBrowserLifecyclePayload({
+      phase: "closed",
+      browser_interaction_policy: "full",
+      browser_interaction_policy_generation: 7,
+      browser_mutation_origins: ["https://example.com"],
+      browser_mutation_origins_sha256: digest,
+      browser_contract_id: "openlinker.browser.v2",
+      browser_mutation_summary: {
+        completed: 2,
+        failed: 1,
+        outcome_unknown: 0,
+        mutation_requests_observed: 3,
+        origin_blocked: 1,
+        journal_entries: 4,
+        journal_entries_dropped: 0,
+        journal_plaintext_bytes: 512,
+        browser_mutation_origins_sha256: digest,
+        terminal_outcome: "success",
+        action_text: "must-not-render",
+      },
+      principal_scope_id: "must-not-render",
+    }),
+    {
+      phase: "closed",
+      browser_interaction_policy: "full",
+      browser_interaction_policy_generation: 7,
+      browser_mutation_origins: ["https://example.com"],
+      browser_mutation_origins_sha256: digest,
+      browser_contract_id: "openlinker.browser.v2",
+      browser_mutation_summary: {
+        completed: 2,
+        failed: 1,
+        outcome_unknown: 0,
+        mutation_requests_observed: 3,
+        origin_blocked: 1,
+        journal_entries: 4,
+        journal_entries_dropped: 0,
+        journal_plaintext_bytes: 512,
+        browser_mutation_origins_sha256: digest,
+        terminal_outcome: "success",
+      },
+    },
+  );
+  assert.equal(
+    "browser_mutation_origins" in
+      displayBrowserLifecyclePayload({
+        browser_mutation_origins: ["https://example.com/path"],
+      }),
+    false,
+  );
+  for (const browserMutationOrigins of [
+    ["https://*.example.com"],
+    ["https://[::ffff:7f00:1]"],
+    ["https://z.example", "https://a.example"],
+    ["https://example.com", "https://example.com"],
+  ]) {
+    assert.equal(
+      "browser_mutation_origins" in
+        displayBrowserLifecyclePayload({
+          browser_mutation_origins: browserMutationOrigins,
+        }),
+      false,
+      browserMutationOrigins.join(","),
+    );
+  }
+});

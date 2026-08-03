@@ -8,6 +8,7 @@ import { ExternalLink, PlayCircle, Save, Settings, ShieldCheck } from "lucide-re
 import { toast } from "sonner";
 
 import { useApi } from "@/hooks/use-api";
+import { BrowserInteractionPolicyPanel } from "@/components/creator/browser-interaction-policy-panel";
 import { localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
 import {
@@ -373,6 +374,12 @@ export function AgentSettingsPanel({ agent, locale }: Props) {
               </p>
             </label>
           </section>
+
+          <BrowserInteractionPolicyPanel
+            agentId={agentState.id}
+            locale={locale}
+            disabled={disabled || saving}
+          />
 
           <section className="ol-panel ol-panel-pad space-y-4">
             <div>

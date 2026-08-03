@@ -51,6 +51,11 @@ export type RunDetailData = {
   runtime_transport?: string;
   runtime_transport_reason?: string;
   runtime_transport_changed_at?: string | null;
+  browser_interaction_policy?: string;
+  browser_interaction_policy_generation?: number;
+  browser_mutation_origins?: string[];
+  browser_mutation_origins_sha256?: string;
+  browser_contract_id?: string;
   input?: Record<string, unknown>;
   output?: Record<string, unknown>;
   error_code?: string;
@@ -155,6 +160,11 @@ type ViewRun = {
   runtimeTransport?: string;
   runtimeTransportReason?: string;
   runtimeTransportChangedAt?: string;
+  browserInteractionPolicy?: string;
+  browserInteractionPolicyGeneration?: number;
+  browserMutationOrigins: string[];
+  browserMutationOriginsSHA256?: string;
+  browserContractId?: string;
   input: Record<string, unknown>;
   costCents: number;
   durationMs: number;
@@ -193,6 +203,11 @@ function normalizeRun(run: RunDetailData, locale: Locale): ViewRun {
     runtimeTransport: run.runtime_transport,
     runtimeTransportReason: run.runtime_transport_reason,
     runtimeTransportChangedAt: run.runtime_transport_changed_at ?? undefined,
+    browserInteractionPolicy: run.browser_interaction_policy,
+    browserInteractionPolicyGeneration: run.browser_interaction_policy_generation,
+    browserMutationOrigins: run.browser_mutation_origins ?? [],
+    browserMutationOriginsSHA256: run.browser_mutation_origins_sha256,
+    browserContractId: run.browser_contract_id,
     input: run.input ?? {},
     costCents: run.cost_cents,
     durationMs: run.duration_ms,
@@ -563,6 +578,7 @@ function RuntimeProgressPanel({ locale, run }: { locale: Locale; run: ViewRun })
       run.agentConnectionMode ||
       run.runtimeContractId ||
       run.runtimeTransport ||
+      run.browserInteractionPolicy ||
       run.replayOfRunId,
   );
 
@@ -622,6 +638,12 @@ function RuntimeProgressPanel({ locale, run }: { locale: Locale; run: ViewRun })
 
         <div className="grid content-start gap-2.5">
           <EvidenceStat label={copy.attempts} value={attemptValue} />
+          {run.browserInteractionPolicy ? (
+            <EvidenceStat
+              label={copy.browserPolicy}
+              value={run.browserInteractionPolicy === "full" ? copy.browserPolicyFull : copy.browserPolicyRestricted}
+            />
+          ) : null}
           {run.nextAttemptAt ? (
             <EvidenceStat
               label={copy.nextRetry}
@@ -652,6 +674,11 @@ function RuntimeProgressPanel({ locale, run }: { locale: Locale; run: ViewRun })
           <OperationsDatum label={copy.runtimeTransportTechnical} value={run.runtimeTransport} />
           <OperationsDatum label={copy.runtimeTransportReasonTechnical} value={run.runtimeTransportReason} />
           <OperationsDatum label={copy.runtimeTransportChangedTechnical} value={run.runtimeTransportChangedAt} mono />
+          <OperationsDatum label={copy.browserPolicyTechnical} value={run.browserInteractionPolicy} />
+          <OperationsDatum label={copy.browserPolicyGenerationTechnical} value={run.browserInteractionPolicyGeneration ? String(run.browserInteractionPolicyGeneration) : undefined} mono />
+          <OperationsDatum label={copy.browserMutationOriginsTechnical} value={run.browserMutationOrigins.join(", ")} mono />
+          <OperationsDatum label={copy.browserMutationOriginsDigestTechnical} value={run.browserMutationOriginsSHA256} mono />
+          <OperationsDatum label={copy.browserContractTechnical} value={run.browserContractId} mono />
           <OperationsDatum label={copy.runtimeContract} value={run.runtimeContractId} mono />
           <OperationsDatum label={copy.cancelStateTechnical} value={run.cancelState} />
           <OperationsDatum label={copy.cancelRequestedTechnical} value={run.cancelRequestedAt} mono />
