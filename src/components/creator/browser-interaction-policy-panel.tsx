@@ -204,4 +204,3 @@ export function BrowserInteractionPolicyPanel({ agentId, locale, disabled = fals
     </section>
   );
 }
-
