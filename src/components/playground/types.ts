@@ -25,6 +25,11 @@ export interface RunResult {
   runtime_transport?: "websocket" | "long_poll" | string;
   runtime_transport_reason?: string;
   runtime_transport_changed_at?: string;
+  browser_interaction_policy?: "restricted" | "full" | string;
+  browser_interaction_policy_generation?: number;
+  browser_mutation_origins?: string[];
+  browser_mutation_origins_sha256?: string;
+  browser_contract_id?: string;
   dispatch_state?: "pending" | "offered" | "executing" | "retry_wait" | "terminal" | "dead_letter" | string;
   attempt_count?: number;
   max_attempts?: number;
