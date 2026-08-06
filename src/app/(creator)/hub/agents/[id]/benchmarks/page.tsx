@@ -60,6 +60,17 @@ export default async function AgentBenchmarksPage({
 
   const { id: slugParam } = await params;
 
+  const runtimeStatusPromise = apiFetchAuthed<BenchmarkRuntimeStatus>(
+    "/api/v1/benchmark/status",
+  ).catch(
+    () =>
+      ({
+        can_run: false,
+        reasons: ["status_unavailable"],
+        message: "Benchmark runtime status is unavailable.",
+      }) satisfies BenchmarkRuntimeStatus,
+  );
+
   let agent: BenchmarkAgent | null = null;
   try {
     const payload = await apiFetchAuthed<AgentsPayload>("/api/v1/creator/agents");
@@ -75,29 +86,24 @@ export default async function AgentBenchmarksPage({
   }
 
   // 已声明的 skill 列表（决定哪些可以跑 benchmark）
-  const declared = await apiFetchAuthed<AgentDetailWithSkills>(
+  const declaredPromise = apiFetchAuthed<AgentDetailWithSkills>(
     `/api/v1/agents/${encodeURIComponent(agent.slug)}`,
   )
     .then((r) => r.skills ?? [])
     .catch(() => [] as DeclaredSkill[]);
 
   // 当前评分快照
-  const scores = await apiFetchAuthed<{ items: SkillScoreItem[] }>(
+  const scoresPromise = apiFetchAuthed<{ items: SkillScoreItem[] }>(
     `/api/v1/creator/agents/${agent.id}/skill-scores`,
   )
     .then((r) => r.items ?? [])
     .catch(() => [] as SkillScoreItem[]);
 
-  const runtimeStatus = await apiFetchAuthed<BenchmarkRuntimeStatus>("/api/v1/benchmark/status")
-    .then((r) => r)
-    .catch(
-      () =>
-        ({
-          can_run: false,
-          reasons: ["status_unavailable"],
-          message: "Benchmark runtime status is unavailable.",
-        }) satisfies BenchmarkRuntimeStatus,
-    );
+  const [declared, scores, runtimeStatus] = await Promise.all([
+    declaredPromise,
+    scoresPromise,
+    runtimeStatusPromise,
+  ]);
 
   return (
     <>

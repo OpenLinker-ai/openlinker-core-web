@@ -56,7 +56,7 @@ export default async function A2APage({
     size: String(parentPageSize),
   });
   if (query) parentQuery.set("q", query);
-  const parentResult = await apiFetchAuthed<ParentRunListPayload>(
+  const parentResultPromise = apiFetchAuthed<ParentRunListPayload>(
     `/api/v1/a2a/parents?${parentQuery.toString()}`,
   )
     .then((data) => ({
@@ -72,18 +72,19 @@ export default async function A2APage({
       } satisfies ParentRunListPayload,
       failed: true,
     }));
-
-  let initialData: ChildrenPayload | null = null;
-  let initialError = "";
-  if (runId) {
-    try {
-      initialData = await apiFetchAuthed<ChildrenPayload>(
-        `/api/v1/runs/${encodeURIComponent(runId)}/children`,
-      );
-    } catch {
-      initialError = copy.readError;
-    }
-  }
+  const childrenResultPromise = runId
+    ? apiFetchAuthed<ChildrenPayload>(
+      `/api/v1/runs/${encodeURIComponent(runId)}/children`,
+    )
+      .then((data) => ({ data, failed: false }))
+      .catch(() => ({ data: null, failed: true }))
+    : Promise.resolve({ data: null, failed: false });
+  const [parentResult, childrenResult] = await Promise.all([
+    parentResultPromise,
+    childrenResultPromise,
+  ]);
+  const initialData = childrenResult.data;
+  const initialError = childrenResult.failed ? copy.readError : "";
   const parentItems = Array.isArray(parentResult.data.items) ? parentResult.data.items : [];
   const activeParent = runId
     ? parentItems.find((item) => item.parent_run_id === runId)

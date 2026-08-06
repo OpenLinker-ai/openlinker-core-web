@@ -38,29 +38,29 @@ export default async function AgentDeliveryPage({
   const { id: agentParam } = await params;
   const { run_id: runId } = await searchParams;
 
-  let agent: AgentResponse | null = null;
-  try {
-    const payload = await apiFetchAuthed<AgentsPayload>("/api/v1/creator/agents");
-    const agents = normalizeAgents(payload);
-    agent = agents.find((item) => item.slug === agentParam || item.id === agentParam) ?? null;
-  } catch {
-    agent = null;
-  }
+  const agentPromise = apiFetchAuthed<AgentsPayload>("/api/v1/creator/agents")
+    .then((payload) => {
+      const agents = normalizeAgents(payload);
+      return agents.find((item) => item.slug === agentParam || item.id === agentParam) ?? null;
+    })
+    .catch(() => null);
+  const targetsPromise = apiFetchAuthed<TargetListResponse>("/api/v1/delivery-targets")
+    .then((data) => data.items ?? [])
+    .catch(() => [] as DeliveryTarget[]);
+  const runStatusPromise = runId
+    ? apiFetchAuthed<RunStatusResponse>(`/api/v1/runs/${encodeURIComponent(runId)}`)
+      .then((data) => data.status)
+      .catch(() => undefined)
+    : Promise.resolve(undefined);
+  const [agent, targets, runStatus] = await Promise.all([
+    agentPromise,
+    targetsPromise,
+    runStatusPromise,
+  ]);
 
   if (!agent) {
     notFound();
   }
-
-  const [targets, runStatus] = await Promise.all([
-    apiFetchAuthed<TargetListResponse>("/api/v1/delivery-targets")
-      .then((data) => data.items ?? [])
-      .catch(() => [] as DeliveryTarget[]),
-    runId
-      ? apiFetchAuthed<RunStatusResponse>(`/api/v1/runs/${encodeURIComponent(runId)}`)
-        .then((data) => data.status)
-        .catch(() => undefined)
-      : Promise.resolve(undefined),
-  ]);
 
   return (
     <>

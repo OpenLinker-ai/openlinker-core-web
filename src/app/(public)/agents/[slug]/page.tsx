@@ -187,9 +187,12 @@ export default async function AgentDetailPage({
           backToMarket: "Back to Registry",
         };
 
+  const agentPromise = fetchAgent(slug);
+  const scoresPromise = fetchSkillScores(slug);
+  const skillCatalogPromise = fetchSkills().catch(() => []);
   let agent: AgentDetail;
   try {
-    agent = await fetchAgent(slug);
+    agent = await agentPromise;
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) notFound();
     return (
@@ -230,10 +233,7 @@ export default async function AgentDetailPage({
     );
   }
 
-  const [scores, skillCatalog] = await Promise.all([
-    fetchSkillScores(slug),
-    fetchSkills().catch(() => []),
-  ]);
+  const [scores, skillCatalog] = await Promise.all([scoresPromise, skillCatalogPromise]);
   const scoreBySkill = new Map(scores.map((s) => [s.skill_id, s]));
   const skillTranslations = indexSkillTranslations(skillCatalog);
   const skillsWithStatus = (agent.skills ?? []).map((skill) => {
