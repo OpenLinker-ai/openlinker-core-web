@@ -120,19 +120,7 @@ body > main {
       linear-gradient(180deg, #fbfefe, var(--ol-bg));
     background-attachment: fixed;
     color: var(--ol-ink);
-    font-family:
-      var(--font-geist-sans),
-      -apple-system,
-      BlinkMacSystemFont,
-      "SF Pro Text",
-      "PingFang SC",
-      "Hiragino Sans GB",
-      "Microsoft YaHei",
-      "Noto Sans CJK SC",
-      "Source Han Sans SC",
-      "Helvetica Neue",
-      Arial,
-      sans-serif;
+    font-family: var(--font-geist-sans);
     letter-spacing: 0;
   }
 

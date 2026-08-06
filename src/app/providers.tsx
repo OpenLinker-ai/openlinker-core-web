@@ -9,6 +9,7 @@ import { SessionExpiryGuard } from "@/components/auth/session-expiry-guard";
 import { RouteTransitionFeedback } from "@/components/layout/route-transition-feedback";
 import { ClientLocaleContext } from "@/hooks/use-client-locale";
 import type { Locale } from "@/lib/i18n";
+import { sessionProviderOptions } from "@/lib/session-provider-options.mjs";
 
 export function Providers({
   children,
@@ -33,7 +34,7 @@ export function Providers({
 
   return (
     <ClientLocaleContext.Provider value={locale}>
-      <SessionProvider session={session} refetchInterval={5 * 60} refetchOnWindowFocus>
+      <SessionProvider session={session} {...sessionProviderOptions}>
         <SessionExpiryGuard />
         <Suspense fallback={null}>
           <RouteTransitionFeedback locale={locale} />

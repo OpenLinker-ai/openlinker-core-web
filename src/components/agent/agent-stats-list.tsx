@@ -114,7 +114,7 @@ export function AgentStatsList({
                   </td>
                   <td className="text-right font-mono text-xs">
                     {a.price_per_call_cents > 0
-                      ? `$${(a.price_per_call_cents / 100).toFixed(3)}`
+                      ? `USD ${(a.price_per_call_cents / 100).toFixed(3)}`
                       : copy.noReferencePrice}
                   </td>
                   <td className="text-right">

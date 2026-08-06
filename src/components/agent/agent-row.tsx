@@ -147,7 +147,7 @@ export function AgentRow({
             <span>
               {copy.referencePrice}{" "}
               {agent.price_per_call_cents > 0
-                ? `$${(agent.price_per_call_cents / 100).toFixed(3)}/${copy.perCall}`
+                ? `USD ${(agent.price_per_call_cents / 100).toFixed(3)}/${copy.perCall}`
                 : copy.noReferencePrice}
             </span>
             <span>{agent.total_calls} {copy.calls}</span>

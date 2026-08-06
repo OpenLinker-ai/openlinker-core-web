@@ -239,7 +239,7 @@ export function A2AConsole({
           <div className="grid gap-3 border-b border-[color:var(--ol-line)] bg-white/70 p-5 sm:grid-cols-3">
             <Metric label={copy.childCalls} value={`${allChildren.length}`} />
             <Metric label={copy.successRunning} value={`${successfulCount} / ${runningCount}`} />
-            <Metric label={copy.costField} value={totalCost === 0 ? copy.freeNow : `$${(totalCost / 100).toFixed(2)}`} />
+            <Metric label={copy.costField} value={totalCost === 0 ? copy.freeNow : `USD ${(totalCost / 100).toFixed(2)}`} />
           </div>
         ) : null}
 
@@ -320,7 +320,7 @@ export function A2AConsole({
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--ol-line)] pt-3 text-[12px] font-bold text-[color:var(--ol-muted)]">
                       <span>
                         {formatDate(child.started_at, locale)} · {fmtMs(child.duration_ms, locale)} ·{" "}
-                        {child.billing_mode === "free_delegation" || child.cost_cents === 0 ? copy.freeDelegation : `$${(child.cost_cents / 100).toFixed(2)}`}
+                        {child.billing_mode === "free_delegation" || child.cost_cents === 0 ? copy.freeDelegation : `USD ${(child.cost_cents / 100).toFixed(2)}`}
                         {" · "}
                         {sourceLabel(child.source)}
                       </span>

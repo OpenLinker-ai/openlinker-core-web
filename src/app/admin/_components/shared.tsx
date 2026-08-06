@@ -486,12 +486,12 @@ export function ForbiddenAdmin({ locale }: { locale: Locale }) {
       ? {
           kicker: "管理员视角",
           heading: "需要管理员权限",
-          lead: "当前账号不是管理员。请使用已设置 is_admin=true 的账号登录后再访问管理台。",
+          lead: "当前账号没有管理员权限。请使用由实例管理员授权的账号登录后再访问管理台。",
         }
       : {
           kicker: "Admin view",
           heading: "Admin access required",
-          lead: "This account is not an admin. Sign in with an account where is_admin=true to access the admin console.",
+          lead: "This account does not have administrator access. Sign in with an account authorized by the instance administrator.",
         };
 
   return (
@@ -845,7 +845,7 @@ export function adminConnectionModeLabel(
 }
 
 export function formatUsd(cents: number): string {
-  return `$${(cents / 100).toLocaleString("en-US", {
+  return `USD ${(cents / 100).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;

@@ -18,8 +18,8 @@ interface PricingTilesProps {
 
 function formatPrice(p: number): string | null {
   if (!Number.isFinite(p) || p <= 0) return null;
-  if (p < 1) return `$${p.toFixed(2)}`;
-  return `$${p.toFixed(2)}`;
+  if (p < 1) return `USD ${p.toFixed(2)}`;
+  return `USD ${p.toFixed(2)}`;
 }
 
 export function PricingTiles({ priceUsd, locale = "zh" }: PricingTilesProps) {
