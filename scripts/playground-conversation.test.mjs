@@ -46,6 +46,13 @@ test("Runtime input omits client history while the task compatibility path prese
   });
   const explicit = { text: "second turn", messages: [] };
   assert.equal(playgroundRunInput(explicit, history, true), explicit);
+  const strictSchema = {
+    type: "object",
+    properties: { text: { type: "string" } },
+    required: ["text"],
+    additionalProperties: false,
+  };
+  assert.equal(playgroundRunInput(input, history, true, strictSchema), input);
 });
 
 test("production runner sends one stable A2A identity and the helper-produced input", () => {
@@ -55,7 +62,7 @@ test("production runner sends one stable A2A identity and the helper-produced in
   );
   assert.match(
     source,
-    /const runInput = playgroundRunInput\(parsedInput, history, (?:Boolean\(taskId\)|false)\);/,
+    /const runInput = playgroundRunInput\(parsedInput, history, (?:Boolean\(taskId\)|false), inputSchema\);/,
   );
   assert.match(source, /input: runInput,/);
   assert.match(

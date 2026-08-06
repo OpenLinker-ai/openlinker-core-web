@@ -1,3 +1,5 @@
+import { inputSchemaAllowsProperty } from "./playground-input.mjs";
+
 const maximumProtocolIDLength = 200;
 
 export function playgroundA2AContext(conversationID, turnID) {
@@ -9,8 +11,9 @@ export function playgroundA2AContext(conversationID, turnID) {
   };
 }
 
-export function playgroundRunInput(input, history, taskBacked) {
+export function playgroundRunInput(input, history, taskBacked, inputSchema) {
   if (!taskBacked || history.length === 0) return input;
+  if (!inputSchemaAllowsProperty(inputSchema, "conversation_history")) return input;
   if (isPlainRecord(input)) {
     if ("conversation_history" in input || "messages" in input) return input;
     return { ...input, conversation_history: history };
