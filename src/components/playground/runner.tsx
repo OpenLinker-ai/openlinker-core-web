@@ -55,14 +55,6 @@ interface PlaygroundTurn {
   errorMessage?: string;
 }
 
-interface ConversationHistoryItem {
-  role: "user" | "assistant";
-  text: string;
-  created_at: string;
-  run_id?: string;
-  status?: string;
-}
-
 const DEFAULT_INPUT = "这里写你的任务描述";
 const DEFAULT_INPUT_EN = "Write your task description here";
 const runWaitSeconds = 30;
@@ -226,7 +218,7 @@ export function PlaygroundRunner({
     }
 
     const previousTurns = turns;
-    const history = conversationHistoryFromTurns(previousTurns, locale);
+    const history: readonly unknown[] = [];
     const runInput = playgroundRunInput(parsedInput, history, false);
     if (creationInFlight.current) return;
     creationInFlight.current = true;
@@ -887,37 +879,6 @@ function inputTextForDisplay(input: unknown): string {
     return input.text;
   }
   return stringifyShort(input);
-}
-
-function conversationHistoryFromTurns(
-  turns: PlaygroundTurn[],
-  locale: Locale,
-): ConversationHistoryItem[] {
-  return turns
-    .filter((turn) => turn.result?.run_id || turn.status !== "failed")
-    .flatMap((turn): ConversationHistoryItem[] => {
-      const assistant = assistantTextForTurn(turn, locale, "");
-      const messages: ConversationHistoryItem[] = [
-        {
-          role: "user",
-          text: turn.inputText,
-          created_at: turn.createdAt,
-          run_id: turn.result?.run_id,
-          status: turn.status,
-        },
-      ];
-      if (assistant) {
-        messages.push({
-          role: "assistant",
-          text: assistant,
-          created_at: turn.completedAt ?? turn.createdAt,
-          run_id: turn.result?.run_id,
-          status: turn.result?.status ?? turn.status,
-        });
-      }
-      return messages;
-    })
-    .slice(-12);
 }
 
 function assistantTextForTurn(
