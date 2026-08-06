@@ -22,6 +22,14 @@ type UserTokenMessages = {
   create: string;
   loadError: string;
   refresh: string;
+  filterStatus: string;
+  filterActive: string;
+  filterAll: string;
+  filterRevoked: string;
+  filterExpired: string;
+  searchLabel: string;
+  searchPlaceholder: string;
+  applyFilters: string;
   loading: string;
   emptyTitle: string;
   emptyBody: string;
@@ -111,6 +119,14 @@ export const coreUserTokenMessages = {
     create: "创建 Token",
     loadError: "暂时无法读取 Token 列表，请检查 Core API 后重试。",
     refresh: "刷新",
+    filterStatus: "状态",
+    filterActive: "仅有效",
+    filterAll: "全部",
+    filterRevoked: "已撤销",
+    filterExpired: "已到期",
+    searchLabel: "按名称或 Token 标识搜索",
+    searchPlaceholder: "搜索名称或前缀",
+    applyFilters: "筛选",
     loading: "加载中…",
     emptyTitle: "还没有 User Token",
     emptyBody: "创建后即可从 MCP 客户端、服务器或自动化脚本访问当前 Core 实例。",
@@ -224,6 +240,14 @@ export const coreUserTokenMessages = {
     create: "Create token",
     loadError: "The token list is unavailable. Check the Core API and try again.",
     refresh: "Refresh",
+    filterStatus: "Status",
+    filterActive: "Active only",
+    filterAll: "All",
+    filterRevoked: "Revoked",
+    filterExpired: "Expired",
+    searchLabel: "Search by name or token identifier",
+    searchPlaceholder: "Search name or prefix",
+    applyFilters: "Filter",
     loading: "Loading…",
     emptyTitle: "No User Tokens yet",
     emptyBody: "Create one to access this Core instance from an MCP client, server, or automation script.",

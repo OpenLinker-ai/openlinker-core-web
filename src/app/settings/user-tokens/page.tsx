@@ -40,7 +40,7 @@ export default async function UserTokensPage() {
   const copy = coreUserTokenMessages[locale];
   const [tokenResult, agentResult] = await Promise.allSettled([
     apiFetchAuthed<UserTokenListResponse>(
-      "/api/v1/user-tokens?limit=10&offset=0&sort_by=created_at&sort_dir=desc",
+      "/api/v1/user-tokens?limit=10&offset=0&sort_by=created_at&sort_dir=desc&status=active",
     ),
     apiFetchAuthed<AgentsPayload>("/api/v1/creator/agents?limit=50&offset=0"),
   ]);
