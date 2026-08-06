@@ -46,21 +46,13 @@ export default async function PublishPage() {
       ? { loadFailed: "账号信息暂时无法读取，请稍后重试。" }
       : { loadFailed: "Account information is temporarily unavailable. Try again later." };
 
-  let me: MeResponse | null = null;
-  let loadFailed = false;
-  try {
-    me = await apiFetchAuthed<MeResponse>("/api/v1/me");
-  } catch {
-    loadFailed = true;
-  }
+  const mePromise = apiFetchAuthed<MeResponse>("/api/v1/me")
+    .then((me) => ({ me, loadFailed: false }))
+    .catch(() => ({ me: null, loadFailed: true }));
 
   // Skill 目录公开接口；失败时降级为空数组（表单内不显示该分区）。
-  let skills: Skill[] = [];
-  try {
-    skills = await fetchSkills();
-  } catch {
-    skills = [];
-  }
+  const skillsPromise = fetchSkills().catch(() => [] as Skill[]);
+  const [{ me, loadFailed }, skills] = await Promise.all([mePromise, skillsPromise]);
 
   return (
     <>

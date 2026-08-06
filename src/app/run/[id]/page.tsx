@@ -30,20 +30,26 @@ export default async function RunDetailAliasPage({
   const locale = await getLocale();
   if (!session) redirect(`/login?callbackUrl=/run/${encodeURIComponent(id)}`);
 
+  const encodedID = encodeURIComponent(id);
   let run: RunDetailData;
   let artifacts: RunArtifactData[] = [];
   let messages: RunMessageData[] = [];
   try {
-    run = await apiFetchAuthed<RunDetailData>(
-      `/api/v1/runs/${encodeURIComponent(id)}`,
-    );
-    const artifactData = await apiFetchAuthed<{ items: RunArtifactData[] }>(
-      `/api/v1/runs/${encodeURIComponent(id)}/artifacts`,
+    const runPromise = apiFetchAuthed<RunDetailData>(`/api/v1/runs/${encodedID}`);
+    const artifactDataPromise = apiFetchAuthed<{ items: RunArtifactData[] }>(
+      `/api/v1/runs/${encodedID}/artifacts`,
     ).catch(() => ({ items: [] }));
+    const messageDataPromise = apiFetchAuthed<{ items: RunMessageData[] }>(
+      `/api/v1/runs/${encodedID}/messages`,
+    ).catch(() => ({ items: [] }));
+
+    const [runData, artifactData, messageData] = await Promise.all([
+      runPromise,
+      artifactDataPromise,
+      messageDataPromise,
+    ]);
+    run = runData;
     artifacts = artifactData.items ?? [];
-    const messageData = await apiFetchAuthed<{ items: RunMessageData[] }>(
-      `/api/v1/runs/${encodeURIComponent(id)}/messages`,
-    ).catch(() => ({ items: [] }));
     messages = messageData.items ?? [];
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) notFound();

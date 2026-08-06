@@ -87,19 +87,20 @@ export default async function AgentOnboardingPage({
     notFound();
   }
 
-  const onboarding = await apiFetchAuthed<OnboardingResponse>(
+  const onboardingPromise = apiFetchAuthed<OnboardingResponse>(
     `/api/v1/creator/agents/${agent.id}/onboarding`,
   ).catch(() => null);
 
-  if (!onboarding) {
-    notFound();
-  }
-
-  const skills = await apiFetchAuthed<AgentDetailWithSkills>(
+  const skillsPromise = apiFetchAuthed<AgentDetailWithSkills>(
     `/api/v1/agents/${encodeURIComponent(agent.slug)}`,
   )
     .then((r) => r.skills ?? [])
     .catch(() => [] as OnboardingSkill[]);
+
+  const [onboarding, skills] = await Promise.all([onboardingPromise, skillsPromise]);
+  if (!onboarding) {
+    notFound();
+  }
 
   return (
     <>

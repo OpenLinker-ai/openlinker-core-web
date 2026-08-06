@@ -37,6 +37,9 @@ jobs:
       - name: Check A2A session compatibility
         run: npm run test:a2a-session
 
+      - name: Check server page request parallelism
+        run: npm run test:server-pages
+
       - name: Check Core navigation route contract
         run: npm run test:core-navigation-routes
 
