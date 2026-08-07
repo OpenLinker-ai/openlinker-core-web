@@ -4,10 +4,17 @@ import { useMemo, useState } from "react";
 
 import { Icon } from "@/components/ui/icon";
 import { useApi } from "@/hooks/use-api";
+import {
+  a2aBaseCheckAccess,
+  a2aExtendedCard,
+  a2aJSONRPCResult,
+  a2aPushConfig,
+  a2aPushConfigItems,
+} from "@/lib/a2a-conformance-response.mjs";
 import { API_BASE_URL, localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
 
-type CheckState = "idle" | "running" | "pass" | "fail";
+type CheckState = "idle" | "running" | "pass" | "fail" | "skipped";
 
 type CheckItem = {
   id: string;
@@ -71,6 +78,8 @@ export function A2AConformancePanel({
             stream: "流式实测",
             long: "长在线验证",
             login: "需要登录后读取扩展卡与 A2A Task 列表。",
+            publicOnly: "公开 Agent Card 校验已完成；登录后可继续受保护的协议检查。",
+            requiresAuth: "需要登录",
             pass: "通过",
             fail: "失败",
             idle: "待测",
@@ -86,6 +95,8 @@ export function A2AConformancePanel({
             stream: "Stream test",
             long: "Long-online test",
             login: "Sign in to read the extended card and task list.",
+            publicOnly: "The public Agent Card check completed. Sign in to continue with protected protocol checks.",
+            requiresAuth: "Sign-in required",
             pass: "Pass",
             fail: "Fail",
             idle: "Idle",
@@ -107,10 +118,6 @@ export function A2AConformancePanel({
       setSummary(copy.ready);
       return;
     }
-    if (!isAuthenticated || !token) {
-      setSummary(copy.login);
-      return;
-    }
     setBusy(true);
     try {
       let failed = 0;
@@ -124,6 +131,14 @@ export function A2AConformancePanel({
         }
       };
       await capture("public-card", () => checkPublicCard(cleanSlug, setCheck));
+      const access = a2aBaseCheckAccess(Boolean(isAuthenticated && token));
+      if (!isAuthenticated || !token) {
+        for (const id of access.requiresAuth) {
+          setCheck(id, { state: "skipped", detail: copy.login });
+        }
+        setSummary(copy.publicOnly);
+        return;
+      }
       await capture("extended-card", () => checkExtendedCard(cleanSlug, token, setCheck));
       await capture("jsonrpc-extended-card", () => checkJSONRPCExtendedCard(cleanSlug, token, setCheck));
       await capture("jsonrpc-send-sync", () => checkJSONRPCSendSync(cleanSlug, token, sample, setCheck));
@@ -251,7 +266,9 @@ export function A2AConformancePanel({
                       ? copy.fail
                       : item.state === "running"
                         ? copy.running
-                        : copy.idle}
+                        : item.state === "skipped"
+                          ? copy.requiresAuth
+                          : copy.idle}
                 </span>
               </div>
               <p className="mt-1 text-[11.5px] font-semibold leading-4 text-[color:var(--ol-muted)]">
@@ -314,7 +331,6 @@ function createChecks(locale: Locale): CheckItem[] {
 function localizedCheckError(err: unknown, locale: Locale, fallback: string): string {
   if (locale === "zh" && err instanceof Error && !(err instanceof TypeError)) {
     const detail = err.message.trim();
-    if (detail.includes("extended card variant required")) return "扩展 Agent Card 缺少 openlinker.card_variant=extended。";
     if (detail.includes("synchronous SendMessage must return")) return "同步 SendMessage 必须返回 Task 或 Message。";
     if (detail.includes("non-blocking SendMessage must return a Task")) return "非阻塞 SendMessage 必须返回带 id 的 Task。";
     if (detail) return `协议校验失败：${detail}`;
@@ -354,8 +370,7 @@ async function checkExtendedCard(slug: string, token: string, setCheck: (id: str
     "A2A-Version": "1.0",
   });
   assertEqual(res.headers.get("a2a-version"), "1.0", "A2A-Version response header must be 1.0");
-  const card = asRecord(json);
-  assertEqual(asRecord(card.openlinker).card_variant, "extended", "extended card variant required");
+  a2aExtendedCard(json);
   setCheck("extended-card", { state: "pass", detail: "authenticated extended card returned" });
 }
 
@@ -366,9 +381,7 @@ async function checkJSONRPCExtendedCard(slug: string, token: string, setCheck: (
     id: "page-extended-card",
     method: "GetExtendedAgentCard",
   }, token, { "A2A-Version": "1.0" });
-  const body = asRecord(json);
-  assertNoRPCError(body);
-  assertEqual(asRecord(asRecord(body.result).openlinker).card_variant, "extended", "extended card variant required");
+  a2aExtendedCard(a2aJSONRPCResult(json));
   setCheck("jsonrpc-extended-card", { state: "pass", detail: "JSON-RPC method returned Agent Card" });
 }
 
@@ -503,15 +516,15 @@ async function checkPushConfig(slug: string, token: string, taskId: string, setC
     eventTypes: ["run.completed"],
     metadata: { client: "openlinker-a2a-conformance" },
   }, token, { "A2A-Version": "1.0" });
-  const created = asRecord(setResult.json);
+  const created = a2aPushConfig(setResult.json);
   const configId = String(created.id ?? "");
   if (!configId) throw new Error("Push config response must include id");
   const listed = await requestJSON(basePath, "GET", undefined, token, { "A2A-Version": "1.0" });
-  if (!asArray(asRecord(listed.json).configs).some((item) => asRecord(item).id === configId)) {
+  if (!a2aPushConfigItems(listed.json).some((item) => a2aPushConfig(item).id === configId)) {
     throw new Error("List push configs must include the created config");
   }
   const got = await requestJSON(`${basePath}/${encodeURIComponent(configId)}`, "GET", undefined, token, { "A2A-Version": "1.0" });
-  assertEqual(asRecord(got.json).id, configId, "Get push config must return created id");
+  assertEqual(a2aPushConfig(got.json).id, configId, "Get push config must return created id");
   const deleted = await fetch(`${API_BASE_URL}${basePath}/${encodeURIComponent(configId)}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}`, "A2A-Version": "1.0" },
@@ -848,6 +861,8 @@ function stateClass(state: CheckState): string {
     case "fail":
       return "ol-chip ol-chip-amber";
     case "running":
+      return "ol-chip ol-chip-blue";
+    case "skipped":
       return "ol-chip ol-chip-blue";
     default:
       return "ol-chip";

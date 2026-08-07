@@ -10,7 +10,7 @@
  * 不在客户端拉数据。
  *
  * cost_cents 是兼容外部系统的费用记录；OpenLinker Core 不据此扣费。
- * 失败 run（status != "success"）不展示 "$0"，避免把兼容字段误解为 Core 账单。
+ * 失败 run（status != "success"）不展示 "USD 0"，避免把兼容字段误解为 Core 账单。
  */
 
 import Link from "next/link";
@@ -98,10 +98,10 @@ function formatRelative(iso: string, locale: Locale): string {
 
 function formatCost(run: Run, locale: Locale): string {
   if (locale === "en") {
-    if (run.cost_cents > 0) return `External cost record $${(run.cost_cents / 100).toFixed(2)}`;
+    if (run.cost_cents > 0) return `External cost record USD ${(run.cost_cents / 100).toFixed(2)}`;
     return "No external cost recorded";
   }
-  if (run.cost_cents > 0) return `外部费用记录 $${(run.cost_cents / 100).toFixed(2)}`;
+  if (run.cost_cents > 0) return `外部费用记录 USD ${(run.cost_cents / 100).toFixed(2)}`;
   return "未记录外部费用";
 }
 

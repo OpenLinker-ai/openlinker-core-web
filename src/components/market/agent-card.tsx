@@ -57,7 +57,7 @@ function formatReferencePrice(cents: number, locale: Locale): string | null {
   if (!cents || cents <= 0) return null;
   const dollars = cents / 100;
   const amount = dollars < 0.01 ? dollars.toFixed(3) : dollars.toFixed(2);
-  return locale === "zh" ? `$${amount}/次` : `$${amount}/call`;
+  return locale === "zh" ? `USD ${amount}/次` : `USD ${amount}/call`;
 }
 
 /** 把 total_calls → 缩写（1.2k / 31k / 1.2M），用于 meta 行。*/

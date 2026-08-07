@@ -231,7 +231,7 @@ function fmtMs(ms: number): string {
 
 function fmtPriceField(cents: number, locale: Locale): string {
   return cents > 0
-    ? locale === "zh" ? `外部费用记录 $${(cents / 100).toFixed(2)}` : `External cost recorded: $${(cents / 100).toFixed(2)}`
+    ? locale === "zh" ? `外部费用记录 USD ${(cents / 100).toFixed(2)}` : `External cost recorded: USD ${(cents / 100).toFixed(2)}`
     : locale === "zh" ? "未记录外部费用" : "No external cost recorded";
 }
 

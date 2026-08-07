@@ -14,4 +14,5 @@ export function playgroundRunInput(
   input: unknown,
   history: readonly unknown[],
   taskBacked: boolean,
+  inputSchema?: Record<string, unknown>,
 ): unknown;

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { RunEventStream } from "@/components/run/run-event-stream";
 import { Icon } from "@/components/ui/icon";
 import { useApi } from "@/hooks/use-api";
-import { localizedErrorMessage } from "@/lib/api";
+import { ApiError, localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
 import { runDispatchStateLabel, runErrorMessage } from "@/lib/i18n-labels";
 import { isPlaygroundSubmitKey } from "@/lib/playground-keyboard.mjs";
@@ -15,6 +15,12 @@ import {
   playgroundA2AContext,
   playgroundRunInput,
 } from "@/lib/playground-conversation.mjs";
+import {
+  PlaygroundInputError,
+  parsePlaygroundDraft,
+  playgroundInitialDraft,
+  playgroundViolationMessage,
+} from "@/lib/playground-input.mjs";
 import {
   acquireRunCreationIntent,
   completeRunCreationIntent,
@@ -37,7 +43,9 @@ interface AgentInfo {
 interface Props {
   agent: AgentInfo;
   prefill?: string;
-  initialInput?: Record<string, unknown>;
+  selectedExample?: Record<string, unknown>;
+  examples?: { input_json: Record<string, unknown> }[];
+  inputSchema?: Record<string, unknown>;
   autorun?: boolean;
   locale?: Locale;
 }
@@ -55,21 +63,9 @@ interface PlaygroundTurn {
   errorMessage?: string;
 }
 
-const DEFAULT_INPUT = "这里写你的任务描述";
-const DEFAULT_INPUT_EN = "Write your task description here";
 const runWaitSeconds = 30;
 const minimumWaitResponseMs = 1000;
 const waitRetryDelaysMs = [2000, 4000, 8000, 15000] as const;
-
-function buildInitialInput(
-  prefill: string | undefined,
-  initialInput: Record<string, unknown> | undefined,
-  locale: Locale,
-): string {
-  if (initialInput) return JSON.stringify(initialInput, null, 2);
-  if (prefill) return prefill;
-  return locale === "zh" ? DEFAULT_INPUT : DEFAULT_INPUT_EN;
-}
 
 function summarizeRunOutput(result: RunResult, locale: Locale): string {
   return summarizeOutputText(result.output ?? {}, locale);
@@ -78,7 +74,9 @@ function summarizeRunOutput(result: RunResult, locale: Locale): string {
 export function PlaygroundRunner({
   agent,
   prefill,
-  initialInput,
+  selectedExample,
+  examples = [],
+  inputSchema,
   autorun = false,
   locale = "zh",
 }: Props) {
@@ -101,7 +99,7 @@ export function PlaygroundRunner({
             inputTitle: "继续对话",
             composeTitle: "浏览并选择其他 Agent",
             compose: "Agent 库",
-            price: (price: string) => `外部参考价格 $${price} · 可选兼容元数据`,
+            price: (price: string) => `外部参考价格 USD ${price} · 可选兼容元数据`,
             noReferencePrice: "未提供外部参考价格 · 可选兼容元数据",
             free: "OpenLinker Core 不据此扣费",
             placeholder: "输入问题，或粘贴 JSON input",
@@ -139,7 +137,7 @@ export function PlaygroundRunner({
             inputTitle: "Continue",
             composeTitle: "Browse Registry to choose another Agent",
             compose: "Registry",
-            price: (price: string) => `External reference price $${price} · optional compatibility metadata`,
+            price: (price: string) => `External reference price USD ${price} · optional compatibility metadata`,
             noReferencePrice: "No external reference price provided · optional compatibility metadata",
             free: "Not used for OpenLinker Core billing",
             placeholder: "Enter a message, or paste JSON input",
@@ -170,8 +168,9 @@ export function PlaygroundRunner({
     isLoading: authLoading,
   } = useApi();
   const [input, setInput] = useState<string>(() =>
-    buildInitialInput(prefill, initialInput, locale),
+    playgroundInitialDraft({ prefill, selectedExample, examples, inputSchema, locale }),
   );
+  const [inputError, setInputError] = useState("");
   const [turns, setTurns] = useState<PlaygroundTurn[]>([]);
   const [activeTurnId, setActiveTurnId] = useState("");
   const autoRunStarted = useRef(false);
@@ -207,19 +206,20 @@ export function PlaygroundRunner({
 
     let parsedInput: unknown;
     try {
-      parsedInput = parseDraftInput(input);
+      parsedInput = parsePlaygroundDraft(input, inputSchema);
     } catch (error) {
-      if (error instanceof EmptyInputError) {
-        toast.error(copy.emptyInput);
-      } else {
-        toast.error(copy.invalidJson);
-      }
+      const message = error instanceof PlaygroundInputError
+        ? playgroundViolationMessage(error, locale)
+        : copy.invalidJson;
+      setInputError(message);
+      toast.error(message);
       return;
     }
+    setInputError("");
 
     const previousTurns = turns;
     const history: readonly unknown[] = [];
-    const runInput = playgroundRunInput(parsedInput, history, false);
+    const runInput = playgroundRunInput(parsedInput, history, false, inputSchema);
     if (creationInFlight.current) return;
     creationInFlight.current = true;
 
@@ -302,6 +302,7 @@ export function PlaygroundRunner({
       }
     } catch (error) {
       const message = errorMessage(error, locale, copy.retry);
+      setInputError(message);
       setTurns((items) =>
         items.map((item) =>
           item.id === turnId
@@ -328,6 +329,7 @@ export function PlaygroundRunner({
     input,
     isAuthenticated,
     locale,
+    inputSchema,
     turns,
   ]);
 
@@ -479,8 +481,13 @@ export function PlaygroundRunner({
             <textarea
               ref={inputRef}
               aria-label={copy.placeholder}
+              aria-invalid={inputError ? true : undefined}
+              aria-describedby={inputError ? "playground-input-error" : undefined}
               value={input}
-              onChange={(event) => setInput(event.target.value)}
+              onChange={(event) => {
+                setInput(event.target.value);
+                if (inputError) setInputError("");
+              }}
               spellCheck={false}
               placeholder={copy.placeholder}
               rows={2}
@@ -497,6 +504,11 @@ export function PlaygroundRunner({
                 }
               }}
             />
+            {inputError ? (
+              <p id="playground-input-error" className="mt-2 text-[12px] font-bold text-[#a3382c]" role="alert">
+                {inputError}
+              </p>
+            ) : null}
           </label>
 
           <div className="mt-2.5 flex flex-wrap items-end justify-between gap-2.5">
@@ -862,18 +874,6 @@ function MetaRow({
   );
 }
 
-function parseDraftInput(text: string): unknown {
-  const trimmed = text.trim();
-  if (!trimmed) throw new EmptyInputError();
-  const first = trimmed[0];
-  if (first === "{" || first === "[") {
-    return JSON.parse(trimmed);
-  }
-  return { text: trimmed };
-}
-
-class EmptyInputError extends Error {}
-
 function inputTextForDisplay(input: unknown): string {
   if (isPlainRecord(input) && typeof input.text === "string") {
     return input.text;
@@ -933,6 +933,12 @@ function formatDateTime(value: string, locale: Locale): string {
 }
 
 function errorMessage(error: unknown, locale: Locale, fallback: string): string {
+  if (
+    error instanceof ApiError
+    && error.code.trim().replaceAll("-", "_").toUpperCase() === "RUN_INPUT_SCHEMA_MISMATCH"
+  ) {
+    return playgroundViolationMessage(error.details, locale);
+  }
   return localizedErrorMessage(error, locale, fallback);
 }
 

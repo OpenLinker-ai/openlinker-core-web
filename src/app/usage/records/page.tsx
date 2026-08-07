@@ -112,11 +112,11 @@ function normalizeCallRelation(raw?: string): CallRecordRelationFilter {
 function formatExternalCost(record: CallRecord, locale: Locale): string {
   if (locale === "en") {
     return record.cost_cents > 0
-      ? `External cost record $${(record.cost_cents / 100).toFixed(2)}`
+      ? `External cost record USD ${(record.cost_cents / 100).toFixed(2)}`
       : "No external cost recorded";
   }
   return record.cost_cents > 0
-    ? `外部费用记录 $${(record.cost_cents / 100).toFixed(2)}`
+    ? `外部费用记录 USD ${(record.cost_cents / 100).toFixed(2)}`
     : "未记录外部费用";
 }
 

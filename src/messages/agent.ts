@@ -258,6 +258,14 @@ type AutomationAccessMessages = {
   tokenBoundary: string;
   tokenBoundarySuffix: string;
   generated: (count: number) => string;
+  filterStatus: string;
+  filterActive: string;
+  filterAll: string;
+  filterRevoked: string;
+  filterExpired: string;
+  searchLabel: string;
+  searchPlaceholder: string;
+  applyFilters: string;
   sortBy: string;
   sortDir: string;
   sortCreated: string;
@@ -309,6 +317,14 @@ export const automationAccessMessages = {
     tokenBoundary: "此 Agent Token 只能调用",
     tokenBoundarySuffix: "注册并运行 Agent；完整接入步骤请看",
     generated: (count: number) => `已生成 ${count} 条 Agent Token 记录。Agent Token 仅用于 Agent 注册与运行，不能代替 User Token 发起 API 或 MCP 调用。`,
+    filterStatus: "筛选状态",
+    filterActive: "仅有效",
+    filterAll: "全部",
+    filterRevoked: "已撤销",
+    filterExpired: "已过期",
+    searchLabel: "按名称或 Token 前缀搜索",
+    searchPlaceholder: "搜索名称或前缀",
+    applyFilters: "筛选",
     sortBy: "排序",
     sortDir: "方向",
     sortCreated: "创建时间",
@@ -358,6 +374,14 @@ export const automationAccessMessages = {
     tokenBoundary: "This Agent Token can only call",
     tokenBoundarySuffix: "to register and run an Agent. For the full onboarding steps, see",
     generated: (count: number) => `${count} Agent Token records generated. Agent Tokens are only for Agent registration and execution; they cannot replace User Tokens for API or MCP calls.`,
+    filterStatus: "Filter status",
+    filterActive: "Active only",
+    filterAll: "All",
+    filterRevoked: "Revoked",
+    filterExpired: "Expired",
+    searchLabel: "Search by name or token prefix",
+    searchPlaceholder: "Search name or prefix",
+    applyFilters: "Filter",
     sortBy: "Sort",
     sortDir: "Direction",
     sortCreated: "Created",

@@ -262,6 +262,9 @@ export function SkillsRegistry({ locale, skills }: { locale: Locale; skills: Ski
             />
           </div>
         </div>
+        <p className="border-b border-[color:var(--ol-line)] bg-white px-4 py-3 text-[12px] font-semibold text-[color:var(--ol-muted)]">
+          <strong className="text-[color:var(--ol-ink)]">{copy.usedFor}{locale === "zh" ? "：" : ": "}</strong>{copy.usage}
+        </p>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] border-collapse text-left">
             <thead className="bg-[color:var(--ol-soft)] text-[11px] uppercase tracking-[0.06em] text-[color:var(--ol-subtle)]">
@@ -269,7 +272,6 @@ export function SkillsRegistry({ locale, skills }: { locale: Locale; skills: Ski
                 <th className="px-4 py-3 font-black">Skill</th>
                 <th className="px-4 py-3 font-black">{copy.category}</th>
                 <th className="px-4 py-3 font-black">ID</th>
-                <th className="px-4 py-3 font-black">{copy.usedFor}</th>
                 <th className="px-4 py-3 font-black">{copy.entry}</th>
               </tr>
             </thead>
@@ -294,9 +296,6 @@ export function SkillsRegistry({ locale, skills }: { locale: Locale; skills: Ski
                       {skill.id}
                     </code>
                   </td>
-                  <td className="px-4 py-4 text-[12.5px] leading-relaxed text-[color:var(--ol-muted)]">
-                    {copy.usage}
-                  </td>
                   <td className="px-4 py-4">
                     <div className="flex flex-wrap gap-2">
                       <Link
@@ -311,7 +310,7 @@ export function SkillsRegistry({ locale, skills }: { locale: Locale; skills: Ski
               ))}
               {rows.length === 0 ? (
                 <tr className="border-t border-[color:var(--ol-line)] bg-white">
-                  <td colSpan={5} className="px-4 py-10 text-center text-[13px] font-semibold text-[color:var(--ol-muted)]">
+                  <td colSpan={4} className="px-4 py-10 text-center text-[13px] font-semibold text-[color:var(--ol-muted)]">
                     {skills.length === 0
                       ? copy.unavailable
                       : copy.noMatch}

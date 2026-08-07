@@ -46,6 +46,10 @@ interface AgentDetail {
     callable?: boolean;
   };
   creator: { display_name: string };
+  capability?: {
+    input_schema: Record<string, unknown>;
+    version: number;
+  };
   examples?: {
     id: string;
     title: string;
@@ -196,10 +200,12 @@ export default async function PlaygroundPage({
 
         <div className="min-h-0">
           <PlaygroundRunner
-            key={agent.id}
+            key={`${agent.id}:${example ?? ""}`}
             agent={agent}
             prefill={prefill}
-            initialInput={selectedExample?.input_json}
+            selectedExample={selectedExample?.input_json}
+            examples={agent.examples ?? []}
+            inputSchema={agent.capability?.input_schema}
             autorun={autorun === "1"}
             locale={locale}
           />

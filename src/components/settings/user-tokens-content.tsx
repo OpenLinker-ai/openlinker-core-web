@@ -32,6 +32,8 @@ type Props = {
   locale: Locale;
 };
 
+type TokenListStatus = "active" | "revoked" | "expired" | "all";
+
 export function UserTokensContent({
   initialItems,
   initialTotal,
@@ -52,6 +54,8 @@ export function UserTokensContent({
   const [replacementOf, setReplacementOf] = useState<UserTokenItem | null>(null);
   const [tightening, setTightening] = useState<UserTokenItem | null>(null);
   const [revokingID, setRevokingID] = useState("");
+  const [status, setStatus] = useState<TokenListStatus>("active");
+  const [query, setQuery] = useState("");
   const limit = initialLimit;
 
   const agentNames = useMemo(
@@ -72,8 +76,13 @@ export function UserTokensContent({
   }, [copy.sessionLoading, copy.sessionMissing, isAuthenticated, sessionLoading]);
 
   const loadPage = useCallback(
-    async (nextOffset = offset) => {
+    async (
+      nextOffset = offset,
+      nextFilters: { status?: TokenListStatus; query?: string } = {},
+    ) => {
       if (!ensureSession()) return;
+      const nextStatus = nextFilters.status ?? status;
+      const nextQuery = nextFilters.query ?? query;
       setLoading(true);
       try {
         const params = new URLSearchParams({
@@ -81,13 +90,17 @@ export function UserTokensContent({
           offset: String(nextOffset),
           sort_by: "created_at",
           sort_dir: "desc",
+          status: nextStatus,
         });
+        if (nextQuery.trim()) params.set("q", nextQuery.trim());
         const response = await apiFetch<UserTokenListResponse>(
           `/api/v1/user-tokens?${params.toString()}`,
         );
         setItems(Array.isArray(response.items) ? response.items : []);
         setTotal(Number.isFinite(response.total) ? response.total : 0);
         setOffset(Number.isFinite(response.offset) ? response.offset : nextOffset);
+        setStatus(nextStatus);
+        setQuery(nextQuery);
         setPageError(false);
       } catch (error) {
         setPageError(true);
@@ -95,7 +108,7 @@ export function UserTokensContent({
       } finally {
         setLoading(false);
       }
-    }, [apiFetch, copy.loadError, ensureSession, limit, locale, offset],
+    }, [apiFetch, copy.loadError, ensureSession, limit, locale, offset, query, status],
   );
 
   const afterMutation = () => {
@@ -175,6 +188,42 @@ export function UserTokensContent({
           </div>
         ) : null}
 
+        <form
+          className="grid gap-2 border-b border-[color:var(--ol-line)] p-4 sm:grid-cols-[180px_minmax(0,1fr)_auto]"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void loadPage(0, { query });
+          }}
+        >
+          <label className="grid gap-1 text-[11px] font-black text-[color:var(--ol-muted)]">
+            <span>{copy.filterStatus}</span>
+            <select
+              value={status}
+              disabled={loading}
+              onChange={(event) => void loadPage(0, { status: event.target.value as TokenListStatus })}
+              className="h-10 rounded-[12px] border border-[color:var(--ol-line)] bg-white px-3 text-[12.5px] font-bold text-[color:var(--ol-ink)]"
+            >
+              <option value="active">{copy.filterActive}</option>
+              <option value="all">{copy.filterAll}</option>
+              <option value="revoked">{copy.filterRevoked}</option>
+              <option value="expired">{copy.filterExpired}</option>
+            </select>
+          </label>
+          <label className="grid gap-1 text-[11px] font-black text-[color:var(--ol-muted)]">
+            <span>{copy.searchLabel}</span>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              maxLength={120}
+              placeholder={copy.searchPlaceholder}
+              className="h-10 rounded-[12px] border border-[color:var(--ol-line)] bg-white px-3 text-[12.5px] font-bold text-[color:var(--ol-ink)]"
+            />
+          </label>
+          <button type="submit" disabled={loading} className="ol-mini-btn self-end">
+            {copy.applyFilters}
+          </button>
+        </form>
+
         {items.length === 0 && !loading ? (
           <div className="px-6 py-12 text-center">
             <KeyRound className="mx-auto size-7 text-[color:var(--ol-subtle)]" />
@@ -243,16 +292,14 @@ export function UserTokensContent({
                       >
                         {copy.replacement}
                       </button>
-                      {status === "active" ? (
-                        <button
-                          type="button"
-                          className="ol-mini-btn"
-                          disabled={revokingID === token.id}
-                          onClick={() => void revoke(token)}
-                        >
-                          {revokingID === token.id ? copy.revoking : copy.revoke}
-                        </button>
-                      ) : null}
+                      <button
+                        type="button"
+                        className="ol-mini-btn disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={status !== "active" || revokingID === token.id}
+                        onClick={() => void revoke(token)}
+                      >
+                        {revokingID === token.id ? copy.revoking : copy.revoke}
+                      </button>
                     </div>
                   </div>
 

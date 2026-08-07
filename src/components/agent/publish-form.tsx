@@ -46,6 +46,7 @@ import { useApi } from "@/hooks/use-api";
 import { ApiError, localizedErrorMessage } from "@/lib/api";
 import { getApiBaseUrl } from "@/lib/api-root";
 import type { Locale } from "@/lib/i18n";
+import { firstInvalidPublishField } from "@/lib/publish-form-validation.mjs";
 import { MAX_SKILLS_PER_AGENT, type Skill } from "@/lib/skills";
 
 // 后端 slug 规则：小写字母/数字/短横线，首尾必须是字母或数字
@@ -91,8 +92,8 @@ const VALIDATION_COPY = {
     max500: "最多 500 字符",
     max120: "最多 120 字符",
     validPrice: "请填写有效的外部参考价格",
-    priceMin: "不能小于 $0",
-    priceMax: "最多 $10,000",
+    priceMin: "不能小于 USD 0",
+    priceMax: "最多 USD 10,000",
     tagRequired: "至少 1 个标签",
     tagMax: "最多 5 个标签",
     mcpEndpointRequired: "请填写 MCP 服务地址",
@@ -108,8 +109,8 @@ const VALIDATION_COPY = {
     max500: "Use at most 500 characters",
     max120: "Use at most 120 characters",
     validPrice: "Enter a valid external reference price",
-    priceMin: "Must be at least $0",
-    priceMax: "Must be at most $10,000",
+    priceMin: "Must be at least USD 0",
+    priceMax: "Must be at most USD 10,000",
     tagRequired: "Add at least 1 tag",
     tagMax: "Use at most 5 tags",
     mcpEndpointRequired: "Enter the MCP endpoint URL",
@@ -234,6 +235,7 @@ export function PublishForm({ creatorName, skills, locale = "zh" }: PublishFormP
           freeBody: "这是与外部系统对接时使用的兼容元数据，不会触发 OpenLinker Core 扣费或结算。每次调用仍会写入运行记录。",
           saving: "保存中...",
           save: "保存并继续接入",
+          formInvalid: "请修正下方标出的必填项或格式错误，然后重新提交。",
         }
       : {
           slugTaken: "This slug is already taken",
@@ -252,6 +254,7 @@ export function PublishForm({ creatorName, skills, locale = "zh" }: PublishFormP
           freeBody: "This compatibility metadata is available for external integrations. It does not trigger charging or settlement in OpenLinker Core, and every invocation still creates a run record.",
           saving: "Saving...",
           save: "Save and continue setup",
+          formInvalid: "Fix the required or invalid fields highlighted below, then submit again.",
         };
 
   const form = useForm<FormValues>({
@@ -357,6 +360,11 @@ export function PublishForm({ creatorName, skills, locale = "zh" }: PublishFormP
     }
   };
 
+  const onInvalid = (errors: FieldErrors<FormValues>) => {
+    const firstField = firstInvalidPublishField(errors);
+    if (firstField) form.setFocus(firstField);
+  };
+
   // 表单 id：让右侧提交按钮通过 form="..." 触发同一份表单
   const formId = useId();
   const connectionMode = useWatch({
@@ -392,7 +400,7 @@ export function PublishForm({ creatorName, skills, locale = "zh" }: PublishFormP
 
         <form
           id={formId}
-          onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={form.handleSubmit(onSubmit, onInvalid)}
           noValidate
           className="ol-panel ol-panel-pad space-y-4"
         >
@@ -405,6 +413,12 @@ export function PublishForm({ creatorName, skills, locale = "zh" }: PublishFormP
               {slug || "your-agent"} · v0.1.0
             </span>
           </div>
+
+          {Object.keys(form.formState.errors).length > 0 ? (
+            <p role="alert" className="rounded-[14px] border border-red-200 bg-red-50 px-4 py-3 text-[12px] font-bold leading-5 text-red-800">
+              {copy.formInvalid}
+            </p>
+          ) : null}
 
           <BasicInfoSection
             register={form.register}
@@ -537,9 +551,14 @@ function BasicInfoSection({
       <Field
         label={copy.slug}
         error={errors.slug?.message}
+        inputId="publish-slug"
+        errorId="publish-slug-error"
       >
         <input
           {...register("slug")}
+          id="publish-slug"
+          aria-invalid={Boolean(errors.slug)}
+          aria-describedby={errors.slug ? "publish-slug-error" : undefined}
           className="ol-publish-input"
           placeholder="contract-review-agent"
           autoComplete="off"
@@ -550,17 +569,23 @@ function BasicInfoSection({
         ) : null}
       </Field>
 
-      <Field label={copy.name} error={errors.name?.message}>
+      <Field label={copy.name} error={errors.name?.message} inputId="publish-name" errorId="publish-name-error">
         <input
           {...register("name")}
+          id="publish-name"
+          aria-invalid={Boolean(errors.name)}
+          aria-describedby={errors.name ? "publish-name-error" : undefined}
           className="ol-publish-input"
           placeholder={copy.namePlaceholder}
         />
       </Field>
 
-      <Field label={copy.description} error={errors.description?.message}>
+      <Field label={copy.description} error={errors.description?.message} inputId="publish-description" errorId="publish-description-error">
         <textarea
           {...register("description")}
+          id="publish-description"
+          aria-invalid={Boolean(errors.description)}
+          aria-describedby={errors.description ? "publish-description-error" : undefined}
           className="ol-publish-input ol-publish-textarea"
           placeholder={copy.descriptionPlaceholder}
         />
@@ -569,9 +594,14 @@ function BasicInfoSection({
       <Field
         label={copy.tags}
         error={errors.tags_input?.message}
+        inputId="publish-tags"
+        errorId="publish-tags-error"
       >
         <input
           {...register("tags_input")}
+          id="publish-tags"
+          aria-invalid={Boolean(errors.tags_input)}
+          aria-describedby={errors.tags_input ? "publish-tags-error" : undefined}
           className="ol-publish-input"
           placeholder={copy.tagsPlaceholder}
         />
@@ -660,9 +690,14 @@ function EndpointSection({
               : copy.httpsOnly
         }
         error={errors.endpoint_url?.message}
+        inputId="publish-endpoint-url"
+        errorId="publish-endpoint-url-error"
       >
         <input
           {...register("endpoint_url")}
+          id="publish-endpoint-url"
+          aria-invalid={Boolean(errors.endpoint_url)}
+          aria-describedby={errors.endpoint_url ? "publish-endpoint-url-error" : undefined}
           className="ol-publish-input"
           placeholder={
             isMCP
@@ -682,9 +717,12 @@ function EndpointSection({
       </Field>
 
       {isMCP ? (
-        <Field label={copy.mcpTool} error={errors.mcp_tool_name?.message}>
+        <Field label={copy.mcpTool} error={errors.mcp_tool_name?.message} inputId="publish-mcp-tool" errorId="publish-mcp-tool-error">
           <input
             {...register("mcp_tool_name")}
+            id="publish-mcp-tool"
+            aria-invalid={Boolean(errors.mcp_tool_name)}
+            aria-describedby={errors.mcp_tool_name ? "publish-mcp-tool-error" : undefined}
             className="ol-publish-input"
             placeholder="analyze_contract"
             autoComplete="off"
@@ -699,9 +737,14 @@ function EndpointSection({
       <Field
         label={isMCP ? copy.mcpAuth : copy.endpointAuth}
         error={errors.endpoint_auth_header?.message}
+        inputId="publish-endpoint-auth"
+        errorId="publish-endpoint-auth-error"
       >
         <input
           {...register("endpoint_auth_header")}
+          id="publish-endpoint-auth"
+          aria-invalid={Boolean(errors.endpoint_auth_header)}
+          aria-describedby={errors.endpoint_auth_header ? "publish-endpoint-auth-error" : undefined}
           className="ol-publish-input"
           placeholder="Bearer sk_secret_xxx"
           autoComplete="off"
@@ -735,6 +778,8 @@ function PricingSection({
     <Field
       label={copy.label}
       error={errors.price_usd?.message}
+      inputId="publish-price"
+      errorId="publish-price-error"
     >
       <input
         type="number"
@@ -742,6 +787,9 @@ function PricingSection({
         min="0"
         max="10000"
         {...register("price_usd", { valueAsNumber: true })}
+        id="publish-price"
+        aria-invalid={Boolean(errors.price_usd)}
+        aria-describedby={errors.price_usd ? "publish-price-error" : undefined}
         className="ol-publish-input"
       />
       <p className="ol-publish-field-hint">{copy.hint}</p>
@@ -773,8 +821,14 @@ function VisibilitySection({
           private: "Private - Agent owner only",
         };
   return (
-    <Field label={copy.label} error={errors.visibility?.message}>
-      <select {...register("visibility")} className="ol-publish-input">
+    <Field label={copy.label} error={errors.visibility?.message} inputId="publish-visibility" errorId="publish-visibility-error">
+      <select
+        {...register("visibility")}
+        id="publish-visibility"
+        aria-invalid={Boolean(errors.visibility)}
+        aria-describedby={errors.visibility ? "publish-visibility-error" : undefined}
+        className="ol-publish-input"
+      >
         <option value="public">{copy.public}</option>
         <option value="unlisted">{copy.unlisted}</option>
         <option value="private">{copy.private}</option>
@@ -831,17 +885,21 @@ function LivePricing({ control, locale }: { control: Control<FormValues>; locale
 function Field({
   label,
   error,
+  inputId,
+  errorId,
   children,
 }: {
   label: string;
   error?: string;
+  inputId: string;
+  errorId: string;
   children: ReactNode;
 }) {
   return (
     <div>
-      <label className="ol-publish-field-label">{label}</label>
+      <label htmlFor={inputId} className="ol-publish-field-label">{label}</label>
       {children}
-      {error ? <p className="ol-publish-field-error">{error}</p> : null}
+      {error ? <p id={errorId} className="ol-publish-field-error">{error}</p> : null}
     </div>
   );
 }

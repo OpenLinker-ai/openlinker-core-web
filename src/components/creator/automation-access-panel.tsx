@@ -40,6 +40,7 @@ interface Approval {
 
 type AgentTokenSortBy = "created_at" | "last_used_at" | "expires_at" | "name" | "status";
 type SortDir = "asc" | "desc";
+type AgentTokenFilterStatus = "active" | "revoked" | "expired" | "all";
 
 interface AgentTokenListResponse {
   items: BootstrapToken[];
@@ -106,6 +107,9 @@ export function AutomationAccessPanel({
   const [tokenOffset, setTokenOffset] = useState(0);
   const [tokenSortBy, setTokenSortBy] = useState<AgentTokenSortBy>("created_at");
   const [tokenSortDir, setTokenSortDir] = useState<SortDir>("desc");
+  const [tokenStatus, setTokenStatus] = useState<AgentTokenFilterStatus>("active");
+  const [tokenQuery, setTokenQuery] = useState("");
+  const [tokenQueryDraft, setTokenQueryDraft] = useState("");
   const [tokenLoading, setTokenLoading] = useState(false);
   const [approvals, setApprovals] = useState<Approval[]>([]);
   const [revealed, setRevealed] = useState<string | null>(null);
@@ -118,7 +122,7 @@ export function AutomationAccessPanel({
   const showTokens = section === "all" || section === "tokens";
   const showApprovals = section === "all" || section === "approvals";
 
-  const load = useCallback(async (next: Partial<{ offset: number; sortBy: AgentTokenSortBy; sortDir: SortDir }> = {}) => {
+  const load = useCallback(async (next: Partial<{ offset: number; sortBy: AgentTokenSortBy; sortDir: SortDir; status: AgentTokenFilterStatus; query: string }> = {}) => {
     if (!showTokens && !showApprovals) return;
     if (sessionLoading) return;
     if (!isAuthenticated) {
@@ -128,13 +132,17 @@ export function AutomationAccessPanel({
     const nextOffset = next.offset ?? tokenOffset;
     const nextSortBy = next.sortBy ?? tokenSortBy;
     const nextSortDir = next.sortDir ?? tokenSortDir;
+    const nextStatus = next.status ?? tokenStatus;
+    const nextQuery = next.query ?? tokenQuery;
     setTokenLoading(true);
     const params = new URLSearchParams({
       limit: String(AGENT_TOKEN_PAGE_SIZE),
       offset: String(nextOffset),
       sort_by: nextSortBy,
       sort_dir: nextSortDir,
+      status: nextStatus,
     });
+    if (nextQuery.trim()) params.set("q", nextQuery.trim());
     try {
       const [tokenData, approvalData] = await Promise.all([
         showTokens
@@ -150,6 +158,9 @@ export function AutomationAccessPanel({
         setTokenOffset(Number.isFinite(tokenData.offset) ? tokenData.offset : nextOffset);
         setTokenSortBy(tokenData.sort_by ?? nextSortBy);
         setTokenSortDir(tokenData.sort_dir ?? nextSortDir);
+        setTokenStatus(nextStatus);
+        setTokenQuery(nextQuery);
+        setTokenQueryDraft(nextQuery);
       }
       if (approvalData) {
         setApprovals(approvalData.items ?? []);
@@ -167,6 +178,8 @@ export function AutomationAccessPanel({
     tokenOffset,
     tokenSortBy,
     tokenSortDir,
+    tokenStatus,
+    tokenQuery,
   ]);
 
   useEffect(() => {
@@ -379,6 +392,50 @@ export function AutomationAccessPanel({
           <div className="text-[12px] text-[color:var(--ol-muted)]">
             {copy.generated(tokenTotal)}
           </div>
+          <form
+            className="grid gap-2 sm:grid-cols-[170px_minmax(0,1fr)_auto]"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const nextQuery = tokenQueryDraft.trim();
+              if (nextQuery === tokenQuery && tokenOffset === 0) {
+                void load({ offset: 0, query: nextQuery });
+              } else {
+                setTokenQuery(nextQuery);
+                setTokenOffset(0);
+              }
+            }}
+          >
+            <label className="grid gap-1 text-[11px] font-black text-[color:var(--ol-muted)]">
+              <span>{copy.filterStatus}</span>
+              <select
+                value={tokenStatus}
+                disabled={tokenLoading}
+                onChange={(event) => {
+                  setTokenStatus(event.target.value as AgentTokenFilterStatus);
+                  setTokenOffset(0);
+                }}
+                className="h-9 rounded-lg border border-[color:var(--ol-line)] bg-white px-2 text-[12px] font-bold text-[color:var(--ol-ink)]"
+              >
+                <option value="active">{copy.filterActive}</option>
+                <option value="all">{copy.filterAll}</option>
+                <option value="revoked">{copy.filterRevoked}</option>
+                <option value="expired">{copy.filterExpired}</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-[11px] font-black text-[color:var(--ol-muted)]">
+              <span>{copy.searchLabel}</span>
+              <input
+                value={tokenQueryDraft}
+                onChange={(event) => setTokenQueryDraft(event.target.value)}
+                maxLength={120}
+                placeholder={copy.searchPlaceholder}
+                className="h-9 rounded-lg border border-[color:var(--ol-line)] bg-white px-3 text-[12px] font-bold text-[color:var(--ol-ink)]"
+              />
+            </label>
+            <button type="submit" disabled={tokenLoading} className="ol-mini-btn self-end">
+              {copy.applyFilters}
+            </button>
+          </form>
           <div className="flex flex-wrap items-center justify-between gap-3 text-[12px] font-bold text-[color:var(--ol-muted)]">
             <div className="flex flex-wrap items-center gap-2">
               <label className="inline-flex items-center gap-1.5">
@@ -438,7 +495,7 @@ export function AutomationAccessPanel({
           {tokens.length > 0 ? (
             <div className="grid gap-2">
               {tokens.map((token) => {
-                const revoked = Boolean(token.revoked_at);
+                const tokenState = agentTokenFilterStatus(token);
                 return (
                   <div
                     key={token.id}
@@ -458,7 +515,7 @@ export function AutomationAccessPanel({
                     <button
                       type="button"
                       onClick={() => void revokeAgentToken(token.id)}
-                      disabled={revoked || revokingTokenId === token.id}
+                      disabled={tokenState !== "active" || revokingTokenId === token.id}
                       className="ol-mini-btn bg-[#fde7e7] text-[#d93b3b] hover:bg-[#fbd5d5] disabled:cursor-not-allowed disabled:bg-[color:var(--ol-soft)] disabled:text-[color:var(--ol-subtle)]"
                     >
                       {revokingTokenId === token.id ? copy.revokingToken : copy.revokeToken}
@@ -564,7 +621,8 @@ function buildSelfRegistrationPrompt(token: string, locale: Locale): string {
 }
 
 function agentTokenStatusLabel(token: BootstrapToken, locale: Locale): string {
-  const status = token.revoked_at ? "revoked" : token.redeemed_at ? "redeemed" : token.status;
+  const filterStatus = agentTokenFilterStatus(token);
+  const status = filterStatus === "expired" ? "expired" : token.revoked_at ? "revoked" : token.redeemed_at ? "redeemed" : token.status;
   const labels: Record<string, Record<Locale, string>> = {
     active: { zh: "有效", en: "Active" },
     pending: { zh: "待注册", en: "Pending" },
@@ -574,4 +632,13 @@ function agentTokenStatusLabel(token: BootstrapToken, locale: Locale): string {
     used: { zh: "已使用", en: "Used" },
   };
   return labels[status]?.[locale] ?? status;
+}
+
+function agentTokenFilterStatus(token: BootstrapToken): Exclude<AgentTokenFilterStatus, "all"> {
+  if (token.revoked_at || token.status === "revoked") return "revoked";
+  if (token.expires_at) {
+    const expiresAt = new Date(token.expires_at).getTime();
+    if (Number.isFinite(expiresAt) && expiresAt <= Date.now()) return "expired";
+  }
+  return "active";
 }
