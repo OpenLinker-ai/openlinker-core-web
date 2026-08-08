@@ -40,6 +40,9 @@ jobs:
       - name: Check server page request parallelism
         run: npm run test:server-pages
 
+      - name: Check Skill directory counts
+        run: npm run test:skills
+
       - name: Check Core navigation route contract
         run: npm run test:core-navigation-routes
 

@@ -14,6 +14,7 @@ import {
   type Skill,
 } from "@/lib/skills";
 import type { Locale } from "@/lib/i18n";
+import { skillDirectoryCountState } from "@/lib/skill-directory-state.mjs";
 import { skillRegistryMessages } from "@/messages/skill";
 import { cn } from "@/lib/utils";
 
@@ -144,6 +145,12 @@ export function SkillsRegistry({ locale, skills }: { locale: Locale; skills: Ski
 
   const currentCategoryLabel =
     filter === ALL_FILTER ? copy.allCategories : categoryLabel(filter);
+  const countState = skillDirectoryCountState({
+    directoryTotal: skills.length,
+    filteredTotal: rows.length,
+    shown: rows.length,
+    filterActive: Boolean(query.trim() || filter !== ALL_FILTER),
+  });
 
   const submitProposal = async (draft: ProposalDraft, source: SkillProposal["source"]) => {
     if (!isAuthenticated) {
@@ -222,7 +229,11 @@ export function SkillsRegistry({ locale, skills }: { locale: Locale; skills: Ski
             >
               {item === ALL_FILTER ? copy.all : categoryLabel(item)}
               <span>
-                {item === ALL_FILTER ? skills.length : categoryCounts.get(item) ?? 0}
+                {item === ALL_FILTER
+                  ? countState.allCount
+                  : item === filter && countState.filterActive
+                    ? countState.activeFilterCount
+                    : categoryCounts.get(item) ?? 0}
               </span>
             </button>
           ))}
@@ -332,8 +343,14 @@ export function SkillsRegistry({ locale, skills }: { locale: Locale; skills: Ski
               {currentCategoryLabel}
             </div>
             <p className="mt-2 text-[12.5px] leading-relaxed text-[color:var(--ol-muted)]">
-              {skills.length > 0
-                ? copy.currentSummary(skills.length, rows.length)
+              {countState.directoryTotal > 0
+                ? countState.filterActive
+                  ? copy.filteredSummary(
+                      countState.directoryTotal,
+                      countState.filteredTotal,
+                      countState.shown,
+                    )
+                  : copy.currentSummary(countState.directoryTotal, countState.shown)
                 : copy.noData}
             </p>
           </div>

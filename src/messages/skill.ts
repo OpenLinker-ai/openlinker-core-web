@@ -21,6 +21,7 @@ type SkillRegistryMessages = {
   registryKicker: string;
   currentDirectory: string;
   currentSummary: (total: number, shown: number) => string;
+  filteredSummary: (directoryTotal: number, filteredTotal: number, shown: number) => string;
   noData: string;
   proposalTitle: string;
   proposalLead: string;
@@ -73,6 +74,8 @@ export const skillRegistryMessages = {
     currentDirectory: "目录概览",
     currentSummary: (total: number, shown: number) =>
       `目录中有 ${total} 个标准 Skill；当前显示 ${shown} 个。`,
+    filteredSummary: (directoryTotal: number, filteredTotal: number, shown: number) =>
+      `目录中有 ${directoryTotal} 个标准 Skill；当前筛选匹配 ${filteredTotal} 个，本页显示 ${shown} 个。`,
     noData: "Skill 目录暂时没有内容。",
     proposalTitle: "提交缺失 Skill",
     proposalLead:
@@ -137,6 +140,8 @@ export const skillRegistryMessages = {
     currentDirectory: "Directory overview",
     currentSummary: (total: number, shown: number) =>
       `${total} standard Skills in the directory; ${shown} shown.`,
+    filteredSummary: (directoryTotal: number, filteredTotal: number, shown: number) =>
+      `${directoryTotal} standard Skills in the directory; ${filteredTotal} match the current filters and ${shown} are shown on this page.`,
     noData: "The Skill directory is currently empty.",
     proposalTitle: "Propose a missing Skill",
     proposalLead:
