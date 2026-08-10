@@ -157,6 +157,8 @@ const FormMessage = React.forwardRef<
     <p
       ref={ref}
       id={formMessageId}
+      // 校验失败时错误文案是动态插入的，没有 role="alert" 屏幕阅读器不会主动播报
+      role={error ? "alert" : undefined}
       className={cn("text-sm font-medium text-destructive", className)}
       {...props}
     >
