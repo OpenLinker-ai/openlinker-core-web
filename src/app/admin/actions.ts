@@ -3,10 +3,22 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { apiFetchAuthed } from "@/lib/api";
+import { apiFetchAuthed, localizedErrorMessage } from "@/lib/api";
+import type { Locale } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n-server";
 
-function messageFromError(error: unknown, fallback: string): string {
-  return fallback;
+function messageFromError(error: unknown, locale: Locale, fallback: string): string {
+  return localizedErrorMessage(error, locale, fallback);
+}
+
+/**
+ * 表单显式带上的 locale 优先（Runtime Node 表单会传 hidden input），
+ * 其余管理表单没有这个字段，回退到语言 Cookie / Accept-Language。
+ */
+async function actionLocale(formData: FormData): Promise<Locale> {
+  const explicit = formData.get("locale");
+  if (explicit === "en" || explicit === "zh") return explicit;
+  return getLocale();
 }
 
 function checked(formData: FormData, name: string): boolean {
@@ -39,8 +51,17 @@ function revalidateAdmin() {
 }
 
 export async function updateUserFlagsAction(formData: FormData) {
-	const id = String(formData.get("id") ?? "").trim();
-	if (!id) adminRedirect(formData, "error", "缺少用户 ID", "/admin/users");
+  const locale = await actionLocale(formData);
+  const copy =
+    locale === "zh"
+      ? { missing: "缺少用户 ID", failed: "更新用户权限失败", done: "用户权限已更新" }
+      : {
+          missing: "User ID is missing",
+          failed: "Failed to update user permissions",
+          done: "User permissions updated",
+        };
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) adminRedirect(formData, "error", copy.missing, "/admin/users");
 
   try {
     await apiFetchAuthed(`/api/v1/admin/users/${id}/flags`, {
@@ -53,13 +74,19 @@ export async function updateUserFlagsAction(formData: FormData) {
     });
     revalidateAdmin();
   } catch (error) {
-    adminRedirect(formData, "error", messageFromError(error, "更新用户权限失败"), "/admin/users");
+    adminRedirect(formData, "error", messageFromError(error, locale, copy.failed), "/admin/users");
   }
 
-	adminRedirect(formData, "status", "用户权限已更新", "/admin/users");
+  adminRedirect(formData, "status", copy.done, "/admin/users");
 }
 
 export async function createUserAction(formData: FormData) {
+	const locale = await actionLocale(formData);
+	const copy =
+		locale === "zh"
+			? { failed: "创建用户失败", done: "用户已创建" }
+			: { failed: "Failed to create the user", done: "User created" };
+
 	try {
 		await apiFetchAuthed("/api/v1/admin/users", {
 			method: "POST",
@@ -74,15 +101,24 @@ export async function createUserAction(formData: FormData) {
 		});
 		revalidateAdmin();
 	} catch (error) {
-		adminRedirect(formData, "error", messageFromError(error, "创建用户失败"), "/admin/users");
+		adminRedirect(formData, "error", messageFromError(error, locale, copy.failed), "/admin/users");
 	}
 
-	adminRedirect(formData, "status", "用户已创建", "/admin/users");
+	adminRedirect(formData, "status", copy.done, "/admin/users");
 }
 
 export async function updateAgentModerationAction(formData: FormData) {
-	const id = String(formData.get("id") ?? "").trim();
-	if (!id) adminRedirect(formData, "error", "缺少 Agent ID", "/admin/agents");
+  const locale = await actionLocale(formData);
+  const copy =
+    locale === "zh"
+      ? { missing: "缺少 Agent ID", failed: "更新 Agent 状态失败", done: "Agent 状态已更新" }
+      : {
+          missing: "Agent ID is missing",
+          failed: "Failed to update the Agent status",
+          done: "Agent status updated",
+        };
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) adminRedirect(formData, "error", copy.missing, "/admin/agents");
 
   try {
     await apiFetchAuthed(`/api/v1/admin/agents/${id}/moderation`, {
@@ -96,31 +132,55 @@ export async function updateAgentModerationAction(formData: FormData) {
     });
     revalidateAdmin();
   } catch (error) {
-    adminRedirect(formData, "error", messageFromError(error, "更新 Agent 状态失败"), "/admin/agents");
+    adminRedirect(formData, "error", messageFromError(error, locale, copy.failed), "/admin/agents");
   }
 
-  adminRedirect(formData, "status", "Agent 状态已更新", "/admin/agents");
+  adminRedirect(formData, "status", copy.done, "/admin/agents");
 }
 
 export async function certifyAgentAction(formData: FormData) {
+  const locale = await actionLocale(formData);
+  const copy =
+    locale === "zh"
+      ? { missing: "缺少 Agent ID", failed: "实例认证通过失败", done: "Agent 已通过实例认证" }
+      : {
+          missing: "Agent ID is missing",
+          failed: "Failed to grant instance certification",
+          done: "Agent passed instance certification",
+        };
   const id = String(formData.get("id") ?? "").trim();
-  if (!id) adminRedirect(formData, "error", "缺少 Agent ID", "/admin/agents");
+  if (!id) adminRedirect(formData, "error", copy.missing, "/admin/agents");
 
   try {
     await apiFetchAuthed(`/api/v1/admin/agents/${id}/certify`, { method: "POST" });
     revalidateAdmin();
   } catch (error) {
-    adminRedirect(formData, "error", messageFromError(error, "实例认证通过失败"), "/admin/agents");
+    adminRedirect(formData, "error", messageFromError(error, locale, copy.failed), "/admin/agents");
   }
 
-  adminRedirect(formData, "status", "Agent 已通过实例认证", "/admin/agents");
+  adminRedirect(formData, "status", copy.done, "/admin/agents");
 }
 
 export async function rejectCertificationAction(formData: FormData) {
+  const locale = await actionLocale(formData);
+  const copy =
+    locale === "zh"
+      ? {
+          missing: "缺少 Agent ID",
+          reason: "拒绝原因不能为空",
+          failed: "拒绝实例认证失败",
+          done: "Agent 实例认证已拒绝",
+        }
+      : {
+          missing: "Agent ID is missing",
+          reason: "A rejection reason is required",
+          failed: "Failed to reject instance certification",
+          done: "Agent instance certification rejected",
+        };
   const id = String(formData.get("id") ?? "").trim();
   const reason = String(formData.get("reason") ?? "").trim();
-  if (!id) adminRedirect(formData, "error", "缺少 Agent ID", "/admin/agents");
-  if (!reason) adminRedirect(formData, "error", "拒绝原因不能为空", "/admin/agents");
+  if (!id) adminRedirect(formData, "error", copy.missing, "/admin/agents");
+  if (!reason) adminRedirect(formData, "error", copy.reason, "/admin/agents");
 
   try {
     await apiFetchAuthed(`/api/v1/admin/agents/${id}/reject-certification`, {
@@ -129,18 +189,14 @@ export async function rejectCertificationAction(formData: FormData) {
     });
     revalidateAdmin();
   } catch (error) {
-    adminRedirect(formData, "error", messageFromError(error, "拒绝实例认证失败"), "/admin/agents");
+    adminRedirect(formData, "error", messageFromError(error, locale, copy.failed), "/admin/agents");
   }
 
-  adminRedirect(formData, "status", "Agent 实例认证已拒绝", "/admin/agents");
-}
-
-function actionLocale(formData: FormData): "zh" | "en" {
-  return formData.get("locale") === "en" ? "en" : "zh";
+  adminRedirect(formData, "status", copy.done, "/admin/agents");
 }
 
 export async function drainRuntimeNodeAction(formData: FormData) {
-  const locale = actionLocale(formData);
+  const locale = await actionLocale(formData);
   const nodeID = String(formData.get("node_id") ?? "").trim();
   const copy = locale === "zh"
     ? { missing: "缺少 Node ID", failed: "无法让 Runtime Node 停止接收新任务", done: "Runtime Node 已停止接收新任务" }
@@ -160,7 +216,7 @@ export async function drainRuntimeNodeAction(formData: FormData) {
 }
 
 export async function activateRuntimeNodeAction(formData: FormData) {
-  const locale = actionLocale(formData);
+  const locale = await actionLocale(formData);
   const nodeID = String(formData.get("node_id") ?? "").trim();
   const copy = locale === "zh"
     ? {
@@ -188,7 +244,7 @@ export async function activateRuntimeNodeAction(formData: FormData) {
 }
 
 export async function revokeRuntimeNodeAction(formData: FormData) {
-  const locale = actionLocale(formData);
+  const locale = await actionLocale(formData);
   const nodeID = String(formData.get("node_id") ?? "").trim();
   const reason = String(formData.get("reason") ?? "").trim();
   const copy = locale === "zh"
