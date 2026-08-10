@@ -19,14 +19,13 @@ export function playgroundInitialDraft({
   }
 
   const textField = preferredTextField(inputSchema);
+  const prefillDraft = normalizedPrefillDraft(prefill, textField);
+  if (prefillDraft !== null) return prefillDraft;
   if (!textField && isPlainRecord(examples[0]?.input_json)) {
     return JSON.stringify(examples[0].input_json, null, 2);
   }
   if (!textField && isPlainRecord(inputSchema)) {
     return JSON.stringify(schemaObjectSkeleton(inputSchema), null, 2);
-  }
-  if (typeof prefill === "string" && prefill.trim() !== "") {
-    return prefill;
   }
   return locale === "zh" ? "这里写你的任务描述" : "Write your task description here";
 }
@@ -114,6 +113,17 @@ function preferredTextField(inputSchema) {
     return propertyNames[0];
   }
   return null;
+}
+
+function normalizedPrefillDraft(prefill, textField) {
+  if (typeof prefill !== "string" || prefill.trim() === "") return null;
+  if (textField) return prefill;
+  try {
+    const parsed = JSON.parse(prefill);
+    return isPlainRecord(parsed) ? JSON.stringify(parsed, null, 2) : null;
+  } catch {
+    return null;
+  }
 }
 
 function schemaObjectSkeleton(schema) {

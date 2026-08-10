@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { PlaygroundInputError, parsePlaygroundDraft, playgroundInitialDraft, playgroundViolationMessage } from "../src/lib/playground-input.mjs";
+import { runReplayPlaygroundHref } from "../src/lib/run-replay.mjs";
 
 const multiFieldSchema = {
   type: "object",
@@ -10,12 +11,24 @@ const multiFieldSchema = {
   additionalProperties: false,
 };
 
-test("Playground initial input follows selected example, published example, then skeleton priority", () => {
+test("Playground initial input follows selected example, structured prefill, published example, then skeleton priority", () => {
   const selected = { query: "selected", budget: 3, sources: ["web"] };
+  const replayed = { query: "replayed", budget: 8, sources: ["db", "web"] };
   const published = { query: "published", budget: 5, sources: [] };
-  assert.equal(playgroundInitialDraft({ selectedExample: selected, examples: [{ input_json: published }], inputSchema: multiFieldSchema, prefill: "ignored", locale: "en" }), JSON.stringify(selected, null, 2));
+  assert.equal(playgroundInitialDraft({ selectedExample: selected, examples: [{ input_json: published }], inputSchema: multiFieldSchema, prefill: JSON.stringify(replayed), locale: "en" }), JSON.stringify(selected, null, 2));
+  assert.equal(playgroundInitialDraft({ examples: [{ input_json: published }], inputSchema: multiFieldSchema, prefill: JSON.stringify(replayed), locale: "en" }), JSON.stringify(replayed, null, 2));
   assert.equal(playgroundInitialDraft({ examples: [{ input_json: published }], inputSchema: multiFieldSchema, prefill: "ignored", locale: "en" }), JSON.stringify(published, null, 2));
   assert.equal(playgroundInitialDraft({ inputSchema: multiFieldSchema, prefill: "ignored", locale: "en" }), JSON.stringify({ query: "", budget: 0, sources: [] }, null, 2));
+});
+
+test("Run replay URL carries the recorded object without enabling autorun", () => {
+  const input = { query: "six-field replay", budget: 12, sources: ["web"] };
+  const href = runReplayPlaygroundHref({ agentSlug: "seller/research", input, fallbackHref: "/registry" });
+  const url = new URL(href, "https://openlinker.local");
+  assert.equal(url.pathname, "/playground/seller%2Fresearch");
+  assert.deepEqual(JSON.parse(url.searchParams.get("prefill")), input);
+  assert.equal(url.searchParams.has("autorun"), false);
+  assert.equal(runReplayPlaygroundHref({ input, fallbackHref: "/registry" }), "/registry");
 });
 
 test("natural language maps only to a single text field contract", () => {

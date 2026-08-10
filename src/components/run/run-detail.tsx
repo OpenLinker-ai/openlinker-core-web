@@ -26,6 +26,7 @@ import {
   acquireRunReplayIntent,
   completeRunReplayIntent,
 } from "@/lib/run-idempotency";
+import { runReplayPlaygroundHref } from "@/lib/run-replay.mjs";
 import { runDetailMessages } from "@/messages/run";
 
 export type RunDetailData = {
@@ -315,7 +316,11 @@ export function RunDetail({
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
-              href={view.agentSlug ? `/playground/${encodeURIComponent(view.agentSlug)}` : "/registry"}
+              href={runReplayPlaygroundHref({
+                agentSlug: view.agentSlug,
+                input: view.input,
+                fallbackHref: "/registry",
+              })}
               className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12.5px] font-[900] text-[color:var(--ol-ink)] hover:border-[color:var(--ol-primary)]/40"
             >
               {copy.rerun}
