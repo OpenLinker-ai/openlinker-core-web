@@ -8,7 +8,7 @@ import {
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-test("creator Agent pagination shares one global four-request limit and keeps deterministic page order", async () => {
+test("creator Agent pagination fills but never exceeds one global four-request pool", async () => {
   const totals = new Map([
     ["public", 450],
     ["unlisted", 370],
@@ -37,7 +37,8 @@ test("creator Agent pagination shares one global four-request limit and keeps de
     { limit: 100, maxConcurrency: 4 },
   );
 
-  assert.equal(maxActive, 4, "the shared pool should use, but never exceed, four request slots");
+  assert.ok(calls.length >= 8, "the utilization fixture must expose enough runnable work");
+  assert.equal(maxActive, 4, "the shared pool must fill, but never exceed, four request slots");
   assert.deepEqual(
     groups.map(({ visibility, pages }) => ({
       visibility,
@@ -79,33 +80,38 @@ test("creator Agent pagination stops queued work after the first failure", async
   assert.ok(calls.length < 20, "the failure must stop the remaining pagination fan-out");
 });
 
-test("creator Agent detail lookup returns null only for caller-classified not found errors", async () => {
+test("creator Agent detail lookup returns null only for caller-classified unavailable errors", async () => {
   const paths = [];
   const fetcher = async (path) => {
     paths.push(path);
     return { id: path };
   };
-  const isNotFound = (error) => error?.status === 404;
+  const isUnavailable = (error) => error?.status === 403 || error?.status === 404;
 
-  assert.equal(await fetchCreatorAgentByParamWith(fetcher, "   ", isNotFound), null);
+  assert.equal(await fetchCreatorAgentByParamWith(fetcher, "   ", isUnavailable), null);
   assert.equal(paths.length, 0);
 
   await fetchCreatorAgentByParamWith(
     fetcher,
     "123e4567-e89b-42d3-a456-426614174000",
-    isNotFound,
+    isUnavailable,
   );
-  await fetchCreatorAgentByParamWith(fetcher, "seller/research", isNotFound);
+  await fetchCreatorAgentByParamWith(fetcher, "seller/research", isUnavailable);
   assert.deepEqual(paths, [
     "/api/v1/creator/agents/123e4567-e89b-42d3-a456-426614174000",
     "/api/v1/creator/agents/by-slug/seller%2Fresearch",
   ]);
 
-  const notFound = { status: 404 };
-  assert.equal(
-    await fetchCreatorAgentByParamWith(async () => Promise.reject(notFound), "missing", isNotFound),
-    null,
-  );
+  for (const unavailable of [{ status: 403 }, { status: 404 }]) {
+    assert.equal(
+      await fetchCreatorAgentByParamWith(
+        async () => Promise.reject(unavailable),
+        "missing",
+        isUnavailable,
+      ),
+      null,
+    );
+  }
 
   for (const error of [
     { status: 401 },
@@ -114,7 +120,7 @@ test("creator Agent detail lookup returns null only for caller-classified not fo
     Object.assign(new Error("timed out"), { name: "AbortError" }),
   ]) {
     await assert.rejects(
-      fetchCreatorAgentByParamWith(async () => Promise.reject(error), "agent", isNotFound),
+      fetchCreatorAgentByParamWith(async () => Promise.reject(error), "agent", isUnavailable),
       (caught) => caught === error,
     );
   }

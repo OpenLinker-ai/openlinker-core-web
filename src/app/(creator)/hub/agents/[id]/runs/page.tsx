@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import type { AgentResponse } from "@/components/agent/my-agents-card";
 import { Topbar } from "@/components/layout/topbar";
@@ -7,6 +7,7 @@ import { RunHistory, type Run } from "@/components/runs/run-history";
 import { apiFetchAuthed } from "@/lib/api";
 import { auth } from "@/lib/auth";
 import { fetchCreatorAgentByParam } from "@/lib/creator-agent";
+import { redirectCreatorAgentLogin, rethrowCreatorAgentPageError } from "@/lib/creator-agent-page";
 import { getLocale } from "@/lib/i18n-server";
 
 interface RunListResp {
@@ -23,9 +24,13 @@ export default async function AgentRunsPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ page?: string }>;
 }) {
-  const session = await auth();
+  const [{ id: slugParam }, sp, session] = await Promise.all([params, searchParams, auth()]);
+  const callbackPath = `/hub/agents/${encodeURIComponent(slugParam)}/runs`;
+  const callbackUrl = sp.page
+    ? `${callbackPath}?${new URLSearchParams({ page: sp.page })}`
+    : callbackPath;
   if (!session) {
-    redirect("/login?callbackUrl=/hub");
+    redirectCreatorAgentLogin(callbackUrl);
   }
   const locale = await getLocale();
   const copy =
@@ -55,12 +60,15 @@ export default async function AgentRunsPage({
           action: "Run once in Playground ->",
         };
 
-  const [{ id: slugParam }, sp] = await Promise.all([params, searchParams]);
   const page = Math.max(1, Number(sp.page ?? "1") || 1);
   const size = 20;
 
-  let agent: AgentResponse | null = null;
-  agent = await fetchCreatorAgentByParam<AgentResponse>(slugParam);
+  let agent: AgentResponse | null;
+  try {
+    agent = await fetchCreatorAgentByParam<AgentResponse>(slugParam);
+  } catch (error) {
+    rethrowCreatorAgentPageError(error, callbackUrl);
+  }
 
   if (!agent) {
     notFound();

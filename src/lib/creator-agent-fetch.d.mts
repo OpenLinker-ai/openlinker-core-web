@@ -13,7 +13,7 @@ export type CreatorAgentPageGroup<T, Visibility extends string> = {
 export function fetchCreatorAgentByParamWith<T>(
   fetcher: (path: string) => Promise<T>,
   param: string,
-  isNotFound: (error: unknown) => boolean,
+  isUnavailable: (error: unknown) => boolean,
 ): Promise<T | null>;
 
 export function fetchCreatorAgentPagesWith<T, Visibility extends string>(
@@ -28,4 +28,3 @@ export function fetchCreatorAgentPagesWith<T, Visibility extends string>(
     maxConcurrency?: number;
   },
 ): Promise<CreatorAgentPageGroup<T, Visibility>[]>;
-

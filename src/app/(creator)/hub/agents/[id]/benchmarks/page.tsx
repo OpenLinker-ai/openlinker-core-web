@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import {
   BenchmarkPanel,
@@ -12,6 +12,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { apiFetchAuthed } from "@/lib/api";
 import { auth } from "@/lib/auth";
 import { fetchCreatorAgentByParam } from "@/lib/creator-agent";
+import { redirectCreatorAgentLogin, rethrowCreatorAgentPageError } from "@/lib/creator-agent-page";
 import { getLocale } from "@/lib/i18n-server";
 
 interface CreatorAgent {
@@ -31,9 +32,10 @@ export default async function AgentBenchmarksPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await auth();
+  const [{ id: slugParam }, session] = await Promise.all([params, auth()]);
+  const callbackUrl = `/hub/agents/${encodeURIComponent(slugParam)}/benchmarks`;
   if (!session) {
-    redirect("/login?callbackUrl=/hub");
+    redirectCreatorAgentLogin(callbackUrl);
   }
   const locale = await getLocale();
   const copy =
@@ -53,8 +55,6 @@ export default async function AgentBenchmarksPage({
           back: "Back to onboarding",
         };
 
-  const { id: slugParam } = await params;
-
   const runtimeStatusPromise = apiFetchAuthed<BenchmarkRuntimeStatus>(
     "/api/v1/benchmark/status",
   ).catch(
@@ -66,8 +66,13 @@ export default async function AgentBenchmarksPage({
       }) satisfies BenchmarkRuntimeStatus,
   );
 
+  let found: CreatorAgent | null;
+  try {
+    found = await fetchCreatorAgentByParam<CreatorAgent>(slugParam);
+  } catch (error) {
+    rethrowCreatorAgentPageError(error, callbackUrl);
+  }
   let agent: BenchmarkAgent | null = null;
-  const found = await fetchCreatorAgentByParam<CreatorAgent>(slugParam);
   if (found) agent = { id: found.id, slug: found.slug, name: found.name };
 
   if (!agent) {

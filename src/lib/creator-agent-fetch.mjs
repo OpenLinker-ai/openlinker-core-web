@@ -1,7 +1,7 @@
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export async function fetchCreatorAgentByParamWith(fetcher, param, isNotFound) {
+export async function fetchCreatorAgentByParamWith(fetcher, param, isUnavailable) {
   const normalized = param.trim();
   if (!normalized) return null;
 
@@ -12,7 +12,7 @@ export async function fetchCreatorAgentByParamWith(fetcher, param, isNotFound) {
   try {
     return await fetcher(path);
   } catch (error) {
-    if (isNotFound(error)) return null;
+    if (isUnavailable(error)) return null;
     throw error;
   }
 }

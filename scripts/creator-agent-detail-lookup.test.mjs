@@ -16,19 +16,30 @@ const detailPages = [
   "src/app/(creator)/hub/agents/[id]/delivery/history/page.tsx",
 ];
 
-test("creator Agent lookup returns null only for ApiError 404", async () => {
+test("creator Agent lookup classifies 403/404 as unavailable and exposes 401", async () => {
   const helper = await source("src/lib/creator-agent.ts");
   assert.match(helper, /import \{ ApiError, apiFetchAuthed \} from "@\/lib\/api"/);
   assert.match(helper, /fetchCreatorAgentByParamWith\(/);
-  assert.match(helper, /error instanceof ApiError && error\.status === 404/);
+  assert.match(helper, /error instanceof ApiError && \(error\.status === 403 \|\| error\.status === 404\)/);
+  assert.match(helper, /isCreatorAgentUnauthorized/);
+  assert.match(helper, /error instanceof ApiError && error\.status === 401/);
   assert.doesNotMatch(helper, /\.catch\(\(\) => null\)/);
+
+  const boundary = await source("src/lib/creator-agent-page.ts");
+  assert.match(boundary, /redirect\(authHref\("\/login", callbackUrl\)\)/);
+  assert.match(boundary, /isCreatorAgentUnauthorized\(error\)/);
+  assert.match(boundary, /throw error/);
 });
 
 test("creator Agent detail pages never resolve one Agent through the paginated active list", async () => {
   for (const path of detailPages) {
     const page = await source(path);
     assert.match(page, /import \{ fetchCreatorAgentByParam \} from "@\/lib\/creator-agent"/i, path);
+    assert.match(page, /redirectCreatorAgentLogin/, path);
+    assert.match(page, /rethrowCreatorAgentPageError\(error, callbackUrl\)/, path);
+    assert.match(page, /encodeURIComponent\([^)]*Param\)/, path);
     assert.match(page, /fetchCreatorAgentByParam</, path);
+    assert.doesNotMatch(page, /redirect\("\/login\?callbackUrl=\/hub"\)/, path);
     assert.doesNotMatch(page, /apiFetchAuthed<[^>]*AgentsPayload[^>]*>\("\/api\/v1\/creator\/agents"\)/, path);
     assert.doesNotMatch(page, /function normalizeAgents\(/, path);
   }

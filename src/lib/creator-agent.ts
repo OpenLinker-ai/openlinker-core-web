@@ -12,6 +12,7 @@ export type CreatorAgentLookup = {
   endpoint_url?: string;
   price_per_call_cents?: number;
   tags?: string[];
+  skill_ids?: string[];
   status?: "pending" | "approved" | "rejected" | "disabled";
   lifecycle_status?: "active" | "disabled";
   visibility?: "public" | "unlisted" | "private";
@@ -34,9 +35,13 @@ export async function fetchCreatorAgentByParam<T extends CreatorAgentLookup = Cr
   const agent = await fetchCreatorAgentByParamWith(
     (path) => apiFetchAuthed<CreatorAgentLookup>(path),
     param,
-    (error) => error instanceof ApiError && error.status === 404,
+    (error) => error instanceof ApiError && (error.status === 403 || error.status === 404),
   );
   return agent ? normalizeCreatorAgent(agent) as T : null;
+}
+
+export function isCreatorAgentUnauthorized(error: unknown): error is ApiError {
+  return error instanceof ApiError && error.status === 401;
 }
 
 export async function fetchActiveCreatorAgents<T extends CreatorAgentLookup = CreatorAgentLookup>(

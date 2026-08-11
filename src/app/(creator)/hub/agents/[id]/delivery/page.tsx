@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import type { AgentResponse } from "@/components/agent/my-agents-card";
 import { AgentDeliveryCenter } from "@/components/delivery/agent-delivery-center";
@@ -7,6 +7,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { apiFetchAuthed } from "@/lib/api";
 import { auth } from "@/lib/auth";
 import { fetchCreatorAgentByParam } from "@/lib/creator-agent";
+import { redirectCreatorAgentLogin, rethrowCreatorAgentPageError } from "@/lib/creator-agent-page";
 import { getLocale } from "@/lib/i18n-server";
 
 type TargetListResponse = {
@@ -24,16 +25,22 @@ export default async function AgentDeliveryPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ run_id?: string }>;
 }) {
-  const session = await auth();
+  const [{ id: agentParam }, { run_id: runId }, session] = await Promise.all([
+    params,
+    searchParams,
+    auth(),
+  ]);
+  const callbackPath = `/hub/agents/${encodeURIComponent(agentParam)}/delivery`;
+  const callbackUrl = runId !== undefined
+    ? `${callbackPath}?${new URLSearchParams({ run_id: runId })}`
+    : callbackPath;
   if (!session) {
-    redirect("/login?callbackUrl=/hub");
+    redirectCreatorAgentLogin(callbackUrl);
   }
 
   const locale = await getLocale();
-  const { id: agentParam } = await params;
-  const { run_id: runId } = await searchParams;
-
-  const agentPromise = fetchCreatorAgentByParam<AgentResponse>(agentParam);
+  const agentPromise = fetchCreatorAgentByParam<AgentResponse>(agentParam)
+    .catch((error) => rethrowCreatorAgentPageError(error, callbackUrl));
   const targetsPromise = apiFetchAuthed<TargetListResponse>("/api/v1/delivery-targets")
     .then((data) => data.items ?? [])
     .catch(() => [] as DeliveryTarget[]);
