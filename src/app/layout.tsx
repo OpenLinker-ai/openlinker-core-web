@@ -60,7 +60,7 @@ export default async function RootLayout({
             {copy.status}
           </a>
         </footer>
-        <Toaster richColors position="top-center" />
+        <Toaster richColors position="bottom-center" />
       </body>
     </html>
   );
