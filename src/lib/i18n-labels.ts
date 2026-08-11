@@ -100,6 +100,10 @@ const RUN_ERROR_MESSAGES: LabelMap = {
     zh: "运行服务暂时无法完成这次调用，请稍后重试。",
     en: "The runtime service could not complete this call. Try again later.",
   },
+  CORE_EVENT_PERSIST_FAILED: {
+    zh: "调用发出前未能记录运行进度，这次运行已终止，Agent 没有被调用。请稍后重试。",
+    en: "Run progress could not be recorded before the call was sent, so the run stopped and the Agent was never invoked. Try again later.",
+  },
   CANCELED: {
     zh: "此运行已按请求取消。",
     en: "This run was canceled as requested.",
