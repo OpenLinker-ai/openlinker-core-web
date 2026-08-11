@@ -6,19 +6,14 @@ import { Topbar } from "@/components/layout/topbar";
 import { RunHistory, type Run } from "@/components/runs/run-history";
 import { apiFetchAuthed } from "@/lib/api";
 import { auth } from "@/lib/auth";
+import { fetchCreatorAgentByParam } from "@/lib/creator-agent";
 import { getLocale } from "@/lib/i18n-server";
-
-type AgentsPayload = AgentResponse[] | { items?: AgentResponse[] };
 
 interface RunListResp {
   items: Run[];
   total: number;
   page: number;
   size: number;
-}
-
-function normalizeAgents(payload: AgentsPayload): AgentResponse[] {
-  return Array.isArray(payload) ? payload : payload.items ?? [];
 }
 
 export default async function AgentRunsPage({
@@ -65,13 +60,7 @@ export default async function AgentRunsPage({
   const size = 20;
 
   let agent: AgentResponse | null = null;
-  try {
-    const payload = await apiFetchAuthed<AgentsPayload>("/api/v1/creator/agents");
-    const agents = normalizeAgents(payload);
-    agent = agents.find((a) => a.slug === slugParam || a.id === slugParam) ?? null;
-  } catch {
-    agent = null;
-  }
+  agent = await fetchCreatorAgentByParam<AgentResponse>(slugParam);
 
   if (!agent) {
     notFound();

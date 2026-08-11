@@ -6,15 +6,9 @@ import {
   type EditableAgent,
 } from "@/components/creator/agent-settings-panel";
 import { Topbar } from "@/components/layout/topbar";
-import { apiFetchAuthed } from "@/lib/api";
 import { auth } from "@/lib/auth";
+import { fetchCreatorAgentByParam } from "@/lib/creator-agent";
 import { getLocale } from "@/lib/i18n-server";
-
-type AgentsPayload = EditableAgent[] | { items?: EditableAgent[] };
-
-function normalizeAgents(payload: AgentsPayload): EditableAgent[] {
-  return Array.isArray(payload) ? payload : payload.items ?? [];
-}
 
 function normalizeAgent(agent: EditableAgent): EditableAgent {
   return {
@@ -56,14 +50,8 @@ export default async function AgentSettingsPage({
 
   const { id: slugParam } = await params;
   let agent: EditableAgent | null = null;
-  try {
-    const payload = await apiFetchAuthed<AgentsPayload>("/api/v1/creator/agents");
-    const agents = normalizeAgents(payload);
-    const found = agents.find((item) => item.slug === slugParam || item.id === slugParam);
-    agent = found ? normalizeAgent(found) : null;
-  } catch {
-    agent = null;
-  }
+  const found = await fetchCreatorAgentByParam<EditableAgent>(slugParam);
+  agent = found ? normalizeAgent(found) : null;
 
   if (!agent) {
     notFound();

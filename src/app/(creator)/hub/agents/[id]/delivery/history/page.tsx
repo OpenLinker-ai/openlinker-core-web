@@ -6,17 +6,12 @@ import type { DeliveryItem } from "@/components/delivery/types";
 import { Topbar } from "@/components/layout/topbar";
 import { apiFetchAuthed } from "@/lib/api";
 import { auth } from "@/lib/auth";
+import { fetchCreatorAgentByParam } from "@/lib/creator-agent";
 import { getLocale } from "@/lib/i18n-server";
-
-type AgentsPayload = AgentResponse[] | { items?: AgentResponse[] };
 
 type DeliveryListResponse = {
   items?: DeliveryItem[];
 };
-
-function normalizeAgents(payload: AgentsPayload): AgentResponse[] {
-  return Array.isArray(payload) ? payload : payload.items ?? [];
-}
 
 function normalizeStatus(value?: string): string {
   if (value === "pending" || value === "success" || value === "failed") {
@@ -43,13 +38,7 @@ export default async function AgentDeliveryHistoryPage({
   const status = normalizeStatus(rawStatus);
 
   let agent: AgentResponse | null = null;
-  try {
-    const payload = await apiFetchAuthed<AgentsPayload>("/api/v1/creator/agents");
-    const agents = normalizeAgents(payload);
-    agent = agents.find((item) => item.slug === agentParam || item.id === agentParam) ?? null;
-  } catch {
-    agent = null;
-  }
+  agent = await fetchCreatorAgentByParam<AgentResponse>(agentParam);
 
   if (!agent) {
     notFound();

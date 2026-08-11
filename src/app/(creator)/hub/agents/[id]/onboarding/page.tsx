@@ -10,6 +10,7 @@ import {
 import { Topbar } from "@/components/layout/topbar";
 import { apiFetchAuthed } from "@/lib/api";
 import { auth } from "@/lib/auth";
+import { fetchCreatorAgentByParam } from "@/lib/creator-agent";
 import { getLocale } from "@/lib/i18n-server";
 
 interface CreatorAgent {
@@ -25,14 +26,8 @@ interface CreatorAgent {
   mcp_tool_name?: string;
 }
 
-type AgentsPayload = CreatorAgent[] | { items?: CreatorAgent[] };
-
 interface AgentDetailWithSkills {
   skills?: OnboardingSkill[];
-}
-
-function normalizeAgents(payload: AgentsPayload): CreatorAgent[] {
-  return Array.isArray(payload) ? payload : payload.items ?? [];
 }
 
 function toOnboardingAgent(agent: CreatorAgent): OnboardingAgent {
@@ -74,14 +69,8 @@ export default async function AgentOnboardingPage({
   const { id: slugParam } = await params;
 
   let agent: OnboardingAgent | null = null;
-  try {
-    const payload = await apiFetchAuthed<AgentsPayload>("/api/v1/creator/agents");
-    const agents = normalizeAgents(payload);
-    const found = agents.find((a) => a.slug === slugParam || a.id === slugParam);
-    agent = found ? toOnboardingAgent(found) : null;
-  } catch {
-    agent = null;
-  }
+  const found = await fetchCreatorAgentByParam<CreatorAgent>(slugParam);
+  agent = found ? toOnboardingAgent(found) : null;
 
   if (!agent) {
     notFound();
