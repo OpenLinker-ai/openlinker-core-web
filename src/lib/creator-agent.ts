@@ -12,6 +12,7 @@ export type CreatorAgentLookup = {
   endpoint_url?: string;
   price_per_call_cents?: number;
   tags?: string[];
+  skill_ids?: string[];
   status?: "pending" | "approved" | "rejected" | "disabled";
   lifecycle_status?: "active" | "disabled";
   visibility?: "public" | "unlisted" | "private";
@@ -27,6 +28,7 @@ export type CreatorAgentLookup = {
 };
 
 export type CreatorAgentVisibility = "public" | "unlisted" | "private";
+export const CREATOR_AGENT_MAX_CONCURRENCY = 4;
 
 export async function fetchCreatorAgentByParam<T extends CreatorAgentLookup = CreatorAgentLookup>(
   param: string,
@@ -34,9 +36,13 @@ export async function fetchCreatorAgentByParam<T extends CreatorAgentLookup = Cr
   const agent = await fetchCreatorAgentByParamWith(
     (path) => apiFetchAuthed<CreatorAgentLookup>(path),
     param,
-    (error) => error instanceof ApiError && error.status === 404,
+    (error) => error instanceof ApiError && (error.status === 403 || error.status === 404),
   );
   return agent ? normalizeCreatorAgent(agent) as T : null;
+}
+
+export function isCreatorAgentUnauthorized(error: unknown): error is ApiError {
+  return error instanceof ApiError && error.status === 401;
 }
 
 export async function fetchActiveCreatorAgents<T extends CreatorAgentLookup = CreatorAgentLookup>(
@@ -45,7 +51,7 @@ export async function fetchActiveCreatorAgents<T extends CreatorAgentLookup = Cr
   const groups = await fetchCreatorAgentPagesWith(
     fetchActiveCreatorAgentPage,
     visibilities,
-    { limit: 100, maxConcurrency: 4 },
+    { limit: 100, maxConcurrency: CREATOR_AGENT_MAX_CONCURRENCY },
   );
   const seen = new Set<string>();
   const agents: T[] = [];

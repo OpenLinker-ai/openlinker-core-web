@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import {
   AgentOnboardingPanel,
@@ -11,6 +11,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { apiFetchAuthed } from "@/lib/api";
 import { auth } from "@/lib/auth";
 import { fetchCreatorAgentByParam } from "@/lib/creator-agent";
+import { redirectCreatorAgentLogin, rethrowCreatorAgentPageError } from "@/lib/creator-agent-page";
 import { getLocale } from "@/lib/i18n-server";
 
 interface CreatorAgent {
@@ -42,9 +43,10 @@ export default async function AgentOnboardingPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await auth();
+  const [{ id: slugParam }, session] = await Promise.all([params, auth()]);
+  const callbackUrl = `/hub/agents/${encodeURIComponent(slugParam)}/onboarding`;
   if (!session) {
-    redirect("/login?callbackUrl=/hub");
+    redirectCreatorAgentLogin(callbackUrl);
   }
   const locale = await getLocale();
   const copy =
@@ -66,11 +68,13 @@ export default async function AgentOnboardingPage({
           back: "Back to Agent Console",
         };
 
-  const { id: slugParam } = await params;
-
-  let agent: OnboardingAgent | null = null;
-  const found = await fetchCreatorAgentByParam<CreatorAgent>(slugParam);
-  agent = found ? toOnboardingAgent(found) : null;
+  let found: CreatorAgent | null;
+  try {
+    found = await fetchCreatorAgentByParam<CreatorAgent>(slugParam);
+  } catch (error) {
+    rethrowCreatorAgentPageError(error, callbackUrl);
+  }
+  const agent = found ? toOnboardingAgent(found) : null;
 
   if (!agent) {
     notFound();

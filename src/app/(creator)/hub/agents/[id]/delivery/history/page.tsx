@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import type { AgentResponse } from "@/components/agent/my-agents-card";
 import { AgentDeliveryHistoryCenter } from "@/components/delivery/agent-delivery-history-center";
@@ -7,6 +7,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { apiFetchAuthed } from "@/lib/api";
 import { auth } from "@/lib/auth";
 import { fetchCreatorAgentByParam } from "@/lib/creator-agent";
+import { redirectCreatorAgentLogin, rethrowCreatorAgentPageError } from "@/lib/creator-agent-page";
 import { getLocale } from "@/lib/i18n-server";
 
 type DeliveryListResponse = {
@@ -27,18 +28,30 @@ export default async function AgentDeliveryHistoryPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ run_id?: string; status?: string }>;
 }) {
-  const session = await auth();
+  const [{ id: agentParam }, { run_id: runId, status: rawStatus }, session] = await Promise.all([
+    params,
+    searchParams,
+    auth(),
+  ]);
+  const callbackPath = `/hub/agents/${encodeURIComponent(agentParam)}/delivery/history`;
+  const callbackParams = new URLSearchParams();
+  if (runId !== undefined) callbackParams.set("run_id", runId);
+  if (rawStatus !== undefined) callbackParams.set("status", rawStatus);
+  const callbackQuery = callbackParams.toString();
+  const callbackUrl = callbackQuery ? `${callbackPath}?${callbackQuery}` : callbackPath;
   if (!session) {
-    redirect("/login?callbackUrl=/hub");
+    redirectCreatorAgentLogin(callbackUrl);
   }
 
   const locale = await getLocale();
-  const { id: agentParam } = await params;
-  const { run_id: runId, status: rawStatus } = await searchParams;
   const status = normalizeStatus(rawStatus);
 
-  let agent: AgentResponse | null = null;
-  agent = await fetchCreatorAgentByParam<AgentResponse>(agentParam);
+  let agent: AgentResponse | null;
+  try {
+    agent = await fetchCreatorAgentByParam<AgentResponse>(agentParam);
+  } catch (error) {
+    rethrowCreatorAgentPageError(error, callbackUrl);
+  }
 
   if (!agent) {
     notFound();

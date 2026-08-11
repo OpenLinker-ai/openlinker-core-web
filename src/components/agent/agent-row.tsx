@@ -34,6 +34,7 @@ export interface AgentResponse {
   endpoint_url: string;
   price_per_call_cents: number;
   tags: string[];
+  skill_ids?: string[];
   status: "pending" | "approved" | "rejected" | "disabled";
   lifecycle_status: "active" | "disabled";
   visibility: "public" | "unlisted" | "private";

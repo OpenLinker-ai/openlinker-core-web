@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import {
   AgentSettingsPanel,
@@ -8,6 +8,7 @@ import {
 import { Topbar } from "@/components/layout/topbar";
 import { auth } from "@/lib/auth";
 import { fetchCreatorAgentByParam } from "@/lib/creator-agent";
+import { redirectCreatorAgentLogin, rethrowCreatorAgentPageError } from "@/lib/creator-agent-page";
 import { getLocale } from "@/lib/i18n-server";
 
 function normalizeAgent(agent: EditableAgent): EditableAgent {
@@ -23,9 +24,10 @@ export default async function AgentSettingsPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await auth();
+  const [{ id: slugParam }, session] = await Promise.all([params, auth()]);
+  const callbackUrl = `/hub/agents/${encodeURIComponent(slugParam)}/settings`;
   if (!session) {
-    redirect("/login?callbackUrl=/hub");
+    redirectCreatorAgentLogin(callbackUrl);
   }
 
   const locale = await getLocale();
@@ -48,10 +50,13 @@ export default async function AgentSettingsPage({
           back: "Back to Agent Console",
         };
 
-  const { id: slugParam } = await params;
-  let agent: EditableAgent | null = null;
-  const found = await fetchCreatorAgentByParam<EditableAgent>(slugParam);
-  agent = found ? normalizeAgent(found) : null;
+  let found: EditableAgent | null;
+  try {
+    found = await fetchCreatorAgentByParam<EditableAgent>(slugParam);
+  } catch (error) {
+    rethrowCreatorAgentPageError(error, callbackUrl);
+  }
+  const agent = found ? normalizeAgent(found) : null;
 
   if (!agent) {
     notFound();
