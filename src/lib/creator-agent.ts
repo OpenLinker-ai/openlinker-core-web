@@ -1,4 +1,8 @@
-import { apiFetchAuthed } from "@/lib/api";
+import { ApiError, apiFetchAuthed } from "@/lib/api";
+import {
+  fetchCreatorAgentByParamWith,
+  fetchCreatorAgentPagesWith,
+} from "@/lib/creator-agent-fetch.mjs";
 
 export type CreatorAgentLookup = {
   id: string;
@@ -27,52 +31,40 @@ export type CreatorAgentVisibility = "public" | "unlisted" | "private";
 export async function fetchCreatorAgentByParam<T extends CreatorAgentLookup = CreatorAgentLookup>(
   param: string,
 ): Promise<T | null> {
-  const normalized = param.trim();
-  if (!normalized) return null;
-  const path = isUUID(normalized)
-    ? `/api/v1/creator/agents/${encodeURIComponent(normalized)}`
-    : `/api/v1/creator/agents/by-slug/${encodeURIComponent(normalized)}`;
-  return apiFetchAuthed<CreatorAgentLookup>(path)
-    .then((agent) => normalizeCreatorAgent(agent) as T)
-    .catch(() => null);
+  const agent = await fetchCreatorAgentByParamWith(
+    (path) => apiFetchAuthed<CreatorAgentLookup>(path),
+    param,
+    (error) => error instanceof ApiError && error.status === 404,
+  );
+  return agent ? normalizeCreatorAgent(agent) as T : null;
 }
 
 export async function fetchActiveCreatorAgents<T extends CreatorAgentLookup = CreatorAgentLookup>(
   visibilities: CreatorAgentVisibility[] = ["public", "unlisted", "private"],
 ): Promise<T[]> {
-  const pages = await Promise.all(
-    visibilities.map((visibility) => fetchActiveCreatorAgentsByVisibility<T>(visibility)),
+  const groups = await fetchCreatorAgentPagesWith(
+    fetchActiveCreatorAgentPage,
+    visibilities,
+    { limit: 100, maxConcurrency: 4 },
   );
   const seen = new Set<string>();
   const agents: T[] = [];
-  for (const agent of pages.flat()) {
-    if (seen.has(agent.id)) continue;
-    seen.add(agent.id);
-    agents.push(agent);
-  }
-  return agents.sort((a, b) => a.name.localeCompare(b.name, "zh-CN"));
-}
-
-async function fetchActiveCreatorAgentsByVisibility<T extends CreatorAgentLookup>(
-  visibility: CreatorAgentVisibility,
-): Promise<T[]> {
-  const limit = 100;
-  const first = await fetchActiveCreatorAgentPage(visibility, limit, 0);
-  const items = [...normalizeAgentPage(first)];
-  const total = first.total ?? items.length;
-  const offsets: number[] = [];
-  for (let offset = limit; offset < total; offset += limit) {
-    offsets.push(offset);
-  }
-  if (offsets.length > 0) {
-    const rest = await Promise.all(offsets.map((offset) => fetchActiveCreatorAgentPage(visibility, limit, offset)));
-    for (const page of rest) {
-      items.push(...normalizeAgentPage(page));
+  for (const { visibility, pages } of groups) {
+    for (const page of pages) {
+      for (const agent of normalizeAgentPage(page)) {
+        if (
+          agent.lifecycle_status !== "active" ||
+          agent.visibility !== visibility ||
+          seen.has(agent.id)
+        ) {
+          continue;
+        }
+        seen.add(agent.id);
+        agents.push(normalizeCreatorAgent(agent) as T);
+      }
     }
   }
-  return items
-    .filter((agent) => agent.lifecycle_status === "active" && agent.visibility === visibility)
-    .map((agent) => normalizeCreatorAgent(agent) as T);
+  return agents.sort((a, b) => a.name.localeCompare(b.name, "zh-CN"));
 }
 
 function fetchActiveCreatorAgentPage(
@@ -123,8 +115,4 @@ function legacyStatus(
   if (certification === "pending") return "pending";
   if (certification === "rejected") return "rejected";
   return "approved";
-}
-
-function isUUID(value: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }

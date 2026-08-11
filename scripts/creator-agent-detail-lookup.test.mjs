@@ -16,12 +16,12 @@ const detailPages = [
   "src/app/(creator)/hub/agents/[id]/delivery/history/page.tsx",
 ];
 
-test("creator Agent lookup selects owner detail routes by UUID or slug", async () => {
+test("creator Agent lookup returns null only for ApiError 404", async () => {
   const helper = await source("src/lib/creator-agent.ts");
-  assert.match(helper, /if \(!normalized\) return null/);
-  assert.match(helper, /isUUID\(normalized\)[\s\S]*`\/api\/v1\/creator\/agents\/\$\{encodeURIComponent\(normalized\)\}`/);
-  assert.match(helper, /`\/api\/v1\/creator\/agents\/by-slug\/\$\{encodeURIComponent\(normalized\)\}`/);
-  assert.match(helper, /\.catch\(\(\) => null\)/);
+  assert.match(helper, /import \{ ApiError, apiFetchAuthed \} from "@\/lib\/api"/);
+  assert.match(helper, /fetchCreatorAgentByParamWith\(/);
+  assert.match(helper, /error instanceof ApiError && error\.status === 404/);
+  assert.doesNotMatch(helper, /\.catch\(\(\) => null\)/);
 });
 
 test("creator Agent detail pages never resolve one Agent through the paginated active list", async () => {
