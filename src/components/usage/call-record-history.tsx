@@ -400,7 +400,7 @@ export function CallRecordHistory({
           views: [
             ["all", "All"],
             ["made", "Called by me"],
-            ["received", "My agents"],
+            ["received", "Calls to my agents"],
           ] as Array<[CallRecordView, string]>,
           sorts: [
             ["started_desc", "Newest first"],
