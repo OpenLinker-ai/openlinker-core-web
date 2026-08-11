@@ -6,9 +6,8 @@ import type { DeliveryTarget } from "@/components/delivery/types";
 import { Topbar } from "@/components/layout/topbar";
 import { apiFetchAuthed } from "@/lib/api";
 import { auth } from "@/lib/auth";
+import { fetchCreatorAgentByParam } from "@/lib/creator-agent";
 import { getLocale } from "@/lib/i18n-server";
-
-type AgentsPayload = AgentResponse[] | { items?: AgentResponse[] };
 
 type TargetListResponse = {
   items: DeliveryTarget[];
@@ -17,10 +16,6 @@ type TargetListResponse = {
 type RunStatusResponse = {
   status?: string;
 };
-
-function normalizeAgents(payload: AgentsPayload): AgentResponse[] {
-  return Array.isArray(payload) ? payload : payload.items ?? [];
-}
 
 export default async function AgentDeliveryPage({
   params,
@@ -38,12 +33,7 @@ export default async function AgentDeliveryPage({
   const { id: agentParam } = await params;
   const { run_id: runId } = await searchParams;
 
-  const agentPromise = apiFetchAuthed<AgentsPayload>("/api/v1/creator/agents")
-    .then((payload) => {
-      const agents = normalizeAgents(payload);
-      return agents.find((item) => item.slug === agentParam || item.id === agentParam) ?? null;
-    })
-    .catch(() => null);
+  const agentPromise = fetchCreatorAgentByParam<AgentResponse>(agentParam);
   const targetsPromise = apiFetchAuthed<TargetListResponse>("/api/v1/delivery-targets")
     .then((data) => data.items ?? [])
     .catch(() => [] as DeliveryTarget[]);

@@ -11,6 +11,7 @@ import {
 import { Topbar } from "@/components/layout/topbar";
 import { apiFetchAuthed } from "@/lib/api";
 import { auth } from "@/lib/auth";
+import { fetchCreatorAgentByParam } from "@/lib/creator-agent";
 import { getLocale } from "@/lib/i18n-server";
 
 interface CreatorAgent {
@@ -21,14 +22,8 @@ interface CreatorAgent {
   endpoint_url: string;
 }
 
-type AgentsPayload = CreatorAgent[] | { items?: CreatorAgent[] };
-
 interface AgentDetailWithSkills {
   skills?: DeclaredSkill[];
-}
-
-function normalizeAgents(payload: AgentsPayload): CreatorAgent[] {
-  return Array.isArray(payload) ? payload : payload.items ?? [];
 }
 
 export default async function AgentBenchmarksPage({
@@ -72,14 +67,8 @@ export default async function AgentBenchmarksPage({
   );
 
   let agent: BenchmarkAgent | null = null;
-  try {
-    const payload = await apiFetchAuthed<AgentsPayload>("/api/v1/creator/agents");
-    const agents = normalizeAgents(payload);
-    const found = agents.find((a) => a.slug === slugParam || a.id === slugParam) ?? null;
-    if (found) agent = { id: found.id, slug: found.slug, name: found.name };
-  } catch {
-    agent = null;
-  }
+  const found = await fetchCreatorAgentByParam<CreatorAgent>(slugParam);
+  if (found) agent = { id: found.id, slug: found.slug, name: found.name };
 
   if (!agent) {
     notFound();
