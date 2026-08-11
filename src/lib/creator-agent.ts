@@ -28,6 +28,7 @@ export type CreatorAgentLookup = {
 };
 
 export type CreatorAgentVisibility = "public" | "unlisted" | "private";
+export const CREATOR_AGENT_MAX_CONCURRENCY = 4;
 
 export async function fetchCreatorAgentByParam<T extends CreatorAgentLookup = CreatorAgentLookup>(
   param: string,
@@ -50,7 +51,7 @@ export async function fetchActiveCreatorAgents<T extends CreatorAgentLookup = Cr
   const groups = await fetchCreatorAgentPagesWith(
     fetchActiveCreatorAgentPage,
     visibilities,
-    { limit: 100, maxConcurrency: 4 },
+    { limit: 100, maxConcurrency: CREATOR_AGENT_MAX_CONCURRENCY },
   );
   const seen = new Set<string>();
   const agents: T[] = [];

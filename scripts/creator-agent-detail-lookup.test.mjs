@@ -31,6 +31,16 @@ test("creator Agent lookup classifies 403/404 as unavailable and exposes 401", a
   assert.match(boundary, /throw error/);
 });
 
+test("production creator Agent pagination is pinned to the four-slot pool", async () => {
+  const helper = await source("src/lib/creator-agent.ts");
+  assert.match(helper, /export const CREATOR_AGENT_MAX_CONCURRENCY = 4/);
+  assert.match(
+    helper,
+    /\{ limit: 100, maxConcurrency: CREATOR_AGENT_MAX_CONCURRENCY \}/,
+  );
+  assert.doesNotMatch(helper, /maxConcurrency:\s*[0-9]+/);
+});
+
 test("creator Agent detail pages never resolve one Agent through the paginated active list", async () => {
   for (const path of detailPages) {
     const page = await source(path);
