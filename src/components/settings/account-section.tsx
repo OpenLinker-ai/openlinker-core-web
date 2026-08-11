@@ -24,20 +24,21 @@ interface Props {
   locale?: Locale;
 }
 
-interface FieldRowProps {
+/** editable 的行必须自带已本地化的 action 文案，避免组件内硬编码默认值。 */
+type FieldRowProps = {
   label: string;
   value: string;
   hint?: string;
-  action?: string;
-  editable?: boolean;
-  onEdit?: () => void;
-}
+} & (
+  | { editable: true; action: string; onEdit: () => void }
+  | { editable?: false; action?: never; onEdit?: never }
+);
 
 function FieldRow({
   label,
   value,
   hint,
-  action = "编辑",
+  action,
   editable,
   onEdit,
 }: FieldRowProps) {

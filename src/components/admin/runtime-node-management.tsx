@@ -422,7 +422,7 @@ function runtimeNodeCopy(locale: "zh" | "en") {
         sessions: "活跃 Session",
         agents: "已连接 Agent",
         protocol: "协议",
-        nodeVersion: "Node version",
+        nodeVersion: "Node 版本",
         nodeIdTechnical: "node_id",
         contractIdTechnical: "runtime_contract_id",
         contractDigestTechnical: "runtime_contract_digest",

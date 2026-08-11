@@ -193,6 +193,22 @@ const DEFAULT_OUTPUT_SCHEMA = {
   required: ["result"],
 };
 
+const DEFAULT_INPUT_SCHEMA_EN = {
+  type: "object",
+  properties: {
+    query: { type: "string", description: "User task description" },
+  },
+  required: ["query"],
+};
+
+const DEFAULT_OUTPUT_SCHEMA_EN = {
+  type: "object",
+  properties: {
+    result: { type: "string", description: "Agent result" },
+  },
+  required: ["result"],
+};
+
 const DEFAULT_EXAMPLE_INPUT = {
   query: "帮我分析这份合同中的关键风险。",
 };
@@ -307,10 +323,16 @@ export function AgentOnboardingPanel({
     initialOnboarding.capability?.summary ?? "",
   );
   const [inputSchema, setInputSchema] = useState(
-    pretty(initialOnboarding.capability?.input_schema ?? DEFAULT_INPUT_SCHEMA),
+    pretty(
+      initialOnboarding.capability?.input_schema ??
+        (locale === "zh" ? DEFAULT_INPUT_SCHEMA : DEFAULT_INPUT_SCHEMA_EN),
+    ),
   );
   const [outputSchema, setOutputSchema] = useState(
-    pretty(initialOnboarding.capability?.output_schema ?? DEFAULT_OUTPUT_SCHEMA),
+    pretty(
+      initialOnboarding.capability?.output_schema ??
+        (locale === "zh" ? DEFAULT_OUTPUT_SCHEMA : DEFAULT_OUTPUT_SCHEMA_EN),
+    ),
   );
   const [exampleTitle, setExampleTitle] = useState(copy.defaultExampleTitle);
   const [exampleInput, setExampleInput] = useState(

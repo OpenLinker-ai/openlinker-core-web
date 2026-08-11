@@ -110,33 +110,40 @@ export function RunHistory({
   total,
   page,
   size,
-  title = "最近运行",
-  emptyText = "还没有调用记录。",
+  title,
+  emptyText,
   emptyHref = "/registry",
-  emptyActionLabel = "打开 Agent 库 →",
+  emptyActionLabel,
   locale = "zh",
 }: Props) {
   const totalPages = Math.max(1, Math.ceil(total / size));
-  const copy =
+  // 默认文案按 locale 取，调用方传入的 title / emptyText / emptyActionLabel 已本地化，直接覆盖。
+  const defaults =
     locale === "zh"
       ? {
-          title,
-          emptyText,
-          emptyActionLabel,
+          title: "最近运行",
+          emptyText: "还没有调用记录。",
+          emptyActionLabel: "打开 Agent 库 →",
           total: `共 ${total} 条`,
           prev: "← 上一页",
           next: "下一页 →",
           page: `第 ${page} / ${totalPages} 页`,
         }
       : {
-          title: title === "最近运行" ? "Recent Runs" : title,
-          emptyText: emptyText === "还没有调用记录。" ? "No run records yet." : emptyText,
-          emptyActionLabel: emptyActionLabel === "打开 Agent 库 →" ? "Open Registry ->" : emptyActionLabel,
+          title: "Recent Runs",
+          emptyText: "No run records yet.",
+          emptyActionLabel: "Open Registry ->",
           total: `${total} total`,
           prev: "← Previous",
           next: "Next →",
           page: `Page ${page} / ${totalPages}`,
         };
+  const copy = {
+    ...defaults,
+    title: title ?? defaults.title,
+    emptyText: emptyText ?? defaults.emptyText,
+    emptyActionLabel: emptyActionLabel ?? defaults.emptyActionLabel,
+  };
 
   return (
     <div className="ol-panel">
