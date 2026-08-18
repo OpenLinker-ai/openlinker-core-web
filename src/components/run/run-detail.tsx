@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { RunEventStream } from "@/components/run/run-event-stream";
 import { BrowserHumanControl } from "@/components/run/browser-human-control";
+import { BrowserObservation } from "@/components/run/browser-observation";
 import { TaskCallbackSection } from "@/components/run/task-callback-section";
 import { AgentMarkdown } from "@/components/ui/agent-markdown";
 import { Icon } from "@/components/ui/icon";
@@ -379,6 +380,13 @@ export function RunDetail({
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]">
         <section className="min-w-0 space-y-5">
           <BrowserHumanControl
+            runId={view.id}
+            locale={locale}
+            enabled={run !== null && view.status === "running"}
+          />
+          {/* Observation sits alongside takeover, not inside it: watching and
+              driving are separate capabilities with separate authorization. */}
+          <BrowserObservation
             runId={view.id}
             locale={locale}
             enabled={run !== null && view.status === "running"}
