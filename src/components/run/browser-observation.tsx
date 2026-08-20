@@ -238,15 +238,29 @@ export function BrowserObservation({
 
   const transition = useCallback(
     async (action: "start" | "stop") => {
+      const requestedRunId = runId;
       setBusy(true);
       try {
         await apiFetch(
-          `/api/v1/runs/${encodeURIComponent(runId)}/observation/${action}`,
+          `/api/v1/runs/${encodeURIComponent(requestedRunId)}/observation/${action}`,
           { method: "POST", signOutOnUnauthorized: false },
         );
+        if (action === "start") {
+          // The lease exists from here on, whatever the viewer did while the
+          // request was in flight. Leaving during a start would otherwise leak
+          // it: the release ran before there was anything to release, and the
+          // observation then outlived the viewer by its whole TTL.
+          activeRef.current = true;
+          if (runIdRef.current !== requestedRunId) {
+            releaseRef.current(requestedRunId);
+            return;
+          }
+        }
+        if (runIdRef.current !== requestedRunId) return;
         setError("");
         await refresh();
       } catch (cause) {
+        if (runIdRef.current !== requestedRunId) return;
         setError(describe(cause, text.failed));
       } finally {
         setBusy(false);
