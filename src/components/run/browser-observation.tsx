@@ -72,7 +72,12 @@ export function BrowserObservation({
   const { fetch: apiFetch, token } = useApi();
   const text = copy[locale === "zh" ? "zh" : "en"];
   const [state, setState] = useState<ObservationState | null>(null);
-  const [frame, setFrame] = useState<ObservationFrame | null>(null);
+  // Carries the Run it was captured for. State survives the render that already
+  // has the next Run's id -- effect cleanups run after that render commits -- so
+  // without this the previous Run's picture is painted once under the new Run.
+  const [frame, setFrame] = useState<{ runId: string; frame: ObservationFrame } | null>(
+    null,
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const sequenceRef = useRef(0);
@@ -81,6 +86,10 @@ export function BrowserObservation({
   // without a browser. The component keeps the wiring: effects, fetches, render.
   const sessionRef = useRef(createObservationSession(runId));
   const stopRef = useRef<(releasedRunId: string) => void>(() => {});
+  // Whether the state in hand says this Run is being observed. State survives
+  // the render that already carries the next Run's id, because effect cleanups
+  // run after that render commits, so every use of it has to name the Run.
+  const observed = state?.run_id === runId && Boolean(state?.active);
 
   const describe = useCallback(
     (cause: unknown, fallback: string) => {
@@ -133,7 +142,7 @@ export function BrowserObservation({
   // Long poll. Each request returns the next frame or 204 when nothing new
   // arrived, so an idle observation costs one open request rather than a spin.
   useEffect(() => {
-    if (!enabled || !token || !state?.active) {
+    if (!enabled || !token || !observed) {
       return;
     }
     let cancelled = false;
@@ -147,7 +156,7 @@ export function BrowserObservation({
           if (cancelled) return;
           if (next) {
             sequenceRef.current = next.frame_seq;
-            setFrame(next);
+            setFrame({ runId, frame: next });
           }
         } catch (cause) {
           if (cancelled) return;
@@ -170,7 +179,7 @@ export function BrowserObservation({
       sequenceRef.current = 0;
       setFrame(null);
     };
-  }, [apiFetch, describe, enabled, refresh, runId, state?.active, text, token]);
+  }, [apiFetch, describe, enabled, observed, refresh, runId, text, token]);
 
   // A lease nobody releases holds its Run until the TTL expires, and nobody else
   // can observe that Run meanwhile. Core reclaims an unpolled observation on its
@@ -265,13 +274,16 @@ export function BrowserObservation({
 
   if (!enabled) return null;
 
+  // Shown only while it still describes the Run on screen, for the same reason.
+  const shown = frame?.runId === runId ? frame.frame : null;
+
   return (
     <section aria-label={text.title}>
       <header>
         <h3>{text.title}</h3>
         <p>{text.description}</p>
       </header>
-      {state?.active ? (
+      {observed ? (
         <button type="button" disabled={busy} onClick={() => void transition("stop")}>
           {text.stop}
         </button>
@@ -280,15 +292,15 @@ export function BrowserObservation({
           {text.start}
         </button>
       )}
-      {state?.active ? (
-        frame ? (
+      {observed ? (
+        shown ? (
           /* eslint-disable-next-line @next/next/no-img-element -- frames are
              per-request data URIs of live page content; next/image would add a
              loader and cache layer for bytes that must never be cached. */
           <img
-            src={`data:${frame.mime_type};base64,${frame.data}`}
-            width={frame.width}
-            height={frame.height}
+            src={`data:${shown.mime_type};base64,${shown.data}`}
+            width={shown.width}
+            height={shown.height}
             alt={text.title}
           />
         ) : (

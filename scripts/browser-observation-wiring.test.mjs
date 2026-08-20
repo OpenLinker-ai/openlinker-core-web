@@ -44,6 +44,26 @@ test("the viewer holds no separate notion of what it is observing", () => {
   }
 });
 
+// A render can carry the next Run's id while state and frame from the previous
+// one are still in hand, because effect cleanups run after that render commits.
+// Every use of them has to name the Run, or the previous Run's picture is
+// painted once under the new one.
+test("what is displayed is bound to the Run on screen", () => {
+  assert.ok(
+    source.includes("state?.run_id === runId"),
+    "the active flag must name the Run its state describes",
+  );
+  assert.ok(
+    source.includes("frame?.runId === runId"),
+    "the frame must name the Run it was captured for",
+  );
+  assert.equal(
+    source.includes("state?.active ?"),
+    false,
+    "nothing may be rendered from the active flag alone",
+  );
+});
+
 test("the page listener is removed with the effect it was added in", () => {
   assert.ok(source.includes('window.addEventListener("pagehide", release)'));
   assert.ok(source.includes('window.removeEventListener("pagehide", release)'));
