@@ -57,6 +57,11 @@ test("what is displayed is bound to the Run on screen", () => {
     source.includes("frame?.runId === runId"),
     "the frame must name the Run it was captured for",
   );
+  // Not only what is drawn: an error from the Run just left would be read as
+  // this Run's, and a request that was never about this Run would disable its
+  // buttons.
+  assert.ok(source.includes("error?.runId === runId"), "the error must name its Run");
+  assert.ok(source.includes("busy === runId"), "the busy flag must name its Run");
   assert.equal(
     source.includes("state?.active ?"),
     false,

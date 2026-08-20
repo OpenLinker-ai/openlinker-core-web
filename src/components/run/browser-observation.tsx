@@ -78,8 +78,12 @@ export function BrowserObservation({
   const [frame, setFrame] = useState<{ runId: string; frame: ObservationFrame } | null>(
     null,
   );
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  // Both carry the Run they belong to, for the same reason the frame does: a
+  // render can hold state from the Run just left. Without it, arriving at a Run
+  // shows the previous Run's error, and its buttons stay disabled by a request
+  // that was never about it.
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<{ runId: string; message: string } | null>(null);
   const sequenceRef = useRef(0);
   // Every rule about which Run this viewer is on, what it holds, and which
   // answers still matter lives in the session, so all of them can be tested
@@ -121,14 +125,14 @@ export function BrowserObservation({
       // viewer moved to another -- and whether this viewer now holds it.
       if (!session.sync(next)) return;
       setState(next);
-      setError("");
+      setError(null);
     } catch (cause) {
       if (!session.accepts(requestedRunId)) return;
       if (cause instanceof ApiError && cause.status === 404) {
         setState(null);
         return;
       }
-      setError(describe(cause, text.failed));
+      setError({ runId: requestedRunId, message: describe(cause, text.failed) });
     }
   }, [apiFetch, describe, enabled, runId, text, token]);
 
@@ -164,7 +168,7 @@ export function BrowserObservation({
           // ordinary outcome rather than a failure. Only re-read the state; the
           // same status on start means the opposite and is reported there.
           if (!(cause instanceof ApiError && cause.status === 409)) {
-            setError(describe(cause, text.failed));
+            setError({ runId, message: describe(cause, text.failed) });
           }
           void refresh();
           return;
@@ -240,7 +244,7 @@ export function BrowserObservation({
     async (action: "start" | "stop") => {
       const requestedRunId = runId;
       const session = sessionRef.current;
-      setBusy(true);
+      setBusy(requestedRunId);
       try {
         await apiFetch(
           `/api/v1/runs/${encodeURIComponent(requestedRunId)}/observation/${action}`,
@@ -260,13 +264,13 @@ export function BrowserObservation({
           session.ended(requestedRunId);
         }
         if (!session.accepts(requestedRunId)) return;
-        setError("");
+        setError(null);
         await refresh();
       } catch (cause) {
         if (!session.accepts(requestedRunId)) return;
-        setError(describe(cause, text.failed));
+        setError({ runId: requestedRunId, message: describe(cause, text.failed) });
       } finally {
-        setBusy(false);
+        setBusy(null);
       }
     },
     [apiFetch, describe, refresh, runId, text],
@@ -274,8 +278,10 @@ export function BrowserObservation({
 
   if (!enabled) return null;
 
-  // Shown only while it still describes the Run on screen, for the same reason.
+  // Shown only while they still describe the Run on screen, for the same reason.
   const shown = frame?.runId === runId ? frame.frame : null;
+  const working = busy === runId;
+  const shownError = error?.runId === runId ? error.message : "";
 
   return (
     <section aria-label={text.title}>
@@ -284,11 +290,11 @@ export function BrowserObservation({
         <p>{text.description}</p>
       </header>
       {observed ? (
-        <button type="button" disabled={busy} onClick={() => void transition("stop")}>
+        <button type="button" disabled={working} onClick={() => void transition("stop")}>
           {text.stop}
         </button>
       ) : (
-        <button type="button" disabled={busy} onClick={() => void transition("start")}>
+        <button type="button" disabled={working} onClick={() => void transition("start")}>
           {text.start}
         </button>
       )}
@@ -309,7 +315,7 @@ export function BrowserObservation({
       ) : (
         <p>{text.inactive}</p>
       )}
-      {error ? <p role="alert">{error}</p> : null}
+      {shownError ? <p role="alert">{shownError}</p> : null}
     </section>
   );
 }
