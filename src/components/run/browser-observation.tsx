@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useApi } from "@/hooks/use-api";
 import { ApiError, localizedErrorMessage } from "@/lib/api";
+import { createObservationSession } from "@/lib/browser-observation-session.mjs";
 import type { Locale } from "@/lib/i18n";
 
 type ObservationState = {
@@ -75,11 +76,11 @@ export function BrowserObservation({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const sequenceRef = useRef(0);
-  const activeRef = useRef(false);
-  // The Run currently on screen, readable from async callbacks that were
-  // started for an earlier one.
-  const runIdRef = useRef(runId);
-  const releaseRef = useRef<(releasedRunId: string) => void>(() => {});
+  // Every rule about which Run this viewer is on, what it holds, and which
+  // answers still matter lives in the session, so all of them can be tested
+  // without a browser. The component keeps the wiring: effects, fetches, render.
+  const sessionRef = useRef(createObservationSession(runId));
+  const stopRef = useRef<(releasedRunId: string) => void>(() => {});
 
   const describe = useCallback(
     (cause: unknown, fallback: string) => {
@@ -100,20 +101,20 @@ export function BrowserObservation({
   const refresh = useCallback(async () => {
     if (!enabled || !token) return;
     const requestedRunId = runId;
-    // A request started for one Run can land after the viewer has moved to
-    // another. Its answer describes the Run that is gone, so applying it would
-    // show one Run's observation under another and clear the new Run's error.
-    const stale = () => runIdRef.current !== requestedRunId;
+    const session = sessionRef.current;
     try {
       const next = await apiFetch<ObservationState>(
         `/api/v1/runs/${encodeURIComponent(requestedRunId)}/observation`,
         { signOutOnUnauthorized: false },
       );
-      if (stale()) return;
+      // sync answers both questions at once: whether this answer still describes
+      // the Run on screen -- a request started for one Run can land after the
+      // viewer moved to another -- and whether this viewer now holds it.
+      if (!session.sync(next)) return;
       setState(next);
       setError("");
     } catch (cause) {
-      if (stale()) return;
+      if (!session.accepts(requestedRunId)) return;
       if (cause instanceof ApiError && cause.status === 404) {
         setState(null);
         return;
@@ -171,30 +172,13 @@ export function BrowserObservation({
     };
   }, [apiFetch, describe, enabled, refresh, runId, state?.active, text, token]);
 
-  // The lease outlives the page by its whole TTL otherwise: a closed tab is
-  // still a lease the Worker holds and a Run nobody else can observe. This is
-  // best effort by nature -- a killed browser sends nothing -- so the TTL and
-  // Core's reconciler remain the real backstop.
-  // Keyed on the Run the state describes, not only on the flag. Moving from one
-  // active Run straight to another leaves the flag unchanged, and the release of
-  // the first Run has already cleared this ref -- without the Run in the
-  // dependencies the second Run would never be marked active again, and so would
-  // never be released.
+  // A lease nobody releases holds its Run until the TTL expires, and nobody else
+  // can observe that Run meanwhile. Core reclaims an unpolled observation on its
+  // own, so these paths only shorten that from up to two minutes to immediate;
+  // they are best effort by nature, since a killed browser sends nothing.
   useEffect(() => {
-    activeRef.current = Boolean(state?.active) && state?.run_id === runId;
-  }, [runId, state?.active, state?.run_id]);
-
-  useEffect(() => {
-    runIdRef.current = runId;
-  }, [runId]);
-
-  // Takes the Run to release rather than reading the current one, so a release
-  // that fires while the component is moving to another Run still stops the Run
-  // it was actually watching.
-  useEffect(() => {
-    releaseRef.current = (releasedRunId: string) => {
-      if (!enabled || !token || !activeRef.current) return;
-      activeRef.current = false;
+    stopRef.current = (releasedRunId: string) => {
+      if (!enabled || !token) return;
       void apiFetch(
         `/api/v1/runs/${encodeURIComponent(releasedRunId)}/observation/stop`,
         {
@@ -209,13 +193,16 @@ export function BrowserObservation({
     };
   }, [apiFetch, enabled, token]);
 
-  // Releases when the component moves to another Run. Without this the previous
-  // Run keeps its lease for the whole TTL and nobody else can observe it, which
-  // is the same leak as a closed tab, only invisible.
+  // Moving between Runs. The cleanup leaves the Run being left -- releasing what
+  // this viewer held for it -- and the body arrives at the next one; React runs
+  // them in that order. Without this the Run left behind keeps its lease for the
+  // whole TTL, which is the same leak as a closed tab, only invisible.
   useEffect(() => {
-    const observedRunId = runId;
+    const session = sessionRef.current;
+    session.focus(runId);
     return () => {
-      releaseRef.current(observedRunId);
+      const leaving = session.leave();
+      if (leaving) stopRef.current(leaving);
       // Cleared on teardown rather than in the effect body, which would cascade
       // a render: the Run being left must not stay on screen under the next one.
       setState(null);
@@ -228,7 +215,11 @@ export function BrowserObservation({
   // a session refresh would otherwise run this cleanup and stop an observation
   // the user is still watching.
   useEffect(() => {
-    const release = () => releaseRef.current(runIdRef.current);
+    const session = sessionRef.current;
+    const release = () => {
+      const held = session.release();
+      if (held) stopRef.current(held);
+    };
     window.addEventListener("pagehide", release);
     return () => {
       window.removeEventListener("pagehide", release);
@@ -239,6 +230,7 @@ export function BrowserObservation({
   const transition = useCallback(
     async (action: "start" | "stop") => {
       const requestedRunId = runId;
+      const session = sessionRef.current;
       setBusy(true);
       try {
         await apiFetch(
@@ -250,17 +242,19 @@ export function BrowserObservation({
           // request was in flight. Leaving during a start would otherwise leak
           // it: the release ran before there was anything to release, and the
           // observation then outlived the viewer by its whole TTL.
-          activeRef.current = true;
-          if (runIdRef.current !== requestedRunId) {
-            releaseRef.current(requestedRunId);
+          const orphaned = session.started(requestedRunId);
+          if (orphaned) {
+            stopRef.current(orphaned);
             return;
           }
+        } else {
+          session.ended(requestedRunId);
         }
-        if (runIdRef.current !== requestedRunId) return;
+        if (!session.accepts(requestedRunId)) return;
         setError("");
         await refresh();
       } catch (cause) {
-        if (runIdRef.current !== requestedRunId) return;
+        if (!session.accepts(requestedRunId)) return;
         setError(describe(cause, text.failed));
       } finally {
         setBusy(false);
