@@ -164,11 +164,15 @@ export function BrowserObservation({
   // best effort by nature -- a killed browser sends nothing -- so the TTL and
   // Core's reconciler remain the real backstop.
   const activeRef = useRef(false);
-  activeRef.current = Boolean(state?.active);
+  const releaseRef = useRef<() => void>(() => {});
+
   useEffect(() => {
-    if (!enabled || !token) return;
-    const release = () => {
-      if (!activeRef.current) return;
+    activeRef.current = Boolean(state?.active);
+  }, [state?.active]);
+
+  useEffect(() => {
+    releaseRef.current = () => {
+      if (!enabled || !token || !activeRef.current) return;
       activeRef.current = false;
       void apiFetch(`/api/v1/runs/${encodeURIComponent(runId)}/observation/stop`, {
         method: "POST",
@@ -179,12 +183,19 @@ export function BrowserObservation({
         // Nothing to report: the page is going away and the TTL covers this.
       });
     };
+  }, [apiFetch, enabled, runId, token]);
+
+  // Mount-scoped on purpose. Releasing from an effect that depends on the token
+  // or the fetch identity would stop an observation the user is still watching
+  // every time the session refreshes; only leaving the page should release it.
+  useEffect(() => {
+    const release = () => releaseRef.current();
     window.addEventListener("pagehide", release);
     return () => {
       window.removeEventListener("pagehide", release);
       release();
     };
-  }, [apiFetch, enabled, runId, token]);
+  }, []);
 
   const transition = useCallback(
     async (action: "start" | "stop") => {
