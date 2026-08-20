@@ -167,9 +167,14 @@ export function BrowserObservation({
   const runIdRef = useRef(runId);
   const releaseRef = useRef<(releasedRunId: string) => void>(() => {});
 
+  // Keyed on the Run the state describes, not only on the flag. Moving from one
+  // active Run straight to another leaves the flag unchanged, and the release of
+  // the first Run has already cleared this ref -- without the Run in the
+  // dependencies the second Run would never be marked active again, and so would
+  // never be released.
   useEffect(() => {
-    activeRef.current = Boolean(state?.active);
-  }, [state?.active]);
+    activeRef.current = Boolean(state?.active) && state?.run_id === runId;
+  }, [runId, state?.active, state?.run_id]);
 
   useEffect(() => {
     runIdRef.current = runId;
