@@ -159,6 +159,33 @@ export function BrowserObservation({
     };
   }, [apiFetch, describe, enabled, refresh, runId, state?.active, text, token]);
 
+  // The lease outlives the page by its whole TTL otherwise: a closed tab is
+  // still a lease the Worker holds and a Run nobody else can observe. This is
+  // best effort by nature -- a killed browser sends nothing -- so the TTL and
+  // Core's reconciler remain the real backstop.
+  const activeRef = useRef(false);
+  activeRef.current = Boolean(state?.active);
+  useEffect(() => {
+    if (!enabled || !token) return;
+    const release = () => {
+      if (!activeRef.current) return;
+      activeRef.current = false;
+      void apiFetch(`/api/v1/runs/${encodeURIComponent(runId)}/observation/stop`, {
+        method: "POST",
+        signOutOnUnauthorized: false,
+        // keepalive so the request survives the unload it was started in.
+        keepalive: true,
+      }).catch(() => {
+        // Nothing to report: the page is going away and the TTL covers this.
+      });
+    };
+    window.addEventListener("pagehide", release);
+    return () => {
+      window.removeEventListener("pagehide", release);
+      release();
+    };
+  }, [apiFetch, enabled, runId, token]);
+
   const transition = useCallback(
     async (action: "start" | "stop") => {
       setBusy(true);
