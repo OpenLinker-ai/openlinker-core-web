@@ -164,32 +164,51 @@ export function BrowserObservation({
   // best effort by nature -- a killed browser sends nothing -- so the TTL and
   // Core's reconciler remain the real backstop.
   const activeRef = useRef(false);
-  const releaseRef = useRef<() => void>(() => {});
+  const runIdRef = useRef(runId);
+  const releaseRef = useRef<(releasedRunId: string) => void>(() => {});
 
   useEffect(() => {
     activeRef.current = Boolean(state?.active);
   }, [state?.active]);
 
   useEffect(() => {
-    releaseRef.current = () => {
+    runIdRef.current = runId;
+  }, [runId]);
+
+  // Takes the Run to release rather than reading the current one, so a release
+  // that fires while the component is moving to another Run still stops the Run
+  // it was actually watching.
+  useEffect(() => {
+    releaseRef.current = (releasedRunId: string) => {
       if (!enabled || !token || !activeRef.current) return;
       activeRef.current = false;
-      void apiFetch(`/api/v1/runs/${encodeURIComponent(runId)}/observation/stop`, {
-        method: "POST",
-        signOutOnUnauthorized: false,
-        // keepalive so the request survives the unload it was started in.
-        keepalive: true,
-      }).catch(() => {
+      void apiFetch(
+        `/api/v1/runs/${encodeURIComponent(releasedRunId)}/observation/stop`,
+        {
+          method: "POST",
+          signOutOnUnauthorized: false,
+          // keepalive so the request survives the unload it was started in.
+          keepalive: true,
+        },
+      ).catch(() => {
         // Nothing to report: the page is going away and the TTL covers this.
       });
     };
-  }, [apiFetch, enabled, runId, token]);
+  }, [apiFetch, enabled, token]);
 
-  // Mount-scoped on purpose. Releasing from an effect that depends on the token
-  // or the fetch identity would stop an observation the user is still watching
-  // every time the session refreshes; only leaving the page should release it.
+  // Releases when the component moves to another Run. Without this the previous
+  // Run keeps its lease for the whole TTL and nobody else can observe it, which
+  // is the same leak as a closed tab, only invisible.
   useEffect(() => {
-    const release = () => releaseRef.current();
+    const observedRunId = runId;
+    return () => releaseRef.current(observedRunId);
+  }, [runId]);
+
+  // Leaving the page. Deliberately not keyed on the token or the fetch identity:
+  // a session refresh would otherwise run this cleanup and stop an observation
+  // the user is still watching.
+  useEffect(() => {
+    const release = () => releaseRef.current(runIdRef.current);
     window.addEventListener("pagehide", release);
     return () => {
       window.removeEventListener("pagehide", release);
