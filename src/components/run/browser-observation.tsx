@@ -37,6 +37,9 @@ const copy = {
     unsupported: "该 Runtime 不支持只读观察。",
     unavailable: "该 Run 的观察通道不在当前 Core 实例上。",
     busy: "该 Run 已有活动的观察。",
+    saturated: "当前 Core 实例的并发观察数已达上限，请稍后再试。",
+    unconfirmed: "Runtime 未确认观察启动，请稍后再试。",
+    ended: "观察已结束。",
     failed: "无法读取观察状态。",
   },
   en: {
@@ -49,6 +52,9 @@ const copy = {
     unsupported: "This Runtime does not support read-only observation.",
     unavailable: "This Run's observation channel is not on the current Core instance.",
     busy: "This Run is already being observed.",
+    saturated: "This Core instance is at its concurrent observation limit. Try again shortly.",
+    unconfirmed: "The Runtime did not confirm the start. Try again shortly.",
+    ended: "The observation has ended.",
     failed: "Could not load observation state.",
   },
 } as const;
@@ -78,6 +84,8 @@ export function BrowserObservation({
         if (cause.status === 501) return text.unsupported;
         if (cause.status === 503) return text.unavailable;
         if (cause.status === 409) return text.busy;
+        if (cause.status === 429) return text.saturated;
+        if (cause.status === 504) return text.unconfirmed;
       }
       return localizedErrorMessage(cause, locale, fallback);
     },
@@ -130,7 +138,12 @@ export function BrowserObservation({
           }
         } catch (cause) {
           if (cancelled) return;
-          setError(describe(cause, text.failed));
+          // On this endpoint 409 means the observation ended, which is an
+          // ordinary outcome rather than a failure. Only re-read the state; the
+          // same status on start means the opposite and is reported there.
+          if (!(cause instanceof ApiError && cause.status === 409)) {
+            setError(describe(cause, text.failed));
+          }
           void refresh();
           return;
         }
