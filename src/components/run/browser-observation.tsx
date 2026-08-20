@@ -75,6 +75,11 @@ export function BrowserObservation({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const sequenceRef = useRef(0);
+  const activeRef = useRef(false);
+  // The Run currently on screen, readable from async callbacks that were
+  // started for an earlier one.
+  const runIdRef = useRef(runId);
+  const releaseRef = useRef<(releasedRunId: string) => void>(() => {});
 
   const describe = useCallback(
     (cause: unknown, fallback: string) => {
@@ -94,14 +99,21 @@ export function BrowserObservation({
 
   const refresh = useCallback(async () => {
     if (!enabled || !token) return;
+    const requestedRunId = runId;
+    // A request started for one Run can land after the viewer has moved to
+    // another. Its answer describes the Run that is gone, so applying it would
+    // show one Run's observation under another and clear the new Run's error.
+    const stale = () => runIdRef.current !== requestedRunId;
     try {
       const next = await apiFetch<ObservationState>(
-        `/api/v1/runs/${encodeURIComponent(runId)}/observation`,
+        `/api/v1/runs/${encodeURIComponent(requestedRunId)}/observation`,
         { signOutOnUnauthorized: false },
       );
+      if (stale()) return;
       setState(next);
       setError("");
     } catch (cause) {
+      if (stale()) return;
       if (cause instanceof ApiError && cause.status === 404) {
         setState(null);
         return;
@@ -163,10 +175,6 @@ export function BrowserObservation({
   // still a lease the Worker holds and a Run nobody else can observe. This is
   // best effort by nature -- a killed browser sends nothing -- so the TTL and
   // Core's reconciler remain the real backstop.
-  const activeRef = useRef(false);
-  const runIdRef = useRef(runId);
-  const releaseRef = useRef<(releasedRunId: string) => void>(() => {});
-
   // Keyed on the Run the state describes, not only on the flag. Moving from one
   // active Run straight to another leaves the flag unchanged, and the release of
   // the first Run has already cleared this ref -- without the Run in the
@@ -206,7 +214,14 @@ export function BrowserObservation({
   // is the same leak as a closed tab, only invisible.
   useEffect(() => {
     const observedRunId = runId;
-    return () => releaseRef.current(observedRunId);
+    return () => {
+      releaseRef.current(observedRunId);
+      // Cleared on teardown rather than in the effect body, which would cascade
+      // a render: the Run being left must not stay on screen under the next one.
+      setState(null);
+      setFrame(null);
+      sequenceRef.current = 0;
+    };
   }, [runId]);
 
   // Leaving the page. Deliberately not keyed on the token or the fetch identity:
