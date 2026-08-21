@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createObservationSession } from "../src/lib/browser-observation-session.mjs";
+import {
+  createObservationSession,
+  releaseBusy,
+} from "../src/lib/browser-observation-session.mjs";
 
 const RUN_A = "11111111-1111-4111-8111-111111111111";
 const RUN_B = "22222222-2222-4222-8222-222222222222";
@@ -130,4 +133,47 @@ test("no answer is accepted while the viewer is between Runs", () => {
   assert.equal(session.sync(observationState(RUN_A, true)), false);
   session.focus(RUN_B);
   assert.equal(session.accepts(RUN_B), true);
+});
+
+// Two transitions really do overlap: the viewer clicks on one Run, moves to
+// another, and the first request finishes last. Driven as actual async work
+// rather than by calling the reducer in a chosen order.
+test("a transition finishing late does not re-enable the Run that replaced it", async () => {
+  let busy = null;
+  const setBusy = (update) => {
+    busy = typeof update === "function" ? update(busy) : update;
+  };
+
+  const settle = { A: null, B: null };
+  const transition = async (runId) => {
+    setBusy(runId);
+    await new Promise((resolve) => {
+      settle[runId] = resolve;
+    });
+    setBusy((current) => releaseBusy(current, runId));
+  };
+
+  const onA = transition("A");
+  await Promise.resolve();
+  assert.equal(busy, "A");
+
+  // The viewer moves to B while A is still in flight.
+  const onB = transition("B");
+  await Promise.resolve();
+  assert.equal(busy, "B");
+
+  // A finishes last. Its clear must not touch B.
+  settle.A();
+  await onA;
+  assert.equal(busy, "B", "the Run that replaced A had its buttons re-enabled");
+
+  settle.B();
+  await onB;
+  assert.equal(busy, null, "B never cleared its own marker");
+});
+
+test("clearing is compare-and-clear, not unconditional", () => {
+  assert.equal(releaseBusy("A", "A"), null);
+  assert.equal(releaseBusy("B", "A"), "B");
+  assert.equal(releaseBusy(null, "A"), null);
 });

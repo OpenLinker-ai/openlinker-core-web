@@ -16,3 +16,5 @@ export type ObservationSession = {
 };
 
 export function createObservationSession(runId: string): ObservationSession;
+
+export function releaseBusy(current: string | null, forRunId: string): string | null;

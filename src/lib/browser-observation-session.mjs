@@ -12,6 +12,18 @@
  * Run straight to another is exactly when a viewer stops being able to release
  * what it holds.
  */
+/**
+ * Clearing the in-flight marker, compare-and-clear.
+ *
+ * Two transitions can overlap: one for the Run being left, one for the Run
+ * arrived at. Clearing unconditionally when the first finishes re-enables the
+ * second Run's buttons while its own request is still running, which is how a
+ * viewer sends two starts.
+ */
+export function releaseBusy(current, forRunId) {
+  return current === forRunId ? null : current;
+}
+
 export function createObservationSession(runId) {
   let currentRunId = runId;
   let observedRunId = null;

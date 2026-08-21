@@ -4,7 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useApi } from "@/hooks/use-api";
 import { ApiError, localizedErrorMessage } from "@/lib/api";
-import { createObservationSession } from "@/lib/browser-observation-session.mjs";
+import {
+  createObservationSession,
+  releaseBusy,
+} from "@/lib/browser-observation-session.mjs";
 import type { Locale } from "@/lib/i18n";
 
 type ObservationState = {
@@ -270,7 +273,10 @@ export function BrowserObservation({
         if (!session.accepts(requestedRunId)) return;
         setError({ runId: requestedRunId, message: describe(cause, text.failed) });
       } finally {
-        setBusy(null);
+        // Compare-and-clear: a transition for the Run just left must not
+        // re-enable the buttons of the Run arrived at while its own request is
+        // still running.
+        setBusy((current) => releaseBusy(current, requestedRunId));
       }
     },
     [apiFetch, describe, refresh, runId, text],
