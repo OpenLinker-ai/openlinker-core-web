@@ -6,6 +6,7 @@ import { useApi } from "@/hooks/use-api";
 import { ApiError, localizedErrorMessage } from "@/lib/api";
 import {
   createObservationSession,
+  observationPreparing,
   releaseBusy,
 } from "@/lib/browser-observation-session.mjs";
 import type { Locale } from "@/lib/i18n";
@@ -101,6 +102,7 @@ export function BrowserObservation({
   const [preparingState, setPreparingState] = useState<ObservationPreparingState | null>(
     null,
   );
+  const [, setPreparingRevision] = useState(0);
   const sequenceRef = useRef(0);
   // Every rule about which Run this viewer is on, what it holds, and which
   // answers still matter lives in the session, so all of them can be tested
@@ -112,7 +114,13 @@ export function BrowserObservation({
   // run after that render commits, so every use of it has to name the Run.
   const observed = state?.run_id === runId && Boolean(state?.active);
   const stateLoaded = state?.run_id === runId;
-  const preparing = preparingState?.runId === runId;
+  const shownError = error?.runId === runId ? error.message : "";
+  const checking = !stateLoaded && !shownError;
+  // Reading the bounded deadline here is intentional: the timer only requests
+  // a render, while this tested helper remains the source of expiration truth.
+  // Any later render therefore recovers even if that timer was delayed.
+  // eslint-disable-next-line react-hooks/purity
+  const preparing = observationPreparing(preparingState, runId, Date.now());
 
   const describe = useCallback(
     (cause: unknown, fallback: string) => {
@@ -170,9 +178,9 @@ export function BrowserObservation({
     if (!preparing || !preparingState) return;
     const delay = Math.max(0, preparingState.retryAt - Date.now());
     const timer = window.setTimeout(() => {
-      setPreparingState((current) =>
-        current?.runId === runId ? null : current,
-      );
+      // The timer only causes a render at the deadline. The tested pure helper
+      // reads the actual clock and remains the authority for expiration.
+      setPreparingRevision((current) => current + 1);
     }, delay);
     return () => window.clearTimeout(timer);
   }, [preparing, preparingState, runId]);
@@ -310,7 +318,8 @@ export function BrowserObservation({
           cause instanceof ApiError &&
           cause.status === 403
         ) {
-          const classification = session.classifyStartForbidden(requestedRunId, Date.now());
+          const now = Date.now();
+          const classification = session.classifyStartForbidden(requestedRunId, now);
           if (
             classification.kind === "preparing" &&
             typeof classification.retryAt === "number"
@@ -338,12 +347,11 @@ export function BrowserObservation({
   // Shown only while they still describe the Run on screen, for the same reason.
   const shown = frame?.runId === runId ? frame.frame : null;
   const working = busy === runId;
-  const shownError = error?.runId === runId ? error.message : "";
   const embedded = presentation === "embedded";
 
   return (
     <section
-      aria-busy={working || !stateLoaded || preparing}
+      aria-busy={working || checking || preparing}
       aria-label={text.title}
       className={embedded ? "grid gap-3" : undefined}
     >
@@ -386,13 +394,13 @@ export function BrowserObservation({
         ) : (
           <p>{text.waiting}</p>
         )
-      ) : !stateLoaded ? (
+      ) : checking ? (
         <p>{text.checking}</p>
       ) : preparing ? (
         <p role="status">{text.preparing}</p>
-      ) : (
+      ) : stateLoaded ? (
         <p>{text.inactive}</p>
-      )}
+      ) : null}
       {shownError ? <p role="alert">{shownError}</p> : null}
     </section>
   );

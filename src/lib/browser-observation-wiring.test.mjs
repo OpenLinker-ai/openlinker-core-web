@@ -76,10 +76,25 @@ test("the page listener is removed with the effect it was added in", () => {
 
 test("start waits for an owner-confirmed state and uses the session for start 403", () => {
   assert.ok(source.includes("const stateLoaded = state?.run_id === runId"));
-  assert.ok(source.includes("working || !stateLoaded || preparing"));
+  assert.ok(source.includes("disabled={working || !stateLoaded || preparing}"));
   assert.ok(source.includes('action === "start"'));
   assert.ok(source.includes("cause.status === 403"));
-  assert.ok(source.includes("session.classifyStartForbidden(requestedRunId, Date.now())"));
+  assert.ok(source.includes("session.classifyStartForbidden(requestedRunId, now)"));
+});
+
+test("the tested cooldown helper drives production readiness", () => {
+  assert.ok(
+    source.includes(
+      "observationPreparing(preparingState, runId, Date.now())",
+    ),
+  );
+  assert.ok(source.includes("setPreparingRevision((current) => current + 1)"));
+});
+
+test("a failed initial state read no longer looks like an active check", () => {
+  assert.ok(source.includes("const checking = !stateLoaded && !shownError"));
+  assert.ok(source.includes("aria-busy={working || checking || preparing}"));
+  assert.ok(source.includes(") : checking ? ("));
 });
 
 test("the shared viewer exposes an embedded presentation without forking behavior", () => {
