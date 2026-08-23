@@ -24,9 +24,24 @@ export function releaseBusy(current, forRunId) {
   return current === forRunId ? null : current;
 }
 
+export const observationPreparingCooldownMS = 2_000;
+
+export function observationPreparing(state, forRunId, now) {
+  return Boolean(
+    state &&
+      state.kind === "preparing" &&
+      state.runId === forRunId &&
+      now < state.retryAt,
+  );
+}
+
 export function createObservationSession(runId) {
   let currentRunId = runId;
   let observedRunId = null;
+  // A successful state read is the proof that the current JWT owns this Run.
+  // Only that proof lets the UI reinterpret a following start 403 as the normal
+  // pre-ready projection window rather than an authorization failure.
+  let ownerConfirmedRunId = null;
 
   return {
     /** The Run on screen. */
@@ -49,11 +64,13 @@ export function createObservationSession(runId) {
       const leaving = observedRunId;
       currentRunId = null;
       observedRunId = null;
+      ownerConfirmedRunId = null;
       return leaving;
     },
 
     /** Arrive at a Run. Paired with leave, which always runs first. */
     focus(nextRunId) {
+      if (nextRunId !== currentRunId) ownerConfirmedRunId = null;
       currentRunId = nextRunId;
     },
 
@@ -79,8 +96,26 @@ export function createObservationSession(runId) {
      */
     sync(state) {
       if (!state || state.run_id !== currentRunId) return false;
+      ownerConfirmedRunId = state.run_id;
       observedRunId = state.active ? state.run_id : null;
       return true;
+    },
+
+    /**
+     * Core deliberately maps both a missing ready projection and a non-owner to
+     * 403. A state 200 for this exact Run is the only client-side fact that can
+     * safely distinguish the normal preparation window without weakening that
+     * anti-enumeration boundary.
+     */
+    classifyStartForbidden(forRunId, now) {
+      if (forRunId === currentRunId && ownerConfirmedRunId === forRunId) {
+        return {
+          kind: "preparing",
+          runId: forRunId,
+          retryAt: now + observationPreparingCooldownMS,
+        };
+      }
+      return { kind: "forbidden", runId: forRunId };
     },
 
     /** The observation ended, by explicit stop or by Core. */

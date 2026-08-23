@@ -3,7 +3,7 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 
 const source = readFileSync(
-  new URL("../src/components/run/browser-observation.tsx", import.meta.url),
+  new URL("../components/run/browser-observation.tsx", import.meta.url),
   "utf8",
 );
 
@@ -72,4 +72,22 @@ test("what is displayed is bound to the Run on screen", () => {
 test("the page listener is removed with the effect it was added in", () => {
   assert.ok(source.includes('window.addEventListener("pagehide", release)'));
   assert.ok(source.includes('window.removeEventListener("pagehide", release)'));
+});
+
+test("start waits for an owner-confirmed state and uses the session for start 403", () => {
+  assert.ok(source.includes("const stateLoaded = state?.run_id === runId"));
+  assert.ok(source.includes("working || !stateLoaded || preparing"));
+  assert.ok(source.includes('action === "start"'));
+  assert.ok(source.includes("cause.status === 403"));
+  assert.ok(source.includes("session.classifyStartForbidden(requestedRunId, Date.now())"));
+});
+
+test("the shared viewer exposes an embedded presentation without forking behavior", () => {
+  assert.ok(source.includes('presentation = "standalone"'));
+  assert.ok(source.includes('presentation?: "standalone" | "embedded"'));
+  assert.equal(
+    (source.match(/const transition = useCallback/g) ?? []).length,
+    1,
+    "presentation variants must share one transition implementation",
+  );
 });

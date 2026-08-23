@@ -30,12 +30,19 @@ type ObservationFrame = {
   height: number;
 };
 
+type ObservationPreparingState = {
+  runId: string;
+  retryAt: number;
+};
+
 const copy = {
   zh: {
     title: "只读观察",
     description: "Agent 继续执行，画面为只读，无法点击或输入。",
     start: "开始观察",
     stop: "停止观察",
+    checking: "正在检查 Browser 状态…",
+    preparing: "Browser 正在准备或切换，请稍后重试。",
     waiting: "等待首帧…",
     inactive: "当前没有进行中的观察。",
     unsupported: "该 Runtime 不支持只读观察。",
@@ -51,6 +58,8 @@ const copy = {
     description: "The Agent keeps working. This view is read-only.",
     start: "Start observing",
     stop: "Stop observing",
+    checking: "Checking Browser status…",
+    preparing: "The Browser is preparing or switching. Try again shortly.",
     waiting: "Waiting for the first frame…",
     inactive: "No observation is running.",
     unsupported: "This Runtime does not support read-only observation.",
@@ -67,10 +76,12 @@ export function BrowserObservation({
   runId,
   locale,
   enabled,
+  presentation = "standalone",
 }: {
   runId: string;
   locale: Locale;
   enabled: boolean;
+  presentation?: "standalone" | "embedded";
 }) {
   const { fetch: apiFetch, token } = useApi();
   const text = copy[locale === "zh" ? "zh" : "en"];
@@ -87,6 +98,9 @@ export function BrowserObservation({
   // that was never about it.
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<{ runId: string; message: string } | null>(null);
+  const [preparingState, setPreparingState] = useState<ObservationPreparingState | null>(
+    null,
+  );
   const sequenceRef = useRef(0);
   // Every rule about which Run this viewer is on, what it holds, and which
   // answers still matter lives in the session, so all of them can be tested
@@ -97,6 +111,8 @@ export function BrowserObservation({
   // the render that already carries the next Run's id, because effect cleanups
   // run after that render commits, so every use of it has to name the Run.
   const observed = state?.run_id === runId && Boolean(state?.active);
+  const stateLoaded = state?.run_id === runId;
+  const preparing = preparingState?.runId === runId;
 
   const describe = useCallback(
     (cause: unknown, fallback: string) => {
@@ -145,6 +161,21 @@ export function BrowserObservation({
     const initial = window.setTimeout(() => void refresh(), 0);
     return () => window.clearTimeout(initial);
   }, [refresh]);
+
+  // A successful owner state read followed by start 403 is the normal window
+  // before the ready projection exists. Cool down locally rather than retrying
+  // automatically: the user's click authorizes one start attempt, not a hidden
+  // loop that may acquire a lease after they stop watching this panel.
+  useEffect(() => {
+    if (!preparing || !preparingState) return;
+    const delay = Math.max(0, preparingState.retryAt - Date.now());
+    const timer = window.setTimeout(() => {
+      setPreparingState((current) =>
+        current?.runId === runId ? null : current,
+      );
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [preparing, preparingState, runId]);
 
   // Long poll. Each request returns the next frame or 204 when nothing new
   // arrived, so an idle observation costs one open request rather than a spin.
@@ -223,6 +254,7 @@ export function BrowserObservation({
       // a render: the Run being left must not stay on screen under the next one.
       setState(null);
       setFrame(null);
+      setPreparingState(null);
       sequenceRef.current = 0;
     };
   }, [runId]);
@@ -248,6 +280,8 @@ export function BrowserObservation({
       const requestedRunId = runId;
       const session = sessionRef.current;
       setBusy(requestedRunId);
+      setPreparingState(null);
+      setError(null);
       try {
         await apiFetch(
           `/api/v1/runs/${encodeURIComponent(requestedRunId)}/observation/${action}`,
@@ -271,6 +305,23 @@ export function BrowserObservation({
         await refresh();
       } catch (cause) {
         if (!session.accepts(requestedRunId)) return;
+        if (
+          action === "start" &&
+          cause instanceof ApiError &&
+          cause.status === 403
+        ) {
+          const classification = session.classifyStartForbidden(requestedRunId, Date.now());
+          if (
+            classification.kind === "preparing" &&
+            typeof classification.retryAt === "number"
+          ) {
+            setPreparingState({
+              runId: requestedRunId,
+              retryAt: classification.retryAt,
+            });
+            return;
+          }
+        }
         setError({ runId: requestedRunId, message: describe(cause, text.failed) });
       } finally {
         // Compare-and-clear: a transition for the Run just left must not
@@ -288,19 +339,34 @@ export function BrowserObservation({
   const shown = frame?.runId === runId ? frame.frame : null;
   const working = busy === runId;
   const shownError = error?.runId === runId ? error.message : "";
+  const embedded = presentation === "embedded";
 
   return (
-    <section aria-label={text.title}>
-      <header>
+    <section
+      aria-busy={working || !stateLoaded || preparing}
+      aria-label={text.title}
+      className={embedded ? "grid gap-3" : undefined}
+    >
+      <header className={embedded ? "sr-only" : undefined}>
         <h3>{text.title}</h3>
         <p>{text.description}</p>
       </header>
       {observed ? (
-        <button type="button" disabled={working} onClick={() => void transition("stop")}>
+        <button
+          type="button"
+          disabled={working}
+          onClick={() => void transition("stop")}
+          className={embedded ? "inline-flex h-9 w-fit items-center justify-center rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12px] font-black text-[color:var(--ol-ink)] transition hover:border-[color:var(--ol-primary)]/40 disabled:cursor-not-allowed disabled:opacity-60" : undefined}
+        >
           {text.stop}
         </button>
       ) : (
-        <button type="button" disabled={working} onClick={() => void transition("start")}>
+        <button
+          type="button"
+          disabled={working || !stateLoaded || preparing}
+          onClick={() => void transition("start")}
+          className={embedded ? "inline-flex h-9 w-fit items-center justify-center rounded-xl border border-[color:var(--ol-primary)] bg-[color:var(--ol-primary)] px-3.5 text-[12px] font-black text-white transition hover:bg-[color:var(--ol-primary-dark)] disabled:cursor-not-allowed disabled:opacity-60" : undefined}
+        >
           {text.start}
         </button>
       )}
@@ -314,10 +380,16 @@ export function BrowserObservation({
             width={shown.width}
             height={shown.height}
             alt={text.title}
+            draggable={false}
+            className="pointer-events-none h-auto max-h-[520px] w-full select-none rounded-[14px] border border-[color:var(--ol-line)] bg-white object-contain"
           />
         ) : (
           <p>{text.waiting}</p>
         )
+      ) : !stateLoaded ? (
+        <p>{text.checking}</p>
+      ) : preparing ? (
+        <p role="status">{text.preparing}</p>
       ) : (
         <p>{text.inactive}</p>
       )}

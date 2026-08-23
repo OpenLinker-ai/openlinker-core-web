@@ -3,8 +3,10 @@ import test from "node:test";
 
 import {
   createObservationSession,
+  observationPreparing,
+  observationPreparingCooldownMS,
   releaseBusy,
-} from "../src/lib/browser-observation-session.mjs";
+} from "./browser-observation-session.mjs";
 
 const RUN_A = "11111111-1111-4111-8111-111111111111";
 const RUN_B = "22222222-2222-4222-8222-222222222222";
@@ -176,4 +178,48 @@ test("clearing is compare-and-clear, not unconditional", () => {
   assert.equal(releaseBusy("A", "A"), null);
   assert.equal(releaseBusy("B", "A"), "B");
   assert.equal(releaseBusy(null, "A"), null);
+});
+
+test("an owner-confirmed state makes a following start 403 a preparing window", () => {
+  const session = createObservationSession(RUN_A);
+  assert.equal(session.sync(observationState(RUN_A, false)), true);
+
+  assert.deepEqual(session.classifyStartForbidden(RUN_A, 1_000), {
+    kind: "preparing",
+    runId: RUN_A,
+    retryAt: 1_000 + observationPreparingCooldownMS,
+  });
+});
+
+test("a start 403 without same-Run owner confirmation remains forbidden", () => {
+  const session = createObservationSession(RUN_A);
+  assert.deepEqual(session.classifyStartForbidden(RUN_A, 1_000), {
+    kind: "forbidden",
+    runId: RUN_A,
+  });
+
+  session.sync(observationState(RUN_A, false));
+  session.leave();
+  session.focus(RUN_B);
+  assert.deepEqual(session.classifyStartForbidden(RUN_B, 1_000), {
+    kind: "forbidden",
+    runId: RUN_B,
+  });
+  assert.deepEqual(session.classifyStartForbidden(RUN_A, 1_000), {
+    kind: "forbidden",
+    runId: RUN_A,
+  });
+});
+
+test("the preparing window is Run-bound and expires at two seconds", () => {
+  const preparing = {
+    kind: "preparing",
+    runId: RUN_A,
+    retryAt: 3_000,
+  };
+  assert.equal(observationPreparing(preparing, RUN_A, 2_999), true);
+  assert.equal(observationPreparing(preparing, RUN_A, 3_000), false);
+  assert.equal(observationPreparing(preparing, RUN_B, 2_000), false);
+  assert.equal(observationPreparing(null, RUN_A, 2_000), false);
+  assert.equal(observationPreparingCooldownMS, 2_000);
 });

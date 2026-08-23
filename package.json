@@ -44,7 +44,7 @@
     "test:skills": "node --test scripts/skill-directory-state.test.mjs",
     "test:runtime-node-admin": "node --test scripts/runtime-node-admin-contract.test.mjs",
     "test:platform-audit": "node --test scripts/platform-audit-remediation.test.mjs",
-    "test:browser-observation": "node --test scripts/browser-observation-session.test.mjs scripts/browser-observation-wiring.test.mjs",
+    "test:browser-observation": "node --test src/lib/browser-observation-session.test.mjs src/lib/browser-observation-wiring.test.mjs",
     "test:playground": "node --test scripts/browser-lifecycle.test.mjs scripts/playground-*.test.mjs"
   },
   "dependencies": {
