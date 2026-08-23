@@ -193,7 +193,7 @@ function CallResultBox({ status, result, locale = "zh" }: Props & { locale?: Loc
     locale === "zh"
       ? {
           title: "调用结果",
-          idle: "点击左侧「调用 Agent」发起请求，结果会在这里显示。",
+          idle: "点击左侧“调用 Agent”发起请求，结果会在这里显示。",
           running: "正在等待响应。Run ID 已生成，可在运行详情中查看最新事件。",
         }
       : {

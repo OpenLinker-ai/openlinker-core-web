@@ -73,9 +73,9 @@ export function SkillsDialog({
           saveFailed: "保存失败，请稍后重试",
           title: "技能",
           desc: `选择该 Agent 对外声明的 Skill，最多 ${MAX_SKILLS_PER_AGENT} 个；保存后会影响 Agent 搜索结果和能力测评。`,
-          loading: "加载技能目录中...",
+          loading: "加载技能目录中…",
           cancel: "取消",
-          saving: "保存中...",
+          saving: "保存中…",
           save: "保存",
         }
       : {
@@ -84,9 +84,9 @@ export function SkillsDialog({
           saveFailed: "Save failed. Try again later.",
           title: "Skills",
           desc: `Choose the Skills this Agent declares publicly, up to ${MAX_SKILLS_PER_AGENT}. Saving affects Registry search and benchmarks.`,
-          loading: "Loading Skill directory...",
+          loading: "Loading Skill directory…",
           cancel: "Cancel",
-          saving: "Saving...",
+          saving: "Saving…",
           save: "Save",
         };
   const { fetch: apiFetch } = useApi();

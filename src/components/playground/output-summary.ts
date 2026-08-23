@@ -241,7 +241,7 @@ function stringifyJson(value: unknown): string {
 }
 
 function clampText(value: string, max: number): string {
-  return value.length > max ? `${value.slice(0, Math.max(0, max - 3))}...` : value;
+  return value.length > max ? `${value.slice(0, Math.max(0, max - 1))}…` : value;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

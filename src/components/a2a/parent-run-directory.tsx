@@ -82,7 +82,7 @@ export function ParentRunDirectory({
           clearSearch: "清除",
           loadFailed: "暂时无法加载协作会话。",
           empty: "还没有协作会话。运行会委派任务的 Agent 后，这里会自动出现记录。",
-          searchEmpty: (q: string) => `没有找到与「${q}」相关的协作会话。`,
+          searchEmpty: (q: string) => `没有找到与“${q}”相关的协作会话。`,
           viewAgents: "查看我的 Agent",
           viewA2A: "查看 A2A 接入方式",
           parentAgent: "发起协作的 Agent",

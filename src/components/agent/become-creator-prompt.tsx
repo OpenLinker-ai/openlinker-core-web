@@ -25,7 +25,7 @@ export function BecomeCreatorPrompt({ locale = "zh" }: { locale?: Locale }) {
   const copy =
     locale === "zh"
       ? {
-          success: "Agent 所有者权限已开通，正在打开接入表单...",
+          success: "Agent 所有者权限已开通，正在打开接入表单…",
           failed: "操作失败，请稍后再试",
           kicker: "开始管理 Agent",
           title: "开通 Agent 所有者权限",
@@ -33,10 +33,10 @@ export function BecomeCreatorPrompt({ locale = "zh" }: { locale?: Locale }) {
           grant: "你可以管理",
           grantBody: "三种连接模式（HTTP、MCP Server、Runtime Worker）、Skill 声明、公开展示设置、能力测评，以及每次调用对应的 Run。",
           submit: "开通权限",
-          submitting: "处理中...",
+          submitting: "处理中…",
         }
       : {
-          success: "Agent owner access enabled. Opening the connection form...",
+          success: "Agent owner access enabled. Opening the connection form…",
           failed: "Action failed. Try again later.",
           kicker: "Start managing Agents",
           title: "Enable Agent owner access",
@@ -44,7 +44,7 @@ export function BecomeCreatorPrompt({ locale = "zh" }: { locale?: Locale }) {
           grant: "What you can manage",
           grantBody: "Three connection modes (HTTP, MCP Server, and Runtime Worker), Skill claims, Registry visibility, benchmarks, and the Run created for each call.",
           submit: "Enable access",
-          submitting: "Working...",
+          submitting: "Working…",
         };
 
   const handleClick = async () => {
