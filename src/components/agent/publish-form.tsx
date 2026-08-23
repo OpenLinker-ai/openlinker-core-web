@@ -233,7 +233,7 @@ export function PublishForm({ creatorName, skills, locale = "zh" }: PublishFormP
           visibilityBody: "新 Agent 默认仅自己可见。公开只决定是否进入 Agent 库；能否调用取决于接入状态与最近运行记录，实例认证和能力测评提供额外背书。",
           freeTitle: "外部参考价格（可选）",
           freeBody: "这是与外部系统对接时使用的兼容元数据，不会触发 OpenLinker Core 扣费或结算。每次调用仍会写入运行记录。",
-          saving: "保存中...",
+          saving: "保存中…",
           save: "保存并继续接入",
           formInvalid: "请修正下方标出的必填项或格式错误，然后重新提交。",
         }
@@ -252,7 +252,7 @@ export function PublishForm({ creatorName, skills, locale = "zh" }: PublishFormP
           visibilityBody: "New Agents are private by default. Public controls Registry listing only; callability depends on connection health and recent run history, while instance certification and Benchmarks add separate proof.",
           freeTitle: "External reference price (optional)",
           freeBody: "This compatibility metadata is available for external integrations. It does not trigger charging or settlement in OpenLinker Core, and every invocation still creates a run record.",
-          saving: "Saving...",
+          saving: "Saving…",
           save: "Save and continue setup",
           formInvalid: "Fix the required or invalid fields highlighted below, then submit again.",
         };
@@ -907,8 +907,8 @@ function Field({
 function SlugStatusHint({ status, locale }: { status: SlugStatus; locale: Locale }) {
   const copy =
     locale === "zh"
-      ? { checking: "检查中...", available: "✓ 可用", taken: "✗ 已被使用" }
-      : { checking: "Checking...", available: "✓ Available", taken: "✗ Already taken" };
+      ? { checking: "检查中…", available: "✓ 可用", taken: "✗ 已被使用" }
+      : { checking: "Checking…", available: "✓ Available", taken: "✗ Already taken" };
   if (status === "checking")
     return <p className="ol-publish-field-hint ol-slug-hint">{copy.checking}</p>;
   if (status === "available")

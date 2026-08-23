@@ -86,7 +86,7 @@ export function AgentRow({
           calls: "次调用",
           collapseReason: "收起拒绝原因",
           viewReason: "查看拒绝原因",
-          disabling: "停用中...",
+          disabling: "停用中…",
           disable: "停用",
           delivery: "投递设置",
         }
@@ -103,7 +103,7 @@ export function AgentRow({
           calls: "calls",
           collapseReason: "Hide rejection reason",
           viewReason: "View rejection reason",
-          disabling: "Disabling...",
+          disabling: "Disabling…",
           disable: "Disable",
           delivery: "Delivery settings",
         };

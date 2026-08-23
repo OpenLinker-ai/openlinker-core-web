@@ -868,7 +868,7 @@ export function formatDate(iso: string, locale: Locale): string {
 
 export function shortID(id: string): string {
   if (id.length <= 12) return id;
-  return `${id.slice(0, 8)}...${id.slice(-4)}`;
+  return `${id.slice(0, 8)}…${id.slice(-4)}`;
 }
 
 export function searchValue(value: string | undefined): string {

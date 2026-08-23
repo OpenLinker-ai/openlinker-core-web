@@ -52,7 +52,7 @@ export function SecuritySection({
           samePassword: "新密码不能与当前密码相同",
           saved: "密码已修改",
           failed: "修改失败，请稍后再试",
-          saving: "保存中...",
+          saving: "保存中…",
           submit: "修改密码",
         }
       : {
@@ -69,7 +69,7 @@ export function SecuritySection({
           samePassword: "New password must be different from the current password",
           saved: "Password updated",
           failed: "Could not update password. Try again later.",
-          saving: "Saving...",
+          saving: "Saving…",
           submit: "Update password",
         };
 

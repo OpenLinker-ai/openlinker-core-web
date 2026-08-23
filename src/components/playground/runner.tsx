@@ -112,7 +112,7 @@ export function PlaygroundRunner({
             emptyBody: "发送第一条消息后，这里会出现你的输入、Agent 回复和调用状态。",
             user: "你",
             assistant: "Agent",
-            pending: "Agent 正在处理...",
+            pending: "Agent 正在处理…",
             selectedTurn: (sequence: number) => `第 ${sequence} 轮`,
             activeTitle: "当前轮次",
             activeEmpty: "选择或发送一轮后查看输入、回复和 Run ID。",
@@ -150,7 +150,7 @@ export function PlaygroundRunner({
             emptyBody: "After the first message, your input, the Agent response, and run status appear here.",
             user: "You",
             assistant: "Agent",
-            pending: "Agent is working...",
+            pending: "Agent is working…",
             selectedTurn: (sequence: number) => `Turn ${sequence}`,
             activeTitle: "Selected Turn",
             activeEmpty: "Select or send a turn to inspect the input, response, and Run ID.",
@@ -931,7 +931,7 @@ function errorMessage(error: unknown, locale: Locale, fallback: string): string 
 function stringifyShort(value: unknown): string {
   try {
     const text = typeof value === "string" ? value : JSON.stringify(value, null, 2);
-    return text.length > 2400 ? `${text.slice(0, 2397)}...` : text;
+    return text.length > 2400 ? `${text.slice(0, 2399)}…` : text;
   } catch {
     return "";
   }

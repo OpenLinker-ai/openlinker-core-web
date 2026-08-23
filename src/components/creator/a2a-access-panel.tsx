@@ -257,7 +257,7 @@ export function A2AAccessPanel({
                 {token.name}
               </strong>
               <code className="block truncate text-[11px] text-[color:var(--ol-muted)]">
-                {token.prefix}...
+                {token.prefix}…
               </code>
             </div>
             <button

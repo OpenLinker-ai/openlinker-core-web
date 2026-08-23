@@ -40,7 +40,7 @@ export function DeliveryTargetsPanel({ locale = "zh", initialItems }: Props) {
   const copy =
     locale === "zh"
       ? {
-          confirmDelete: (name: string) => `确认删除「${name}」？投递历史保留。`,
+          confirmDelete: (name: string) => `确认删除“${name}”？投递历史保留。`,
           deleted: "已删除",
           deleteFailed: "删除失败",
           defaultSet: (name: string) => `已设为默认：${name}`,

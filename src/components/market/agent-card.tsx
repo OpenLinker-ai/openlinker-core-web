@@ -133,7 +133,7 @@ export function AgentCard({ agent, active = false, locale = "zh" }: AgentCardPro
                 <span
                   key={skill.id}
                   className="ol-chip ol-chip-mint ol-agent-tag"
-                  title={display.description ? `${display.name} — ${display.description}` : display.name}
+                  title={display.description ? `${display.name}${locale === "zh" ? "：" : ": "}${display.description}` : display.name}
                 >
                   <span className="ol-agent-tag-label">{display.name}</span>
                 </span>

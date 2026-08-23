@@ -952,7 +952,7 @@ function RuntimeWorkbenchPanel({
   if (loading) {
     return (
       <div className="ol-panel ol-panel-pad text-[13px] font-bold text-[color:var(--ol-muted)]">
-        {title}...
+        {title}…
       </div>
     );
   }

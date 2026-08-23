@@ -178,7 +178,7 @@ function formatRelative(iso: string, locale: Locale): string {
 function shortID(value?: string): string {
   if (!value) return "";
   if (value.length <= 18) return value;
-  return `${value.slice(0, 8)}...${value.slice(-6)}`;
+  return `${value.slice(0, 8)}…${value.slice(-6)}`;
 }
 
 function idRows(record: CallRecord, locale: Locale): Array<{ label: string; value?: string; href?: string }> {
