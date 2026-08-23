@@ -30,8 +30,11 @@ test("playground creates immediately, retains long-wait final sync, and fits des
   assert.match(runner, /"Idempotency-Key": intent\.idempotencyKey,[\s\S]{0,120}Prefer: "wait=0"/);
   assert.match(runner, /headers: \{ Prefer: `wait=\$\{runWaitSeconds\}` \}/);
   assert.match(runner, /<RunEventStream[\s\S]{0,180}runId=\{activeResult\.run_id\}[\s\S]{0,80}enabled/);
-  assert.match(runner, /xl:grid-rows-\[auto_minmax\(0,1fr\)_auto\]/);
-  assert.match(runner, /xl:h-full xl:min-h-0 xl:overflow-y-auto/);
+  assert.match(runner, /xl:grid-rows-\[minmax\(0,1fr\)_auto\]/);
+  assert.match(runner, /xl:grid-rows-\[auto_minmax\(0,1fr\)\]/);
+  assert.match(runner, /xl:sticky/);
+  assert.match(runner, /xl:max-h-\[calc\(100vh-7rem\)\]/);
+  assert.match(runner, /xl:overflow-y-auto/);
   assert.match(runner, /isPlaygroundSubmitKey\(\{[\s\S]{0,180}isComposing:/);
   assert.match(runner, /Enter 发送 · Shift\+Enter 换行/);
   assert.match(page, /xl:h-\[calc\(100dvh-84px\)\]/);
