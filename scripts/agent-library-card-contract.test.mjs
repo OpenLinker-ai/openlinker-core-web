@@ -45,7 +45,7 @@ describe("Agent library card contract", () => {
 
   it("preserves full Skill and tag values outside the clipped chip label", () => {
     assert.match(component, /className="ol-chip ol-chip-mint ol-agent-tag"/);
-    assert.match(component, /title=\{display\.description \? `\$\{display\.name\} — \$\{display\.description\}` : display\.name\}/);
+    assert.match(component, /title=\{display\.description \? `\$\{display\.name\}\$\{locale === "zh" \? "：" : ": "\}\$\{display\.description\}` : display\.name\}/);
     assert.match(component, /className=\{`ol-chip ol-agent-tag \$\{tagColor\(tag, i\)\}`\}/);
     assert.match(component, /title=\{tag\}/);
     assert.match(component, /className="ol-agent-tag-label"/);
