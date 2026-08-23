@@ -25,6 +25,7 @@ import {
   acquireRunCreationIntent,
   completeRunCreationIntent,
 } from "@/lib/run-idempotency";
+import { PlaygroundBrowserObservation } from "./browser-observation-panel";
 import { summarizeOutputText } from "./output-summary";
 import { ResultPanel } from "./result-panel";
 import { RunTrace } from "./run-trace";
@@ -574,6 +575,15 @@ export function PlaygroundRunner({
             noRunYet: copy.noRunYet,
           }}
         />
+
+        {activeResult?.run_id ? (
+          <PlaygroundBrowserObservation
+            key={activeResult.run_id}
+            result={activeResult}
+            status={activeStatus}
+            locale={locale}
+          />
+        ) : null}
 
         {activeResult?.run_id ? (
           <RunEventStream
