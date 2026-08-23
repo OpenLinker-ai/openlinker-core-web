@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useApi } from "@/hooks/use-api";
+import { Icon } from "@/components/ui/icon";
 import { ApiError, localizedErrorMessage } from "@/lib/api";
 import {
   createObservationSession,
@@ -42,6 +43,11 @@ const copy = {
     description: "Agent 继续执行，画面为只读，无法点击或输入。",
     start: "开始观察",
     stop: "停止观察",
+    live: "实时",
+    readOnly: "只读",
+    expand: "放大浏览器画面",
+    closeExpanded: "关闭放大画面",
+    frameAlt: "当前 Run 的实时浏览器画面",
     checking: "正在检查 Browser 状态…",
     preparing: "Browser 正在准备或切换，请稍后重试。",
     waiting: "等待首帧…",
@@ -59,6 +65,11 @@ const copy = {
     description: "The Agent keeps working. This view is read-only.",
     start: "Start observing",
     stop: "Stop observing",
+    live: "Live",
+    readOnly: "Read only",
+    expand: "Enlarge Browser view",
+    closeExpanded: "Close enlarged view",
+    frameAlt: "Live Browser view for the current Run",
     checking: "Checking Browser status…",
     preparing: "The Browser is preparing or switching. Try again shortly.",
     waiting: "Waiting for the first frame…",
@@ -102,6 +113,7 @@ export function BrowserObservation({
   const [preparingState, setPreparingState] = useState<ObservationPreparingState | null>(
     null,
   );
+  const [expandedView, setExpandedView] = useState(false);
   const [, setPreparingRevision] = useState(0);
   const sequenceRef = useRef(0);
   // Every rule about which Run this viewer is on, what it holds, and which
@@ -263,9 +275,19 @@ export function BrowserObservation({
       setState(null);
       setFrame(null);
       setPreparingState(null);
+      setExpandedView(false);
       sequenceRef.current = 0;
     };
   }, [runId]);
+
+  useEffect(() => {
+    if (!expandedView) return;
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") setExpandedView(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [expandedView]);
 
   // Leaving the page. Deliberately not keyed on the token or the fetch identity:
   // a session refresh would otherwise run this cleanup and stop an observation
@@ -287,6 +309,7 @@ export function BrowserObservation({
     async (action: "start" | "stop") => {
       const requestedRunId = runId;
       const session = sessionRef.current;
+      setExpandedView(false);
       setBusy(requestedRunId);
       setPreparingState(null);
       setError(null);
@@ -348,60 +371,152 @@ export function BrowserObservation({
   const shown = frame?.runId === runId ? frame.frame : null;
   const working = busy === runId;
   const embedded = presentation === "embedded";
+  const statusText = observed
+    ? shown
+      ? text.live
+      : text.waiting
+    : checking
+      ? text.checking
+      : preparing
+        ? text.preparing
+        : stateLoaded
+          ? text.inactive
+          : shownError;
 
   return (
     <section
       aria-busy={working || checking || preparing}
       aria-label={text.title}
-      className={embedded ? "grid gap-3" : undefined}
+      className={embedded ? "grid min-w-0 gap-3" : "ol-panel min-w-0 overflow-hidden"}
     >
-      <header className={embedded ? "sr-only" : undefined}>
-        <h3>{text.title}</h3>
-        <p>{text.description}</p>
+      <header className={embedded ? "sr-only" : "ol-panel-head flex-wrap gap-3"}>
+        <div className="min-w-0">
+          <h3 className="text-[14px] font-black text-[color:var(--ol-ink)]">{text.title}</h3>
+          <p className="mt-0.5 text-[11.5px] font-semibold text-[color:var(--ol-muted)]">
+            {text.description}
+          </p>
+        </div>
+        <span className={`ol-chip ${observed ? "ol-chip-green" : "ol-chip-mint"}`}>
+          {observed ? text.live : text.readOnly}
+        </span>
       </header>
-      {observed ? (
-        <button
-          type="button"
-          disabled={working}
-          onClick={() => void transition("stop")}
-          className={embedded ? "inline-flex h-9 w-fit items-center justify-center rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12px] font-black text-[color:var(--ol-ink)] transition hover:border-[color:var(--ol-primary)]/40 disabled:cursor-not-allowed disabled:opacity-60" : undefined}
+
+      <div className={embedded ? "grid gap-3" : "grid gap-4 p-4 sm:p-5"}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {observed ? (
+              <button
+                type="button"
+                disabled={working}
+                onClick={() => void transition("stop")}
+                className="inline-flex h-9 items-center justify-center rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12px] font-black text-[color:var(--ol-ink)] transition hover:border-[color:var(--ol-primary)]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ol-primary)]/35 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {text.stop}
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={working || !stateLoaded || preparing}
+                onClick={() => void transition("start")}
+                className="inline-flex h-9 items-center justify-center rounded-xl border border-[color:var(--ol-primary)] bg-[color:var(--ol-primary)] px-3.5 text-[12px] font-black text-white transition hover:bg-[color:var(--ol-primary-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ol-primary)]/35 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {text.start}
+              </button>
+            )}
+            <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-[color:var(--ol-muted)]">
+              <span
+                aria-hidden="true"
+                className={`h-2 w-2 rounded-full ${observed ? "animate-pulse bg-[color:var(--ol-primary)] motion-reduce:animate-none" : "bg-[color:var(--ol-line)]"}`}
+              />
+              {text.readOnly}
+            </span>
+          </div>
+          <button
+            type="button"
+            disabled={!shown}
+            onClick={() => setExpandedView(true)}
+            aria-label={text.expand}
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--ol-line)] bg-white px-3 text-[11.5px] font-black text-[color:var(--ol-muted)] transition hover:border-[color:var(--ol-primary)]/40 hover:text-[color:var(--ol-primary-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ol-primary)]/35 disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            <Icon name="arrow-up-right" size="sm" />
+            {text.expand}
+          </button>
+        </div>
+
+        <div
+          tabIndex={0}
+          className="relative grid aspect-video min-h-[180px] place-items-center overflow-hidden rounded-[16px] border border-white/10 bg-[color:var(--ol-ink)] shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ol-primary)]/60"
         >
-          {text.stop}
-        </button>
-      ) : (
-        <button
-          type="button"
-          disabled={working || !stateLoaded || preparing}
-          onClick={() => void transition("start")}
-          className={embedded ? "inline-flex h-9 w-fit items-center justify-center rounded-xl border border-[color:var(--ol-primary)] bg-[color:var(--ol-primary)] px-3.5 text-[12px] font-black text-white transition hover:bg-[color:var(--ol-primary-dark)] disabled:cursor-not-allowed disabled:opacity-60" : undefined}
+          {observed && shown ? (
+            /* eslint-disable-next-line @next/next/no-img-element -- frames are
+               per-request data URIs of live page content; next/image would add a
+               loader and cache layer for bytes that must never be cached. */
+            <img
+              src={`data:${shown.mime_type};base64,${shown.data}`}
+              width={shown.width}
+              height={shown.height}
+              alt={text.frameAlt}
+              draggable={false}
+              className="pointer-events-none h-full w-full select-none object-contain"
+            />
+          ) : (
+            <div className="max-w-sm px-5 text-center text-white/78">
+              <span className="mx-auto grid h-10 w-10 place-items-center rounded-[13px] border border-white/12 bg-white/7 text-white/90">
+                <Icon name="globe" size="lg" />
+              </span>
+              <p className="mt-3 text-[12.5px] font-bold leading-5">
+                {statusText || text.inactive}
+              </p>
+            </div>
+          )}
+        </div>
+
+        <p className="sr-only" role="status" aria-live="polite">
+          {statusText}
+        </p>
+        {shownError ? (
+          <p className="rounded-[12px] border border-[#d93b3b]/20 bg-[#fde7e7] px-3 py-2 text-[12px] font-bold text-[#7a1f1f]" role="alert">
+            {shownError}
+          </p>
+        ) : null}
+      </div>
+
+      {expandedView && shown ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={text.expand}
+          onKeyDown={(event) => {
+            if (event.key === "Tab") event.preventDefault();
+          }}
+          className="fixed inset-0 z-50 grid grid-rows-[auto_minmax(0,1fr)] bg-[color:var(--ol-ink)]/96 p-3 sm:p-5"
         >
-          {text.start}
-        </button>
-      )}
-      {observed ? (
-        shown ? (
-          /* eslint-disable-next-line @next/next/no-img-element -- frames are
-             per-request data URIs of live page content; next/image would add a
-             loader and cache layer for bytes that must never be cached. */
+          <div className="flex items-center justify-between gap-3 pb-3 text-white">
+            <div>
+              <strong className="text-[14px] font-black">{text.title}</strong>
+              <span className="ml-2 text-[11.5px] font-bold text-white/65">{text.readOnly}</span>
+            </div>
+            <button
+              type="button"
+              autoFocus
+              onClick={() => setExpandedView(false)}
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3.5 text-[12px] font-black text-white hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+            >
+              <Icon name="x" size="sm" />
+              {text.closeExpanded}
+            </button>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element -- see the inline viewer above. */}
           <img
             src={`data:${shown.mime_type};base64,${shown.data}`}
             width={shown.width}
             height={shown.height}
-            alt={text.title}
+            alt={text.frameAlt}
             draggable={false}
-            className="pointer-events-none h-auto max-h-[520px] w-full select-none rounded-[14px] border border-[color:var(--ol-line)] bg-white object-contain"
+            className="h-full min-h-0 w-full select-none object-contain"
           />
-        ) : (
-          <p>{text.waiting}</p>
-        )
-      ) : checking ? (
-        <p>{text.checking}</p>
-      ) : preparing ? (
-        <p role="status">{text.preparing}</p>
-      ) : stateLoaded ? (
-        <p>{text.inactive}</p>
+        </div>
       ) : null}
-      {shownError ? <p role="alert">{shownError}</p> : null}
     </section>
   );
 }

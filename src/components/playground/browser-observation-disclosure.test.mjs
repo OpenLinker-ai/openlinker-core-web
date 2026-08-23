@@ -7,7 +7,7 @@ import {
   hasPlaygroundBrowserObservation,
   playgroundObservationExpanded,
   togglePlaygroundObservationDisclosure,
-} from "../src/components/playground/browser-observation-disclosure.mjs";
+} from "./browser-observation-disclosure.mjs";
 
 test("the playground entry requires a Run and Browser policy evidence", () => {
   assert.equal(
@@ -42,7 +42,7 @@ test("a running Browser Run opens by default but never starts an observation", a
   assert.equal(playgroundObservationExpanded(state, "run-a", "running"), true);
 
   const panel = await readFile(
-    new URL("../src/components/playground/browser-observation-panel.tsx", import.meta.url),
+    new URL("./browser-observation-panel.tsx", import.meta.url),
     "utf8",
   );
   assert.match(panel, /<BrowserObservation/);
@@ -62,7 +62,7 @@ test("collapse is scoped to one Run and terminal Runs cannot remain expanded", (
 
 test("the playground mounts the panel between the selected turn and event stream", async () => {
   const runner = await readFile(
-    new URL("../src/components/playground/runner.tsx", import.meta.url),
+    new URL("./runner.tsx", import.meta.url),
     "utf8",
   );
   const summary = runner.indexOf("<ActiveTurnSummary");

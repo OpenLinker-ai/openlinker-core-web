@@ -94,7 +94,10 @@ test("the tested cooldown helper drives production readiness", () => {
 test("a failed initial state read no longer looks like an active check", () => {
   assert.ok(source.includes("const checking = !stateLoaded && !shownError"));
   assert.ok(source.includes("aria-busy={working || checking || preparing}"));
-  assert.ok(source.includes(") : checking ? ("));
+  const statusStart = source.indexOf("const statusText");
+  const statusEnd = source.indexOf("return (", statusStart);
+  assert.ok(statusStart >= 0 && statusEnd > statusStart);
+  assert.match(source.slice(statusStart, statusEnd), /checking\s*\? text\.checking/);
 });
 
 test("the shared viewer exposes an embedded presentation without forking behavior", () => {

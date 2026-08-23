@@ -268,6 +268,7 @@ export function RunDetail({
   const view = normalizeRun(run, locale);
   const success = view.status === "success";
   const delegated = view.billingMode === "free_delegation";
+  const browserRunning = view.status === "running" && Boolean(view.browserInteractionPolicy);
   const chip = statusChip(view.status, locale);
   const deliverySettingsHref =
     view.agentSlug || view.agentId
@@ -292,30 +293,29 @@ export function RunDetail({
 
   return (
     <div className="space-y-5">
-      <section>
-        <div className="grid items-end gap-5 md:grid-cols-[minmax(0,1fr)_auto]">
-          <div>
-            <div className="ol-kicker">{copy.kicker}</div>
-            <h1 className="mt-2 break-all text-[30px] font-[900] leading-tight text-[color:var(--ol-ink)]">
-              {view.id}
-            </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+      <section className="ol-panel overflow-hidden">
+        <div className="grid items-center gap-4 p-4 sm:p-5 md:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-[23px] font-[900] leading-tight text-[color:var(--ol-ink)]">
+                {copy.kicker}
+              </h1>
               <span className={chip.tone}>{chip.label}</span>
-              <span className="text-[12.5px] font-bold text-[color:var(--ol-muted)]">
-                run_id
-              </span>
-              <code className="font-mono text-[12px] text-[color:var(--ol-subtle)]">{view.id}</code>
+            </div>
+            <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
+              <span className="text-[11.5px] font-black uppercase tracking-[0.06em] text-[color:var(--ol-subtle)]">run_id</span>
+              <code className="max-w-full truncate font-mono text-[11.5px] text-[color:var(--ol-muted)]" title={view.id}>{view.id}</code>
               <button
                 type="button"
                 onClick={copyId}
-                className="inline-flex h-7 items-center gap-1 rounded-lg border border-[color:var(--ol-line)] bg-white px-2 text-[11.5px] font-[800] text-[color:var(--ol-muted)] hover:border-[color:var(--ol-primary)]/40"
+                className="inline-flex h-7 items-center gap-1 rounded-lg border border-[color:var(--ol-line)] bg-white px-2 text-[11.5px] font-[800] text-[color:var(--ol-muted)] hover:border-[color:var(--ol-primary)]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ol-primary)]/35"
               >
                 <Icon name={copied ? "check" : "clipboard"} size="sm" />
                 {copied ? copy.copied : copy.copyId}
               </button>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 md:justify-end">
             <Link
               href={runReplayPlaygroundHref({
                 agentSlug: view.agentSlug,
@@ -343,50 +343,32 @@ export function RunDetail({
             </Link>
           </div>
         </div>
+        <div className="grid gap-3 border-t border-[color:var(--ol-line)] bg-[color:var(--ol-soft)]/65 p-3 sm:grid-cols-2 lg:grid-cols-4 sm:px-5">
+          <StatCell label={copy.cost} value={delegated ? copy.freeDelegation : fmtPriceField(view.costCents, locale)} divider={false} />
+          <StatCell label={copy.duration} value={fmtMs(view.durationMs)} />
+          <StatCell label={copy.status} value={runStatusLabel(view.status, locale)} />
+          <StatCell label={copy.delivery} value={delegated ? copy.deliveryNoSeparate : copy.deliverySettings} />
+        </div>
       </section>
 
-      <section className="ol-panel grid gap-6 p-5 md:grid-cols-4">
-        <StatCell label={copy.cost} value={delegated ? copy.freeDelegation : fmtPriceField(view.costCents, locale)} divider={false} />
-        <StatCell label={copy.duration} value={fmtMs(view.durationMs)} />
-        <StatCell label={copy.status} value={runStatusLabel(view.status, locale)} />
-        <StatCell label={copy.delivery} value={delegated ? copy.deliveryNoSeparate : copy.deliverySettings} />
-      </section>
-
-      <RuntimeProgressPanel locale={locale} run={view} />
-
-      {view.evidenceSummary ? (
-        <section className="ol-panel p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div className="ol-kicker">{copy.evidence}</div>
-              <h2 className="mt-1 text-[18px] font-black text-[color:var(--ol-ink)]">
-                {coverageStatusLabel(view.evidenceSummary.coverage_status, locale)}
-              </h2>
-            </div>
-            <span className={`ol-chip ${view.evidenceSummary.public_safe ? "ol-chip-green" : "ol-chip-mint"}`}>
-              {view.evidenceSummary.public_safe ? copy.publicExample : copy.privateEvidence}
-            </span>
-          </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <EvidenceStat label={copy.coverage} value={coverageStatusLabel(view.evidenceSummary.coverage_status, locale)} />
-            <EvidenceStat label={copy.matchedSkills} value={String(view.evidenceSummary.matched_skill_count)} />
-            <EvidenceStat label={copy.missingItems} value={String(view.evidenceSummary.missing_skill_count)} />
-            <EvidenceStat label={copy.usedMCP} value={String(view.evidenceSummary.used_mcp_tool_count)} />
-            <EvidenceStat label={copy.artifactCount} value={`${view.evidenceSummary.artifact_count} / ${view.evidenceSummary.message_count} ${copy.messageCount}`} />
-          </div>
+      {browserRunning ? (
+        <section data-browser-workspace className="grid items-start gap-5 xl:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)]">
+          <BrowserObservation runId={view.id} locale={locale} enabled />
+          <aside className="grid gap-4 xl:sticky xl:top-4">
+            <RuntimeProgressPanel locale={locale} run={view} compact />
+            {view.evidenceSummary ? <EvidenceSummaryPanel locale={locale} evidence={view.evidenceSummary} compact /> : null}
+          </aside>
         </section>
-      ) : null}
+      ) : (
+        <>
+          <RuntimeProgressPanel locale={locale} run={view} />
+          {view.evidenceSummary ? <EvidenceSummaryPanel locale={locale} evidence={view.evidenceSummary} /> : null}
+        </>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]">
         <section className="min-w-0 space-y-5">
           <BrowserHumanControl
-            runId={view.id}
-            locale={locale}
-            enabled={run !== null && view.status === "running"}
-          />
-          {/* Observation sits alongside takeover, not inside it: watching and
-              driving are separate capabilities with separate authorization. */}
-          <BrowserObservation
             runId={view.id}
             locale={locale}
             enabled={run !== null && view.status === "running"}
@@ -566,7 +548,49 @@ export function RunDetail({
   );
 }
 
-function RuntimeProgressPanel({ locale, run }: { locale: Locale; run: ViewRun }) {
+function EvidenceSummaryPanel({
+  locale,
+  evidence,
+  compact = false,
+}: {
+  locale: Locale;
+  evidence: RunEvidenceSummaryData;
+  compact?: boolean;
+}) {
+  const copy = runDetailMessages[locale];
+  return (
+    <details className="ol-panel overflow-hidden">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 marker:hidden">
+        <span className="min-w-0">
+          <span className="ol-kicker">{copy.evidence}</span>
+          <strong className="mt-1 block truncate text-[14px] font-black text-[color:var(--ol-ink)]">
+            {coverageStatusLabel(evidence.coverage_status, locale)}
+          </strong>
+        </span>
+        <span className={`ol-chip shrink-0 ${evidence.public_safe ? "ol-chip-green" : "ol-chip-mint"}`}>
+          {evidence.public_safe ? copy.publicExample : copy.privateEvidence}
+        </span>
+      </summary>
+      <div className={compact ? "grid gap-3 border-t border-[color:var(--ol-line)] bg-[color:var(--ol-soft)]/55 p-4 sm:grid-cols-2" : "grid gap-3 border-t border-[color:var(--ol-line)] bg-[color:var(--ol-soft)]/55 p-4 sm:grid-cols-2 lg:grid-cols-5"}>
+        <EvidenceStat label={copy.coverage} value={coverageStatusLabel(evidence.coverage_status, locale)} />
+        <EvidenceStat label={copy.matchedSkills} value={String(evidence.matched_skill_count)} />
+        <EvidenceStat label={copy.missingItems} value={String(evidence.missing_skill_count)} />
+        <EvidenceStat label={copy.usedMCP} value={String(evidence.used_mcp_tool_count)} />
+        <EvidenceStat label={copy.artifactCount} value={`${evidence.artifact_count} / ${evidence.message_count} ${copy.messageCount}`} />
+      </div>
+    </details>
+  );
+}
+
+function RuntimeProgressPanel({
+  locale,
+  run,
+  compact = false,
+}: {
+  locale: Locale;
+  run: ViewRun;
+  compact?: boolean;
+}) {
   const copy = runDetailMessages[locale];
   const state = run.dispatchState ?? "";
   const description =
@@ -618,7 +642,7 @@ function RuntimeProgressPanel({ locale, run }: { locale: Locale; run: ViewRun })
           {runDispatchStateLabel(state, locale)}
         </span>
       </div>
-      <div className="grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_260px]">
+      <div className={compact ? "grid gap-3 p-4" : "grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_260px]"}>
         <div>
           <p className="text-[13.5px] font-semibold leading-relaxed text-[color:var(--ol-ink)]">
             {description}
