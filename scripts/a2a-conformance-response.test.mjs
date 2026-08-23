@@ -55,6 +55,9 @@ test("normalizes top-level and nested Push Config responses", () => {
   assert.deepEqual(a2aPushConfig(nested), nested.pushNotificationConfig);
   assert.deepEqual(a2aPushConfigItems({ items: [direct] }), [direct]);
   assert.deepEqual(a2aPushConfigItems({ configs: [nested] }), [nested]);
+  assert.deepEqual(a2aPushConfigItems({}), []);
+  assert.deepEqual(a2aPushConfigItems({ nextPageToken: "" }), []);
   assert.throws(() => a2aPushConfig("invalid"));
   assert.throws(() => a2aPushConfigItems({ items: {} }));
+  assert.throws(() => a2aPushConfigItems({ unexpected: true }));
 });

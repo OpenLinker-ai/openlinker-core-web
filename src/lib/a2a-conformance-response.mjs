@@ -54,6 +54,9 @@ export function a2aPushConfig(value) {
 export function a2aPushConfigItems(value) {
   const response = record(value, "Push Config list response");
   const items = Object.hasOwn(response, "configs") ? response.configs : response.items;
+  if (items === undefined && Object.keys(response).every((key) => key === "nextPageToken")) {
+    return [];
+  }
   if (!Array.isArray(items)) {
     throw new TypeError("Push Config list response must include configs or items");
   }
