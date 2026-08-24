@@ -11,10 +11,11 @@ import {
   a2aPushConfig,
   a2aPushConfigItems,
 } from "@/lib/a2a-conformance-response.mjs";
+import { a2aConformanceMessageParts, type A2AMessagePart } from "@/lib/a2a-conformance-input.mjs";
 import { API_BASE_URL, localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
 
-type CheckState = "idle" | "running" | "pass" | "fail" | "skipped";
+type CheckState = "idle" | "running" | "pass" | "fail" | "skipped" | "unverified";
 
 type CheckItem = {
   id: string;
@@ -35,6 +36,13 @@ type SSESnapshot = {
   lastEventId: number;
   heartbeatCount: number;
 };
+
+class A2ALongOnlineNotObservableError extends Error {
+  constructor() {
+    super("The Agent completed before the task subscription opened");
+    this.name = "A2ALongOnlineNotObservableError";
+  }
+}
 
 const CHECK_IDS = [
   "public-card",
@@ -80,6 +88,7 @@ export function A2AConformancePanel({
             login: "需要登录后读取扩展卡与 A2A Task 列表。",
             publicOnly: "公开 Agent Card 校验已完成；登录后可继续受保护的协议检查。",
             requiresAuth: "需要登录",
+            unverified: "未验证",
             pass: "通过",
             fail: "失败",
             idle: "待测",
@@ -97,6 +106,7 @@ export function A2AConformancePanel({
             login: "Sign in to read the extended card and task list.",
             publicOnly: "The public Agent Card check completed. Sign in to continue with protected protocol checks.",
             requiresAuth: "Sign-in required",
+            unverified: "Not verified",
             pass: "Pass",
             fail: "Fail",
             idle: "Idle",
@@ -202,6 +212,14 @@ export function A2AConformancePanel({
       await checkLongOnline(cleanSlug, token, sample, setCheck);
       setSummary(locale === "zh" ? "A2A 长在线、断线续传与终态收敛通过。" : "A2A long-online, resume, and terminal convergence passed.");
     } catch (err) {
+      if (err instanceof A2ALongOnlineNotObservableError) {
+        const message = locale === "zh"
+          ? "Agent 在订阅建立前已完成；本次未验证长在线，请改用可保持运行的测试 Agent。"
+          : "The Agent finished before the subscription opened. Long-online behavior was not verified; use a test Agent that stays running.";
+        setCheck("long-online", { state: "unverified", detail: message });
+        setSummary(message);
+        return;
+      }
       const message = localizedCheckError(err, locale, copy.fail);
       setCheck("long-online", { state: "fail", detail: message });
       setSummary(message);
@@ -268,6 +286,8 @@ export function A2AConformancePanel({
                         ? copy.running
                         : item.state === "skipped"
                           ? copy.requiresAuth
+                          : item.state === "unverified"
+                            ? copy.unverified
                           : copy.idle}
                 </span>
               </div>
@@ -338,6 +358,11 @@ function localizedCheckError(err: unknown, locale: Locale, fallback: string): st
   return localizedErrorMessage(err instanceof Error ? err : new Error(String(err)), locale, fallback);
 }
 
+async function inputPartsForAgent(slug: string, sample: string): Promise<A2AMessagePart[]> {
+  const { json } = await requestJSON(`/api/v1/agents/${encodeURIComponent(slug)}`, "GET");
+  return a2aConformanceMessageParts(sample, json);
+}
+
 async function checkPublicCard(slug: string, setCheck: (id: string, patch: Partial<CheckItem>) => void) {
   setCheck("public-card", { state: "running", detail: "GET /.well-known/agent-card.json" });
   const { json } = await requestJSON(`/api/v1/a2a/agents/${encodeURIComponent(slug)}/.well-known/agent-card.json`, "GET");
@@ -392,6 +417,7 @@ async function checkJSONRPCSendSync(
   setCheck: (id: string, patch: Partial<CheckItem>) => void,
 ) {
   setCheck("jsonrpc-send-sync", { state: "running", detail: "POST SendMessage returnImmediately=false" });
+  const parts = await inputPartsForAgent(slug, sample);
   const { json } = await requestJSON(`/api/v1/a2a/agents/${encodeURIComponent(slug)}`, "POST", {
     jsonrpc: "2.0",
     id: "page-send-message-sync",
@@ -401,7 +427,7 @@ async function checkJSONRPCSendSync(
         messageId: `page-message-sync-${Date.now()}`,
         contextId: `page-a2a-sync-${Date.now()}`,
         role: "ROLE_USER",
-        parts: [{ text: sample.trim() || "A2A synchronous standard check" }],
+        parts,
       },
       configuration: { acceptedOutputModes: ["application/json", "text/plain"], returnImmediately: false },
       metadata: { client: "openlinker-a2a-conformance" },
@@ -428,6 +454,7 @@ async function checkJSONRPCSend(
 ): Promise<{ taskId: string; contextId: string }> {
   const contextId = `page-a2a-${Date.now()}`;
   setCheck("jsonrpc-send", { state: "running", detail: "POST SendMessage" });
+  const parts = await inputPartsForAgent(slug, sample);
   const { json } = await requestJSON(`/api/v1/a2a/agents/${encodeURIComponent(slug)}`, "POST", {
     jsonrpc: "2.0",
     id: "page-send-message",
@@ -437,7 +464,7 @@ async function checkJSONRPCSend(
           messageId: `page-message-${Date.now()}`,
           contextId,
           role: "ROLE_USER",
-          parts: [{ text: sample.trim() || "A2A standard check" }],
+          parts,
         },
       configuration: { acceptedOutputModes: ["application/json", "text/plain"], returnImmediately: true },
       metadata: { client: "openlinker-a2a-conformance" },
@@ -540,6 +567,7 @@ async function checkStream(
   setCheck: (id: string, patch: Partial<CheckItem>) => void,
 ) {
   setCheck("stream", { state: "running", detail: "POST /message:stream" });
+  const parts = await inputPartsForAgent(slug, sample);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12000);
   try {
@@ -555,7 +583,7 @@ async function checkStream(
         message: {
           messageId: `page-stream-${Date.now()}`,
           role: "ROLE_USER",
-          parts: [{ text: sample.trim() || "A2A stream check" }],
+          parts,
         },
         configuration: { acceptedOutputModes: ["application/json", "text/plain"] },
         metadata: { client: "openlinker-a2a-conformance" },
@@ -589,6 +617,7 @@ async function checkLongOnline(
   let canceled = false;
   setCheck("long-online", { state: "running", detail: "POST SendMessage returnImmediately=true" });
   try {
+    const parts = await inputPartsForAgent(slug, sample);
     const start = await requestJSON(`/api/v1/a2a/agents/${encodeURIComponent(slug)}`, "POST", {
       jsonrpc: "2.0",
       id: "page-long-online-start",
@@ -598,7 +627,7 @@ async function checkLongOnline(
           messageId: `page-long-online-${Date.now()}`,
           contextId: `page-long-online-${Date.now()}`,
           role: "ROLE_USER",
-          parts: [{ text: sample.trim() || "A2A long-online check" }],
+          parts,
         },
         configuration: { acceptedOutputModes: ["application/json", "text/plain"], returnImmediately: true },
         metadata: { client: "openlinker-a2a-long-online" },
@@ -736,7 +765,11 @@ async function readTaskSubscription(
       signal: controller.signal,
     });
     if (!res.ok) {
-      throw new Error(`SubscribeTask -> HTTP ${res.status}: ${(await res.text()).slice(0, 240)}`);
+      const body = await res.text();
+      if (res.status === 400 && /终态任务|terminal(?:-state)? task|task (?:is|already) terminal/i.test(body)) {
+        throw new A2ALongOnlineNotObservableError();
+      }
+      throw new Error(`SubscribeTask -> HTTP ${res.status}: ${body.slice(0, 240)}`);
     }
     if (!/text\/event-stream/i.test(res.headers.get("content-type") ?? "")) {
       throw new Error("SubscribeTask response must be text/event-stream");
@@ -863,6 +896,7 @@ function stateClass(state: CheckState): string {
     case "running":
       return "ol-chip ol-chip-blue";
     case "skipped":
+    case "unverified":
       return "ol-chip ol-chip-blue";
     default:
       return "ol-chip";

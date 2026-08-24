@@ -92,6 +92,18 @@ test("A2A checks synchronous union and non-blocking Task independently", async (
   assert.match(panel, /returnImmediately: true/);
   assert.match(panel, /synchronous SendMessage must return a Task or Message/);
   assert.match(panel, /non-blocking SendMessage must return a Task with id/);
+  assert.equal(
+    (panel.match(/const parts = await inputPartsForAgent\(slug, sample\)/g) ?? []).length,
+    4,
+    "base, non-blocking, stream, and long-online checks must all adapt to the Agent input schema",
+  );
+  assert.match(panel, /a2aConformanceMessageParts\(sample, json\)/);
+  assert.doesNotMatch(panel, /parts: \[\{ (?:kind: "text", )?text: sample\.trim\(\)/);
+  assert.match(panel, /class A2ALongOnlineNotObservableError extends Error/);
+  assert.match(panel, /setCheck\("long-online", \{ state: "unverified", detail: message \}\)/);
+  assert.match(panel, /unverified: "未验证"/);
+  assert.match(panel, /unverified: "Not verified"/);
+  assert.match(panel, /终态任务\|terminal\(\?:-state\)\? task/);
 });
 
 test("shared high-impact UX actions remain explicit and reversible", async () => {
