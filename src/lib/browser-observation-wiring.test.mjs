@@ -69,8 +69,10 @@ test("what is displayed is bound to the Run on screen", () => {
   );
 });
 
-test("the page listener is removed with the effect it was added in", () => {
+test("both page-exit listeners share the release and are removed with their effect", () => {
+  assert.ok(source.includes('window.addEventListener("beforeunload", release)'));
   assert.ok(source.includes('window.addEventListener("pagehide", release)'));
+  assert.ok(source.includes('window.removeEventListener("beforeunload", release)'));
   assert.ok(source.includes('window.removeEventListener("pagehide", release)'));
 });
 

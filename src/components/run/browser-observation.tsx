@@ -298,8 +298,13 @@ export function BrowserObservation({
       const held = session.release();
       if (held) stopRef.current(held);
     };
+    // beforeunload starts the keepalive request while the document can still
+    // send it; pagehide covers browsers and exits that skip the earlier event.
+    // session.release() makes the two paths one idempotent release.
+    window.addEventListener("beforeunload", release);
     window.addEventListener("pagehide", release);
     return () => {
+      window.removeEventListener("beforeunload", release);
       window.removeEventListener("pagehide", release);
       release();
     };
