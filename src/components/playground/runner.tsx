@@ -504,7 +504,7 @@ export function PlaygroundRunner({
 
         {activeResult?.run_id ? (
           <PlaygroundBrowserObservation
-            key={activeResult.run_id}
+            key={`browser-observation:${activeResult.run_id}`}
             result={activeResult}
             status={activeStatus}
             locale={locale}
@@ -513,7 +513,7 @@ export function PlaygroundRunner({
 
         {activeResult?.run_id ? (
           <RunEventStream
-            key={activeResult.run_id}
+            key={`run-events:${activeResult.run_id}`}
             locale={locale}
             runId={activeResult.run_id}
             enabled

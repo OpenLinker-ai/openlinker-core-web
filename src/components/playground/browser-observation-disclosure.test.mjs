@@ -83,7 +83,12 @@ test("the playground mounts the panel between the selected turn and event stream
   assert.ok(summary >= 0);
   assert.ok(observation > summary);
   assert.ok(events > observation);
-  assert.match(runner, /key=\{activeResult\.run_id\}/);
+  assert.match(
+    runner,
+    /key=\{`browser-observation:\$\{activeResult\.run_id\}`\}/,
+  );
+  assert.match(runner, /key=\{`run-events:\$\{activeResult\.run_id\}`\}/);
+  assert.doesNotMatch(runner, /key=\{activeResult\.run_id\}/);
 
   const panel = await readFile(
     new URL("./browser-observation-panel.tsx", import.meta.url),
