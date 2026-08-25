@@ -45,13 +45,18 @@ const copy = {
     stop: "停止观察",
     live: "实时",
     readOnly: "只读",
+    frozen: "任务结束时画面",
+    stoppedFrame: "画面已停止更新",
+    runEnded: "运行已结束",
     expand: "放大浏览器画面",
     closeExpanded: "关闭放大画面",
     frameAlt: "当前 Run 的实时浏览器画面",
+    frozenFrameAlt: "当前 Run 最后收到的浏览器画面",
     checking: "正在检查 Browser 状态…",
     preparing: "Browser 正在准备或切换，请稍后重试。",
     waiting: "等待首帧…",
     inactive: "当前没有进行中的观察。",
+    endedNoFrame: "运行已结束，未捕获可保留的浏览器画面。",
     unsupported: "该 Runtime 不支持只读观察。",
     unavailable: "该 Run 的观察通道不在当前 Core 实例上。",
     busy: "该 Run 已有活动的观察。",
@@ -67,13 +72,18 @@ const copy = {
     stop: "Stop observing",
     live: "Live",
     readOnly: "Read only",
+    frozen: "Task-end frame",
+    stoppedFrame: "Frame updates stopped",
+    runEnded: "Run ended",
     expand: "Enlarge Browser view",
     closeExpanded: "Close enlarged view",
     frameAlt: "Live Browser view for the current Run",
+    frozenFrameAlt: "Last Browser frame received for the current Run",
     checking: "Checking Browser status…",
     preparing: "The Browser is preparing or switching. Try again shortly.",
     waiting: "Waiting for the first frame…",
     inactive: "No observation is running.",
+    endedNoFrame: "The Run ended before a Browser frame could be retained.",
     unsupported: "This Runtime does not support read-only observation.",
     unavailable: "This Run's observation channel is not on the current Core instance.",
     busy: "This Run is already being observed.",
@@ -89,11 +99,13 @@ export function BrowserObservation({
   locale,
   enabled,
   presentation = "standalone",
+  terminal = false,
 }: {
   runId: string;
   locale: Locale;
   enabled: boolean;
   presentation?: "standalone" | "embedded";
+  terminal?: boolean;
 }) {
   const { fetch: apiFetch, token } = useApi();
   const text = copy[locale === "zh" ? "zh" : "en"];
@@ -124,15 +136,15 @@ export function BrowserObservation({
   // Whether the state in hand says this Run is being observed. State survives
   // the render that already carries the next Run's id, because effect cleanups
   // run after that render commits, so every use of it has to name the Run.
-  const observed = state?.run_id === runId && Boolean(state?.active);
+  const observed = !terminal && state?.run_id === runId && Boolean(state?.active);
   const stateLoaded = state?.run_id === runId;
   const shownError = error?.runId === runId ? error.message : "";
-  const checking = !stateLoaded && !shownError;
+  const checking = !terminal && !stateLoaded && !shownError;
   // Reading the bounded deadline here is intentional: the timer only requests
   // a render, while this tested helper remains the source of expiration truth.
   // Any later render therefore recovers even if that timer was delayed.
   // eslint-disable-next-line react-hooks/purity
-  const preparing = observationPreparing(preparingState, runId, Date.now());
+  const preparing = !terminal && observationPreparing(preparingState, runId, Date.now());
 
   const describe = useCallback(
     (cause: unknown, fallback: string) => {
@@ -232,10 +244,10 @@ export function BrowserObservation({
     void poll();
     return () => {
       cancelled = true;
-      // Reset on teardown rather than in the effect body: clearing state while
-      // rendering would cascade another render on every dependency change.
+      // Polling can stop before presentation does (explicit stop or terminal
+      // Run). Preserve the last Run-keyed frame for inspection; Run transition
+      // cleanup below remains the only place that clears it.
       sequenceRef.current = 0;
-      setFrame(null);
     };
   }, [apiFetch, describe, enabled, observed, refresh, runId, text, token]);
 
@@ -259,6 +271,15 @@ export function BrowserObservation({
       });
     };
   }, [apiFetch, enabled, token]);
+
+  // Terminal state ends live authority but not local inspection. Core already
+  // closes the authoritative lease on Run terminal; the best-effort stop makes
+  // this viewer release immediately if its terminal update wins the race.
+  useEffect(() => {
+    if (!terminal) return;
+    const held = sessionRef.current.terminal(runId);
+    if (held) stopRef.current(held);
+  }, [runId, terminal]);
 
   // Moving between Runs. The cleanup leaves the Run being left -- releasing what
   // this viewer held for it -- and the body arrives at the next one; React runs
@@ -312,6 +333,7 @@ export function BrowserObservation({
 
   const transition = useCallback(
     async (action: "start" | "stop") => {
+      if (terminal && action === "start") return;
       const requestedRunId = runId;
       const session = sessionRef.current;
       setExpandedView(false);
@@ -324,6 +346,10 @@ export function BrowserObservation({
           { method: "POST", signOutOnUnauthorized: false },
         );
         if (action === "start") {
+          // A new live lease must not present the previous stopped snapshot as
+          // current. Wait for a frame from this lease before showing "Live".
+          setFrame(null);
+          sequenceRef.current = 0;
           // The lease exists from here on, whatever the viewer did while the
           // request was in flight. Leaving during a start would otherwise leak
           // it: the release ran before there was anything to release, and the
@@ -367,7 +393,7 @@ export function BrowserObservation({
         setBusy((current) => releaseBusy(current, requestedRunId));
       }
     },
-    [apiFetch, describe, refresh, runId, text],
+    [apiFetch, describe, refresh, runId, terminal, text],
   );
 
   if (!enabled) return null;
@@ -376,17 +402,21 @@ export function BrowserObservation({
   const shown = frame?.runId === runId ? frame.frame : null;
   const working = busy === runId;
   const embedded = presentation === "embedded";
-  const statusText = observed
+  const statusText = terminal
     ? shown
-      ? text.live
-      : text.waiting
-    : checking
-      ? text.checking
-      : preparing
-        ? text.preparing
-        : stateLoaded
-          ? text.inactive
-          : shownError;
+      ? text.frozen
+      : text.endedNoFrame
+    : observed
+      ? shown
+        ? text.live
+        : text.waiting
+      : checking
+        ? text.checking
+        : preparing
+          ? text.preparing
+          : stateLoaded
+            ? text.inactive
+            : shownError;
 
   return (
     <section
@@ -402,14 +432,18 @@ export function BrowserObservation({
           </p>
         </div>
         <span className={`ol-chip ${observed ? "ol-chip-green" : "ol-chip-mint"}`}>
-          {observed ? text.live : text.readOnly}
+          {observed ? text.live : terminal ? text.runEnded : text.readOnly}
         </span>
       </header>
 
       <div className={embedded ? "grid gap-3" : "grid gap-4 p-4 sm:p-5"}>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            {observed ? (
+            {terminal ? (
+              <span className="inline-flex h-9 items-center rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12px] font-black text-[color:var(--ol-muted)]">
+                {text.runEnded}
+              </span>
+            ) : observed ? (
               <button
                 type="button"
                 disabled={working}
@@ -452,7 +486,7 @@ export function BrowserObservation({
           tabIndex={0}
           className="relative grid aspect-video min-h-[180px] place-items-center overflow-hidden rounded-[16px] border border-white/10 bg-[color:var(--ol-ink)] shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ol-primary)]/60"
         >
-          {observed && shown ? (
+          {shown ? (
             /* eslint-disable-next-line @next/next/no-img-element -- frames are
                per-request data URIs of live page content; next/image would add a
                loader and cache layer for bytes that must never be cached. */
@@ -460,7 +494,7 @@ export function BrowserObservation({
               src={`data:${shown.mime_type};base64,${shown.data}`}
               width={shown.width}
               height={shown.height}
-              alt={text.frameAlt}
+              alt={terminal ? text.frozenFrameAlt : text.frameAlt}
               draggable={false}
               className="pointer-events-none h-full w-full select-none object-contain"
             />
@@ -474,6 +508,11 @@ export function BrowserObservation({
               </p>
             </div>
           )}
+          {shown && !observed ? (
+            <span className="pointer-events-none absolute left-3 top-3 rounded-full border border-white/15 bg-[color:var(--ol-ink)]/82 px-2.5 py-1 text-[10.5px] font-black text-white shadow-sm backdrop-blur-sm">
+              {terminal ? text.frozen : text.stoppedFrame}
+            </span>
+          ) : null}
         </div>
 
         <p className="sr-only" role="status" aria-live="polite">
@@ -516,7 +555,7 @@ export function BrowserObservation({
             src={`data:${shown.mime_type};base64,${shown.data}`}
             width={shown.width}
             height={shown.height}
-            alt={text.frameAlt}
+            alt={terminal ? text.frozenFrameAlt : text.frameAlt}
             draggable={false}
             className="h-full min-h-0 w-full select-none object-contain"
           />

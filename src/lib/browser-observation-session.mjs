@@ -124,6 +124,17 @@ export function createObservationSession(runId) {
     },
 
     /**
+     * The Run reached a terminal state while its last frame may still be on
+     * screen. Hand the live lease back exactly once without changing focus;
+     * presentation state is owned by the component, not by this session.
+     */
+    terminal(forRunId) {
+      if (forRunId !== currentRunId || observedRunId !== forRunId) return null;
+      observedRunId = null;
+      return forRunId;
+    },
+
+    /**
      * Leaving the page. Returns the Run to stop, once: a second call after the
      * first has released is not another lease.
      */

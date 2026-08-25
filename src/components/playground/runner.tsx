@@ -122,6 +122,7 @@ export function PlaygroundRunner({
             completedAt: "完成",
             rawInput: "实际 input",
             viewRunDetails: "查看运行详情",
+            detailsRail: "当前轮次详情",
           }
         : {
             authLoading: "Reading sign-in state, please wait",
@@ -161,6 +162,7 @@ export function PlaygroundRunner({
             completedAt: "Done",
             rawInput: "Actual input",
             viewRunDetails: "View run details",
+            detailsRail: "Selected turn details",
           },
     [locale],
   );
@@ -478,7 +480,12 @@ export function PlaygroundRunner({
 
       </section>
 
-      <aside className="grid auto-rows-max gap-4 xl:sticky xl:top-4 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:max-h-[calc(100vh-7rem)] xl:min-h-0 xl:self-start xl:overflow-y-auto xl:pr-1">
+      <aside
+        data-playground-detail-rail
+        aria-label={copy.detailsRail}
+        tabIndex={0}
+        className="grid auto-rows-max gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ol-primary)]/35 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:pb-2 xl:pr-2 xl:[scrollbar-gutter:stable]"
+      >
         <ActiveTurnSummary
           turn={activeTurn}
           locale={locale}
@@ -526,9 +533,10 @@ export function PlaygroundRunner({
           result={activeResult}
           locale={locale}
         />
+        <span data-playground-detail-rail-end aria-hidden="true" className="h-px" />
       </aside>
 
-      <section className="ol-panel bg-white p-3.5 xl:col-start-1 xl:row-start-2">
+      <section data-playground-composer className="ol-panel bg-white p-3.5 xl:col-start-1 xl:row-start-2">
         <label className="block">
           <span className="text-[11px] font-black uppercase tracking-[0.08em] text-[color:var(--ol-primary-dark)]">
             {copy.inputTitle}
@@ -811,6 +819,8 @@ function ActiveTurnSummary({
           {turn.result?.run_id ? (
             <Link
               href={`/run/${encodeURIComponent(turn.result.run_id)}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex h-8 items-center justify-center rounded-[10px] border border-[color:var(--ol-primary)] bg-white px-3 text-[11.5px] font-black text-[color:var(--ol-primary-dark)] transition hover:bg-[color:var(--ol-mint)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ol-primary)]/35"
             >
               {labels.viewRunDetails}

@@ -125,6 +125,20 @@ test("an observation that ended is no longer held", () => {
   assert.equal(session.release(), RUN_A);
 });
 
+test("terminal releases the live lease once without leaving the Run", () => {
+  const session = createObservationSession(RUN_A);
+  session.started(RUN_A);
+
+  assert.equal(session.terminal(RUN_A), RUN_A);
+  assert.equal(session.currentRunId, RUN_A);
+  assert.equal(session.observedRunId, null);
+  assert.equal(session.terminal(RUN_A), null, "terminal replay must not stop twice");
+
+  session.started(RUN_A);
+  assert.equal(session.terminal(RUN_B), null, "another Run cannot release this lease");
+  assert.equal(session.release(), RUN_A);
+});
+
 // Between leaving and arriving there is no Run on screen, so nothing is
 // accepted. An answer that lands in that window belongs to neither side.
 test("no answer is accepted while the viewer is between Runs", () => {

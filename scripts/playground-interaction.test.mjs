@@ -75,9 +75,16 @@ test("playground creates immediately, retains long-wait final sync, and fits des
   assert.match(runner, /<RunEventStream[\s\S]{0,180}runId=\{activeResult\.run_id\}[\s\S]{0,80}enabled/);
   assert.match(runner, /xl:grid-rows-\[minmax\(0,1fr\)_auto\]/);
   assert.match(runner, /xl:grid-rows-\[auto_minmax\(0,1fr\)\]/);
-  assert.match(runner, /xl:sticky/);
-  assert.match(runner, /xl:max-h-\[calc\(100vh-7rem\)\]/);
+  assert.match(runner, /xl:row-span-2/);
+  assert.match(runner, /xl:h-full/);
   assert.match(runner, /xl:overflow-y-auto/);
+  assert.match(runner, /xl:overscroll-contain/);
+  assert.match(runner, /xl:\[scrollbar-gutter:stable\]/);
+  assert.match(runner, /data-playground-detail-rail/);
+  assert.match(runner, /data-playground-detail-rail-end/);
+  assert.match(runner, /data-playground-composer/);
+  assert.doesNotMatch(runner, /xl:sticky/);
+  assert.doesNotMatch(runner, /xl:max-h-\[calc\(100vh/);
   assert.match(runner, /isPlaygroundSubmitKey\(\{[\s\S]{0,180}isComposing:/);
   assert.match(runner, /Enter 发送 · Shift\+Enter 换行/);
   assert.match(page, /xl:h-\[calc\(100dvh-84px\)\]/);
@@ -120,10 +127,21 @@ test("running Run details stay in the first summary and developer API values nev
     "result-panel.tsx",
     "DeveloperApiBox",
   );
+  const bottomActions = functionSource(
+    resultPanel,
+    "result-panel.tsx",
+    "BottomActions",
+  );
+  const browserPanel = await readFile(
+    path.join(root, "src/components/playground/browser-observation-panel.tsx"),
+    "utf8",
+  );
 
   assert.ok(summary.includes("turn.result?.run_id"));
   assert.ok(summary.includes("labels.viewRunDetails"));
   assert.ok(summary.includes("/run/${encodeURIComponent(turn.result.run_id)}"));
+  assert.ok(summary.includes('target="_blank"'));
+  assert.ok(summary.includes('rel="noopener noreferrer"'));
   assert.equal(
     linkCondition(runner, "runner.tsx", "ActiveTurnSummary", "labels.viewRunDetails"),
     "turn.result?.run_id",
@@ -136,6 +154,12 @@ test("running Run details stay in the first summary and developer API values nev
   assert.ok((developerApi.match(/\[overflow-wrap:anywhere\]/g) ?? []).length >= 2);
   assert.equal(developerApi.includes("truncate"), false,
     "neither the Run ID nor endpoint may be visually clipped");
+  assert.ok(developerApi.includes('target="_blank"'));
+  assert.ok(developerApi.includes('rel="noopener noreferrer"'));
+  assert.ok(bottomActions.includes('target="_blank"'));
+  assert.ok(bottomActions.includes('rel="noopener noreferrer"'));
+  assert.ok(browserPanel.includes('target="_blank"'));
+  assert.ok(browserPanel.includes('rel="noopener noreferrer"'));
 
   assert.ok(
     runner.indexOf("<ActiveTurnSummary") < runner.indexOf("<PlaygroundBrowserObservation"),

@@ -28,6 +28,7 @@ export type ObservationSession = {
   sync(state: ObservationSessionState | null | undefined): boolean;
   classifyStartForbidden(forRunId: string, now: number): ObservationStartForbidden;
   ended(forRunId: string): void;
+  terminal(forRunId: string): string | null;
   release(): string | null;
 };
 

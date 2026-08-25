@@ -49,15 +49,26 @@ test("a running Browser Run opens by default but never starts an observation", a
   assert.doesNotMatch(panel, /observation\/start/);
 });
 
-test("collapse is scoped to one Run and terminal Runs cannot remain expanded", () => {
+test("collapse is scoped to one Run and terminal keeps the same disclosure choice", () => {
+  const initial = createPlaygroundObservationDisclosure("run-a");
+  assert.equal(playgroundObservationExpanded(initial, "run-a", "success"), true);
+
   const first = togglePlaygroundObservationDisclosure(
-    createPlaygroundObservationDisclosure("run-a"),
+    initial,
     "run-a",
     "running",
   );
   assert.equal(playgroundObservationExpanded(first, "run-a", "running"), false);
-  assert.equal(playgroundObservationExpanded(first, "run-b", "running"), true);
   assert.equal(playgroundObservationExpanded(first, "run-a", "success"), false);
+  assert.equal(playgroundObservationExpanded(first, "run-b", "running"), true);
+  assert.equal(playgroundObservationExpanded(first, "run-b", "success"), false);
+
+  const reopened = togglePlaygroundObservationDisclosure(
+    first,
+    "run-a",
+    "success",
+  );
+  assert.equal(playgroundObservationExpanded(reopened, "run-a", "success"), true);
 });
 
 test("the playground mounts the panel between the selected turn and event stream", async () => {
@@ -73,4 +84,14 @@ test("the playground mounts the panel between the selected turn and event stream
   assert.ok(observation > summary);
   assert.ok(events > observation);
   assert.match(runner, /key=\{activeResult\.run_id\}/);
+
+  const panel = await readFile(
+    new URL("./browser-observation-panel.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(panel, /\{expanded \? \(/);
+  assert.match(panel, /terminal=\{!running\}/);
+  assert.doesNotMatch(panel, /\{running && expanded \? \(/);
+  assert.match(panel, /target="_blank"/);
+  assert.match(panel, /rel="noopener noreferrer"/);
 });

@@ -491,6 +491,8 @@ function DeveloperApiBox({
             <div className="mt-3 grid grid-cols-2 gap-2">
               <Link
                 href={`/run/${encodeURIComponent(runId)}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[color:var(--ol-line)] bg-white px-2 text-[12px] font-black text-[color:var(--ol-ink)] hover:bg-[color:var(--ol-soft)]"
               >
                 {copy.parentRun}
@@ -541,6 +543,8 @@ function BottomActions({
       {runId ? (
         <Link
           href={`/run/${encodeURIComponent(runId)}`}
+          target="_blank"
+          rel="noopener noreferrer"
           className={`${baseBtn} border-[color:var(--ol-primary)] bg-[color:var(--ol-primary)] text-white`}
         >
           {copy.trace}

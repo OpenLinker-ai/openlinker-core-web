@@ -20,8 +20,7 @@ export function createPlaygroundObservationDisclosure(runId) {
 }
 
 export function playgroundObservationExpanded(state, runId, status) {
-  if (status !== "running") return false;
-  if (!state || state.runId !== runId) return true;
+  if (!state || state.runId !== runId) return status === "running";
   return state.userExpanded ?? true;
 }
 

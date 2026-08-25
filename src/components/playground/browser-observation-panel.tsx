@@ -18,6 +18,7 @@ const copy = {
   zh: {
     title: "浏览器画面",
     description: "只读观察，Agent 会继续执行",
+    terminalDescription: "实时观察已结束，可检查最后收到的画面",
     detail: "完整详情",
     running: "可观察",
     terminal: "运行已结束",
@@ -27,6 +28,7 @@ const copy = {
   en: {
     title: "Browser view",
     description: "Read-only view; the Agent keeps working",
+    terminalDescription: "Live observation ended; inspect the last received frame",
     detail: "Full details",
     running: "Observable",
     terminal: "Run ended",
@@ -62,11 +64,10 @@ export function PlaygroundBrowserObservation({
       <div className="flex items-center gap-3 px-4 py-3.5">
         <button
           type="button"
-          className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:cursor-default"
+          className="flex min-w-0 flex-1 items-center gap-3 text-left"
           aria-controls={contentId}
           aria-expanded={expanded}
           aria-label={expanded ? text.collapse : text.expand}
-          disabled={!running}
           onClick={() =>
             setDisclosure((current) =>
               togglePlaygroundObservationDisclosure(current, runId, status),
@@ -81,7 +82,7 @@ export function PlaygroundBrowserObservation({
               {text.title}
             </strong>
             <span className="mt-0.5 block truncate text-[11.5px] font-bold text-[color:var(--ol-muted)]">
-              {text.description}
+              {running ? text.description : text.terminalDescription}
             </span>
           </span>
           <span className="ol-chip shrink-0">
@@ -91,18 +92,20 @@ export function PlaygroundBrowserObservation({
             aria-hidden="true"
             className="w-4 shrink-0 text-center text-[18px] font-bold leading-none text-[color:var(--ol-subtle)]"
           >
-            {running ? (expanded ? "−" : "+") : ""}
+            {expanded ? "−" : "+"}
           </span>
         </button>
         <Link
           href={`/run/${encodeURIComponent(runId)}`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="shrink-0 text-[11.5px] font-black text-[color:var(--ol-primary-dark)] hover:underline"
         >
           {text.detail}
         </Link>
       </div>
 
-      {running && expanded ? (
+      {expanded ? (
         <div
           id={contentId}
           className="border-t border-[color:var(--ol-line)] bg-[color:var(--ol-soft)]/55 p-4"
@@ -112,6 +115,7 @@ export function PlaygroundBrowserObservation({
             locale={locale}
             enabled
             presentation="embedded"
+            terminal={!running}
           />
         </div>
       ) : null}
