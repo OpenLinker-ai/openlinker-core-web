@@ -121,6 +121,7 @@ export function PlaygroundRunner({
             sentAt: "发送",
             completedAt: "完成",
             rawInput: "实际 input",
+            viewRunDetails: "查看运行详情",
           }
         : {
             authLoading: "Reading sign-in state, please wait",
@@ -159,6 +160,7 @@ export function PlaygroundRunner({
             sentAt: "Sent",
             completedAt: "Done",
             rawInput: "Actual input",
+            viewRunDetails: "View run details",
           },
     [locale],
   );
@@ -489,6 +491,7 @@ export function PlaygroundRunner({
             completedAt: copy.completedAt,
             rawInput: copy.rawInput,
             noRunYet: copy.noRunYet,
+            viewRunDetails: copy.viewRunDetails,
           }}
         />
 
@@ -770,6 +773,7 @@ function ActiveTurnSummary({
     completedAt: string;
     rawInput: string;
     noRunYet: string;
+    viewRunDetails: string;
   };
 }) {
   if (!turn) {
@@ -803,9 +807,19 @@ function ActiveTurnSummary({
             {labels.selectedTurn(turn.sequence)}
           </span>
         </div>
-        <span className={`ol-chip shrink-0 ${statusToneClass(turn.status)}`}>
-          {progressStatus}
-        </span>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {turn.result?.run_id ? (
+            <Link
+              href={`/run/${encodeURIComponent(turn.result.run_id)}`}
+              className="inline-flex h-8 items-center justify-center rounded-[10px] border border-[color:var(--ol-primary)] bg-white px-3 text-[11.5px] font-black text-[color:var(--ol-primary-dark)] transition hover:bg-[color:var(--ol-mint)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ol-primary)]/35"
+            >
+              {labels.viewRunDetails}
+            </Link>
+          ) : null}
+          <span className={`ol-chip shrink-0 ${statusToneClass(turn.status)}`}>
+            {progressStatus}
+          </span>
+        </div>
       </div>
 
       <div className="mt-3 grid gap-2 rounded-[14px] border border-[color:var(--ol-line)] bg-white p-3 text-[12px] font-bold text-[color:var(--ol-muted)] 2xl:grid-cols-2">
@@ -849,8 +863,10 @@ function MetaRow({
     <div className="grid grid-cols-[82px_minmax(0,1fr)] gap-2">
       <span className="text-[color:var(--ol-subtle)]">{label}</span>
       <span
-        className={`min-w-0 truncate text-right text-[color:var(--ol-ink)] ${
-          mono ? "font-mono text-[11px]" : ""
+        className={`min-w-0 text-right text-[color:var(--ol-ink)] ${
+          mono
+            ? "break-all font-mono text-[11px] [overflow-wrap:anywhere]"
+            : "truncate"
         }`}
         title={value}
       >
