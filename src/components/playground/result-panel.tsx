@@ -403,6 +403,7 @@ function DeveloperApiBox({
           copyRun: "复制 ID",
           copyPath: "复制路径",
           runId: "Run ID",
+          method: "GET",
           endpoint: "运行状态接口",
           parentRun: "查看父运行",
           collaboration: "查看协作链",
@@ -419,6 +420,7 @@ function DeveloperApiBox({
           copyRun: "Copy ID",
           copyPath: "Copy path",
           runId: "Run ID",
+          method: "GET",
           endpoint: "Run status endpoint",
           parentRun: "View Parent Run",
           collaboration: "View Agent Call Chain",
@@ -470,7 +472,7 @@ function DeveloperApiBox({
               <div className="flex items-center justify-between gap-2">
                 <span className="inline-flex min-w-0 items-center gap-2 text-[11px] font-black text-[color:var(--ol-subtle)]">
                   <span className="rounded-md bg-[color:var(--ol-mint)] px-1.5 py-0.5 font-mono text-[10.5px] text-[color:var(--ol-primary-dark)]">
-                    GET
+                    {copy.method}
                   </span>
                   {copy.endpoint}
                 </span>
