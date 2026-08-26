@@ -93,6 +93,25 @@ test("the tested cooldown helper drives production readiness", () => {
   assert.ok(source.includes("setPreparingRevision((current) => current + 1)"));
 });
 
+test("the tested auto-follow budget drives the optional production retry", () => {
+  assert.ok(source.includes("beginObservationAutoFollow(runId, Date.now())"));
+  assert.ok(source.includes("observationAutoFollowDecision(autoStartDeadlineRef.current"));
+  assert.ok(source.includes('if (decision !== "start") return'));
+  assert.ok(source.includes('if (decision === "expired")'));
+  assert.ok(
+    source.includes("onFollowChange?.(true)"),
+    "a successful manual start must authorize later-turn follow",
+  );
+  assert.ok(
+    source.includes('if (action === "stop") onFollowChange?.(false)'),
+    "an explicit stop must disable later-turn follow",
+  );
+  assert.ok(
+    source.includes("onFrame?.(snapshot)"),
+    "received frames must reach the conversation snapshot store",
+  );
+});
+
 test("a failed initial state read no longer looks like an active check", () => {
   assert.ok(source.includes("const checking = !terminal && !stateLoaded && !shownError"));
   assert.ok(source.includes("aria-busy={working || checking || preparing}"));
@@ -118,8 +137,16 @@ test("terminal releases authority but retains the Run-keyed last frame", () => {
   assert.ok(source.includes("sessionRef.current.terminal(runId)"));
   assert.ok(source.includes('if (terminal && action === "start") return'));
   assert.ok(source.includes("const observed = !terminal &&"));
-  assert.match(source, /const statusText = terminal[\s\S]{0,120}text\.frozen/);
-  assert.ok(source.includes("{shown ? ("), "a frozen frame must render without a live lease");
+  assert.match(source, /const statusText = terminal[\s\S]{0,120}frozenLabel/);
+  assert.ok(source.includes("{displayed ? ("), "a frozen frame must render without a live lease");
+  assert.ok(source.includes("retainedSnapshot?.runId === runId"));
+  assert.ok(source.includes("handoffSnapshot?.runId !== runId"));
+  assert.ok(source.includes("text.previousTurnFrame"));
+  assert.match(
+    source,
+    /conversationMode\s*\? text\.turnEndedNoFrame\s*:\s*text\.endedNoFrame/,
+    "Playground completion copy must describe a turn, not end the conversation",
+  );
   assert.match(
     source,
     /if \(action === "start"\) \{[\s\S]{0,180}setFrame\(null\)/,

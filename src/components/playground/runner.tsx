@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { RunEventStream } from "@/components/run/run-event-stream";
+import type { BrowserObservationSnapshot } from "@/components/run/browser-observation";
 import { Icon } from "@/components/ui/icon";
 import { useApi } from "@/hooks/use-api";
 import { ApiError, localizedErrorMessage } from "@/lib/api";
@@ -26,6 +27,13 @@ import {
   completeRunCreationIntent,
 } from "@/lib/run-idempotency";
 import { PlaygroundBrowserObservation } from "./browser-observation-panel";
+import {
+  createPlaygroundObservationFollow,
+  playgroundObservationHandoffSnapshot,
+  playgroundObservationSnapshotForRun,
+  rememberPlaygroundObservationSnapshot,
+  setPlaygroundObservationFollow,
+} from "./browser-observation-follow.mjs";
 import { summarizeOutputText } from "./output-summary";
 import { ResultPanel } from "./result-panel";
 import { RunTrace } from "./run-trace";
@@ -183,6 +191,26 @@ export function PlaygroundRunner({
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
   const [conversationID] = useState(() => localID("conversation"));
+  const [browserObservationFollow, setBrowserObservationFollow] = useState(() =>
+    createPlaygroundObservationFollow(conversationID),
+  );
+
+  const handleBrowserFollowChange = useCallback(
+    (enabled: boolean) => {
+      setBrowserObservationFollow((current) =>
+        setPlaygroundObservationFollow(current, conversationID, enabled),
+      );
+    },
+    [conversationID],
+  );
+  const handleBrowserFrame = useCallback(
+    (snapshot: BrowserObservationSnapshot) => {
+      setBrowserObservationFollow((current) =>
+        rememberPlaygroundObservationSnapshot(current, conversationID, snapshot),
+      );
+    },
+    [conversationID],
+  );
 
   const running = turns.some((turn) => turn.status === "running");
   const activeTurn =
@@ -195,6 +223,28 @@ export function PlaygroundRunner({
   );
   const pollingTurnId = runningTurn?.id;
   const pollingRunId = runningTurn?.result?.run_id;
+  const selectedLatestTurn = Boolean(
+    activeTurn && turns.length > 0 && activeTurn.id === turns[turns.length - 1].id,
+  );
+  const orderedRunIds = turns.flatMap((turn) =>
+    turn.result?.run_id ? [turn.result.run_id] : [],
+  );
+  const retainedBrowserSnapshot = activeResult?.run_id
+    ? playgroundObservationSnapshotForRun(
+        browserObservationFollow,
+        conversationID,
+        activeResult.run_id,
+      )
+    : null;
+  const browserHandoffSnapshot = activeResult?.run_id
+    ? playgroundObservationHandoffSnapshot(
+        browserObservationFollow,
+        conversationID,
+        activeResult.run_id,
+        orderedRunIds,
+        selectedLatestTurn,
+      )
+    : null;
   const priceUSD = agent.price_per_call_cents > 0
     ? (agent.price_per_call_cents / 100).toFixed(3)
     : null;
@@ -241,6 +291,7 @@ export function PlaygroundRunner({
         conversation_context_id: conversationID,
       });
       turnId = intent.intentId;
+      const predecessor = latestRunPredecessor(previousTurns, turnId);
       const now = new Date().toISOString();
       const existingTurn = previousTurns.find((item) => item.id === turnId);
       const turn: PlaygroundTurn = {
@@ -272,7 +323,11 @@ export function PlaygroundRunner({
         body: {
           agent_id: agent.id,
           input: runInput,
-          a2a_context: playgroundA2AContext(conversationID, turnId),
+          a2a_context: playgroundA2AContext(
+            conversationID,
+            turnId,
+            predecessor,
+          ),
           metadata: {
             ...requestMetadata,
             intent_id: turnId,
@@ -504,10 +559,15 @@ export function PlaygroundRunner({
 
         {activeResult?.run_id ? (
           <PlaygroundBrowserObservation
-            key={`browser-observation:${activeResult.run_id}`}
             result={activeResult}
             status={activeStatus}
             locale={locale}
+            latestSelected={selectedLatestTurn}
+            followEnabled={browserObservationFollow.enabled}
+            onFollowChange={handleBrowserFollowChange}
+            onFrame={handleBrowserFrame}
+            retainedSnapshot={retainedBrowserSnapshot}
+            handoffSnapshot={browserHandoffSnapshot}
           />
         ) : null}
 
@@ -619,6 +679,20 @@ export function PlaygroundRunner({
       </section>
     </div>
   );
+}
+
+function latestRunPredecessor(
+  turns: readonly PlaygroundTurn[],
+  currentTurnID: string,
+): { taskID: string; runID: string } | undefined {
+  for (let index = turns.length - 1; index >= 0; index -= 1) {
+    const turn = turns[index];
+    const runID = turn.result?.run_id;
+    if (turn.id !== currentTurnID && runID) {
+      return { taskID: turn.id, runID };
+    }
+  }
+  return undefined;
 }
 
 function EmptyThread({ title, body }: { title: string; body: string }) {

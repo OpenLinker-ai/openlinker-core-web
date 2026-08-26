@@ -25,6 +25,29 @@ export function releaseBusy(current, forRunId) {
 }
 
 export const observationPreparingCooldownMS = 2_000;
+export const observationAutoFollowBudgetMS = 30_000;
+
+export function beginObservationAutoFollow(runId, now) {
+  if (typeof runId !== "string" || !runId.trim() || !Number.isFinite(now)) {
+    throw new TypeError("auto-follow requires a Run and current time");
+  }
+  return { runId, expiresAt: now + observationAutoFollowBudgetMS };
+}
+
+export function observationAutoFollowDecision(state, conditions) {
+  if (!conditions?.enabled || conditions.terminal) return "disabled";
+  if (!state || state.runId !== conditions.runId) return "wait";
+  if (
+    !conditions.stateLoaded ||
+    conditions.observed ||
+    conditions.working ||
+    conditions.preparing ||
+    conditions.hasError
+  ) {
+    return "wait";
+  }
+  return conditions.now >= state.expiresAt ? "expired" : "start";
+}
 
 export function observationPreparing(state, forRunId, now) {
   return Boolean(

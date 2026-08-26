@@ -6,7 +6,9 @@ import { useApi } from "@/hooks/use-api";
 import { Icon } from "@/components/ui/icon";
 import { ApiError, localizedErrorMessage } from "@/lib/api";
 import {
+  beginObservationAutoFollow,
   createObservationSession,
+  observationAutoFollowDecision,
   observationPreparing,
   releaseBusy,
 } from "@/lib/browser-observation-session.mjs";
@@ -23,13 +25,18 @@ type ObservationState = {
 
 // Exactly what the API returns. No Runtime, Node, Attachment or Session identity
 // reaches the browser: those are invariants between the Worker and Core.
-type ObservationFrame = {
+export type ObservationFrame = {
   frame_seq: number;
   captured_at: string;
   mime_type: "image/jpeg";
   data: string;
   width: number;
   height: number;
+};
+
+export type BrowserObservationSnapshot = {
+  runId: string;
+  frame: ObservationFrame;
 };
 
 type ObservationPreparingState = {
@@ -48,20 +55,26 @@ const copy = {
     frozen: "任务结束时画面",
     stoppedFrame: "画面已停止更新",
     runEnded: "运行已结束",
+    turnEnded: "本轮已完成",
+    turnFrozen: "本轮最终画面",
+    previousTurnFrame: "上一轮最终画面",
     expand: "放大浏览器画面",
     closeExpanded: "关闭放大画面",
     frameAlt: "当前 Run 的实时浏览器画面",
     frozenFrameAlt: "当前 Run 最后收到的浏览器画面",
+    previousFrameAlt: "上一轮 Run 最后收到的浏览器画面",
     checking: "正在检查 Browser 状态…",
     preparing: "Browser 正在准备或切换，请稍后重试。",
     waiting: "等待首帧…",
     inactive: "当前没有进行中的观察。",
     endedNoFrame: "运行已结束，未捕获可保留的浏览器画面。",
+    turnEndedNoFrame: "本轮已完成，未捕获可保留的浏览器画面。",
     unsupported: "该 Runtime 不支持只读观察。",
     unavailable: "该 Run 的观察通道不在当前 Core 实例上。",
     busy: "该 Run 已有活动的观察。",
     saturated: "当前 Core 实例的并发观察数已达上限，请稍后再试。",
     unconfirmed: "Runtime 未确认观察启动，请稍后再试。",
+    followTimedOut: "Browser 尚未准备好自动跟随，请手动重试。",
     ended: "观察已结束。",
     failed: "无法读取观察状态。",
   },
@@ -75,20 +88,26 @@ const copy = {
     frozen: "Task-end frame",
     stoppedFrame: "Frame updates stopped",
     runEnded: "Run ended",
+    turnEnded: "Turn completed",
+    turnFrozen: "Turn-end frame",
+    previousTurnFrame: "Previous-turn final frame",
     expand: "Enlarge Browser view",
     closeExpanded: "Close enlarged view",
     frameAlt: "Live Browser view for the current Run",
     frozenFrameAlt: "Last Browser frame received for the current Run",
+    previousFrameAlt: "Last Browser frame received for the previous Run",
     checking: "Checking Browser status…",
     preparing: "The Browser is preparing or switching. Try again shortly.",
     waiting: "Waiting for the first frame…",
     inactive: "No observation is running.",
     endedNoFrame: "The Run ended before a Browser frame could be retained.",
+    turnEndedNoFrame: "This turn completed before a Browser frame could be retained.",
     unsupported: "This Runtime does not support read-only observation.",
     unavailable: "This Run's observation channel is not on the current Core instance.",
     busy: "This Run is already being observed.",
     saturated: "This Core instance is at its concurrent observation limit. Try again shortly.",
     unconfirmed: "The Runtime did not confirm the start. Try again shortly.",
+    followTimedOut: "The Browser was not ready for automatic follow. Retry manually.",
     ended: "The observation has ended.",
     failed: "Could not load observation state.",
   },
@@ -100,12 +119,24 @@ export function BrowserObservation({
   enabled,
   presentation = "standalone",
   terminal = false,
+  autoStart = false,
+  conversationMode = false,
+  retainedSnapshot = null,
+  handoffSnapshot = null,
+  onFollowChange,
+  onFrame,
 }: {
   runId: string;
   locale: Locale;
   enabled: boolean;
   presentation?: "standalone" | "embedded";
   terminal?: boolean;
+  autoStart?: boolean;
+  conversationMode?: boolean;
+  retainedSnapshot?: BrowserObservationSnapshot | null;
+  handoffSnapshot?: BrowserObservationSnapshot | null;
+  onFollowChange?: (enabled: boolean) => void;
+  onFrame?: (snapshot: BrowserObservationSnapshot) => void;
 }) {
   const { fetch: apiFetch, token } = useApi();
   const text = copy[locale === "zh" ? "zh" : "en"];
@@ -113,9 +144,7 @@ export function BrowserObservation({
   // Carries the Run it was captured for. State survives the render that already
   // has the next Run's id -- effect cleanups run after that render commits -- so
   // without this the previous Run's picture is painted once under the new Run.
-  const [frame, setFrame] = useState<{ runId: string; frame: ObservationFrame } | null>(
-    null,
-  );
+  const [frame, setFrame] = useState<BrowserObservationSnapshot | null>(null);
   // Both carry the Run they belong to, for the same reason the frame does: a
   // render can hold state from the Run just left. Without it, arriving at a Run
   // shows the previous Run's error, and its buttons stay disabled by a request
@@ -128,6 +157,10 @@ export function BrowserObservation({
   const [expandedView, setExpandedView] = useState(false);
   const [, setPreparingRevision] = useState(0);
   const sequenceRef = useRef(0);
+  const autoStartDeadlineRef = useRef<{ runId: string; expiresAt: number } | null>(
+    null,
+  );
+  const autoStartInFlightRef = useRef<string | null>(null);
   // Every rule about which Run this viewer is on, what it holds, and which
   // answers still matter lives in the session, so all of them can be tested
   // without a browser. The component keeps the wiring: effects, fetches, render.
@@ -139,6 +172,7 @@ export function BrowserObservation({
   const observed = !terminal && state?.run_id === runId && Boolean(state?.active);
   const stateLoaded = state?.run_id === runId;
   const shownError = error?.runId === runId ? error.message : "";
+  const working = busy === runId;
   const checking = !terminal && !stateLoaded && !shownError;
   // Reading the bounded deadline here is intentional: the timer only requests
   // a render, while this tested helper remains the source of expiration truth.
@@ -226,7 +260,9 @@ export function BrowserObservation({
           if (cancelled) return;
           if (next) {
             sequenceRef.current = next.frame_seq;
-            setFrame({ runId, frame: next });
+            const snapshot = { runId, frame: next };
+            setFrame(snapshot);
+            onFrame?.(snapshot);
           }
         } catch (cause) {
           if (cancelled) return;
@@ -249,7 +285,7 @@ export function BrowserObservation({
       // cleanup below remains the only place that clears it.
       sequenceRef.current = 0;
     };
-  }, [apiFetch, describe, enabled, observed, refresh, runId, text, token]);
+  }, [apiFetch, describe, enabled, observed, onFrame, refresh, runId, text, token]);
 
   // A lease nobody releases holds its Run until the TTL expires, and nobody else
   // can observe that Run meanwhile. Core reclaims an unpolled observation on its
@@ -280,6 +316,13 @@ export function BrowserObservation({
     const held = sessionRef.current.terminal(runId);
     if (held) stopRef.current(held);
   }, [runId, terminal]);
+
+  useEffect(() => {
+    autoStartInFlightRef.current = null;
+    autoStartDeadlineRef.current = autoStart && !terminal
+      ? beginObservationAutoFollow(runId, Date.now())
+      : null;
+  }, [autoStart, runId, terminal]);
 
   // Moving between Runs. The cleanup leaves the Run being left -- releasing what
   // this viewer held for it -- and the body arrives at the next one; React runs
@@ -336,6 +379,7 @@ export function BrowserObservation({
       if (terminal && action === "start") return;
       const requestedRunId = runId;
       const session = sessionRef.current;
+      if (action === "stop") onFollowChange?.(false);
       setExpandedView(false);
       setBusy(requestedRunId);
       setPreparingState(null);
@@ -359,6 +403,7 @@ export function BrowserObservation({
             stopRef.current(orphaned);
             return;
           }
+          onFollowChange?.(true);
         } else {
           session.ended(requestedRunId);
         }
@@ -393,19 +438,75 @@ export function BrowserObservation({
         setBusy((current) => releaseBusy(current, requestedRunId));
       }
     },
-    [apiFetch, describe, refresh, runId, terminal, text],
+    [apiFetch, describe, onFollowChange, refresh, runId, terminal, text],
   );
+
+  // The standalone viewer keeps one-click/one-attempt semantics. The
+  // Playground passes autoStart only after the user enables visible
+  // conversation follow, which authorizes bounded retries for each new Run.
+  useEffect(() => {
+    if (autoStartInFlightRef.current === runId) return;
+    const decision = observationAutoFollowDecision(autoStartDeadlineRef.current, {
+      enabled: autoStart,
+      runId,
+      now: Date.now(),
+      terminal,
+      stateLoaded,
+      observed,
+      working,
+      preparing,
+      hasError: Boolean(shownError),
+    });
+    if (decision === "expired") {
+      const timer = window.setTimeout(() => {
+        if (sessionRef.current.accepts(runId)) {
+          setError({ runId, message: text.followTimedOut });
+        }
+      }, 0);
+      return () => window.clearTimeout(timer);
+    }
+    if (decision !== "start") return;
+    autoStartInFlightRef.current = runId;
+    void transition("start").finally(() => {
+      if (autoStartInFlightRef.current === runId) {
+        autoStartInFlightRef.current = null;
+      }
+    });
+  }, [
+    autoStart,
+    observed,
+    preparing,
+    runId,
+    shownError,
+    stateLoaded,
+    terminal,
+    text.followTimedOut,
+    transition,
+    working,
+  ]);
 
   if (!enabled) return null;
 
   // Shown only while they still describe the Run on screen, for the same reason.
-  const shown = frame?.runId === runId ? frame.frame : null;
-  const working = busy === runId;
+  const liveOrLocal = frame?.runId === runId ? frame.frame : null;
+  const retained = retainedSnapshot?.runId === runId
+    ? retainedSnapshot.frame
+    : null;
+  const shown = liveOrLocal ?? (!observed ? retained : null);
+  const handoff = !shown && handoffSnapshot?.runId !== runId
+    ? handoffSnapshot
+    : null;
+  const displayed = shown ?? handoff?.frame ?? null;
+  const displayingHandoff = Boolean(handoff && !shown);
   const embedded = presentation === "embedded";
+  const terminalLabel = conversationMode ? text.turnEnded : text.runEnded;
+  const frozenLabel = conversationMode ? text.turnFrozen : text.frozen;
   const statusText = terminal
     ? shown
-      ? text.frozen
-      : text.endedNoFrame
+      ? frozenLabel
+      : conversationMode
+        ? text.turnEndedNoFrame
+        : text.endedNoFrame
     : observed
       ? shown
         ? text.live
@@ -432,7 +533,7 @@ export function BrowserObservation({
           </p>
         </div>
         <span className={`ol-chip ${observed ? "ol-chip-green" : "ol-chip-mint"}`}>
-          {observed ? text.live : terminal ? text.runEnded : text.readOnly}
+          {observed ? text.live : terminal ? terminalLabel : text.readOnly}
         </span>
       </header>
 
@@ -441,7 +542,7 @@ export function BrowserObservation({
           <div className="flex flex-wrap items-center gap-2">
             {terminal ? (
               <span className="inline-flex h-9 items-center rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12px] font-black text-[color:var(--ol-muted)]">
-                {text.runEnded}
+                {terminalLabel}
               </span>
             ) : observed ? (
               <button
@@ -472,7 +573,7 @@ export function BrowserObservation({
           </div>
           <button
             type="button"
-            disabled={!shown}
+            disabled={!displayed}
             onClick={() => setExpandedView(true)}
             aria-label={text.expand}
             className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--ol-line)] bg-white px-3 text-[11.5px] font-black text-[color:var(--ol-muted)] transition hover:border-[color:var(--ol-primary)]/40 hover:text-[color:var(--ol-primary-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ol-primary)]/35 disabled:cursor-not-allowed disabled:opacity-45"
@@ -486,15 +587,21 @@ export function BrowserObservation({
           tabIndex={0}
           className="relative grid aspect-video min-h-[180px] place-items-center overflow-hidden rounded-[16px] border border-white/10 bg-[color:var(--ol-ink)] shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ol-primary)]/60"
         >
-          {shown ? (
+          {displayed ? (
             /* eslint-disable-next-line @next/next/no-img-element -- frames are
                per-request data URIs of live page content; next/image would add a
                loader and cache layer for bytes that must never be cached. */
             <img
-              src={`data:${shown.mime_type};base64,${shown.data}`}
-              width={shown.width}
-              height={shown.height}
-              alt={terminal ? text.frozenFrameAlt : text.frameAlt}
+              src={`data:${displayed.mime_type};base64,${displayed.data}`}
+              width={displayed.width}
+              height={displayed.height}
+              alt={
+                displayingHandoff
+                  ? text.previousFrameAlt
+                  : terminal
+                    ? text.frozenFrameAlt
+                    : text.frameAlt
+              }
               draggable={false}
               className="pointer-events-none h-full w-full select-none object-contain"
             />
@@ -508,9 +615,9 @@ export function BrowserObservation({
               </p>
             </div>
           )}
-          {shown && !observed ? (
+          {displayed && (displayingHandoff || !observed) ? (
             <span className="pointer-events-none absolute left-3 top-3 rounded-full border border-white/15 bg-[color:var(--ol-ink)]/82 px-2.5 py-1 text-[10.5px] font-black text-white shadow-sm backdrop-blur-sm">
-              {terminal ? text.frozen : text.stoppedFrame}
+              {displayingHandoff ? text.previousTurnFrame : terminal ? frozenLabel : text.stoppedFrame}
             </span>
           ) : null}
         </div>
@@ -525,7 +632,7 @@ export function BrowserObservation({
         ) : null}
       </div>
 
-      {expandedView && shown ? (
+      {expandedView && displayed ? (
         <div
           role="dialog"
           aria-modal="true"
@@ -552,10 +659,16 @@ export function BrowserObservation({
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element -- see the inline viewer above. */}
           <img
-            src={`data:${shown.mime_type};base64,${shown.data}`}
-            width={shown.width}
-            height={shown.height}
-            alt={terminal ? text.frozenFrameAlt : text.frameAlt}
+            src={`data:${displayed.mime_type};base64,${displayed.data}`}
+            width={displayed.width}
+            height={displayed.height}
+            alt={
+              displayingHandoff
+                ? text.previousFrameAlt
+                : terminal
+                  ? text.frozenFrameAlt
+                  : text.frameAlt
+            }
             draggable={false}
             className="h-full min-h-0 w-full select-none object-contain"
           />

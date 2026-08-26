@@ -83,9 +83,10 @@ test("the playground mounts the panel between the selected turn and event stream
   assert.ok(summary >= 0);
   assert.ok(observation > summary);
   assert.ok(events > observation);
-  assert.match(
+  assert.doesNotMatch(
     runner,
     /key=\{`browser-observation:\$\{activeResult\.run_id\}`\}/,
+    "the conversation follower must survive a Run transition",
   );
   assert.match(runner, /key=\{`run-events:\$\{activeResult\.run_id\}`\}/);
   assert.doesNotMatch(runner, /key=\{activeResult\.run_id\}/);
@@ -96,6 +97,17 @@ test("the playground mounts the panel between the selected turn and event stream
   );
   assert.match(panel, /\{expanded \? \(/);
   assert.match(panel, /terminal=\{!running\}/);
+  assert.match(panel, /autoStart=\{running && latestSelected && followEnabled\}/);
+  assert.match(panel, /retainedSnapshot=\{retainedSnapshot\}/);
+  assert.match(panel, /handoffSnapshot=\{running \? handoffSnapshot : null\}/);
+  assert.match(panel, /onFollowChange=\{onFollowChange\}/);
+  assert.match(panel, /onFrame=\{onFrame\}/);
+  assert.match(panel, /本轮已完成/);
+  assert.match(panel, /持续跟随/);
+  assert.match(panel, /停止跟随/);
+  assert.match(panel, /!running && followEnabled/);
+  assert.match(panel, /onClick=\{\(\) => onFollowChange\(false\)\}/);
+  assert.doesNotMatch(panel, /运行已结束/);
   assert.doesNotMatch(panel, /\{running && expanded \? \(/);
   assert.match(panel, /target="_blank"/);
   assert.match(panel, /rel="noopener noreferrer"/);

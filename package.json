@@ -45,7 +45,7 @@
     "test:runtime-node-admin": "node --test scripts/runtime-node-admin-contract.test.mjs",
     "test:platform-audit": "node --test scripts/platform-audit-remediation.test.mjs",
     "test:browser-observation": "node --test src/lib/browser-observation-layout.test.mjs src/lib/browser-observation-session.test.mjs src/lib/browser-observation-wiring.test.mjs",
-    "test:playground": "node --test src/components/playground/browser-observation-disclosure.test.mjs scripts/browser-lifecycle.test.mjs scripts/playground-*.test.mjs"
+    "test:playground": "node --test src/components/playground/browser-observation-disclosure.test.mjs src/components/playground/browser-observation-follow.test.mjs scripts/browser-lifecycle.test.mjs scripts/playground-*.test.mjs"
   },
   "dependencies": {
     "@auth/core": "^0.41.3",

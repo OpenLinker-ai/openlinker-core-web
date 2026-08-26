@@ -36,6 +36,36 @@ test("Playground protocol IDs fail closed", () => {
   }
 });
 
+test("Playground continuation names the exact preceding task and Run", () => {
+  const parentRunID = "11111111-1111-4111-8111-111111111111";
+  assert.deepEqual(
+    playgroundA2AContext("conversation-one", "turn-two", {
+      taskID: "turn-one",
+      runID: parentRunID,
+    }),
+    {
+      protocol_context_id: "conversation-one",
+      root_context_id: "conversation-one",
+      protocol_task_id: "turn-two",
+      parent_task_id: "turn-one",
+      parent_run_id: parentRunID,
+      reference_task_ids: ["turn-one"],
+      source: "a2a_protocol",
+    },
+  );
+  for (const predecessor of [
+    {},
+    { taskID: "turn-one" },
+    { taskID: "turn-one", runID: "not-a-run" },
+    { taskID: "", runID: parentRunID },
+  ]) {
+    assert.throws(
+      () => playgroundA2AContext("conversation-one", "turn-two", predecessor),
+      TypeError,
+    );
+  }
+});
+
 test("Runtime input omits client history while the task compatibility path preserves it", () => {
   const input = { text: "second turn" };
   const history = [{ role: "user", text: "first turn" }];
@@ -67,7 +97,7 @@ test("production runner sends one stable A2A identity and the helper-produced in
   assert.match(source, /input: runInput,/);
   assert.match(
     source,
-    /a2a_context: playgroundA2AContext\(conversationID, turnId\),/,
+    /a2a_context: playgroundA2AContext\([\s\S]{0,180}conversationID,[\s\S]{0,180}turnId,[\s\S]{0,240}predecessor/,
   );
   assert.match(source, /conversation_context_id: (?:taskId \? null : )?conversationID,/);
   assert.doesNotMatch(source, /a2a_context:[\s\S]{0,240}conversation_history:/);
