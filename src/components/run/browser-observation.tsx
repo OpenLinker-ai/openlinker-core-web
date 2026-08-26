@@ -74,7 +74,6 @@ const copy = {
     busy: "该 Run 已有活动的观察。",
     saturated: "当前 Core 实例的并发观察数已达上限，请稍后再试。",
     unconfirmed: "Runtime 未确认观察启动，请稍后再试。",
-    followTimedOut: "Browser 尚未准备好自动跟随，请手动重试。",
     ended: "观察已结束。",
     failed: "无法读取观察状态。",
   },
@@ -107,7 +106,6 @@ const copy = {
     busy: "This Run is already being observed.",
     saturated: "This Core instance is at its concurrent observation limit. Try again shortly.",
     unconfirmed: "The Runtime did not confirm the start. Try again shortly.",
-    followTimedOut: "The Browser was not ready for automatic follow. Retry manually.",
     ended: "The observation has ended.",
     failed: "Could not load observation state.",
   },
@@ -157,9 +155,7 @@ export function BrowserObservation({
   const [expandedView, setExpandedView] = useState(false);
   const [, setPreparingRevision] = useState(0);
   const sequenceRef = useRef(0);
-  const autoStartDeadlineRef = useRef<{ runId: string; expiresAt: number } | null>(
-    null,
-  );
+  const autoStartRef = useRef<{ runId: string } | null>(null);
   const autoStartInFlightRef = useRef<string | null>(null);
   // Every rule about which Run this viewer is on, what it holds, and which
   // answers still matter lives in the session, so all of them can be tested
@@ -319,8 +315,8 @@ export function BrowserObservation({
 
   useEffect(() => {
     autoStartInFlightRef.current = null;
-    autoStartDeadlineRef.current = autoStart && !terminal
-      ? beginObservationAutoFollow(runId, Date.now())
+    autoStartRef.current = autoStart && !terminal
+      ? beginObservationAutoFollow(runId)
       : null;
   }, [autoStart, runId, terminal]);
 
@@ -375,7 +371,7 @@ export function BrowserObservation({
   }, []);
 
   const transition = useCallback(
-    async (action: "start" | "stop") => {
+    async (action: "start" | "stop", source: "manual" | "follow" = "manual") => {
       if (terminal && action === "start") return;
       const requestedRunId = runId;
       const session = sessionRef.current;
@@ -403,7 +399,11 @@ export function BrowserObservation({
             stopRef.current(orphaned);
             return;
           }
-          onFollowChange?.(true);
+          // Follow was already authorized before an automatic start. Only a
+          // manual start may turn it on; otherwise a late automatic success
+          // could undo a Stop Following click made while the request was in
+          // flight.
+          if (source === "manual") onFollowChange?.(true);
         } else {
           session.ended(requestedRunId);
         }
@@ -443,13 +443,14 @@ export function BrowserObservation({
 
   // The standalone viewer keeps one-click/one-attempt semantics. The
   // Playground passes autoStart only after the user enables visible
-  // conversation follow, which authorizes bounded retries for each new Run.
+  // conversation follow, which authorizes readiness retries for each new Run
+  // until that Run ends or the user stops following.
   useEffect(() => {
     if (autoStartInFlightRef.current === runId) return;
-    const decision = observationAutoFollowDecision(autoStartDeadlineRef.current, {
+    const decision = observationAutoFollowDecision(autoStartRef.current, {
       enabled: autoStart,
+      authenticated: Boolean(token),
       runId,
-      now: Date.now(),
       terminal,
       stateLoaded,
       observed,
@@ -457,17 +458,9 @@ export function BrowserObservation({
       preparing,
       hasError: Boolean(shownError),
     });
-    if (decision === "expired") {
-      const timer = window.setTimeout(() => {
-        if (sessionRef.current.accepts(runId)) {
-          setError({ runId, message: text.followTimedOut });
-        }
-      }, 0);
-      return () => window.clearTimeout(timer);
-    }
     if (decision !== "start") return;
     autoStartInFlightRef.current = runId;
-    void transition("start").finally(() => {
+    void transition("start", "follow").finally(() => {
       if (autoStartInFlightRef.current === runId) {
         autoStartInFlightRef.current = null;
       }
@@ -480,7 +473,7 @@ export function BrowserObservation({
     shownError,
     stateLoaded,
     terminal,
-    text.followTimedOut,
+    token,
     transition,
     working,
   ]);

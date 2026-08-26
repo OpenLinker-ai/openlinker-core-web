@@ -25,17 +25,18 @@ export function releaseBusy(current, forRunId) {
 }
 
 export const observationPreparingCooldownMS = 2_000;
-export const observationAutoFollowBudgetMS = 30_000;
 
-export function beginObservationAutoFollow(runId, now) {
-  if (typeof runId !== "string" || !runId.trim() || !Number.isFinite(now)) {
-    throw new TypeError("auto-follow requires a Run and current time");
+export function beginObservationAutoFollow(runId) {
+  if (typeof runId !== "string" || !runId.trim()) {
+    throw new TypeError("auto-follow requires a Run");
   }
-  return { runId, expiresAt: now + observationAutoFollowBudgetMS };
+  return { runId };
 }
 
 export function observationAutoFollowDecision(state, conditions) {
-  if (!conditions?.enabled || conditions.terminal) return "disabled";
+  if (!conditions?.enabled || !conditions.authenticated || conditions.terminal) {
+    return "disabled";
+  }
   if (!state || state.runId !== conditions.runId) return "wait";
   if (
     !conditions.stateLoaded ||
@@ -46,7 +47,7 @@ export function observationAutoFollowDecision(state, conditions) {
   ) {
     return "wait";
   }
-  return conditions.now >= state.expiresAt ? "expired" : "start";
+  return "start";
 }
 
 export function observationPreparing(state, forRunId, now) {

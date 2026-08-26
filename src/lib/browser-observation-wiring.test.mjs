@@ -93,11 +93,15 @@ test("the tested cooldown helper drives production readiness", () => {
   assert.ok(source.includes("setPreparingRevision((current) => current + 1)"));
 });
 
-test("the tested auto-follow budget drives the optional production retry", () => {
-  assert.ok(source.includes("beginObservationAutoFollow(runId, Date.now())"));
-  assert.ok(source.includes("observationAutoFollowDecision(autoStartDeadlineRef.current"));
+test("the tested Run-lifecycle auto-follow drives the optional production retry", () => {
+  assert.ok(source.includes("beginObservationAutoFollow(runId)"));
+  assert.ok(source.includes("observationAutoFollowDecision(autoStartRef.current"));
   assert.ok(source.includes('if (decision !== "start") return'));
-  assert.ok(source.includes('if (decision === "expired")'));
+  assert.equal(source.includes('if (decision === "expired")'), false);
+  assert.equal(source.includes("followTimedOut"), false);
+  assert.ok(source.includes("authenticated: Boolean(token)"));
+  assert.ok(source.includes('transition("start", "follow")'));
+  assert.ok(source.includes('if (source === "manual") onFollowChange?.(true)'));
   assert.ok(
     source.includes("onFollowChange?.(true)"),
     "a successful manual start must authorize later-turn follow",

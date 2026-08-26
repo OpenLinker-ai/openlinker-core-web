@@ -105,7 +105,8 @@ test("the playground mounts the panel between the selected turn and event stream
   assert.match(panel, /本轮已完成/);
   assert.match(panel, /持续跟随/);
   assert.match(panel, /停止跟随/);
-  assert.match(panel, /!running && followEnabled/);
+  assert.match(panel, /\{followEnabled \? \(/);
+  assert.doesNotMatch(panel, /!running && followEnabled/);
   assert.match(panel, /onClick=\{\(\) => onFollowChange\(false\)\}/);
   assert.doesNotMatch(panel, /运行已结束/);
   assert.doesNotMatch(panel, /\{running && expanded \? \(/);

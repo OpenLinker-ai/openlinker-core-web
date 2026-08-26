@@ -4,7 +4,6 @@ import test from "node:test";
 import {
   beginObservationAutoFollow,
   createObservationSession,
-  observationAutoFollowBudgetMS,
   observationAutoFollowDecision,
   observationPreparing,
   observationPreparingCooldownMS,
@@ -21,17 +20,13 @@ const observationState = (runId, active) => ({
   frame_count_complete: false,
 });
 
-test("conversation auto-follow starts only inside its bounded ready window", () => {
-  const startedAt = 1_000;
-  const state = beginObservationAutoFollow(RUN_A, startedAt);
-  assert.deepEqual(state, {
-    runId: RUN_A,
-    expiresAt: startedAt + observationAutoFollowBudgetMS,
-  });
+test("conversation auto-follow remains eligible for the whole nonterminal Run", () => {
+  const state = beginObservationAutoFollow(RUN_A);
+  assert.deepEqual(state, { runId: RUN_A });
   const ready = {
     enabled: true,
+    authenticated: true,
     runId: RUN_A,
-    now: startedAt + 1,
     terminal: false,
     stateLoaded: true,
     observed: false,
@@ -49,14 +44,51 @@ test("conversation auto-follow starts only inside its bounded ready window", () 
     "wait",
   );
   assert.equal(
-    observationAutoFollowDecision(state, {
-      ...ready,
-      now: state.expiresAt,
-    }),
-    "expired",
+    observationAutoFollowDecision(state, { ...ready, stateLoaded: false }),
+    "wait",
   );
   assert.equal(
+    observationAutoFollowDecision(state, { ...ready, working: true }),
+    "wait",
+  );
+  assert.equal(
+    observationAutoFollowDecision(state, { ...ready, hasError: true }),
+    "wait",
+  );
+  assert.equal(
+    observationAutoFollowDecision(state, ready),
+    "start",
+  );
+  for (const elapsedMS of [30_000, 60_000, 180_000]) {
+    const preparing = {
+      kind: "preparing",
+      runId: RUN_A,
+      retryAt: elapsedMS,
+    };
+    const beforeCooldown = observationPreparing(preparing, RUN_A, elapsedMS - 1);
+    assert.equal(beforeCooldown, true);
+    assert.equal(
+      observationAutoFollowDecision(state, { ...ready, preparing: beforeCooldown }),
+      "wait",
+    );
+    const afterCooldown = observationPreparing(preparing, RUN_A, elapsedMS);
+    assert.equal(afterCooldown, false);
+    assert.equal(
+      observationAutoFollowDecision(state, { ...ready, preparing: afterCooldown }),
+      "start",
+      `follow expired after ${elapsedMS}ms while the Run was still active`,
+    );
+  }
+  assert.equal(
     observationAutoFollowDecision(state, { ...ready, enabled: false }),
+    "disabled",
+  );
+  assert.equal(
+    observationAutoFollowDecision(state, { ...ready, authenticated: false }),
+    "disabled",
+  );
+  assert.equal(
+    observationAutoFollowDecision(state, { ...ready, terminal: true }),
     "disabled",
   );
   assert.equal(

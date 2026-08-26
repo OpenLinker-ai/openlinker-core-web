@@ -37,17 +37,15 @@ export function createObservationSession(runId: string): ObservationSession;
 export function releaseBusy(current: string | null, forRunId: string): string | null;
 
 export const observationPreparingCooldownMS: 2000;
-export const observationAutoFollowBudgetMS: 30000;
 
 export type ObservationAutoFollowState = {
   runId: string;
-  expiresAt: number;
 };
 
 export type ObservationAutoFollowConditions = {
   enabled: boolean;
+  authenticated: boolean;
   runId: string;
-  now: number;
   terminal: boolean;
   stateLoaded: boolean;
   observed: boolean;
@@ -58,13 +56,12 @@ export type ObservationAutoFollowConditions = {
 
 export function beginObservationAutoFollow(
   runId: string,
-  now: number,
 ): ObservationAutoFollowState;
 
 export function observationAutoFollowDecision(
   state: ObservationAutoFollowState | null,
   conditions: ObservationAutoFollowConditions,
-): "disabled" | "wait" | "start" | "expired";
+): "disabled" | "wait" | "start";
 
 export function observationPreparing(
   state: ObservationPreparingState | null | undefined,

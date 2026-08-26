@@ -124,7 +124,7 @@ export function PlaygroundBrowserObservation({
             {expanded ? "−" : "+"}
           </span>
         </button>
-        {!running && followEnabled ? (
+        {followEnabled ? (
           <button
             type="button"
             onClick={() => onFollowChange(false)}
