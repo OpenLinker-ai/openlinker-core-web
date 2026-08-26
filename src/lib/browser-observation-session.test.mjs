@@ -5,9 +5,11 @@ import {
   beginObservationAutoFollow,
   createObservationSession,
   observationAutoFollowDecision,
+  observationFollowChangeForStart,
   observationPreparing,
   observationPreparingCooldownMS,
   releaseBusy,
+  startObservationWithFollowIntent,
 } from "./browser-observation-session.mjs";
 
 const RUN_A = "11111111-1111-4111-8111-111111111111";
@@ -94,6 +96,78 @@ test("conversation auto-follow remains eligible for the whole nonterminal Run", 
   assert.equal(
     observationAutoFollowDecision(state, { ...ready, runId: RUN_B }),
     "wait",
+  );
+});
+
+test("a Playground manual start establishes follow before its request settles", () => {
+  assert.equal(
+    observationFollowChangeForStart(true, "manual", "begin"),
+    true,
+  );
+  assert.equal(
+    observationFollowChangeForStart(true, "manual", "preparing"),
+    null,
+    "a classified preparation window must retain the user's follow intent",
+  );
+  assert.equal(
+    observationFollowChangeForStart(true, "follow", "begin"),
+    null,
+    "an automatic retry must not create a new user preference",
+  );
+});
+
+test("the production start wrapper publishes follow before invoking the request", async () => {
+  const changes = [];
+  const value = await startObservationWithFollowIntent(
+    true,
+    "manual",
+    (enabled) => changes.push(enabled),
+    async () => {
+      assert.deepEqual(
+        changes,
+        [true],
+        "the request began before the visible follow intent was established",
+      );
+      return "started";
+    },
+  );
+  assert.equal(value, "started");
+
+  for (const [conversationMode, source] of [
+    [false, "manual"],
+    [true, "follow"],
+  ]) {
+    const isolatedChanges = [];
+    await startObservationWithFollowIntent(
+      conversationMode,
+      source,
+      (enabled) => isolatedChanges.push(enabled),
+      async () => {
+        assert.deepEqual(isolatedChanges, []);
+      },
+    );
+  }
+});
+
+test("a hard start failure rolls back Playground follow only", () => {
+  assert.equal(
+    observationFollowChangeForStart(true, "manual", "hard-failure"),
+    false,
+  );
+  assert.equal(
+    observationFollowChangeForStart(true, "follow", "hard-failure"),
+    false,
+  );
+  for (const outcome of ["begin", "preparing", "hard-failure"]) {
+    assert.equal(
+      observationFollowChangeForStart(false, "manual", outcome),
+      null,
+      "standalone Run observation must keep one-click/one-attempt semantics",
+    );
+  }
+  assert.throws(
+    () => observationFollowChangeForStart(true, "manual", "unknown"),
+    /unknown observation start outcome/,
   );
 });
 

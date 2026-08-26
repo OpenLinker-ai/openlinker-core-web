@@ -101,10 +101,14 @@ test("the tested Run-lifecycle auto-follow drives the optional production retry"
   assert.equal(source.includes("followTimedOut"), false);
   assert.ok(source.includes("authenticated: Boolean(token)"));
   assert.ok(source.includes('transition("start", "follow")'));
-  assert.ok(source.includes('if (source === "manual") onFollowChange?.(true)'));
   assert.ok(
-    source.includes("onFollowChange?.(true)"),
-    "a successful manual start must authorize later-turn follow",
+    source.includes("startObservationWithFollowIntent("),
+    "production must use the tested pre-request follow wrapper",
+  );
+  assert.match(
+    source,
+    /observationFollowChangeForStart\([\s\S]{0,100}conversationMode,[\s\S]{0,60}source,[\s\S]{0,60}"hard-failure"/,
+    "a hard start failure must roll Playground follow back",
   );
   assert.ok(
     source.includes('if (action === "stop") onFollowChange?.(false)'),
