@@ -63,6 +63,22 @@ export function observationAutoFollowDecision(
   conditions: ObservationAutoFollowConditions,
 ): "disabled" | "wait" | "start";
 
+export type ObservationStartSource = "manual" | "follow";
+export type ObservationStartOutcome = "begin" | "preparing" | "hard-failure";
+
+export function observationFollowChangeForStart(
+  conversationMode: boolean,
+  source: ObservationStartSource,
+  outcome: ObservationStartOutcome,
+): boolean | null;
+
+export function startObservationWithFollowIntent<T>(
+  conversationMode: boolean,
+  source: ObservationStartSource,
+  onFollowChange: ((enabled: boolean) => void) | undefined,
+  request: () => Promise<T>,
+): Promise<T>;
+
 export function observationPreparing(
   state: ObservationPreparingState | null | undefined,
   forRunId: string,

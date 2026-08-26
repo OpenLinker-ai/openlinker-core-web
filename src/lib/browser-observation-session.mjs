@@ -50,6 +50,39 @@ export function observationAutoFollowDecision(state, conditions) {
   return "start";
 }
 
+/**
+ * Conversation follow is a visible user intent, not proof that a Runtime lease
+ * already exists. A Playground manual start therefore enables it before the
+ * request, so a classified preparing response can be retried. A hard start
+ * failure rolls the intent back; standalone observation never changes it.
+ */
+export function observationFollowChangeForStart(
+  conversationMode,
+  source,
+  outcome,
+) {
+  if (!conversationMode) return null;
+  if (outcome === "begin") return source === "manual" ? true : null;
+  if (outcome === "preparing") return null;
+  if (outcome === "hard-failure") return false;
+  throw new TypeError("unknown observation start outcome");
+}
+
+export async function startObservationWithFollowIntent(
+  conversationMode,
+  source,
+  onFollowChange,
+  request,
+) {
+  const followChange = observationFollowChangeForStart(
+    conversationMode,
+    source,
+    "begin",
+  );
+  if (followChange !== null) onFollowChange?.(followChange);
+  return request();
+}
+
 export function observationPreparing(state, forRunId, now) {
   return Boolean(
     state &&

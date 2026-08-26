@@ -9,8 +9,10 @@ import {
   beginObservationAutoFollow,
   createObservationSession,
   observationAutoFollowDecision,
+  observationFollowChangeForStart,
   observationPreparing,
   releaseBusy,
+  startObservationWithFollowIntent,
 } from "@/lib/browser-observation-session.mjs";
 import type { Locale } from "@/lib/i18n";
 
@@ -381,10 +383,21 @@ export function BrowserObservation({
       setPreparingState(null);
       setError(null);
       try {
-        await apiFetch(
-          `/api/v1/runs/${encodeURIComponent(requestedRunId)}/observation/${action}`,
-          { method: "POST", signOutOnUnauthorized: false },
-        );
+        const request = () =>
+          apiFetch(
+            `/api/v1/runs/${encodeURIComponent(requestedRunId)}/observation/${action}`,
+            { method: "POST", signOutOnUnauthorized: false },
+          );
+        if (action === "start") {
+          await startObservationWithFollowIntent(
+            conversationMode,
+            source,
+            onFollowChange,
+            request,
+          );
+        } else {
+          await request();
+        }
         if (action === "start") {
           // A new live lease must not present the previous stopped snapshot as
           // current. Wait for a frame from this lease before showing "Live".
@@ -399,11 +412,6 @@ export function BrowserObservation({
             stopRef.current(orphaned);
             return;
           }
-          // Follow was already authorized before an automatic start. Only a
-          // manual start may turn it on; otherwise a late automatic success
-          // could undo a Stop Following click made while the request was in
-          // flight.
-          if (source === "manual") onFollowChange?.(true);
         } else {
           session.ended(requestedRunId);
         }
@@ -423,12 +431,26 @@ export function BrowserObservation({
             classification.kind === "preparing" &&
             typeof classification.retryAt === "number"
           ) {
+            const followChange = observationFollowChangeForStart(
+              conversationMode,
+              source,
+              "preparing",
+            );
+            if (followChange !== null) onFollowChange?.(followChange);
             setPreparingState({
               runId: requestedRunId,
               retryAt: classification.retryAt,
             });
             return;
           }
+        }
+        if (action === "start") {
+          const followChange = observationFollowChangeForStart(
+            conversationMode,
+            source,
+            "hard-failure",
+          );
+          if (followChange !== null) onFollowChange?.(followChange);
         }
         setError({ runId: requestedRunId, message: describe(cause, text.failed) });
       } finally {
@@ -438,7 +460,16 @@ export function BrowserObservation({
         setBusy((current) => releaseBusy(current, requestedRunId));
       }
     },
-    [apiFetch, describe, onFollowChange, refresh, runId, terminal, text],
+    [
+      apiFetch,
+      conversationMode,
+      describe,
+      onFollowChange,
+      refresh,
+      runId,
+      terminal,
+      text,
+    ],
   );
 
   // The standalone viewer keeps one-click/one-attempt semantics. The
