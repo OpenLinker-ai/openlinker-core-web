@@ -32,6 +32,14 @@ test("follow preference is scoped to one mounted conversation", () => {
   assert.deepEqual(different.snapshots, []);
 });
 
+test("follow can be disabled before an observation lease exists", () => {
+  const initial = createPlaygroundObservationFollow("conversation-a");
+  const enabled = setPlaygroundObservationFollow(initial, "conversation-a", true);
+  const disabled = setPlaygroundObservationFollow(enabled, "conversation-a", false);
+  assert.equal(disabled.enabled, false);
+  assert.deepEqual(disabled.snapshots, []);
+});
+
 test("snapshots retain exact Run provenance and are bounded", () => {
   let state = createPlaygroundObservationFollow("conversation-a");
   for (let index = 0; index < maximumPlaygroundObservationSnapshots + 2; index += 1) {
