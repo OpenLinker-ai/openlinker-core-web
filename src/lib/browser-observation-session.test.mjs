@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  beginObservationAutoFollow,
   createObservationSession,
+  observationAutoFollowBudgetMS,
+  observationAutoFollowDecision,
   observationPreparing,
   observationPreparingCooldownMS,
   releaseBusy,
@@ -16,6 +19,50 @@ const observationState = (runId, active) => ({
   active,
   frame_count: 0,
   frame_count_complete: false,
+});
+
+test("conversation auto-follow starts only inside its bounded ready window", () => {
+  const startedAt = 1_000;
+  const state = beginObservationAutoFollow(RUN_A, startedAt);
+  assert.deepEqual(state, {
+    runId: RUN_A,
+    expiresAt: startedAt + observationAutoFollowBudgetMS,
+  });
+  const ready = {
+    enabled: true,
+    runId: RUN_A,
+    now: startedAt + 1,
+    terminal: false,
+    stateLoaded: true,
+    observed: false,
+    working: false,
+    preparing: false,
+    hasError: false,
+  };
+  assert.equal(observationAutoFollowDecision(state, ready), "start");
+  assert.equal(
+    observationAutoFollowDecision(state, { ...ready, preparing: true }),
+    "wait",
+  );
+  assert.equal(
+    observationAutoFollowDecision(state, { ...ready, observed: true }),
+    "wait",
+  );
+  assert.equal(
+    observationAutoFollowDecision(state, {
+      ...ready,
+      now: state.expiresAt,
+    }),
+    "expired",
+  );
+  assert.equal(
+    observationAutoFollowDecision(state, { ...ready, enabled: false }),
+    "disabled",
+  );
+  assert.equal(
+    observationAutoFollowDecision(state, { ...ready, runId: RUN_B }),
+    "wait",
+  );
 });
 
 // Leaving a Run while its start is still in flight is the case a naive viewer
@@ -122,6 +169,20 @@ test("an observation that ended is no longer held", () => {
   // Ending some other Run leaves this one alone.
   session.started(RUN_A);
   session.ended(RUN_B);
+  assert.equal(session.release(), RUN_A);
+});
+
+test("terminal releases the live lease once without leaving the Run", () => {
+  const session = createObservationSession(RUN_A);
+  session.started(RUN_A);
+
+  assert.equal(session.terminal(RUN_A), RUN_A);
+  assert.equal(session.currentRunId, RUN_A);
+  assert.equal(session.observedRunId, null);
+  assert.equal(session.terminal(RUN_A), null, "terminal replay must not stop twice");
+
+  session.started(RUN_A);
+  assert.equal(session.terminal(RUN_B), null, "another Run cannot release this lease");
   assert.equal(session.release(), RUN_A);
 });
 

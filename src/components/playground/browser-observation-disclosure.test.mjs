@@ -49,15 +49,26 @@ test("a running Browser Run opens by default but never starts an observation", a
   assert.doesNotMatch(panel, /observation\/start/);
 });
 
-test("collapse is scoped to one Run and terminal Runs cannot remain expanded", () => {
+test("collapse is scoped to one Run and terminal keeps the same disclosure choice", () => {
+  const initial = createPlaygroundObservationDisclosure("run-a");
+  assert.equal(playgroundObservationExpanded(initial, "run-a", "success"), true);
+
   const first = togglePlaygroundObservationDisclosure(
-    createPlaygroundObservationDisclosure("run-a"),
+    initial,
     "run-a",
     "running",
   );
   assert.equal(playgroundObservationExpanded(first, "run-a", "running"), false);
-  assert.equal(playgroundObservationExpanded(first, "run-b", "running"), true);
   assert.equal(playgroundObservationExpanded(first, "run-a", "success"), false);
+  assert.equal(playgroundObservationExpanded(first, "run-b", "running"), true);
+  assert.equal(playgroundObservationExpanded(first, "run-b", "success"), false);
+
+  const reopened = togglePlaygroundObservationDisclosure(
+    first,
+    "run-a",
+    "success",
+  );
+  assert.equal(playgroundObservationExpanded(reopened, "run-a", "success"), true);
 });
 
 test("the playground mounts the panel between the selected turn and event stream", async () => {
@@ -72,5 +83,32 @@ test("the playground mounts the panel between the selected turn and event stream
   assert.ok(summary >= 0);
   assert.ok(observation > summary);
   assert.ok(events > observation);
-  assert.match(runner, /key=\{activeResult\.run_id\}/);
+  assert.doesNotMatch(
+    runner,
+    /key=\{`browser-observation:\$\{activeResult\.run_id\}`\}/,
+    "the conversation follower must survive a Run transition",
+  );
+  assert.match(runner, /key=\{`run-events:\$\{activeResult\.run_id\}`\}/);
+  assert.doesNotMatch(runner, /key=\{activeResult\.run_id\}/);
+
+  const panel = await readFile(
+    new URL("./browser-observation-panel.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(panel, /\{expanded \? \(/);
+  assert.match(panel, /terminal=\{!running\}/);
+  assert.match(panel, /autoStart=\{running && latestSelected && followEnabled\}/);
+  assert.match(panel, /retainedSnapshot=\{retainedSnapshot\}/);
+  assert.match(panel, /handoffSnapshot=\{running \? handoffSnapshot : null\}/);
+  assert.match(panel, /onFollowChange=\{onFollowChange\}/);
+  assert.match(panel, /onFrame=\{onFrame\}/);
+  assert.match(panel, /本轮已完成/);
+  assert.match(panel, /持续跟随/);
+  assert.match(panel, /停止跟随/);
+  assert.match(panel, /!running && followEnabled/);
+  assert.match(panel, /onClick=\{\(\) => onFollowChange\(false\)\}/);
+  assert.doesNotMatch(panel, /运行已结束/);
+  assert.doesNotMatch(panel, /\{running && expanded \? \(/);
+  assert.match(panel, /target="_blank"/);
+  assert.match(panel, /rel="noopener noreferrer"/);
 });

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { RunEventStream } from "@/components/run/run-event-stream";
+import type { BrowserObservationSnapshot } from "@/components/run/browser-observation";
 import { Icon } from "@/components/ui/icon";
 import { useApi } from "@/hooks/use-api";
 import { ApiError, localizedErrorMessage } from "@/lib/api";
@@ -26,6 +27,13 @@ import {
   completeRunCreationIntent,
 } from "@/lib/run-idempotency";
 import { PlaygroundBrowserObservation } from "./browser-observation-panel";
+import {
+  createPlaygroundObservationFollow,
+  playgroundObservationHandoffSnapshot,
+  playgroundObservationSnapshotForRun,
+  rememberPlaygroundObservationSnapshot,
+  setPlaygroundObservationFollow,
+} from "./browser-observation-follow.mjs";
 import { summarizeOutputText } from "./output-summary";
 import { ResultPanel } from "./result-panel";
 import { RunTrace } from "./run-trace";
@@ -121,6 +129,8 @@ export function PlaygroundRunner({
             sentAt: "发送",
             completedAt: "完成",
             rawInput: "实际 input",
+            viewRunDetails: "查看运行详情",
+            detailsRail: "当前轮次详情",
           }
         : {
             authLoading: "Reading sign-in state, please wait",
@@ -159,6 +169,8 @@ export function PlaygroundRunner({
             sentAt: "Sent",
             completedAt: "Done",
             rawInput: "Actual input",
+            viewRunDetails: "View run details",
+            detailsRail: "Selected turn details",
           },
     [locale],
   );
@@ -179,6 +191,26 @@ export function PlaygroundRunner({
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
   const [conversationID] = useState(() => localID("conversation"));
+  const [browserObservationFollow, setBrowserObservationFollow] = useState(() =>
+    createPlaygroundObservationFollow(conversationID),
+  );
+
+  const handleBrowserFollowChange = useCallback(
+    (enabled: boolean) => {
+      setBrowserObservationFollow((current) =>
+        setPlaygroundObservationFollow(current, conversationID, enabled),
+      );
+    },
+    [conversationID],
+  );
+  const handleBrowserFrame = useCallback(
+    (snapshot: BrowserObservationSnapshot) => {
+      setBrowserObservationFollow((current) =>
+        rememberPlaygroundObservationSnapshot(current, conversationID, snapshot),
+      );
+    },
+    [conversationID],
+  );
 
   const running = turns.some((turn) => turn.status === "running");
   const activeTurn =
@@ -191,6 +223,28 @@ export function PlaygroundRunner({
   );
   const pollingTurnId = runningTurn?.id;
   const pollingRunId = runningTurn?.result?.run_id;
+  const selectedLatestTurn = Boolean(
+    activeTurn && turns.length > 0 && activeTurn.id === turns[turns.length - 1].id,
+  );
+  const orderedRunIds = turns.flatMap((turn) =>
+    turn.result?.run_id ? [turn.result.run_id] : [],
+  );
+  const retainedBrowserSnapshot = activeResult?.run_id
+    ? playgroundObservationSnapshotForRun(
+        browserObservationFollow,
+        conversationID,
+        activeResult.run_id,
+      )
+    : null;
+  const browserHandoffSnapshot = activeResult?.run_id
+    ? playgroundObservationHandoffSnapshot(
+        browserObservationFollow,
+        conversationID,
+        activeResult.run_id,
+        orderedRunIds,
+        selectedLatestTurn,
+      )
+    : null;
   const priceUSD = agent.price_per_call_cents > 0
     ? (agent.price_per_call_cents / 100).toFixed(3)
     : null;
@@ -237,6 +291,7 @@ export function PlaygroundRunner({
         conversation_context_id: conversationID,
       });
       turnId = intent.intentId;
+      const predecessor = latestRunPredecessor(previousTurns, turnId);
       const now = new Date().toISOString();
       const existingTurn = previousTurns.find((item) => item.id === turnId);
       const turn: PlaygroundTurn = {
@@ -268,7 +323,11 @@ export function PlaygroundRunner({
         body: {
           agent_id: agent.id,
           input: runInput,
-          a2a_context: playgroundA2AContext(conversationID, turnId),
+          a2a_context: playgroundA2AContext(
+            conversationID,
+            turnId,
+            predecessor,
+          ),
           metadata: {
             ...requestMetadata,
             intent_id: turnId,
@@ -476,7 +535,12 @@ export function PlaygroundRunner({
 
       </section>
 
-      <aside className="grid auto-rows-max gap-4 xl:sticky xl:top-4 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:max-h-[calc(100vh-7rem)] xl:min-h-0 xl:self-start xl:overflow-y-auto xl:pr-1">
+      <aside
+        data-playground-detail-rail
+        aria-label={copy.detailsRail}
+        tabIndex={0}
+        className="grid auto-rows-max gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ol-primary)]/35 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:pb-2 xl:pr-2 xl:[scrollbar-gutter:stable]"
+      >
         <ActiveTurnSummary
           turn={activeTurn}
           locale={locale}
@@ -489,21 +553,27 @@ export function PlaygroundRunner({
             completedAt: copy.completedAt,
             rawInput: copy.rawInput,
             noRunYet: copy.noRunYet,
+            viewRunDetails: copy.viewRunDetails,
           }}
         />
 
         {activeResult?.run_id ? (
           <PlaygroundBrowserObservation
-            key={activeResult.run_id}
             result={activeResult}
             status={activeStatus}
             locale={locale}
+            latestSelected={selectedLatestTurn}
+            followEnabled={browserObservationFollow.enabled}
+            onFollowChange={handleBrowserFollowChange}
+            onFrame={handleBrowserFrame}
+            retainedSnapshot={retainedBrowserSnapshot}
+            handoffSnapshot={browserHandoffSnapshot}
           />
         ) : null}
 
         {activeResult?.run_id ? (
           <RunEventStream
-            key={activeResult.run_id}
+            key={`run-events:${activeResult.run_id}`}
             locale={locale}
             runId={activeResult.run_id}
             enabled
@@ -523,9 +593,10 @@ export function PlaygroundRunner({
           result={activeResult}
           locale={locale}
         />
+        <span data-playground-detail-rail-end aria-hidden="true" className="h-px" />
       </aside>
 
-      <section className="ol-panel bg-white p-3.5 xl:col-start-1 xl:row-start-2">
+      <section data-playground-composer className="ol-panel bg-white p-3.5 xl:col-start-1 xl:row-start-2">
         <label className="block">
           <span className="text-[11px] font-black uppercase tracking-[0.08em] text-[color:var(--ol-primary-dark)]">
             {copy.inputTitle}
@@ -608,6 +679,20 @@ export function PlaygroundRunner({
       </section>
     </div>
   );
+}
+
+function latestRunPredecessor(
+  turns: readonly PlaygroundTurn[],
+  currentTurnID: string,
+): { taskID: string; runID: string } | undefined {
+  for (let index = turns.length - 1; index >= 0; index -= 1) {
+    const turn = turns[index];
+    const runID = turn.result?.run_id;
+    if (turn.id !== currentTurnID && runID) {
+      return { taskID: turn.id, runID };
+    }
+  }
+  return undefined;
 }
 
 function EmptyThread({ title, body }: { title: string; body: string }) {
@@ -770,6 +855,7 @@ function ActiveTurnSummary({
     completedAt: string;
     rawInput: string;
     noRunYet: string;
+    viewRunDetails: string;
   };
 }) {
   if (!turn) {
@@ -803,9 +889,21 @@ function ActiveTurnSummary({
             {labels.selectedTurn(turn.sequence)}
           </span>
         </div>
-        <span className={`ol-chip shrink-0 ${statusToneClass(turn.status)}`}>
-          {progressStatus}
-        </span>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {turn.result?.run_id ? (
+            <Link
+              href={`/run/${encodeURIComponent(turn.result.run_id)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-8 items-center justify-center rounded-[10px] border border-[color:var(--ol-primary)] bg-white px-3 text-[11.5px] font-black text-[color:var(--ol-primary-dark)] transition hover:bg-[color:var(--ol-mint)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ol-primary)]/35"
+            >
+              {labels.viewRunDetails}
+            </Link>
+          ) : null}
+          <span className={`ol-chip shrink-0 ${statusToneClass(turn.status)}`}>
+            {progressStatus}
+          </span>
+        </div>
       </div>
 
       <div className="mt-3 grid gap-2 rounded-[14px] border border-[color:var(--ol-line)] bg-white p-3 text-[12px] font-bold text-[color:var(--ol-muted)] 2xl:grid-cols-2">
@@ -849,8 +947,10 @@ function MetaRow({
     <div className="grid grid-cols-[82px_minmax(0,1fr)] gap-2">
       <span className="text-[color:var(--ol-subtle)]">{label}</span>
       <span
-        className={`min-w-0 truncate text-right text-[color:var(--ol-ink)] ${
-          mono ? "font-mono text-[11px]" : ""
+        className={`min-w-0 text-right text-[color:var(--ol-ink)] ${
+          mono
+            ? "break-all font-mono text-[11px] [overflow-wrap:anywhere]"
+            : "truncate"
         }`}
         title={value}
       >

@@ -13,7 +13,7 @@ test("the shared Viewer owns one responsive read-only canvas", async () => {
   assert.match(source, /aria-live="polite"/);
   assert.match(source, /role="dialog"/);
   assert.match(source, /setExpandedView\(true\)/);
-  const observedControls = source.indexOf("{observed ? (");
+  const observedControls = source.indexOf(": observed ? (");
   const stop = source.indexOf('transition("stop")', observedControls);
   const start = source.indexOf('transition("start")', stop);
   assert.ok(
@@ -35,7 +35,12 @@ test("the playground is an operate-and-observe workspace", async () => {
   const composer = source.indexOf("ol-panel bg-white p-3.5 xl:col-start-1 xl:row-start-2");
 
   assert.match(source, /minmax\(0,11fr\)_minmax\(400px,9fr\)/);
-  assert.match(source, /xl:sticky/);
+  assert.match(source, /xl:h-full/);
+  assert.match(source, /xl:overflow-y-auto/);
+  assert.match(source, /xl:overscroll-contain/);
+  assert.match(source, /xl:\[scrollbar-gutter:stable\]/);
+  assert.doesNotMatch(source, /xl:sticky/);
+  assert.doesNotMatch(source, /xl:max-h-\[calc\(100vh/);
   assert.ok(summary >= 0 && observation > summary && events > observation);
   assert.ok(
     composer > events,

@@ -25,6 +25,29 @@ export function releaseBusy(current, forRunId) {
 }
 
 export const observationPreparingCooldownMS = 2_000;
+export const observationAutoFollowBudgetMS = 30_000;
+
+export function beginObservationAutoFollow(runId, now) {
+  if (typeof runId !== "string" || !runId.trim() || !Number.isFinite(now)) {
+    throw new TypeError("auto-follow requires a Run and current time");
+  }
+  return { runId, expiresAt: now + observationAutoFollowBudgetMS };
+}
+
+export function observationAutoFollowDecision(state, conditions) {
+  if (!conditions?.enabled || conditions.terminal) return "disabled";
+  if (!state || state.runId !== conditions.runId) return "wait";
+  if (
+    !conditions.stateLoaded ||
+    conditions.observed ||
+    conditions.working ||
+    conditions.preparing ||
+    conditions.hasError
+  ) {
+    return "wait";
+  }
+  return conditions.now >= state.expiresAt ? "expired" : "start";
+}
 
 export function observationPreparing(state, forRunId, now) {
   return Boolean(
@@ -121,6 +144,17 @@ export function createObservationSession(runId) {
     /** The observation ended, by explicit stop or by Core. */
     ended(forRunId) {
       if (observedRunId === forRunId) observedRunId = null;
+    },
+
+    /**
+     * The Run reached a terminal state while its last frame may still be on
+     * screen. Hand the live lease back exactly once without changing focus;
+     * presentation state is owned by the component, not by this session.
+     */
+    terminal(forRunId) {
+      if (forRunId !== currentRunId || observedRunId !== forRunId) return null;
+      observedRunId = null;
+      return forRunId;
     },
 
     /**

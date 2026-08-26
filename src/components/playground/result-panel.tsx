@@ -386,7 +386,10 @@ function DeveloperApiBox({
   hasDelegation: boolean;
   locale?: Locale;
 }) {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"run" | "path" | null>(null);
+  const apiPath = runId
+    ? `/api/v1/runs/${encodeURIComponent(runId)}`
+    : null;
   const copy =
     locale === "zh"
       ? {
@@ -394,9 +397,14 @@ function DeveloperApiBox({
           apiTitle: "开发者 API",
           delegated: "该 Run 包含子 Agent 调用，可进入协作链查看父子关系。",
           copyDoneToast: "Run ID 已复制",
+          pathDoneToast: "API 路径已复制",
           copyFailToast: "复制失败，请手动选择",
           copied: "已复制",
-          copy: "复制",
+          copyRun: "复制 ID",
+          copyPath: "复制路径",
+          runId: "Run ID",
+          method: "GET",
+          endpoint: "运行状态接口",
           parentRun: "查看父运行",
           collaboration: "查看协作链",
           empty: "运行后这里会出现 Run ID，可通过 API 查询运行状态、事件和结果。",
@@ -406,21 +414,25 @@ function DeveloperApiBox({
           apiTitle: "Developer API",
           delegated: "This Run includes child-Agent calls. Open the Agent call chain to inspect parent-child relationships.",
           copyDoneToast: "Run ID copied",
+          pathDoneToast: "API path copied",
           copyFailToast: "Copy failed. Select it manually.",
           copied: "Copied",
-          copy: "Copy",
+          copyRun: "Copy ID",
+          copyPath: "Copy path",
+          runId: "Run ID",
+          method: "GET",
+          endpoint: "Run status endpoint",
           parentRun: "View Parent Run",
           collaboration: "View Agent Call Chain",
           empty: "After running, the Run ID appears here and can be used to query status, events, and results through the API.",
         };
 
-  const handleCopy = async () => {
-    if (!runId) return;
+  const handleCopy = async (kind: "run" | "path", value: string) => {
     try {
-      await navigator.clipboard.writeText(runId);
-      setCopied(true);
-      toast.success(copy.copyDoneToast);
-      setTimeout(() => setCopied(false), 1500);
+      await navigator.clipboard.writeText(value);
+      setCopied(kind);
+      toast.success(kind === "run" ? copy.copyDoneToast : copy.pathDoneToast);
+      setTimeout(() => setCopied(null), 1500);
     } catch {
       toast.error(copy.copyFailToast);
     }
@@ -438,22 +450,51 @@ function DeveloperApiBox({
       ) : null}
       {runId ? (
         <>
-          <div className="mt-2 flex items-center gap-2">
-            <code className="min-w-0 flex-1 truncate rounded-md bg-[color:var(--ol-soft)] px-2 py-1.5 font-mono text-[11.5px] text-[color:var(--ol-ink)]">
-              {runId}
-            </code>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="inline-flex h-7 shrink-0 items-center rounded-md border border-[color:var(--ol-line)] bg-white px-2.5 text-[11.5px] font-black text-[color:var(--ol-muted)] hover:bg-[color:var(--ol-soft)]"
-            >
-              {copied ? copy.copied : copy.copy}
-            </button>
+          <div className="mt-3 grid gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-black uppercase tracking-[0.06em] text-[color:var(--ol-subtle)]">
+                  {copy.runId}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void handleCopy("run", runId)}
+                  className="inline-flex h-7 shrink-0 items-center rounded-md border border-[color:var(--ol-line)] bg-white px-2.5 text-[11.5px] font-black text-[color:var(--ol-muted)] transition hover:bg-[color:var(--ol-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ol-primary)]/35"
+                >
+                  {copied === "run" ? copy.copied : copy.copyRun}
+                </button>
+              </div>
+              <code className="mt-1.5 block w-full select-text rounded-[10px] bg-[color:var(--ol-soft)] px-2.5 py-2 font-mono text-[11.5px] leading-5 text-[color:var(--ol-ink)] [overflow-wrap:anywhere]">
+                {runId}
+              </code>
+            </div>
+            <div className="min-w-0 border-t border-[color:var(--ol-line)] pt-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="inline-flex min-w-0 items-center gap-2 text-[11px] font-black text-[color:var(--ol-subtle)]">
+                  <span className="rounded-md bg-[color:var(--ol-mint)] px-1.5 py-0.5 font-mono text-[10.5px] text-[color:var(--ol-primary-dark)]">
+                    {copy.method}
+                  </span>
+                  {copy.endpoint}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void handleCopy("path", apiPath!)}
+                  className="inline-flex h-7 shrink-0 items-center rounded-md border border-[color:var(--ol-line)] bg-white px-2.5 text-[11.5px] font-black text-[color:var(--ol-muted)] transition hover:bg-[color:var(--ol-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ol-primary)]/35"
+                >
+                  {copied === "path" ? copy.copied : copy.copyPath}
+                </button>
+              </div>
+              <code className="mt-1.5 block w-full select-text rounded-[10px] bg-[color:var(--ol-soft)] px-2.5 py-2 font-mono text-[11.5px] leading-5 text-[color:var(--ol-ink)] [overflow-wrap:anywhere]">
+                {apiPath}
+              </code>
+            </div>
           </div>
           {hasDelegation ? (
             <div className="mt-3 grid grid-cols-2 gap-2">
               <Link
                 href={`/run/${encodeURIComponent(runId)}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex h-9 items-center justify-center rounded-[10px] border border-[color:var(--ol-line)] bg-white px-2 text-[12px] font-black text-[color:var(--ol-ink)] hover:bg-[color:var(--ol-soft)]"
               >
                 {copy.parentRun}
@@ -504,6 +545,8 @@ function BottomActions({
       {runId ? (
         <Link
           href={`/run/${encodeURIComponent(runId)}`}
+          target="_blank"
+          rel="noopener noreferrer"
           className={`${baseBtn} border-[color:var(--ol-primary)] bg-[color:var(--ol-primary)] text-white`}
         >
           {copy.trace}
