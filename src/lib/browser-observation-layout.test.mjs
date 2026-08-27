@@ -13,13 +13,14 @@ test("the shared Viewer owns one responsive read-only canvas", async () => {
   assert.match(source, /aria-live="polite"/);
   assert.match(source, /role="dialog"/);
   assert.match(source, /setExpandedView\(true\)/);
-  const observedControls = source.indexOf(": observed ? (");
-  const stop = source.indexOf('transition("stop")', observedControls);
+  const ownedControls = source.indexOf(": owned ? (");
+  const stop = source.indexOf('transition("stop")', ownedControls);
   const start = source.indexOf('transition("start")', stop);
   assert.ok(
-    observedControls >= 0 && stop > observedControls && start > stop,
-    "an already-active server lease must offer stop rather than issuing another start",
+    ownedControls >= 0 && stop > ownedControls && start > stop,
+    "only a locally started lease may offer the remote stop control",
   );
+  assert.match(source, /: passive \? null : \(/);
   assert.equal(
     (source.match(/const transition = useCallback/g) ?? []).length,
     1,
@@ -53,21 +54,21 @@ test("the playground is an operate-and-observe workspace", async () => {
   );
 });
 
-test("running Browser Runs promote Viewer ahead of diagnostics", async () => {
+test("Browser Runs keep the conversation Viewer ahead of diagnostics after terminal", async () => {
   const source = await readSource("../components/run/run-detail.tsx");
   const workspace = source.indexOf("data-browser-workspace");
-  const observation = source.indexOf("<BrowserObservation", workspace);
+  const observation = source.indexOf("<ConversationBrowserObservation", workspace);
   const events = source.indexOf("<RunEventStream");
 
   assert.match(
     source,
-    /view\.status === "running" && Boolean\(view\.browserInteractionPolicy\)/,
+    /const hasBrowserWorkspace = Boolean\(view\.browserInteractionPolicy\)/,
   );
   assert.ok(workspace >= 0 && observation > workspace && events > observation);
   assert.equal(
-    (source.match(/<BrowserObservation/g) ?? []).length,
+    (source.match(/<ConversationBrowserObservation/g) ?? []).length,
     1,
-    "non-Browser and terminal Runs must not receive an empty Viewer slot",
+    "one stable conversation Browser workspace must survive terminal state",
   );
   assert.match(source, /view\.status !== "running"/);
 });

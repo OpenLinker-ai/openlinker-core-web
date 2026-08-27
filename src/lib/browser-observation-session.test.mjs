@@ -237,16 +237,18 @@ test("a failed request for a Run the viewer has left is dropped too", () => {
 
 // Two active Runs in a row is where a boolean flag fails: it never changes, so
 // nothing marks the second Run as something this viewer holds.
-test("moving from one active Run to another still releases the second", () => {
+test("moving between passively discovered active Runs never releases either lease", () => {
   const session = createObservationSession(RUN_A);
   assert.equal(session.sync(observationState(RUN_A, true)), true);
   assert.equal(session.observedRunId, RUN_A);
+  assert.equal(session.mode(RUN_A), "passive");
 
-  assert.equal(session.leave(), RUN_A);
+  assert.equal(session.leave(), null);
   session.focus(RUN_B);
   assert.equal(session.sync(observationState(RUN_B, true)), true);
   assert.equal(session.observedRunId, RUN_B);
-  assert.equal(session.release(), RUN_B, "the second active Run must be released as well");
+  assert.equal(session.mode(RUN_B), "passive");
+  assert.equal(session.release(), null, "an external lease must never be released here");
 });
 
 // Unload releases once. A token refresh is not a page event and must not reach
@@ -254,7 +256,7 @@ test("moving from one active Run to another still releases the second", () => {
 // mount-scoped; here the guarantee is that a second release is not a lease.
 test("release hands back the held Run exactly once", () => {
   const session = createObservationSession(RUN_A);
-  session.sync(observationState(RUN_A, true));
+  session.started(RUN_A);
 
   assert.equal(session.release(), RUN_A);
   assert.equal(session.release(), null, "a second release must not stop anything again");
@@ -356,6 +358,22 @@ test("an owner-confirmed state makes a following start 403 a preparing window", 
     runId: RUN_A,
     retryAt: 1_000 + observationPreparingCooldownMS,
   });
+});
+
+test("a local start replaces passive attachment and alone grants stop authority", () => {
+  const session = createObservationSession(RUN_A);
+  session.sync(observationState(RUN_A, true));
+  assert.equal(session.mode(RUN_A), "passive");
+  assert.equal(session.started(RUN_A), null);
+  assert.equal(session.mode(RUN_A), "owned");
+  assert.equal(session.release(), RUN_A);
+});
+
+test("terminal clears passive attachment without returning a remote stop", () => {
+  const session = createObservationSession(RUN_A);
+  session.sync(observationState(RUN_A, true));
+  assert.equal(session.terminal(RUN_A), null);
+  assert.equal(session.mode(RUN_A), "none");
 });
 
 test("a start 403 without same-Run owner confirmation remains forbidden", () => {

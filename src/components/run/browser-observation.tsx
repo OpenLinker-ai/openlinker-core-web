@@ -14,6 +14,13 @@ import {
   releaseBusy,
   startObservationWithFollowIntent,
 } from "@/lib/browser-observation-session.mjs";
+import {
+  browserObservationFailureCause,
+  browserObservationFailureKind,
+  browserObservationFailureStatus,
+  browserObservationFrameCapacityRetryMS,
+  performBrowserObservationRequest,
+} from "@/lib/browser-observation-transport.mjs";
 import type { Locale } from "@/lib/i18n";
 
 type ObservationState = {
@@ -75,6 +82,8 @@ const copy = {
     unavailable: "该 Run 的观察通道不在当前 Core 实例上。",
     busy: "该 Run 已有活动的观察。",
     saturated: "当前 Core 实例的并发观察数已达上限，请稍后再试。",
+    viewerCapacity: "该 Run 的观察入口已达上限，请关闭其他观察入口后重试。",
+    passive: "跟随中 · 画面由另一观察入口提供",
     unconfirmed: "Runtime 未确认观察启动，请稍后再试。",
     ended: "观察已结束。",
     failed: "无法读取观察状态。",
@@ -107,6 +116,8 @@ const copy = {
     unavailable: "This Run's observation channel is not on the current Core instance.",
     busy: "This Run is already being observed.",
     saturated: "This Core instance is at its concurrent observation limit. Try again shortly.",
+    viewerCapacity: "This Run has reached its viewer limit. Close another observation view and try again.",
+    passive: "Following · Frame provided by another observation view",
     unconfirmed: "The Runtime did not confirm the start. Try again shortly.",
     ended: "The observation has ended.",
     failed: "Could not load observation state.",
@@ -123,8 +134,11 @@ export function BrowserObservation({
   conversationMode = false,
   retainedSnapshot = null,
   handoffSnapshot = null,
+  startLabel,
+  stopLabel,
   onFollowChange,
   onFrame,
+  onLeaseModeChange,
 }: {
   runId: string;
   locale: Locale;
@@ -135,8 +149,11 @@ export function BrowserObservation({
   conversationMode?: boolean;
   retainedSnapshot?: BrowserObservationSnapshot | null;
   handoffSnapshot?: BrowserObservationSnapshot | null;
+  startLabel?: string;
+  stopLabel?: string;
   onFollowChange?: (enabled: boolean) => void;
   onFrame?: (snapshot: BrowserObservationSnapshot) => void;
+  onLeaseModeChange?: (mode: "owned" | "passive" | "none") => void;
 }) {
   const { fetch: apiFetch, token } = useApi();
   const text = copy[locale === "zh" ? "zh" : "en"];
@@ -155,6 +172,7 @@ export function BrowserObservation({
     null,
   );
   const [expandedView, setExpandedView] = useState(false);
+  const [leaseMode, setLeaseMode] = useState<"owned" | "passive" | "none">("none");
   const [, setPreparingRevision] = useState(0);
   const sequenceRef = useRef(0);
   const autoStartRef = useRef<{ runId: string } | null>(null);
@@ -164,10 +182,13 @@ export function BrowserObservation({
   // without a browser. The component keeps the wiring: effects, fetches, render.
   const sessionRef = useRef(createObservationSession(runId));
   const stopRef = useRef<(releasedRunId: string) => void>(() => {});
+  const leaseModeChangeRef = useRef(onLeaseModeChange);
   // Whether the state in hand says this Run is being observed. State survives
   // the render that already carries the next Run's id, because effect cleanups
   // run after that render commits, so every use of it has to name the Run.
   const observed = !terminal && state?.run_id === runId && Boolean(state?.active);
+  const owned = observed && leaseMode === "owned";
+  const passive = observed && leaseMode === "passive";
   const stateLoaded = state?.run_id === runId;
   const shownError = error?.runId === runId ? error.message : "";
   const working = busy === runId;
@@ -180,44 +201,58 @@ export function BrowserObservation({
 
   const describe = useCallback(
     (cause: unknown, fallback: string) => {
-      if (cause instanceof ApiError) {
+      const actual = browserObservationFailureCause(cause);
+      if (actual instanceof ApiError) {
         // Each status is a different problem with a different fix, so they are
         // not collapsed into one generic failure here either.
-        if (cause.status === 501) return text.unsupported;
-        if (cause.status === 503) return text.unavailable;
-        if (cause.status === 409) return text.busy;
-        if (cause.status === 429) return text.saturated;
-        if (cause.status === 504) return text.unconfirmed;
+        if (actual.status === 501) return text.unsupported;
+        if (actual.status === 503) return text.unavailable;
+        if (actual.status === 409) return text.busy;
+        if (actual.status === 429) return text.saturated;
+        if (actual.status === 504) return text.unconfirmed;
       }
-      return localizedErrorMessage(cause, locale, fallback);
+      return localizedErrorMessage(actual, locale, fallback);
     },
     [locale, text],
   );
 
-  const refresh = useCallback(async () => {
-    if (!enabled || !token) return;
+  const refresh = useCallback(async (raise = false) => {
+    if (!enabled || !token) return null;
     const requestedRunId = runId;
     const session = sessionRef.current;
     try {
-      const next = await apiFetch<ObservationState>(
-        `/api/v1/runs/${encodeURIComponent(requestedRunId)}/observation`,
-        { signOutOnUnauthorized: false },
-      );
+      const next = await performBrowserObservationRequest({
+        operation: "state",
+        runId: requestedRunId,
+        request: apiFetch,
+      }) as ObservationState;
       // sync answers both questions at once: whether this answer still describes
       // the Run on screen -- a request started for one Run can land after the
       // viewer moved to another -- and whether this viewer now holds it.
       if (!session.sync(next)) return;
       setState(next);
+      const mode = session.mode(requestedRunId);
+      setLeaseMode(mode);
+      leaseModeChangeRef.current?.(mode);
       setError(null);
+      return next;
     } catch (cause) {
       if (!session.accepts(requestedRunId)) return;
-      if (cause instanceof ApiError && cause.status === 404) {
+      if (browserObservationFailureStatus(cause) === 404) {
         setState(null);
-        return;
+        setLeaseMode("none");
+        leaseModeChangeRef.current?.("none");
+        return null;
       }
       setError({ runId: requestedRunId, message: describe(cause, text.failed) });
+      if (raise) throw cause;
+      return null;
     }
   }, [apiFetch, describe, enabled, runId, text, token]);
+
+  useEffect(() => {
+    leaseModeChangeRef.current = onLeaseModeChange;
+  }, [onLeaseModeChange]);
 
   useEffect(() => {
     // Deferred like the takeover component does: starting the fetch inside the
@@ -251,23 +286,33 @@ export function BrowserObservation({
     const poll = async () => {
       while (!cancelled) {
         try {
-          const next = await apiFetch<ObservationFrame | undefined>(
-            `/api/v1/runs/${encodeURIComponent(runId)}/observation/frame?after=${sequenceRef.current}`,
-            { signOutOnUnauthorized: false },
-          );
+          const next = await performBrowserObservationRequest({
+            operation: "frame",
+            runId,
+            after: sequenceRef.current,
+            request: apiFetch,
+          }) as ObservationFrame | undefined;
           if (cancelled) return;
           if (next) {
             sequenceRef.current = next.frame_seq;
             const snapshot = { runId, frame: next };
             setFrame(snapshot);
+            setError(null);
             onFrame?.(snapshot);
           }
         } catch (cause) {
           if (cancelled) return;
+          if (browserObservationFailureKind(cause) === "viewer-capacity") {
+            setError({ runId, message: text.viewerCapacity });
+            await new Promise((resolve) =>
+              window.setTimeout(resolve, browserObservationFrameCapacityRetryMS),
+            );
+            continue;
+          }
           // On this endpoint 409 means the observation ended, which is an
           // ordinary outcome rather than a failure. Only re-read the state; the
           // same status on start means the opposite and is reported there.
-          if (!(cause instanceof ApiError && cause.status === 409)) {
+          if (browserObservationFailureKind(cause) !== "inactive") {
             setError({ runId, message: describe(cause, text.failed) });
           }
           void refresh();
@@ -313,6 +358,11 @@ export function BrowserObservation({
     if (!terminal) return;
     const held = sessionRef.current.terminal(runId);
     if (held) stopRef.current(held);
+    const settled = window.setTimeout(() => {
+      setLeaseMode("none");
+      leaseModeChangeRef.current?.("none");
+    }, 0);
+    return () => window.clearTimeout(settled);
   }, [runId, terminal]);
 
   useEffect(() => {
@@ -337,6 +387,8 @@ export function BrowserObservation({
       setState(null);
       setFrame(null);
       setPreparingState(null);
+      setLeaseMode("none");
+      leaseModeChangeRef.current?.("none");
       setExpandedView(false);
       sequenceRef.current = 0;
     };
@@ -384,17 +436,21 @@ export function BrowserObservation({
       setError(null);
       try {
         const request = () =>
-          apiFetch(
-            `/api/v1/runs/${encodeURIComponent(requestedRunId)}/observation/${action}`,
-            { method: "POST", signOutOnUnauthorized: false },
-          );
+          performBrowserObservationRequest({
+            operation: action,
+            runId: requestedRunId,
+            request: apiFetch,
+          }) as Promise<ObservationState | undefined>;
         if (action === "start") {
-          await startObservationWithFollowIntent(
+          const startedState = await startObservationWithFollowIntent(
             conversationMode,
             source,
             onFollowChange,
             request,
           );
+          if (startedState && startedState.run_id === requestedRunId) {
+            setState(startedState);
+          }
         } else {
           await request();
         }
@@ -412,8 +468,12 @@ export function BrowserObservation({
             stopRef.current(orphaned);
             return;
           }
+          setLeaseMode("owned");
+          leaseModeChangeRef.current?.("owned");
         } else {
           session.ended(requestedRunId);
+          setLeaseMode("none");
+          leaseModeChangeRef.current?.("none");
         }
         if (!session.accepts(requestedRunId)) return;
         setError(null);
@@ -422,8 +482,34 @@ export function BrowserObservation({
         if (!session.accepts(requestedRunId)) return;
         if (
           action === "start" &&
-          cause instanceof ApiError &&
-          cause.status === 403
+          browserObservationFailureKind(cause) === "conflict"
+        ) {
+          try {
+            const current = await refresh(true);
+            if (current?.active) {
+              const mode = session.mode(requestedRunId);
+              setLeaseMode(mode);
+              leaseModeChangeRef.current?.(mode);
+              return;
+            }
+            const now = Date.now();
+            const classification = session.classifyStartForbidden(requestedRunId, now);
+            if (classification.kind === "preparing") {
+              setPreparingState({
+                runId: requestedRunId,
+                retryAt: classification.retryAt,
+              });
+            }
+            return;
+          } catch {
+            // refresh surfaced the exact state-read failure. Keep follow and
+            // the last frame; the user can retry explicitly.
+            return;
+          }
+        }
+        if (
+          action === "start" &&
+          browserObservationFailureKind(cause) === "forbidden"
         ) {
           const now = Date.now();
           const classification = session.classifyStartForbidden(requestedRunId, now);
@@ -531,7 +617,9 @@ export function BrowserObservation({
       : conversationMode
         ? text.turnEndedNoFrame
         : text.endedNoFrame
-    : observed
+    : passive
+      ? text.passive
+      : observed
       ? shown
         ? text.live
         : text.waiting
@@ -568,23 +656,23 @@ export function BrowserObservation({
               <span className="inline-flex h-9 items-center rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12px] font-black text-[color:var(--ol-muted)]">
                 {terminalLabel}
               </span>
-            ) : observed ? (
+            ) : owned ? (
               <button
                 type="button"
                 disabled={working}
                 onClick={() => void transition("stop")}
                 className="inline-flex h-9 items-center justify-center rounded-xl border border-[color:var(--ol-line)] bg-white px-3.5 text-[12px] font-black text-[color:var(--ol-ink)] transition hover:border-[color:var(--ol-primary)]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ol-primary)]/35 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {text.stop}
+                {stopLabel ?? text.stop}
               </button>
-            ) : (
+            ) : passive ? null : (
               <button
                 type="button"
                 disabled={working || !stateLoaded || preparing}
                 onClick={() => void transition("start")}
                 className="inline-flex h-9 items-center justify-center rounded-xl border border-[color:var(--ol-primary)] bg-[color:var(--ol-primary)] px-3.5 text-[12px] font-black text-white transition hover:bg-[color:var(--ol-primary-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ol-primary)]/35 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {text.start}
+                {startLabel ?? text.start}
               </button>
             )}
             <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-[color:var(--ol-muted)]">
