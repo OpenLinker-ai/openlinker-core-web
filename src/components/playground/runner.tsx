@@ -28,12 +28,12 @@ import {
 } from "@/lib/run-idempotency";
 import { PlaygroundBrowserObservation } from "./browser-observation-panel";
 import {
-  createPlaygroundObservationFollow,
-  playgroundObservationHandoffSnapshot,
-  playgroundObservationSnapshotForRun,
-  rememberPlaygroundObservationSnapshot,
-  setPlaygroundObservationFollow,
-} from "./browser-observation-follow.mjs";
+  browserObservationHandoffSnapshot,
+  browserObservationSnapshotForRun,
+  createBrowserObservationCoordinator,
+  rememberBrowserObservationSnapshot,
+  setBrowserObservationFollow,
+} from "@/lib/browser-observation-coordinator.mjs";
 import { summarizeOutputText } from "./output-summary";
 import { ResultPanel } from "./result-panel";
 import { RunTrace } from "./run-trace";
@@ -191,22 +191,22 @@ export function PlaygroundRunner({
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
   const [conversationID] = useState(() => localID("conversation"));
-  const [browserObservationFollow, setBrowserObservationFollow] = useState(() =>
-    createPlaygroundObservationFollow(conversationID),
+  const [browserObservationFollow, setBrowserObservationCoordinator] = useState(() =>
+    createBrowserObservationCoordinator(conversationID),
   );
 
   const handleBrowserFollowChange = useCallback(
     (enabled: boolean) => {
-      setBrowserObservationFollow((current) =>
-        setPlaygroundObservationFollow(current, conversationID, enabled),
+      setBrowserObservationCoordinator((current) =>
+        setBrowserObservationFollow(current, conversationID, enabled),
       );
     },
     [conversationID],
   );
   const handleBrowserFrame = useCallback(
     (snapshot: BrowserObservationSnapshot) => {
-      setBrowserObservationFollow((current) =>
-        rememberPlaygroundObservationSnapshot(current, conversationID, snapshot),
+      setBrowserObservationCoordinator((current) =>
+        rememberBrowserObservationSnapshot(current, conversationID, snapshot),
       );
     },
     [conversationID],
@@ -230,14 +230,14 @@ export function PlaygroundRunner({
     turn.result?.run_id ? [turn.result.run_id] : [],
   );
   const retainedBrowserSnapshot = activeResult?.run_id
-    ? playgroundObservationSnapshotForRun(
+    ? browserObservationSnapshotForRun(
         browserObservationFollow,
         conversationID,
         activeResult.run_id,
       )
     : null;
   const browserHandoffSnapshot = activeResult?.run_id
-    ? playgroundObservationHandoffSnapshot(
+    ? browserObservationHandoffSnapshot(
         browserObservationFollow,
         conversationID,
         activeResult.run_id,

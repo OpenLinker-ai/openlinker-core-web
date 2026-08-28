@@ -94,7 +94,8 @@ export function observationPreparing(state, forRunId, now) {
 
 export function createObservationSession(runId) {
   let currentRunId = runId;
-  let observedRunId = null;
+  let ownedRunId = null;
+  let passiveRunId = null;
   // A successful state read is the proof that the current JWT owns this Run.
   // Only that proof lets the UI reinterpret a following start 403 as the normal
   // pre-ready projection window rather than an authorization failure.
@@ -108,7 +109,17 @@ export function createObservationSession(runId) {
 
     /** The Run whose observation this viewer holds, or null. */
     get observedRunId() {
-      return observedRunId;
+      return ownedRunId ?? passiveRunId;
+    },
+
+    /** The Run whose lease this component started and may therefore stop. */
+    get ownedRunId() {
+      return ownedRunId;
+    },
+
+    /** An active Run discovered through owner state, never stoppable here. */
+    get passiveRunId() {
+      return passiveRunId;
     },
 
     /**
@@ -118,9 +129,10 @@ export function createObservationSession(runId) {
      * correct -- mid-transition there is no Run for one to belong to.
      */
     leave() {
-      const leaving = observedRunId;
+      const leaving = ownedRunId;
       currentRunId = null;
-      observedRunId = null;
+      ownedRunId = null;
+      passiveRunId = null;
       ownerConfirmedRunId = null;
       return leaving;
     },
@@ -143,7 +155,8 @@ export function createObservationSession(runId) {
      */
     started(forRunId) {
       if (forRunId !== currentRunId) return forRunId;
-      observedRunId = forRunId;
+      ownedRunId = forRunId;
+      passiveRunId = null;
       return null;
     },
 
@@ -154,7 +167,12 @@ export function createObservationSession(runId) {
     sync(state) {
       if (!state || state.run_id !== currentRunId) return false;
       ownerConfirmedRunId = state.run_id;
-      observedRunId = state.active ? state.run_id : null;
+      if (state.active) {
+        if (ownedRunId !== state.run_id) passiveRunId = state.run_id;
+      } else {
+        if (ownedRunId === state.run_id) ownedRunId = null;
+        if (passiveRunId === state.run_id) passiveRunId = null;
+      }
       return true;
     },
 
@@ -177,7 +195,8 @@ export function createObservationSession(runId) {
 
     /** The observation ended, by explicit stop or by Core. */
     ended(forRunId) {
-      if (observedRunId === forRunId) observedRunId = null;
+      if (ownedRunId === forRunId) ownedRunId = null;
+      if (passiveRunId === forRunId) passiveRunId = null;
     },
 
     /**
@@ -186,8 +205,10 @@ export function createObservationSession(runId) {
      * presentation state is owned by the component, not by this session.
      */
     terminal(forRunId) {
-      if (forRunId !== currentRunId || observedRunId !== forRunId) return null;
-      observedRunId = null;
+      if (forRunId !== currentRunId) return null;
+      passiveRunId = null;
+      if (ownedRunId !== forRunId) return null;
+      ownedRunId = null;
       return forRunId;
     },
 
@@ -196,9 +217,16 @@ export function createObservationSession(runId) {
      * first has released is not another lease.
      */
     release() {
-      const held = observedRunId;
-      observedRunId = null;
+      const held = ownedRunId;
+      ownedRunId = null;
+      passiveRunId = null;
       return held;
+    },
+
+    mode(forRunId) {
+      if (ownedRunId === forRunId) return "owned";
+      if (passiveRunId === forRunId) return "passive";
+      return "none";
     },
   };
 }

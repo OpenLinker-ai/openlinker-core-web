@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 import { RunEventStream } from "@/components/run/run-event-stream";
 import { BrowserHumanControl } from "@/components/run/browser-human-control";
-import { BrowserObservation } from "@/components/run/browser-observation";
+import { ConversationBrowserObservation } from "@/components/run/conversation-browser-observation";
 import { TaskCallbackSection } from "@/components/run/task-callback-section";
 import { AgentMarkdown } from "@/components/ui/agent-markdown";
 import { Icon } from "@/components/ui/icon";
@@ -268,7 +268,7 @@ export function RunDetail({
   const view = normalizeRun(run, locale);
   const success = view.status === "success";
   const delegated = view.billingMode === "free_delegation";
-  const browserRunning = view.status === "running" && Boolean(view.browserInteractionPolicy);
+  const hasBrowserWorkspace = Boolean(view.browserInteractionPolicy);
   const chip = statusChip(view.status, locale);
   const deliverySettingsHref =
     view.agentSlug || view.agentId
@@ -351,9 +351,14 @@ export function RunDetail({
         </div>
       </section>
 
-      {browserRunning ? (
+      {hasBrowserWorkspace ? (
         <section data-browser-workspace className="grid items-start gap-5 xl:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)]">
-          <BrowserObservation runId={view.id} locale={locale} enabled />
+          <ConversationBrowserObservation
+            anchorRunId={view.id}
+            anchorStatus={view.status}
+            anchorBrowserPolicy={view.browserInteractionPolicy}
+            locale={locale}
+          />
           <aside className="grid gap-4 xl:sticky xl:top-4">
             <RuntimeProgressPanel locale={locale} run={view} compact />
             {view.evidenceSummary ? <EvidenceSummaryPanel locale={locale} evidence={view.evidenceSummary} compact /> : null}

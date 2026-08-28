@@ -80,7 +80,7 @@ test("start waits for an owner-confirmed state and uses the session for start 40
   assert.ok(source.includes("const stateLoaded = state?.run_id === runId"));
   assert.ok(source.includes("disabled={working || !stateLoaded || preparing}"));
   assert.ok(source.includes('action === "start"'));
-  assert.ok(source.includes("cause.status === 403"));
+  assert.ok(source.includes('browserObservationFailureKind(cause) === "forbidden"'));
   assert.ok(source.includes("session.classifyStartForbidden(requestedRunId, now)"));
 });
 
@@ -172,4 +172,19 @@ test("terminal releases authority but retains the Run-keyed last frame", () => {
   );
   const runCleanup = source.slice(source.indexOf("// Moving between Runs."));
   assert.ok(runCleanup.includes("setFrame(null)"), "Run changes still clear the frame");
+});
+
+test("operation-aware capacity handling keeps frame and start failures distinct", () => {
+  assert.ok(source.includes('browserObservationFailureKind(cause) === "viewer-capacity"'));
+  assert.ok(source.includes("message: text.viewerCapacity"));
+  assert.ok(source.includes("browserObservationFrameCapacityRetryMS"));
+  assert.ok(source.includes('operation: action'));
+  assert.ok(source.includes('"hard-failure"'));
+});
+
+test("passive attachment has no lease-level stop control", () => {
+  assert.ok(source.includes('const passive = observed && leaseMode === "passive"'));
+  assert.ok(source.includes(': owned ? ('));
+  assert.ok(source.includes(': passive ? null : ('));
+  assert.ok(source.includes('browserObservationFailureKind(cause) === "conflict"'));
 });

@@ -21,6 +21,8 @@ export type ObservationStartForbidden =
 export type ObservationSession = {
   readonly currentRunId: string | null;
   readonly observedRunId: string | null;
+  readonly ownedRunId: string | null;
+  readonly passiveRunId: string | null;
   leave(): string | null;
   focus(nextRunId: string): void;
   accepts(forRunId: string): boolean;
@@ -30,6 +32,7 @@ export type ObservationSession = {
   ended(forRunId: string): void;
   terminal(forRunId: string): string | null;
   release(): string | null;
+  mode(forRunId: string): "owned" | "passive" | "none";
 };
 
 export function createObservationSession(runId: string): ObservationSession;
