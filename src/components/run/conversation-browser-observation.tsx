@@ -71,6 +71,7 @@ const copy = {
     waiting: "本轮已完成，等待下一轮",
     noFrame: "本页未捕获可保留画面",
     finalFrame: "本轮最终画面",
+    run: "运行",
     branched: "该会话出现多个后续分支，已停止自动跟随。",
     retry: "重试会话检查",
     chain: "查看 Agent 调用链",
@@ -95,6 +96,7 @@ const copy = {
     waiting: "This turn completed; waiting for the next turn",
     noFrame: "No retainable frame was captured on this page",
     finalFrame: "Turn-end frame",
+    run: "Run",
     branched: "This conversation has multiple successors. Automatic follow stopped.",
     retry: "Retry conversation check",
     chain: "View Agent call chain",
@@ -288,7 +290,12 @@ export function ConversationBrowserObservation({
           </div>
         ) : viewerSuppressed ? (
           <div className="grid gap-3">
-            <RetainedFrame snapshot={retainedDisplay} empty={text.noFrame} marker={text.finalFrame} />
+            <RetainedFrame
+              snapshot={retainedDisplay}
+              empty={text.noFrame}
+              marker={text.finalFrame}
+              runLabel={text.run}
+            />
             <button
               type="button"
               onClick={() => {
@@ -356,10 +363,12 @@ function RetainedFrame({
   snapshot,
   empty,
   marker,
+  runLabel,
 }: {
   snapshot: BrowserObservationSnapshot | null;
   empty: string;
   marker: string;
+  runLabel: string;
 }) {
   if (!snapshot) {
     return (
@@ -379,7 +388,7 @@ function RetainedFrame({
         className="h-full w-full select-none object-contain"
       />
       <span className="absolute left-3 top-3 rounded-full bg-[color:var(--ol-ink)]/82 px-2.5 py-1 text-[10.5px] font-black text-white">
-        {marker} · Run {shortRun(snapshot.runId)}
+        {marker} · {runLabel} {shortRun(snapshot.runId)}
       </span>
     </div>
   );
