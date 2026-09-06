@@ -7,12 +7,14 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
 import {
-  DEPENDENT_WAVE_ALLOWLIST,
+  dependentWaveAllowlistForProduct,
   REQUIRED_PAGE_BUDGETS,
 } from "./server-page-wave-budget.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const appRoot = join(root, "src/app");
+const { name: packageName } = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
+const dependentWaveAllowlist = dependentWaveAllowlistForProduct(packageName);
 
 async function pageFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -134,12 +136,38 @@ test("request-wave analysis catches a post-batch serial read without depending o
   assert.equal(regressed.waves, 2);
 });
 
-test("server pages keep independent Core reads within an explicit request-wave budget", async () => {
+test("Hosted ownership lookup permits two Playground waves without relaxing Core or other pages", () => {
+  const key = "src/app/(user)/playground/[slug]/page.tsx#PlaygroundPage";
+  const hosted = dependentWaveAllowlistForProduct("openlinker-web");
+  const core = dependentWaveAllowlistForProduct("openlinker-core-web");
+  const ownershipLookup = analyzeFixture(`async function PlaygroundPage() {
+    const agent = await fetchPlaygroundAgent(slug, token);
+    if (agent.visibility === "unlisted") return await apiFetch("/creator/agents/by-slug/slug");
+    return agent;
+  }`);
+
+  assert.equal(ownershipLookup.waves, 2);
+  assert.ok(ownershipLookup.waves <= (hosted.get(key) ?? 1));
+  assert.ok(ownershipLookup.waves > (core.get(key) ?? 1));
+  assert.equal(core.has(key), false, "Core must not inherit the Hosted dependency allowance");
+  assert.deepEqual(new Map([...hosted].filter(([path]) => path !== key)), core);
+  for (const allowlist of [hosted, core]) {
+    assert.equal(allowlist.get("src/app/other/page.tsx#OtherPage") ?? 1, 1);
+  }
+});
+
+test("request-wave product selection rejects missing and unknown package names", () => {
+  for (const packageName of [undefined, "", "openlinker-web-preview"]) {
+    assert.throws(() => dependentWaveAllowlistForProduct(packageName), /Unknown frontend product/);
+  }
+});
+
+test("server pages keep independent backend reads within an explicit request-wave budget", async () => {
   const analyses = await analyzePages();
   const failures = [];
 
   for (const [key, analysis] of analyses) {
-    const budget = REQUIRED_PAGE_BUDGETS.get(key) ?? DEPENDENT_WAVE_ALLOWLIST.get(key) ?? 1;
+    const budget = REQUIRED_PAGE_BUDGETS.get(key) ?? dependentWaveAllowlist.get(key) ?? 1;
     if (analysis.waves > budget) {
       const detail = analysis.requests
         .map((request) => `${request.name}@${request.line}:wave${request.wave}`)
@@ -154,7 +182,7 @@ test("server pages keep independent Core reads within an explicit request-wave b
     assert.ok(analyses.has(key), `required page budget target is missing: ${key}`);
     assert.ok(analyses.get(key).waves <= budget, `${key} exceeded its ${budget}-wave contract`);
   }
-  for (const [key, budget] of DEPENDENT_WAVE_ALLOWLIST) {
+  for (const [key, budget] of dependentWaveAllowlist) {
     assert.equal(analyses.get(key)?.waves, budget, `remove or update stale dependency allowlist: ${key}`);
   }
 });
