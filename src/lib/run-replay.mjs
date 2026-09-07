@@ -17,10 +17,3 @@ export function runReplayPlaygroundHref({
 function isPlainRecord(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
-
-export function runRecoveryState({ status, dispatch_state, can_replay }) {
-  if (["running", "pending"].includes(status) && dispatch_state === "retry_wait") return "retrying";
-  if (status === "failed" && dispatch_state === "dead_letter" && can_replay === true) return "replayable";
-  if (["failed", "timeout", "canceled"].includes(status)) return "terminal";
-  return "active";
-}
