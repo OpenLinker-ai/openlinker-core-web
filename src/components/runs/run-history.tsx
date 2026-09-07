@@ -205,6 +205,7 @@ function RunItemRow({ run, locale }: { run: Run; locale: Locale }) {
     : run.dispatch_state
       ? runDispatchStateLabel(run.dispatch_state, locale)
       : statusLabel;
+  const wrapProgress = !run.cancel_state && run.dispatch_state === "retry_wait";
   const subtitle =
     run.duration_ms != null
       ? `${run.agent_name} · ${progressLabel} · ${run.duration_ms}ms`
@@ -212,7 +213,11 @@ function RunItemRow({ run, locale }: { run: Run; locale: Locale }) {
   const sourceBadge = run.source ? SOURCE_BADGE[run.source] : undefined;
 
   return (
-    <div className="ol-item-row">
+    <div
+      className={`ol-item-row ${
+        wrapProgress ? "max-[980px]:grid-cols-[38px_minmax(0,1fr)] max-[980px]:items-start" : ""
+      }`}
+    >
       <div className="ol-dash-icon" style={{ background: avatar.color }}>
         {avatar.initials}
       </div>
@@ -233,16 +238,28 @@ function RunItemRow({ run, locale }: { run: Run; locale: Locale }) {
             </span>
           ) : null}
         </h4>
-        <p className="truncate">{subtitle}</p>
+        <p className={wrapProgress ? "whitespace-normal [overflow-wrap:anywhere]" : "truncate"}>
+          {subtitle}
+        </p>
       </div>
-      <div className="ol-ir-side flex flex-col items-end gap-1.5">
+      <div
+        className={`ol-ir-side flex flex-col items-end gap-1.5 ${
+          wrapProgress
+            ? "max-[980px]:col-start-2 max-[980px]:w-full max-[980px]:items-start max-[980px]:text-left"
+            : ""
+        }`}
+      >
         <div>
           <b>{formatCost(run, locale)}</b>
           <span className="ml-1 text-[12px] font-bold text-[color:var(--ol-muted)]">
             {formatRelative(run.started_at, locale)}
           </span>
         </div>
-        <div className="flex flex-wrap justify-end gap-1.5">
+        <div
+          className={`flex flex-wrap justify-end gap-1.5 ${
+            wrapProgress ? "max-[980px]:justify-start" : ""
+          }`}
+        >
           <Link
             href={`/run/${encodeURIComponent(run.id)}`}
             className="ol-mini-btn"

@@ -645,7 +645,13 @@ function RuntimeProgressPanel({
     <section className="ol-panel overflow-hidden">
       <div className="ol-panel-head">
         <strong>{copy.progress}</strong>
-        <span className={`ol-chip ${stateTone}`}>
+        <span
+          className={`ol-chip ${stateTone} ${
+            state === "retry_wait"
+              ? "h-auto min-h-6 max-w-full min-w-0 whitespace-normal [overflow-wrap:anywhere] leading-4 py-1"
+              : ""
+          }`}
+        >
           {runDispatchStateLabel(state, locale)}
         </span>
       </div>
