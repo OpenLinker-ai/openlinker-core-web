@@ -163,6 +163,18 @@ or `API_URL` to reach Core directly.
 random value in production; do not reuse Core's `JWT_SECRET`. If both frontend
 variables are set, keep their values identical.
 
+For local loopback Agent debugging, set `NEXT_PUBLIC_ALLOW_LOCAL_HTTP_ENDPOINTS=true`
+in Core Web's `.env.local` and `ALLOW_LOCAL_HTTP_ENDPOINTS=true` in Core, then
+restart the development services. This allows HTTP only for loopback addresses
+such as `localhost`, `127.0.0.1`, and `[::1]`, not arbitrary private-network HTTP
+endpoints. Keep both settings disabled in production.
+
+`NEXT_PUBLIC_ALLOW_LOCAL_HTTP_ENDPOINTS` is included in the browser bundle at
+build time. For a Docker deployment, rebuild Core Web with
+`--build-arg NEXT_PUBLIC_ALLOW_LOCAL_HTTP_ENDPOINTS=true` when local debugging is
+needed; changing only the running container's environment will not update form
+validation. Core must also have its backend setting enabled.
+
 ## Common Commands
 
 ```bash
@@ -181,7 +193,7 @@ npm run test:agent-library-card
 Build from the parent workspace root:
 
 ```bash
-docker build -f openlinker-core-web/Dockerfile.server -t openlinker-core-web .
+docker build -f openlinker-core-web/Dockerfile.server -t openlinker-core-web openlinker-core-web
 ```
 
 The container expects `API_URL` or `CORE_API_URL` to point at the Core API.
