@@ -49,6 +49,7 @@ export type RunDetailData = {
   cancel_acknowledged_at?: string | null;
   cancel_reason?: string | null;
   dead_lettered_at?: string | null;
+  can_replay?: boolean;
   replay_of_run_id?: string | null;
   runtime_contract_id?: string;
   runtime_transport?: string;
@@ -158,6 +159,7 @@ type ViewRun = {
   cancelAcknowledgedAt?: string;
   cancelReason?: string;
   deadLetteredAt?: string;
+  canReplay: boolean;
   replayOfRunId?: string;
   runtimeContractId?: string;
   runtimeTransport?: string;
@@ -201,6 +203,7 @@ function normalizeRun(run: RunDetailData, locale: Locale): ViewRun {
     cancelAcknowledgedAt: run.cancel_acknowledged_at ?? undefined,
     cancelReason: run.cancel_reason ?? undefined,
     deadLetteredAt: run.dead_lettered_at ?? undefined,
+    canReplay: run.can_replay === true,
     replayOfRunId: run.replay_of_run_id ?? undefined,
     runtimeContractId: run.runtime_contract_id,
     runtimeTransport: run.runtime_transport,
@@ -664,7 +667,9 @@ function RuntimeProgressPanel({
             <div className="mt-4 rounded-[14px] border border-amber-200 bg-amber-50 p-4">
               <strong className="text-[13px] font-black text-amber-950">{copy.deadLetterTitle}</strong>
               <p className="mt-1 text-[12.5px] leading-relaxed text-amber-900">{copy.deadLetterBody}</p>
-              <RunReplayButton locale={locale} sourceRunId={run.id} />
+              {run.canReplay && run.status === "failed" ? (
+                <RunReplayButton locale={locale} sourceRunId={run.id} />
+              ) : null}
             </div>
           ) : null}
           {run.cancelState ? (
