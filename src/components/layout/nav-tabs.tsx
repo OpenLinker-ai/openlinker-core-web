@@ -88,7 +88,7 @@ export function NavTabs({ className, locale = "zh" }: { className?: string; loca
             key={item.href}
             href={item.href}
             className={cn(isActive && "active")}
-            aria-current={isActive ? "page" : undefined}
+            aria-current={pathname === item.href ? "page" : undefined}
           >
             <span className="ol-nav-label">{item.label[locale]}</span>
             <NavPendingDot locale={locale} />
