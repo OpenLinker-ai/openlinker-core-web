@@ -489,6 +489,88 @@ export function PlaygroundRunner({
 
   return (
     <div className="grid gap-4 xl:h-full xl:min-h-0 xl:grid-cols-[minmax(0,11fr)_minmax(400px,9fr)] xl:grid-rows-[minmax(0,1fr)_auto]">
+      <section data-playground-composer className="ol-panel bg-white p-3.5 xl:col-start-1 xl:row-start-2">
+        <label className="block">
+          <span className="text-[11px] font-black uppercase tracking-[0.08em] text-[color:var(--ol-primary-dark)]">
+            {copy.inputTitle}
+          </span>
+          <textarea
+            ref={inputRef}
+            aria-label={copy.placeholder}
+            aria-invalid={inputError ? true : undefined}
+            aria-describedby={inputError ? "playground-input-error" : undefined}
+            value={input}
+            onChange={(event) => {
+              setInput(event.target.value);
+              if (inputError) setInputError("");
+            }}
+            spellCheck={false}
+            placeholder={copy.placeholder}
+            rows={2}
+            className="mt-2 min-h-[64px] max-h-[128px] w-full resize-none rounded-[14px] border border-[color:var(--ol-line)] bg-white px-3.5 py-2.5 text-[13px] leading-[1.6] text-[color:var(--ol-ink)] outline-none transition focus:border-[color:var(--ol-primary)] focus:ring-2 focus:ring-[color:var(--ol-primary)]/20"
+            onKeyDown={(event) => {
+              if (isPlaygroundSubmitKey({
+                key: event.key,
+                shiftKey: event.shiftKey,
+                isComposing: event.nativeEvent.isComposing,
+                keyCode: event.nativeEvent.keyCode,
+              })) {
+                event.preventDefault();
+                if (!running && !authLoading) void handleRun();
+              }
+            }}
+          />
+          {inputError ? (
+            <p id="playground-input-error" className="mt-2 text-[12px] font-bold text-[#a3382c]" role="alert">
+              {inputError}
+            </p>
+          ) : null}
+        </label>
+
+        <div className="mt-2.5 flex flex-wrap items-end justify-between gap-2.5">
+          <div className="min-w-0 text-[11.5px] font-extrabold leading-5 text-[color:var(--ol-muted)]">
+            <div>{copy.sendHint}</div>
+            <div className="truncate text-[color:var(--ol-subtle)]">
+              {copy.free} · {priceUSD ? copy.price(priceUSD) : copy.noReferencePrice}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/registry"
+              title={copy.composeTitle}
+              className="inline-flex h-[42px] items-center justify-center gap-2 rounded-[13px] border border-[color:var(--ol-line)] bg-white px-4 text-[13px] font-black text-[color:var(--ol-ink)] transition hover:bg-[color:var(--ol-soft)]"
+            >
+              <Icon name="folder" size="sm" />
+              {copy.compose}
+            </Link>
+            <button
+              type="button"
+              onClick={handleRun}
+              disabled={running || authLoading || input.trim().length === 0}
+              className="inline-flex h-[42px] items-center justify-center gap-2 rounded-[13px] border border-[color:var(--ol-primary)] bg-[color:var(--ol-primary)] px-4 text-[13px] font-black text-white transition-colors hover:bg-[color:var(--ol-primary-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {running ? (
+                <>
+                  <span
+                    aria-hidden
+                    className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent motion-reduce:animate-none"
+                  />
+                  {copy.running}
+                </>
+              ) : authLoading ? (
+                copy.syncing
+              ) : (
+                <>
+                  <Icon name="message" size="sm" />
+                  {copy.run}
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </section>
+
       <section className="ol-panel min-w-0 overflow-hidden xl:col-start-1 xl:row-start-1 xl:grid xl:h-full xl:min-h-0 xl:grid-rows-[auto_minmax(0,1fr)]">
         <div className="ol-panel-head">
           <div className="flex min-w-0 items-center gap-2">
@@ -596,87 +678,7 @@ export function PlaygroundRunner({
         <span data-playground-detail-rail-end aria-hidden="true" className="h-px" />
       </aside>
 
-      <section data-playground-composer className="ol-panel bg-white p-3.5 xl:col-start-1 xl:row-start-2">
-        <label className="block">
-          <span className="text-[11px] font-black uppercase tracking-[0.08em] text-[color:var(--ol-primary-dark)]">
-            {copy.inputTitle}
-          </span>
-          <textarea
-            ref={inputRef}
-            aria-label={copy.placeholder}
-            aria-invalid={inputError ? true : undefined}
-            aria-describedby={inputError ? "playground-input-error" : undefined}
-            value={input}
-            onChange={(event) => {
-              setInput(event.target.value);
-              if (inputError) setInputError("");
-            }}
-            spellCheck={false}
-            placeholder={copy.placeholder}
-            rows={2}
-            className="mt-2 min-h-[64px] max-h-[128px] w-full resize-none rounded-[14px] border border-[color:var(--ol-line)] bg-white px-3.5 py-2.5 text-[13px] leading-[1.6] text-[color:var(--ol-ink)] outline-none transition focus:border-[color:var(--ol-primary)] focus:ring-2 focus:ring-[color:var(--ol-primary)]/20"
-            onKeyDown={(event) => {
-              if (isPlaygroundSubmitKey({
-                key: event.key,
-                shiftKey: event.shiftKey,
-                isComposing: event.nativeEvent.isComposing,
-                keyCode: event.nativeEvent.keyCode,
-              })) {
-                event.preventDefault();
-                if (!running && !authLoading) void handleRun();
-              }
-            }}
-          />
-          {inputError ? (
-            <p id="playground-input-error" className="mt-2 text-[12px] font-bold text-[#a3382c]" role="alert">
-              {inputError}
-            </p>
-          ) : null}
-        </label>
 
-        <div className="mt-2.5 flex flex-wrap items-end justify-between gap-2.5">
-          <div className="min-w-0 text-[11.5px] font-extrabold leading-5 text-[color:var(--ol-muted)]">
-            <div>{copy.sendHint}</div>
-            <div className="truncate text-[color:var(--ol-subtle)]">
-              {copy.free} · {priceUSD ? copy.price(priceUSD) : copy.noReferencePrice}
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/registry"
-              title={copy.composeTitle}
-              className="inline-flex h-[42px] items-center justify-center gap-2 rounded-[13px] border border-[color:var(--ol-line)] bg-white px-4 text-[13px] font-black text-[color:var(--ol-ink)] transition hover:bg-[color:var(--ol-soft)]"
-            >
-              <Icon name="folder" size="sm" />
-              {copy.compose}
-            </Link>
-            <button
-              type="button"
-              onClick={handleRun}
-              disabled={running || authLoading || input.trim().length === 0}
-              className="inline-flex h-[42px] items-center justify-center gap-2 rounded-[13px] border border-[color:var(--ol-primary)] bg-[color:var(--ol-primary)] px-4 text-[13px] font-black text-white transition-colors hover:bg-[color:var(--ol-primary-dark)] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {running ? (
-                <>
-                  <span
-                    aria-hidden
-                    className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent motion-reduce:animate-none"
-                  />
-                  {copy.running}
-                </>
-              ) : authLoading ? (
-                copy.syncing
-              ) : (
-                <>
-                  <Icon name="message" size="sm" />
-                  {copy.run}
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

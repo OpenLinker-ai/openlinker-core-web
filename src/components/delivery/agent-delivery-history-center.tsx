@@ -17,6 +17,7 @@ type Props = {
   locale: Locale;
   agent: AgentResponse;
   items: DeliveryItem[];
+  loadError?: boolean;
   status?: string;
   runId?: string;
 };
@@ -27,6 +28,7 @@ export function AgentDeliveryHistoryCenter({
   locale,
   agent,
   items,
+  loadError = false,
   status = "",
   runId,
 }: Props) {
@@ -49,6 +51,8 @@ export function AgentDeliveryHistoryCenter({
           failed: "失败",
           empty: "当前筛选条件下没有通知投递历史。",
           total: "总数",
+          loadFailed: "通知投递历史加载失败，请重试。",
+          reload: "重新加载",
         }
       : {
           title: "Notification delivery history",
@@ -64,6 +68,8 @@ export function AgentDeliveryHistoryCenter({
           failed: "Failed",
           empty: "No notification delivery history matches this filter.",
           total: "Total",
+          loadFailed: "Could not load delivery history. Please retry.",
+          reload: "Reload",
         };
 
   const counts = {
@@ -117,12 +123,12 @@ export function AgentDeliveryHistoryCenter({
         </div>
       </section>
 
-      <section className="grid gap-3 md:grid-cols-4">
+      {!loadError ? <section className="grid gap-3 md:grid-cols-4">
         <MetricCard label={copy.total} value={items.length} />
         <MetricCard label={copy.pending} value={counts.pending} />
         <MetricCard label={copy.success} value={counts.success} />
         <MetricCard label={copy.failed} value={counts.failed} />
-      </section>
+      </section> : null}
 
       <section className="ol-panel overflow-hidden">
         <div className="ol-panel-head">
@@ -144,13 +150,18 @@ export function AgentDeliveryHistoryCenter({
           </div>
         </div>
         <div className="p-5">
-          <DeliveryHistoryList
+          {loadError ? (
+            <div role="alert" className="space-y-3 text-[13px] text-[color:var(--ol-muted)]">
+              <p>{copy.loadFailed}</p>
+              <button type="button" className="ol-mini-btn" onClick={() => router.refresh()}>{copy.reload}</button>
+            </div>
+          ) : <DeliveryHistoryList
             locale={locale}
             items={items}
             onRetry={retry}
             retryingId={retryingId}
             emptyText={copy.empty}
-          />
+          />}
         </div>
       </section>
     </div>

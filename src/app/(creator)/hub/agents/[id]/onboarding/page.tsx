@@ -28,7 +28,7 @@ interface CreatorAgent {
 }
 
 interface AgentDetailWithSkills {
-  skills?: OnboardingSkill[];
+  items?: OnboardingSkill[];
 }
 
 function toOnboardingAgent(agent: CreatorAgent): OnboardingAgent {
@@ -85,10 +85,10 @@ export default async function AgentOnboardingPage({
   ).catch(() => null);
 
   const skillsPromise = apiFetchAuthed<AgentDetailWithSkills>(
-    `/api/v1/agents/${encodeURIComponent(agent.slug)}`,
+    `/api/v1/creator/agents/${encodeURIComponent(agent.id)}/skills`,
   )
-    .then((r) => r.skills ?? [])
-    .catch(() => [] as OnboardingSkill[]);
+    .then((r) => r.items ?? [])
+    .catch((error) => rethrowCreatorAgentPageError(error, callbackUrl));
 
   const [onboarding, skills] = await Promise.all([onboardingPromise, skillsPromise]);
   if (!onboarding) {

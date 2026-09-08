@@ -29,6 +29,7 @@ export function DeliveryHistoryList({
     locale === "zh"
       ? {
           empty: "尚无投递历史",
+          deletedTarget: "目标已删除",
           attempt: (n: number) => `第 ${n} 次`,
           retrying: "重试中…",
           retry: "重试",
@@ -39,6 +40,7 @@ export function DeliveryHistoryList({
         }
       : {
           empty: "No delivery history yet",
+          deletedTarget: "Target deleted",
           attempt: (n: number) => `Attempt ${n}`,
           retrying: "Retrying…",
           retry: "Retry",
@@ -102,6 +104,7 @@ export function DeliveryHistoryList({
           </div>
           <div className="mt-1.5 truncate text-[11.5px] text-[color:var(--ol-muted)]">
             {delivery.target_url}
+            {!delivery.target_id ? <span className="ml-2">· {copy.deletedTarget}</span> : null}
           </div>
           {rawError ? (
             <div className="mt-1.5 rounded-md bg-[#fde7e7] px-2 py-1 text-[11.5px] text-[#7a1f1f]">
