@@ -49,6 +49,9 @@ jobs:
       - name: Check Core navigation route contract
         run: npm run test:core-navigation-routes
 
+      - name: Check Browser observation viewer
+        run: npm run test:browser-observation
+
       - name: Type check
         run: npx tsc --noEmit
 

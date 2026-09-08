@@ -44,8 +44,8 @@ test("the playground is an operate-and-observe workspace", async () => {
   assert.doesNotMatch(source, /xl:max-h-\[calc\(100vh/);
   assert.ok(summary >= 0 && observation > summary && events > observation);
   assert.ok(
-    composer > events,
-    "mobile DOM order must keep the Viewer and diagnostics before the composer",
+    composer >= 0 && composer < summary,
+    "mobile DOM order must expose the composer before the Viewer and diagnostics",
   );
   assert.doesNotMatch(
     source.slice(source.indexOf("function ActiveTurnSummary")),
