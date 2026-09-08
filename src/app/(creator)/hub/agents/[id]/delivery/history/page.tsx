@@ -4,7 +4,7 @@ import type { AgentResponse } from "@/components/agent/my-agents-card";
 import { AgentDeliveryHistoryCenter } from "@/components/delivery/agent-delivery-history-center";
 import type { DeliveryItem } from "@/components/delivery/types";
 import { Topbar } from "@/components/layout/topbar";
-import { apiFetchAuthed } from "@/lib/api";
+import { ApiError, apiFetchAuthed } from "@/lib/api";
 import { auth } from "@/lib/auth";
 import { fetchCreatorAgentByParam } from "@/lib/creator-agent";
 import { redirectCreatorAgentLogin, rethrowCreatorAgentPageError } from "@/lib/creator-agent-page";
@@ -67,8 +67,11 @@ export default async function AgentDeliveryHistoryPage({
   const deliveries = await apiFetchAuthed<DeliveryListResponse>(
     `/api/v1/deliveries?${query.toString()}`,
   )
-    .then((data) => data.items ?? [])
-    .catch(() => [] as DeliveryItem[]);
+    .then((data) => ({ items: data.items ?? [], loadError: false }))
+    .catch((error) => {
+      if (error instanceof ApiError && error.status === 401) redirectCreatorAgentLogin(callbackUrl);
+      return { items: [] as DeliveryItem[], loadError: true };
+    });
 
   return (
     <>
@@ -77,7 +80,8 @@ export default async function AgentDeliveryHistoryPage({
         <AgentDeliveryHistoryCenter
           locale={locale}
           agent={agent}
-          items={deliveries}
+          items={deliveries.items}
+          loadError={deliveries.loadError}
           status={status}
           runId={runId}
         />

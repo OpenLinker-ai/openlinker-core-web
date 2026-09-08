@@ -33,16 +33,19 @@ interface TopbarProps {
 
 interface MeResponse {
   is_admin?: boolean;
+  display_name?: string;
 }
 
 export async function Topbar({ rightSlot, contained = true, className }: TopbarProps) {
   const session = await auth();
   const locale = await getLocale();
   let isAdmin = false;
+  let profileName = session?.user?.name ?? null;
   if (session?.jwt) {
     try {
       const me = await apiFetch<MeResponse>("/api/v1/me", { token: session.jwt });
       isAdmin = Boolean(me.is_admin);
+      if (typeof me.display_name === "string") profileName = me.display_name;
     } catch {
       isAdmin = false;
     }
@@ -51,7 +54,7 @@ export async function Topbar({ rightSlot, contained = true, className }: TopbarP
   const right = rightSlot ?? (
     <DefaultRightSlot
       signedIn={Boolean(session)}
-      userName={session?.user?.name ?? null}
+      userName={profileName}
       userEmail={session?.user?.email ?? null}
       isAdmin={isAdmin}
       locale={locale}

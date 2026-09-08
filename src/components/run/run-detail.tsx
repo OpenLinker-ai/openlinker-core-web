@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { RunEventStream } from "@/components/run/run-event-stream";
@@ -12,6 +12,7 @@ import { TaskCallbackSection } from "@/components/run/task-callback-section";
 import { AgentMarkdown } from "@/components/ui/agent-markdown";
 import { Icon } from "@/components/ui/icon";
 import { useApi } from "@/hooks/use-api";
+import { watchRunStatus } from "@/lib/watch-run-status.mjs";
 import { localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
 import {
@@ -270,10 +271,8 @@ export function RunDetail({
   const delegated = view.billingMode === "free_delegation";
   const hasBrowserWorkspace = Boolean(view.browserInteractionPolicy);
   const chip = statusChip(view.status, locale);
-  const deliverySettingsHref =
-    view.agentSlug || view.agentId
-      ? `/hub/agents/${encodeURIComponent(view.agentSlug || view.agentId || "")}/delivery?run_id=${encodeURIComponent(view.id)}`
-      : `/connect?tab=delivery&run_id=${encodeURIComponent(view.id)}`;
+  // Delivery targets belong to the caller account, not to the Agent creator.
+  const deliverySettingsHref = `/connect?tab=delivery&run_id=${encodeURIComponent(view.id)}`;
   const externalDeliveryStatus = delegated
     ? copy.deliveryNoSeparate
     : copy.deliveryReview;
@@ -293,6 +292,9 @@ export function RunDetail({
 
   return (
     <div className="space-y-5">
+      {view.status === "running" ? (
+        <RunDetailLiveUpdates runId={view.id} status={view.status} />
+      ) : null}
       <section className="ol-panel overflow-hidden">
         <div className="grid items-center gap-4 p-4 sm:p-5 md:grid-cols-[minmax(0,1fr)_auto]">
           <div className="min-w-0">
@@ -1332,4 +1334,22 @@ function NextActionPanel({ locale, action }: { locale: Locale; action?: RunNextA
       ) : null}
     </div>
   );
+}
+
+function RunDetailLiveUpdates({ runId, status }: { runId: string; status: string }) {
+  const router = useRouter();
+  const { fetch: apiFetch, isAuthenticated } = useApi();
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const controller = new AbortController();
+    void watchRunStatus({
+      runId,
+      status,
+      signal: controller.signal,
+      fetchRun: (path, options) => apiFetch<{ status: string }>(path, options),
+      onChange: () => router.refresh(),
+    });
+    return () => controller.abort();
+  }, [apiFetch, isAuthenticated, router, runId, status]);
+  return null;
 }

@@ -24,7 +24,7 @@ interface CreatorAgent {
 }
 
 interface AgentDetailWithSkills {
-  skills?: DeclaredSkill[];
+  items?: DeclaredSkill[];
 }
 
 export default async function AgentBenchmarksPage({
@@ -81,10 +81,10 @@ export default async function AgentBenchmarksPage({
 
   // 已声明的 skill 列表（决定哪些可以跑 benchmark）
   const declaredPromise = apiFetchAuthed<AgentDetailWithSkills>(
-    `/api/v1/agents/${encodeURIComponent(agent.slug)}`,
+    `/api/v1/creator/agents/${encodeURIComponent(agent.id)}/skills`,
   )
-    .then((r) => r.skills ?? [])
-    .catch(() => [] as DeclaredSkill[]);
+    .then((r) => r.items ?? [])
+    .catch((error) => rethrowCreatorAgentPageError(error, callbackUrl));
 
   // 当前评分快照
   const scoresPromise = apiFetchAuthed<{ items: SkillScoreItem[] }>(

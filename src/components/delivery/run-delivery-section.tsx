@@ -88,6 +88,7 @@ export function RunDeliverySection({
   const { fetch: apiFetch, isAuthenticated } = useApi();
   const [targets, setTargets] = useState<DeliveryTarget[]>([]);
   const [deliveries, setDeliveries] = useState<DeliveryItem[]>([]);
+  const [historyError, setHistoryError] = useState(false);
   const [selectedId, setSelectedId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -117,7 +118,7 @@ export function RunDeliverySection({
             if (err instanceof ApiError && err.status !== 401) {
               toast.error(localizedErrorMessage(err, locale, copy.historyLoadFailed));
             }
-            return { items: [] as DeliveryItem[] };
+            return null;
           }),
         ]);
         if (cancelled) return;
@@ -125,7 +126,8 @@ export function RunDeliverySection({
         setTargets(items);
         const def = items.find((t) => t.is_default);
         setSelectedId((prev) => prev || def?.id || items[0]?.id || "");
-        setDeliveries(dRes?.items ?? []);
+        setHistoryError(dRes === null);
+        if (dRes !== null) setDeliveries(dRes?.items ?? []);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -142,7 +144,9 @@ export function RunDeliverySection({
         `/api/v1/runs/${encodeURIComponent(runId)}/deliveries`,
       );
       setDeliveries(data?.items ?? []);
+      setHistoryError(false);
     } catch (err) {
+      setHistoryError(true);
       if (err instanceof ApiError && err.status !== 401) {
         toast.error(localizedErrorMessage(err, locale, copy.historyLoadFailed));
       }
@@ -262,7 +266,14 @@ export function RunDeliverySection({
           </div>
         )}
 
-        {historyMode === "link" ? (
+        {historyError ? (
+          <div role="alert" className="rounded-xl bg-[color:var(--ol-soft)] p-4 text-sm">
+            {copy.historyLoadFailed}
+            <button type="button" onClick={reloadDeliveries} className="ml-3 font-bold underline">
+              {copy.refreshHistory}
+            </button>
+          </div>
+        ) : historyMode === "link" ? (
           <HistorySummary
             copy={copy}
             items={deliveries}
