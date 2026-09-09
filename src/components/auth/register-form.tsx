@@ -147,8 +147,8 @@ export function RegisterForm({ locale = "zh" }: { locale?: Locale }) {
         return;
       }
       toast.success(copy.success);
-      router.push(callbackUrl);
-      router.refresh();
+      // Complete automatic sign-in with the same single document navigation as login.
+      window.location.replace(callbackUrl);
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         form.setError("email", { message: copy.conflict });
