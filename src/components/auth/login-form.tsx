@@ -3,7 +3,7 @@
 /**
  * 登录表单。
  *
- * 流程：zod 校验 → next-auth signIn("credentials") → 成功 push 到首页 / callbackUrl。
+ * 流程：zod 校验 → next-auth signIn("credentials") → 成功返回 callbackUrl。
  * 错误：NextAuth credentials provider 失败时返回 res.error，统一显示"邮箱或密码错误"。
  */
 
@@ -42,6 +42,7 @@ type LoginValues = {
 export function LoginForm({ locale = "zh" }: { locale?: Locale }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const reauth = searchParams.get("reauth") === "1";
   const callbackUrl = safeAuthCallback(
     searchParams.get("callbackUrl") || searchParams.get("from"),
   );
@@ -85,6 +86,7 @@ export function LoginForm({ locale = "zh" }: { locale?: Locale }) {
         email: values.email,
         password: values.password,
         redirect: false,
+        redirectTo: callbackUrl,
       });
 
       if (!res || res.error) {
@@ -94,7 +96,7 @@ export function LoginForm({ locale = "zh" }: { locale?: Locale }) {
       }
 
       toast.success(copy.success);
-      router.push(callbackUrl);
+      router.replace(callbackUrl);
       router.refresh();
     } catch {
       setSubmitError(copy.failed);
@@ -166,7 +168,7 @@ export function LoginForm({ locale = "zh" }: { locale?: Locale }) {
         <div className="ol-auth-row justify-end">
           <span>
             {copy.registerPrompt}{" "}
-            <Link href={authHref("/register", callbackUrl)}>{copy.register}</Link>
+            <Link href={authHref("/register", callbackUrl, { reauth })}>{copy.register}</Link>
           </span>
         </div>
 

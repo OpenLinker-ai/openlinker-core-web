@@ -26,7 +26,7 @@ test("creator Agent lookup classifies 403/404 as unavailable and exposes 401", a
   assert.doesNotMatch(helper, /\.catch\(\(\) => null\)/);
 
   const boundary = await source("src/lib/creator-agent-page.ts");
-  assert.match(boundary, /redirect\(authHref\("\/login", callbackUrl\)\)/);
+  assert.match(boundary, /redirect\(authHref\("\/login", callbackUrl, \{ reauth: true \}\)\)/);
   assert.match(boundary, /isCreatorAgentUnauthorized\(error\)/);
   assert.match(boundary, /throw error/);
 });

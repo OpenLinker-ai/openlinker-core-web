@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 
 import { RunEventStream } from "@/components/run/run-event-stream";
@@ -38,6 +38,7 @@ import { summarizeOutputText } from "./output-summary";
 import { ResultPanel } from "./result-panel";
 import { RunTrace } from "./run-trace";
 import type { RunResult, RunStatus } from "./types";
+import { createPlaygroundSessionStore, playgroundSessionKey, type PlaygroundTurn } from "@/lib/playground-session";
 
 interface AgentInfo {
   id: string;
@@ -51,25 +52,13 @@ interface AgentInfo {
 
 interface Props {
   agent: AgentInfo;
+  userId?: string;
   prefill?: string;
   selectedExample?: Record<string, unknown>;
   examples?: { input_json: Record<string, unknown> }[];
   inputSchema?: Record<string, unknown>;
   autorun?: boolean;
   locale?: Locale;
-}
-
-interface PlaygroundTurn {
-  id: string;
-  sequence: number;
-  inputText: string;
-  inputPayload: unknown;
-  runInput: unknown;
-  status: RunStatus;
-  result: RunResult | null;
-  createdAt: string;
-  completedAt?: string;
-  errorMessage?: string;
 }
 
 const runWaitSeconds = 30;
@@ -82,6 +71,7 @@ function summarizeRunOutput(result: RunResult, locale: Locale): string {
 
 export function PlaygroundRunner({
   agent,
+  userId,
   prefill,
   selectedExample,
   examples = [],
@@ -103,7 +93,10 @@ export function PlaygroundRunner({
             failed: "调用失败",
             retry: "调用失败，请稍后再试",
             threadTitle: "会话记录",
-            threadLead: "每次发送都会保留输入、Agent 回复和对应的运行记录。",
+            threadLead: "仅保存在此浏览器，登出后仍保留；同一 Agent 多标签页以最后保存为准。",
+            newConversation: "新会话",
+            storageUnavailable: "浏览器未能保存会话，刷新可能丢失草稿；已提交的调用仍可在运行记录中查看。",
+            retrySubmission: "重试提交",
             turnCount: (count: number) => `${count} 轮`,
             inputTitle: "继续对话",
             composeTitle: "浏览并选择其他 Agent",
@@ -143,7 +136,10 @@ export function PlaygroundRunner({
             failed: "Run failed",
             retry: "Run failed. Try again later.",
             threadTitle: "Conversation history",
-            threadLead: "Each send keeps the input, Agent response, and linked run record together.",
+            threadLead: "Saved in this browser, including after sign-out. For the same Agent, the last tab to save wins.",
+            newConversation: "New chat",
+            storageUnavailable: "This browser could not save the conversation. Drafts may be lost on refresh; submitted calls remain in run history.",
+            retrySubmission: "Retry submission",
             turnCount: (count: number) => `${count} turns`,
             inputTitle: "Continue",
             composeTitle: "Browse Registry to choose another Agent",
@@ -180,17 +176,25 @@ export function PlaygroundRunner({
     isAuthenticated,
     isLoading: authLoading,
   } = useApi();
-  const [input, setInput] = useState<string>(() =>
-    playgroundInitialDraft({ prefill, selectedExample, examples, inputSchema, locale }),
+  const [sessionStore] = useState(() => createPlaygroundSessionStore(
+    playgroundSessionKey(userId, agent.id),
+    { input: playgroundInitialDraft({ prefill, selectedExample, examples, inputSchema, locale }), conversationID: localID("conversation"), seed: JSON.stringify([prefill ?? null, selectedExample ?? null]) },
+  ));
+  const { input, turns, activeTurnId, conversationID, ready: restored, storageError, autorunConsumed } = useSyncExternalStore(
+    sessionStore.subscribe, sessionStore.getSnapshot, sessionStore.getServerSnapshot,
   );
+  const setInput = useCallback((change: string | ((current: string) => string)) => {
+    sessionStore.update((state) => ({ input: typeof change === "function" ? change(state.input) : change }));
+  }, [sessionStore]);
+  const setTurns = useCallback((change: (items: PlaygroundTurn[]) => PlaygroundTurn[]) => {
+    sessionStore.update((state) => ({ turns: change(state.turns) }));
+  }, [sessionStore]);
+  const setActiveTurnId = (id: string) => sessionStore.update({ activeTurnId: id });
   const [inputError, setInputError] = useState("");
-  const [turns, setTurns] = useState<PlaygroundTurn[]>([]);
-  const [activeTurnId, setActiveTurnId] = useState("");
   const autoRunStarted = useRef(false);
   const creationInFlight = useRef(false);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
-  const [conversationID] = useState(() => localID("conversation"));
   const [browserObservationFollow, setBrowserObservationCoordinator] = useState(() =>
     createBrowserObservationCoordinator(conversationID),
   );
@@ -250,6 +254,7 @@ export function PlaygroundRunner({
     : null;
 
   const handleRun = useCallback(async () => {
+    if (!restored || running) return;
     if (authLoading) {
       toast.message(copy.authLoading);
       return;
@@ -303,63 +308,32 @@ export function PlaygroundRunner({
         status: "running",
         result: null,
         createdAt: now,
+        request: {
+          idempotencyKey: intent.idempotencyKey,
+          body: {
+              agent_id: agent.id,
+              input: runInput,
+              a2a_context: playgroundA2AContext(
+                conversationID,
+                turnId,
+                predecessor,
+              ),
+              metadata: {
+                ...requestMetadata,
+                intent_id: turnId,
+              },
+            },
+        },
       };
-
-      setTurns((items) =>
-        items.some((item) => item.id === turnId)
-          ? items.map((item) => (item.id === turnId ? turn : item))
-          : [...items, turn],
-      );
-      setActiveTurnId(turnId);
-      setInput("");
+      sessionStore.update((state) => ({
+        turns: state.turns.some((item) => item.id === turnId)
+          ? state.turns.map((item) => item.id === turnId ? turn : item)
+          : [...state.turns, turn],
+        activeTurnId: turnId,
+        autorunConsumed: true,
+        input: "",
+      }));
       requestAnimationFrame(() => inputRef.current?.focus());
-
-      const runData = await apiFetch<RunResult>("/api/v1/runs", {
-        method: "POST",
-        headers: {
-          "Idempotency-Key": intent.idempotencyKey,
-          Prefer: "wait=0",
-        },
-        body: {
-          agent_id: agent.id,
-          input: runInput,
-          a2a_context: playgroundA2AContext(
-            conversationID,
-            turnId,
-            predecessor,
-          ),
-          metadata: {
-            ...requestMetadata,
-            intent_id: turnId,
-          },
-        },
-      });
-      if (runData.run_id) {
-        completeRunCreationIntent(agent.id, intent.intentId);
-      }
-      const nextStatus = runStatusFromResult(runData);
-      setTurns((items) =>
-        items.map((item) =>
-          item.id === turnId
-            ? {
-                ...item,
-                status: nextStatus,
-                result: runData,
-                completedAt:
-                  nextStatus === "running" ? item.completedAt : new Date().toISOString(),
-              }
-            : item,
-        ),
-      );
-
-      if (runData.status === "running") {
-        toast.success(copy.runStarted);
-      } else if (runData.status === "success") {
-        toast.success(copy.success(runData.duration_ms));
-      } else {
-        const verb = runData.status === "canceled" ? copy.canceled : copy.failed;
-        toast.error(`${verb}: ${runErrorMessage(runData.error_code, runData.error_message, locale)}`);
-      }
     } catch (error) {
       const message = errorMessage(error, locale, copy.retry);
       setInputError(message);
@@ -382,7 +356,6 @@ export function PlaygroundRunner({
     }
   }, [
     agent.id,
-    apiFetch,
     authLoading,
     copy,
     conversationID,
@@ -391,10 +364,82 @@ export function PlaygroundRunner({
     locale,
     inputSchema,
     turns,
+    restored,
+    running,
+    sessionStore,
+    setInput,
+    setTurns,
   ]);
 
+  const pendingTurn = turns.find((turn) => turn.status === "running" && !turn.result && turn.request);
   useEffect(() => {
-    if (!pollingTurnId || !pollingRunId) return;
+    if (!restored || authLoading || !isAuthenticated || !pendingTurn?.request) return;
+    const turn = pendingTurn;
+    const request = pendingTurn.request;
+    const turnId = turn.id;
+    const controller = new AbortController();
+    const intentScope = agent.id;
+    const abortOnPageHide = () => controller.abort();
+    window.addEventListener("pagehide", abortOnPageHide);
+    async function submit() {
+      try {
+        const runPath = "/api/v1/runs";
+        const data = await apiFetch<RunResult>(runPath, {
+          method: "POST",
+          headers: { "Idempotency-Key": request.idempotencyKey, Prefer: "wait=0" },
+          body: request.body,
+          signal: controller.signal,
+        });
+        if (controller.signal.aborted) return;
+        const runData = data;
+        if (runData.run_id) {
+          completeRunCreationIntent(intentScope, turn.id);
+        }
+        const nextStatus = runStatusFromResult(runData);
+        setTurns((items) =>
+          items.map((item) =>
+            item.id === turnId
+              ? {
+                  ...item,
+                  status: nextStatus,
+                  result: runData,
+                  request: undefined,
+                  resumeOnReload: undefined,
+                  completedAt:
+                    nextStatus === "running" ? item.completedAt : new Date().toISOString(),
+                }
+              : item,
+          ),
+        );
+
+        if (runData.status === "running") {
+          toast.success(copy.runStarted);
+        } else if (runData.status === "success") {
+          toast.success(copy.success(runData.duration_ms));
+        } else {
+          const verb = runData.status === "canceled" ? copy.canceled : copy.failed;
+          toast.error(`${verb}: ${runErrorMessage(runData.error_code, runData.error_message, locale)}`);
+        }
+
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        const message = errorMessage(error, locale, copy.retry);
+        setTurns((items) => items.map((item) => item.id === turnId
+          ? { ...item, status: "failed", errorMessage: message, completedAt: new Date().toISOString(),
+              resumeOnReload: !(error instanceof ApiError) || [401, 408, 429].includes(error.status) || error.status >= 500 }
+          : item));
+        toast.error(message);
+      }
+    }
+    void submit();
+    return () => {
+      window.removeEventListener("pagehide", abortOnPageHide);
+      controller.abort();
+    };
+  }, [agent.id, apiFetch, authLoading, copy, isAuthenticated, locale, pendingTurn, restored, setTurns]);
+
+  useEffect(() => {
+    if (!restored || authLoading || !isAuthenticated || !pollingTurnId || !pollingRunId) return;
     const turnId = pollingTurnId;
     const runId = pollingRunId;
 
@@ -452,8 +497,13 @@ export function PlaygroundRunner({
 
         const verb = latest.status === "canceled" ? copy.canceled : copy.failed;
         toast.error(`${verb}: ${runErrorMessage(latest.error_code, latest.error_message, locale)}`);
-      } catch {
+      } catch (error) {
         if (stopped || controller.signal.aborted) return;
+        if (error instanceof ApiError && error.status === 401) return; // Sign-in will resume this Run.
+        if (error instanceof ApiError && [403, 404].includes(error.status)) {
+          setTurns((items) => items.map((item) => item.id === turnId ? { ...item, status: "failed", errorMessage: errorMessage(error, locale, copy.retry) } : item));
+          return;
+        }
         const delay = waitRetryDelaysMs[Math.min(retryIndex, waitRetryDelaysMs.length - 1)];
         retryIndex += 1;
         schedule(delay);
@@ -467,11 +517,13 @@ export function PlaygroundRunner({
       controller?.abort();
       if (timer) clearTimeout(timer);
     };
-  }, [apiFetch, copy, locale, pollingRunId, pollingTurnId]);
+  }, [apiFetch, authLoading, copy, isAuthenticated, locale, pollingRunId, pollingTurnId, restored, setTurns]);
 
   useEffect(() => {
     if (
+      !restored ||
       !autorun ||
+      autorunConsumed ||
       autoRunStarted.current ||
       turns.length > 0 ||
       authLoading ||
@@ -481,7 +533,7 @@ export function PlaygroundRunner({
     }
     autoRunStarted.current = true;
     void handleRun();
-  }, [authLoading, autorun, handleRun, isAuthenticated, turns.length]);
+  }, [authLoading, autorun, autorunConsumed, handleRun, isAuthenticated, restored, turns.length]);
 
   useEffect(() => {
     scrollConversationEnd(threadEndRef.current);
@@ -496,6 +548,7 @@ export function PlaygroundRunner({
           </span>
           <textarea
             ref={inputRef}
+            disabled={!restored}
             aria-label={copy.placeholder}
             aria-invalid={inputError ? true : undefined}
             aria-describedby={inputError ? "playground-input-error" : undefined}
@@ -527,6 +580,14 @@ export function PlaygroundRunner({
           ) : null}
         </label>
 
+        {storageError && <p role="status" className="mt-2 text-[12px] text-[color:var(--ol-amber)]">{copy.storageUnavailable}</p>}
+        {turns.filter((turn) => turn.status === "failed" && turn.request).map((turn) => (
+          <button key={turn.id} type="button" className="ol-mini-btn mt-2" disabled={running || authLoading}
+            onClick={() => setTurns((items) => items.map((item) => item.id === turn.id
+              ? { ...item, status: "running", errorMessage: undefined, completedAt: undefined } : item))}>
+            {copy.retrySubmission} · {copy.selectedTurn(turn.sequence)}
+          </button>
+        ))}
         <div className="mt-2.5 flex flex-wrap items-end justify-between gap-2.5">
           <div className="min-w-0 text-[11.5px] font-extrabold leading-5 text-[color:var(--ol-muted)]">
             <div>{copy.sendHint}</div>
@@ -547,7 +608,7 @@ export function PlaygroundRunner({
             <button
               type="button"
               onClick={handleRun}
-              disabled={running || authLoading || input.trim().length === 0}
+              disabled={!restored || running || authLoading || input.trim().length === 0}
               className="inline-flex h-[42px] items-center justify-center gap-2 rounded-[13px] border border-[color:var(--ol-primary)] bg-[color:var(--ol-primary)] px-4 text-[13px] font-black text-white transition-colors hover:bg-[color:var(--ol-primary-dark)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {running ? (
@@ -584,6 +645,13 @@ export function PlaygroundRunner({
               <Icon name="bot" size="sm" />
               <span className="max-w-44 truncate">{agent.name}</span>
             </span>
+            <button type="button" className="ol-mini-btn shrink-0" disabled={!restored || running}
+              onClick={() => {
+                autoRunStarted.current = true;
+                sessionStore.update({ input: "", turns: [], activeTurnId: "", autorunConsumed: true, conversationID: localID("conversation") });
+                setInputError("");
+                inputRef.current?.focus();
+              }}>{copy.newConversation}</button>
             <span className="ol-chip ol-chip-blue shrink-0">
               {copy.turnCount(turns.length)}
             </span>
@@ -979,11 +1047,11 @@ function assistantTextForTurn(
       ? runDispatchStateLabel(turn.result.dispatch_state, locale)
       : pendingText;
   }
+  if (turn.errorMessage) return turn.errorMessage;
   if (turn.result?.status === "success") return summarizeRunOutput(turn.result, locale);
   if (turn.result) {
     return runErrorMessage(turn.result.error_code, turn.result.error_message, locale);
   }
-  if (turn.errorMessage) return turn.errorMessage;
   return pendingText;
 }
 

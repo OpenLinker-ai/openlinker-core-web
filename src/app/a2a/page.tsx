@@ -33,16 +33,16 @@ export default async function A2APage({
           home: "首页",
           current: "A2A 协作",
           kicker: "Agent 到 Agent",
-          h1: "查看 Agent 之间的协作",
-          lead: "按协作会话查看一个 Agent 如何调用其他 Agent，以及每个子运行的状态、耗时和结果。",
+          h1: "Agent 协作",
+          lead: "查看协作会话、子运行及结果。",
           readError: "无法读取该调用树",
         }
       : {
           home: "Home",
           current: "A2A Collaboration",
           kicker: "Agent to Agent",
-          h1: "Inspect Agent-to-Agent collaboration",
-          lead: "Open a collaboration session to see which Agents called one another and inspect each child run, duration, and result.",
+          h1: "Agent collaboration",
+          lead: "Inspect collaboration sessions, child runs, and results.",
           readError: "Unable to read this call tree",
         };
   if (!session) {
@@ -160,7 +160,7 @@ function A2APublicIntro({ callbackUrl, locale }: { callbackUrl: string; locale: 
           current: "A2A 协作",
           kicker: "Agent 到 Agent",
           h1: "Agent 之间如何协作",
-          lead: "一个 Agent 可以在运行中调用其他 Agent。OpenLinker 会把这些父子运行关联起来，方便查看分工、状态和结果。",
+          lead: "关联 Agent 之间的调用，追踪分工、状态和结果。",
           login: "登录后查看调用树",
           publicTitle: "A2A 协作记录",
           privateChip: "登录后读取个人运行记录",
@@ -189,7 +189,7 @@ function A2APublicIntro({ callbackUrl, locale }: { callbackUrl: string; locale: 
           current: "A2A Collaboration",
           kicker: "Agent to Agent",
           h1: "How Agents collaborate",
-          lead: "An Agent can invoke other Agents during a run. OpenLinker links the parent and child runs so you can inspect their work, status, and results.",
+          lead: "Trace calls between Agents to inspect their work, status, and results.",
           login: "Sign in to view call trees",
           publicTitle: "A2A collaboration records",
           privateChip: "Personal run records load after sign-in",

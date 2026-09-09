@@ -71,6 +71,7 @@ type RegisterResponse = {
 export function RegisterForm({ locale = "zh" }: { locale?: Locale }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const reauth = searchParams.get("reauth") === "1";
   const callbackUrl = safeAuthCallback(
     searchParams.get("callbackUrl") || searchParams.get("from"),
   );
@@ -141,7 +142,7 @@ export function RegisterForm({ locale = "zh" }: { locale?: Locale }) {
       });
       if (!res || res.error) {
         toast.success(copy.signinFailed);
-        router.push(authHref("/login", callbackUrl));
+        router.push(authHref("/login", callbackUrl, { reauth }));
         router.refresh();
         return;
       }
@@ -265,7 +266,7 @@ export function RegisterForm({ locale = "zh" }: { locale?: Locale }) {
 
         <div className="ol-auth-row">
           <span>{copy.hasAccount}</span>
-          <Link href={authHref("/login", callbackUrl)}>{copy.login}</Link>
+          <Link href={authHref("/login", callbackUrl, { reauth })}>{copy.login}</Link>
         </div>
       </form>
     </Form>

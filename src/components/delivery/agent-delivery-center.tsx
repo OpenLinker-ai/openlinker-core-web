@@ -89,13 +89,13 @@ export function AgentDeliveryCenter({
   return (
     <div className="space-y-6">
       <section>
-        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_auto]">
-          <div>
+        <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="ol-page-title">
             <div className="ol-kicker">{copy.kicker}</div>
-            <h1 className="mt-2 text-[30px] font-[900] leading-tight text-[color:var(--ol-ink)]">
+            <h1>
               {agent.name} · {copy.title}
             </h1>
-            <p className="mt-3 max-w-3xl text-[14px] leading-relaxed text-[color:var(--ol-muted)]">
+            <p>
               {copy.subtitle}
             </p>
           </div>

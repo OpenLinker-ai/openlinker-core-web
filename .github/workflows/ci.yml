@@ -52,6 +52,9 @@ jobs:
       - name: Check Browser observation viewer
         run: npm run test:browser-observation
 
+      - name: Check sign-in return paths and Playground persistence
+        run: node --test scripts/auth-return-path.test.mjs scripts/playground-session.test.mjs scripts/playground-interaction.test.mjs
+
       - name: Type check
         run: npx tsc --noEmit
 

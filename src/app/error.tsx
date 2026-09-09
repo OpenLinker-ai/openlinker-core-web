@@ -1,5 +1,7 @@
 "use client";
 
+import { AuthLink } from "@/components/auth/auth-link";
+
 import Link from "next/link";
 import { useEffect } from "react";
 
@@ -53,12 +55,12 @@ export default function Error({
             <NavTabs locale={locale} />
           </div>
           <div className="ol-topbar-actions flex shrink-0 items-center gap-2 sm:gap-3">
-            <Link
+            <AuthLink
               href="/login"
               className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-xl bg-[color:var(--ol-primary)] px-3 text-[12px] font-bold text-white shadow-sm hover:bg-[color:var(--ol-primary-dark)] sm:px-4 sm:text-[13px]"
             >
               {copy.signIn}
-            </Link>
+            </AuthLink>
           </div>
         </div>
         <div className="overflow-x-auto border-t border-[color:var(--ol-line)]/60 px-4 pb-3 pt-2 md:hidden">
