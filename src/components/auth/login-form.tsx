@@ -10,7 +10,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -40,7 +40,6 @@ type LoginValues = {
 };
 
 export function LoginForm({ locale = "zh" }: { locale?: Locale }) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const reauth = searchParams.get("reauth") === "1";
   const callbackUrl = safeAuthCallback(
@@ -96,8 +95,9 @@ export function LoginForm({ locale = "zh" }: { locale?: Locale }) {
       }
 
       toast.success(copy.success);
-      router.replace(callbackUrl);
-      router.refresh();
+      // Reload the authenticated document once. Refreshing the login route while
+      // its client navigation is pending can race the signed-in proxy redirect.
+      window.location.replace(callbackUrl);
     } catch {
       setSubmitError(copy.failed);
       toast.error(copy.failed);
