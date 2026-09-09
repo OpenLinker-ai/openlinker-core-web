@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../styles/page-header.css";
 
 html {
   overflow-y: scroll;
@@ -636,7 +637,11 @@ body > main {
   main.mx-auto {
     width: 100% !important;
     max-width: 96rem !important;
-    padding: 32px 1.5rem 64px !important;
+    padding: 24px 1.5rem 48px !important;
+  }
+
+  @media (max-width: 767px) {
+    main.mx-auto { padding: 16px 1rem 40px !important; }
   }
 
   main.mx-auto > :first-child {
@@ -732,64 +737,6 @@ body > main {
   /* ============================================================
      Registry 页原型组件
      ============================================================ */
-
-  /* page-head: kicker + h1 + 副标题 + 右侧搜索框 */
-  .ol-page-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 18px 22px;
-    flex-wrap: wrap;
-    margin-top: 24px;
-  }
-
-  .ol-page-title {
-    flex: 1 1 420px;
-    min-width: 0;
-    max-width: min(760px, 100%);
-  }
-
-  .ol-page-title h1 {
-    margin-top: 8px;
-    font-size: 36px;
-    line-height: 1.15;
-    font-weight: 900;
-    color: var(--ol-ink);
-  }
-
-  .ol-page-title p {
-    max-width: 720px;
-    margin-top: 10px;
-    color: var(--ol-muted);
-    font-size: 15px;
-    line-height: 1.55;
-  }
-
-  .ol-page-head > :not(.ol-page-title) {
-    flex: 0 0 auto;
-  }
-
-  .ol-settings-head .ol-page-title {
-    flex-basis: auto;
-  }
-
-  @media (max-width: 820px) {
-    .ol-page-head {
-      align-items: stretch;
-      flex-direction: column;
-      margin-top: 32px;
-    }
-
-    .ol-page-head .ol-search {
-      width: 100%;
-    }
-
-    .ol-page-head > a,
-    .ol-page-head > button {
-      width: 100%;
-      justify-content: center;
-    }
-  }
 
   /* 搜索框（page-head 右侧） */
   .ol-search {

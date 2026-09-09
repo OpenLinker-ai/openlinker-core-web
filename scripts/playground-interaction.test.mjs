@@ -70,7 +70,7 @@ test("playground creates immediately, retains long-wait final sync, and fits des
     path.join(root, "src/app/(user)/playground/[slug]/page.tsx"),
     "utf8",
   );
-  assert.match(runner, /"Idempotency-Key": intent\.idempotencyKey,[\s\S]{0,120}Prefer: "wait=0"/);
+  assert.match(runner, /"Idempotency-Key": request\.idempotencyKey,[\s\S]{0,120}Prefer: "wait=0"/);
   assert.match(runner, /headers: \{ Prefer: `wait=\$\{runWaitSeconds\}` \}/);
   assert.match(runner, /<RunEventStream[\s\S]{0,180}runId=\{activeResult\.run_id\}[\s\S]{0,80}enabled/);
   assert.match(runner, /xl:grid-rows-\[minmax\(0,1fr\)_auto\]/);

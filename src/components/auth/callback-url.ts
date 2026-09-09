@@ -21,13 +21,34 @@ export function safeAuthCallback(raw: string | null | undefined): string {
   if (!normalized.startsWith("/") || /^\/[\\/]/.test(normalized)) {
     return "/";
   }
+  // Do not return to authentication pages or endpoints (including normalized aliases).
+  try {
+    const url = new URL(normalized, "https://openlinker.invalid");
+    if (url.origin !== "https://openlinker.invalid" || isAuthPath(decodeURIComponent(url.pathname))) return "/";
+  } catch {
+    return "/";
+  }
   return normalized;
 }
 
-export function authHref(path: string, callbackUrl: string): string {
-  const safeCallback = safeAuthCallback(callbackUrl);
-  if (safeCallback === "/") {
-    return path;
+function isAuthPath(pathname: string): boolean {
+  return /^\/(?:login|register|forgot-password|auth|api\/auth)(?:\/|$)/.test(pathname);
+}
+
+export function authReturnPath(pathname: string, search = "", hash = ""): string {
+  const params = new URLSearchParams(search);
+  if (isAuthPath(pathname)) {
+    return safeAuthCallback(params.get("callbackUrl") || params.get("from"));
   }
-  return `${path}?${new URLSearchParams({ callbackUrl: safeCallback })}`;
+  const query = params.toString();
+  return safeAuthCallback(`${pathname}${query ? `?${query}` : ""}${hash}`);
+}
+
+export function authHref(path: string, callbackUrl: string, { reauth = false }: { reauth?: boolean } = {}): string {
+  const safeCallback = safeAuthCallback(callbackUrl);
+  const params = new URLSearchParams();
+  if (safeCallback !== "/") params.set("callbackUrl", safeCallback);
+  // This belongs to the authentication flow, never to the destination URL.
+  if (reauth) params.set("reauth", "1");
+  return params.size ? `${path}?${params}` : path;
 }

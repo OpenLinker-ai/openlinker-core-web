@@ -1,0 +1,50 @@
+/* Shared compact page headings. Content wraps naturally; actions remain accessible. */
+@layer components {
+  .ol-page-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px 20px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+
+  .ol-page-title {
+    display: grid;
+    gap: 4px;
+    flex: 1 1 420px;
+    min-width: 0;
+    max-width: min(760px, 100%);
+  }
+
+  .ol-page-title > .ol-kicker { line-height: 16px; }
+
+  .ol-page-title h1 {
+    margin: 0;
+    font-size: 28px;
+    line-height: 1.25;
+    font-weight: 900;
+    color: var(--ol-ink);
+    overflow-wrap: anywhere;
+  }
+
+  .ol-page-title p {
+    max-width: 720px;
+    margin: 0;
+    color: var(--ol-muted);
+    font-size: 14px;
+    line-height: 20px;
+    overflow-wrap: anywhere;
+  }
+
+  .ol-page-head > :not(.ol-page-title) { flex: 0 0 auto; }
+  .ol-settings-head .ol-page-title { flex-basis: auto; }
+
+  @media (max-width: 820px) {
+    .ol-page-head { align-items: stretch; flex-direction: column; }
+    .ol-page-head .ol-page-title { flex-basis: auto; }
+    .ol-page-title h1 { font-size: 24px; line-height: 30px; }
+    .ol-page-head .ol-search { width: 100%; }
+    .ol-page-head > a, .ol-page-head > button { width: 100%; justify-content: center; }
+  }
+}

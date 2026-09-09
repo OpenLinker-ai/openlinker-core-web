@@ -61,12 +61,12 @@ export default async function SettingsPage({
     locale === "zh"
       ? {
           kicker: "设置",
-          heading: "账户、安全与通知",
+          heading: "账户设置",
           lead: "管理登录资料、密码、站内告警和运行投递/回调入口。Agent Token 在接入 Agent 流程和 Agent 管理中签发与吊销。",
         }
       : {
           kicker: "settings",
-          heading: "Account, Security, and Notifications",
+          heading: "Account settings",
           lead: "Manage profile details, password, in-app alerts, and run delivery/callback entry points. Issue and revoke Agent Tokens from the Connect Agent flow or Agent Console.",
         };
 

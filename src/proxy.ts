@@ -3,13 +3,14 @@
  *
  * 鉴权拦截：
  *   - 未登录访问 protected 路由组（/my /usage /runs /publish /hub /settings /playground /inbox /run /admin）
- *     → 跳 /login?callbackUrl=<原 path>，登录成功后由登录页 router.push(callbackUrl || "/")
- *   - 已登录访问 /login → 跳首页
+ *     → 跳 /login?callbackUrl=<原 path>，登录成功后由登录页 router.replace(callbackUrl || "/")
+ *   - 已登录访问 /login → 返回安全的 callbackUrl
  *
  * Next.js 16 强制 proxy 跑在 nodejs runtime，所以 NextAuth `auth()` 可以直接用。
  * 不需要 edge-safe 拆分。
  */
 
+import { safeAuthCallback } from "@/components/auth/callback-url";
 import { auth } from "@/lib/auth";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -43,15 +44,15 @@ export async function proxy(req: NextRequest) {
   if (isProtected && !signedIn) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
+    url.search = "";
     url.searchParams.set("callbackUrl", `${pathname}${req.nextUrl.search}`);
     return NextResponse.redirect(url);
   }
 
-  if (isAuthPage && signedIn) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/";
-    url.search = "";
-    return NextResponse.redirect(url);
+  // A Core 401 may require signing in again even before the session expires.
+  if (isAuthPage && signedIn && req.nextUrl.searchParams.get("reauth") !== "1") {
+    const callback = safeAuthCallback(req.nextUrl.searchParams.get("callbackUrl") || req.nextUrl.searchParams.get("from"));
+    return NextResponse.redirect(new URL(callback, req.nextUrl.origin));
   }
 
   return NextResponse.next();

@@ -1,3 +1,4 @@
+import { AuthLink } from "@/components/auth/auth-link";
 /**
  * <Topbar /> —— 顶部统一导航栏。
  *
@@ -11,7 +12,6 @@
  * 不接受 children；如需自定义右侧，传 rightSlot。
  */
 
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { auth } from "@/lib/auth";
 import { apiFetch } from "@/lib/api";
@@ -111,12 +111,12 @@ function DefaultRightSlot({
 }) {
   if (!signedIn) {
     return (
-      <Link
+      <AuthLink
         href="/login"
         className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-xl bg-[color:var(--ol-primary)] px-3 text-[12px] font-bold text-white shadow-sm hover:bg-[color:var(--ol-primary-dark)] sm:px-4 sm:text-[13px]"
       >
         {locale === "zh" ? "登录" : "Sign in"}
-      </Link>
+      </AuthLink>
     );
   }
 

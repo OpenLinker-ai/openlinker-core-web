@@ -69,11 +69,14 @@ export default async function PlaygroundPage({
   }>;
 }) {
   const { slug } = await params;
-  const { prefill, example, autorun } = await searchParams;
+  const query = await searchParams;
+  const { prefill, example, autorun } = query;
 
   const session = await auth();
   if (!session) {
-    redirect(`/login?callbackUrl=/playground/${encodeURIComponent(slug)}`);
+    const params = new URLSearchParams(Object.entries(query).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+    const callback = `/playground/${encodeURIComponent(slug)}${params.size ? `?${params}` : ""}`;
+    redirect(`/login?${new URLSearchParams({ callbackUrl: callback })}`);
   }
   const locale = await getLocale();
   const copy =
@@ -83,9 +86,8 @@ export default async function PlaygroundPage({
           market: "Agent 库",
           myAgent: "我的 Agent",
           playground: "试用台",
-          kicker: "第 3 步 / 运行",
-          heading: "发送输入，查看运行结果",
-          lead: "输入任务描述或 JSON，继续多轮会话，并查看每次运行的状态、耗时和输出。调用记录会保存在当前实例中。",
+          heading: "试用 Agent",
+          lead: "会话保存在本机，刷新可继续；登出不清除，多标签页可能互相覆盖。",
           unavailableTitle: "试用台暂不可用",
           unavailableLead: "该 Agent 暂不可调用，或还没有成功通过健康检查。请稍后重试，或在 Agent 管理中运行健康检查。",
           back: "返回",
@@ -95,9 +97,8 @@ export default async function PlaygroundPage({
           market: "Registry",
           myAgent: "My Agent",
           playground: "Playground",
-          kicker: "Step 3 / Run",
-          heading: "Send an input and inspect the result",
-          lead: "Enter a task or JSON, continue a multi-turn conversation, and review the status, duration, and output of each run. Run records stay in this instance.",
+          heading: "Try the Agent",
+          lead: "Chats stay in this browser after refresh and sign-out. Multiple tabs may overwrite each other.",
           unavailableTitle: "Playground unavailable",
           unavailableLead: "This Agent is not callable yet or has not passed a health check. Try again later, or run a health check from Agent Console.",
           back: "Back",
@@ -185,22 +186,16 @@ export default async function PlaygroundPage({
           <span className="text-[color:var(--ol-ink)]">{copy.playground}</span>
         </nav>
 
-        {/* page-head */}
-        <header>
-          <div className="text-[11px] font-black uppercase tracking-[0.08em] text-[color:var(--ol-primary-dark)]">
-            {copy.kicker}
-          </div>
-          <h1 className="mt-1.5 text-[30px] font-black leading-[1.15] text-[color:var(--ol-ink)] sm:text-[36px]">
-            {copy.heading}
-          </h1>
-          <p className="mt-1.5 max-w-2xl text-[14px] leading-[1.45] text-[color:var(--ol-muted)]">
-            {copy.lead}
-          </p>
+        <header className="ol-page-title">
+          <div className="ol-kicker">{copy.playground}</div>
+          <h1>{copy.heading}</h1>
+          <p>{copy.lead}</p>
         </header>
 
         <div className="min-h-0">
           <PlaygroundRunner
-            key={`${agent.id}:${example ?? ""}`}
+            key={`${session.user?.id ?? ""}:${agent.id}:${example ?? ""}:${prefill ?? ""}`}
+            userId={session.user?.id}
             agent={agent}
             prefill={prefill}
             selectedExample={selectedExample?.input_json}
