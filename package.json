@@ -36,7 +36,7 @@
     "start": "next start",
     "lint": "eslint",
     "check:i18n": "node scripts/check-i18n-copy.mjs && node --test scripts/check-i18n-copy.test.mjs",
-    "test:a2a-session": "node --test scripts/a2a-session-compat.test.mjs",
+    "test:a2a-session": "node --test scripts/a2a-session-compat.test.mjs scripts/a2a-local-time.test.mjs",
     "test:agent-library-card": "node --test scripts/agent-library-card-contract.test.mjs",
     "test:creator-agent-detail": "node --test scripts/creator-agent-detail-lookup.test.mjs scripts/creator-agent-fetch.test.mjs",
     "test:core-navigation-routes": "node --test scripts/core-navigation-routes.test.mjs",
@@ -76,6 +76,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "jsdom": "30.0.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   },

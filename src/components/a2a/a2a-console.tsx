@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+
+import { LocalRunTime } from "@/components/a2a/local-run-time";
 import {
   useEffect,
   useMemo,
@@ -319,7 +321,7 @@ export function A2AConsole({
                     />
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--ol-line)] pt-3 text-[12px] font-bold text-[color:var(--ol-muted)]">
                       <span>
-                        {formatDate(child.started_at, locale)} · {fmtMs(child.duration_ms, locale)} ·{" "}
+                        <LocalRunTime value={child.started_at} locale={locale} /> · {fmtMs(child.duration_ms, locale)} ·{" "}
                         {child.billing_mode === "free_delegation" || child.cost_cents === 0 ? copy.freeDelegation : `USD ${(child.cost_cents / 100).toFixed(2)}`}
                         {" · "}
                         {sourceLabel(child.source)}
@@ -820,15 +822,4 @@ function fmtMs(ms: number | undefined, locale: Locale): string {
   if (ms == null) return locale === "zh" ? "进行中" : "Running";
   if (ms < 1000) return `${ms}ms`;
   return `${(ms / 1000).toFixed(2)}s`;
-}
-
-function formatDate(value: string, locale: Locale): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString(locale === "zh" ? "zh-CN" : "en-US", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }

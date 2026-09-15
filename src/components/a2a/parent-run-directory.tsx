@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { LocalRunTime } from "@/components/a2a/local-run-time";
+
 import { a2aSessionLabel } from "@/lib/a2a-session.mjs";
 import type { Locale } from "@/lib/i18n";
 import { runStatusLabel } from "@/lib/i18n-labels";
@@ -244,7 +246,7 @@ export function ParentRunDirectory({
                     : null}
                 </div>
                 <p className="mt-1 text-[12px] font-bold text-[color:var(--ol-muted)]">
-                  {formatDate(item.started_at, locale)} · {fmtMs(item.duration_ms, locale)}
+                  <LocalRunTime value={item.started_at} locale={locale} /> · {fmtMs(item.duration_ms, locale)}
                 </p>
               </Link>
             );
@@ -300,13 +302,4 @@ function fmtMs(ms: number | undefined, locale: Locale): string {
   if (ms == null) return locale === "zh" ? "进行中" : "Running";
   if (ms < 1000) return `${ms}ms`;
   return `${(ms / 1000).toFixed(2)}s`;
-}
-
-function formatDate(value: string, locale: Locale): string {
-  return new Date(value).toLocaleString(locale === "zh" ? "zh-CN" : "en-US", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
