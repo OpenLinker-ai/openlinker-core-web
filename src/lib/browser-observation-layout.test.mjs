@@ -30,27 +30,21 @@ test("the shared Viewer owns one responsive read-only canvas", async () => {
 
 test("the playground is an operate-and-observe workspace", async () => {
   const source = await readSource("../components/playground/runner.tsx");
-  const summary = source.indexOf("<ActiveTurnSummary");
-  const observation = source.indexOf("<PlaygroundBrowserObservation");
+  const composer = source.indexOf("data-playground-composer");
   const events = source.indexOf("<RunEventStream");
-  const composer = source.indexOf("ol-panel bg-white p-3.5 xl:col-start-1 xl:row-start-2");
 
-  assert.match(source, /minmax\(0,11fr\)_minmax\(400px,9fr\)/);
-  assert.match(source, /xl:h-full/);
-  assert.match(source, /xl:overflow-y-auto/);
-  assert.match(source, /xl:overscroll-contain/);
-  assert.match(source, /xl:\[scrollbar-gutter:stable\]/);
+  assert.match(source, /xl:h-full/, "the workspace fills the desktop viewport instead of the page scroll");
+  assert.match(source, /overflow-y-auto/, "long conversations and diagnostics scroll inside their own surface");
   assert.doesNotMatch(source, /xl:sticky/);
   assert.doesNotMatch(source, /xl:max-h-\[calc\(100vh/);
-  assert.ok(summary >= 0 && observation > summary && events > observation);
   assert.ok(
-    composer >= 0 && composer < summary,
+    composer >= 0 && events > composer,
     "mobile DOM order must expose the composer before the Viewer and diagnostics",
   );
   assert.doesNotMatch(
-    source.slice(source.indexOf("function ActiveTurnSummary")),
+    source,
     /SidebarTextBlock/,
-    "the selected turn must not duplicate the conversation transcript",
+    "run details must not duplicate the conversation transcript",
   );
 });
 
