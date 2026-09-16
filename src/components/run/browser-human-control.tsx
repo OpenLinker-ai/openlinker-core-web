@@ -52,6 +52,10 @@ type ViewerInput =
 
 export const browserControlEventName = "openlinker:browser-control";
 
+/** Slow enough to be free next to the Run itself, quick enough that a paused
+ * Agent is noticed while the reader is still looking at the Browser. */
+const browserControlPollMS = 5000;
+
 export function BrowserHumanControl({
   runId,
   locale,
@@ -94,8 +98,15 @@ export function BrowserHumanControl({
     }
   }, [apiFetch, enabled, locale, runId, token]);
 
+  // The lifecycle event only arrives while some surface renders the Run event
+  // stream. A viewer that shows the Browser without that stream - the
+  // playground with its run details collapsed, for one - would otherwise keep
+  // whatever control state it read on mount, and never notice that the Agent
+  // paused for a human. Poll as well, slowly, for as long as this view is live.
   useEffect(() => {
+    if (!enabled) return;
     const initialRefresh = window.setTimeout(() => void refresh(), 0);
+    const poll = window.setInterval(() => void refresh(), browserControlPollMS);
     const onLifecycle = (event: Event) => {
       const detail = (event as CustomEvent<{ runId?: string }>).detail;
       if (detail?.runId === runId) void refresh();
@@ -103,9 +114,10 @@ export function BrowserHumanControl({
     window.addEventListener(browserControlEventName, onLifecycle);
     return () => {
       window.clearTimeout(initialRefresh);
+      window.clearInterval(poll);
       window.removeEventListener(browserControlEventName, onLifecycle);
     };
-  }, [refresh, runId]);
+  }, [enabled, refresh, runId]);
 
   useEffect(() => {
     if (control?.state !== "human" || !token) return;
