@@ -50,6 +50,7 @@ const RUN_STATUS_LABELS: LabelMap = {
   waiting: { zh: "待调用", en: "Waiting" },
   queued: { zh: "已入队", en: "Queued" },
   endpoint_response_received: { zh: "调用端点已响应", en: "Endpoint responded" },
+  provider_failed: { zh: "模型服务中断", en: "Model service interrupted" },
 };
 
 const RUN_DISPATCH_STATE_LABELS: LabelMap = {
@@ -72,6 +73,10 @@ const RUN_CANCEL_STATE_LABELS: LabelMap = {
 };
 
 const RUN_ERROR_MESSAGES: LabelMap = {
+  PROVIDER_ERROR: {
+    zh: "Agent 的模型服务没有返回完整结果，本轮没有产出。可以重发这一轮；连续出现时查看运行事件里的中断原因。",
+    en: "The Agent's model service did not return a complete result, so this turn produced no output. Send the turn again; if it keeps happening, check the interruption reason in the run events.",
+  },
   UNSUPPORTED_CONNECTION_MODE: {
     zh: "该 Agent 的连接模式不受支持，请检查接入配置。",
     en: "This Agent uses an unsupported connection mode. Check its connection settings.",
