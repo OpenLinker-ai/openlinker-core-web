@@ -627,6 +627,8 @@ function eventMeta(event: RunEvent, locale: Locale): {
       {
         const providerTool = providerToolEventMeta(event.payload, locale);
         if (providerTool) return providerTool;
+        const providerFailure = providerFailureEventMeta(event.payload, locale);
+        if (providerFailure) return providerFailure;
       }
       if (typeof event.payload.message === "string" && event.payload.message.trim()) {
         return {
@@ -742,6 +744,54 @@ function providerToolEventMeta(
     detail: isZh ? "Codex 已启动工具，正在等待结果。" : "Codex started the tool and is waiting for its result.",
     icon: toolKind === "web_search" ? "globe" : "refresh",
     tone: "bg-[#EAF1FF] text-[#2952A3]",
+  };
+}
+
+/**
+ * Provider 中断自带 kind/reason 两个固定枚举字段。把它们翻成一句话，读者才知道
+ * 这轮为什么没有结果；未知取值退回通用说明，不猜测原因。
+ */
+function providerFailureEventMeta(
+  payload: Record<string, unknown>,
+  locale: Locale,
+): {
+  title: string;
+  detail: string;
+  icon: IconName;
+  tone: string;
+} | null {
+  if (String(payload.status ?? "") !== "provider_failed") return null;
+  const isZh = locale === "zh";
+  const kind = String(payload.provider_error_kind ?? "");
+  const reason = String(payload.provider_error_reason ?? "");
+  const reasonText = isZh
+    ? ({
+        max_messages: "上游一次响应能返回的条目数已达上限",
+        max_output_tokens: "上游一次响应能返回的长度已达上限",
+      } as Record<string, string>)[reason]
+    : ({
+        max_messages: "the upstream response hit its item limit",
+        max_output_tokens: "the upstream response hit its length limit",
+      } as Record<string, string>)[reason];
+  const kindText = isZh
+    ? ({
+        incomplete_response: "模型服务在给出最终答复前就结束了这次响应",
+      } as Record<string, string>)[kind]
+    : ({
+        incomplete_response: "the model service ended the response before a final answer",
+      } as Record<string, string>)[kind];
+  const parts = [kindText, reasonText].filter(Boolean);
+  return {
+    title: isZh ? "模型服务中断" : "Model service interrupted",
+    detail: parts.length
+      ? isZh
+        ? `${parts.join("；")}。本轮没有产出。`
+        : `${parts.join("; ")}. This turn produced no output.`
+      : isZh
+        ? "模型服务中断，本轮没有产出。"
+        : "The model service was interrupted and this turn produced no output.",
+    icon: "warn",
+    tone: "bg-[#FFF4D8] text-[#9A6200]",
   };
 }
 
