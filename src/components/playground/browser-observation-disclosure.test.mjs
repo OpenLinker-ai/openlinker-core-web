@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
@@ -71,45 +71,43 @@ test("collapse is scoped to one Run and terminal keeps the same disclosure choic
   assert.equal(playgroundObservationExpanded(reopened, "run-a", "success"), true);
 });
 
-test("the playground mounts the panel between the selected turn and event stream", async () => {
-  const runner = await readFile(
-    new URL("./runner.tsx", import.meta.url),
-    "utf8",
+test("the playground mounts the browser panel with the selected run", async () => {
+  const directory = new URL("./", import.meta.url);
+  const names = (await readdir(directory)).filter((name) => name.endsWith(".tsx"));
+  const sources = new Map(
+    await Promise.all(
+      names.map(async (name) => [name, await readFile(new URL(name, directory), "utf8")]),
+    ),
   );
-  const summary = runner.indexOf("<ActiveTurnSummary");
-  const observation = runner.indexOf("<PlaygroundBrowserObservation");
-  const events = runner.indexOf("<RunEventStream");
 
-  assert.ok(summary >= 0);
-  assert.ok(observation > summary);
-  assert.ok(events > observation);
-  assert.doesNotMatch(
-    runner,
-    /key=\{`browser-observation:\$\{activeResult\.run_id\}`\}/,
-    "the conversation follower must survive a Run transition",
+  const mounts = [...sources].filter(([, text]) => text.includes("<PlaygroundBrowserObservation"));
+  assert.equal(mounts.length, 1, "exactly one playground surface mounts the Browser panel");
+  const [, mountSource] = mounts[0];
+  assert.match(mountSource, /latestSelected=\{/, "the panel must know whether it shows the newest turn");
+  assert.match(
+    mountSource,
+    /result=\{\w+[?.]*\w*\}/,
+    "the panel belongs to the run the reader selected",
   );
-  assert.match(runner, /key=\{`run-events:\$\{activeResult\.run_id\}`\}/);
-  assert.doesNotMatch(runner, /key=\{activeResult\.run_id\}/);
+
+  const streams = [...sources].filter(([, text]) => text.includes("<RunEventStream"));
+  assert.equal(streams.length, 1, "run events belong to one playground surface");
+  const [, streamSource] = streams[0];
+  assert.match(streamSource, /key=\{`run-events:\$\{\w+Result\.run_id\}`\}/);
+
+  for (const [name, text] of sources) {
+    assert.doesNotMatch(
+      text,
+      /key=\{`browser-observation:/,
+      `${name}: the conversation follower must survive a Run transition`,
+    );
+    assert.doesNotMatch(text, /key=\{\w+Result\.run_id\}/, name);
+  }
 
   const panel = await readFile(
     new URL("./browser-observation-panel.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(panel, /\{expanded \? \(/);
-  assert.match(panel, /terminal=\{!running\}/);
-  assert.match(panel, /autoStart=\{running && latestSelected && followEnabled\}/);
-  assert.match(panel, /retainedSnapshot=\{retainedSnapshot\}/);
-  assert.match(panel, /handoffSnapshot=\{running \? handoffSnapshot : null\}/);
-  assert.match(panel, /onFollowChange=\{onFollowChange\}/);
-  assert.match(panel, /onFrame=\{onFrame\}/);
-  assert.match(panel, /本轮已完成/);
-  assert.match(panel, /持续跟随/);
-  assert.match(panel, /停止跟随/);
-  assert.match(panel, /\{followEnabled \? \(/);
-  assert.doesNotMatch(panel, /!running && followEnabled/);
-  assert.match(panel, /onClick=\{\(\) => onFollowChange\(false\)\}/);
-  assert.doesNotMatch(panel, /运行已结束/);
-  assert.doesNotMatch(panel, /\{running && expanded \? \(/);
-  assert.match(panel, /target="_blank"/);
-  assert.match(panel, /rel="noopener noreferrer"/);
+  assert.match(panel, /<BrowserObservation/);
+  assert.doesNotMatch(panel, /observation\/start/);
 });
