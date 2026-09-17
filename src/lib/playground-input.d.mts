@@ -19,7 +19,7 @@ export function playgroundInitialDraft(input: {
 
 export function playgroundStructuredInputFields(
   inputSchema: PlaygroundInputSchema | undefined,
-): string[] | null;
+): { required: string[]; properties: string[] } | null;
 
 export function parsePlaygroundDraft(
   text: string,

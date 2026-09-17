@@ -116,3 +116,29 @@ test("a failure focus survives its own turn but not the next one", () => {
   assert.equal(selectedTurnIndex(turns, selection), 1);
   assert.equal(selectedTurnIndex([...turns, turn("c", "running")], selection), 2);
 });
+
+// --- structured input detection ----------------------------------------------
+
+import { playgroundStructuredInputFields } from "../src/lib/playground-input.mjs";
+
+test("plain text is offered only when one required string field can hold it", () => {
+  assert.equal(
+    playgroundStructuredInputFields({ type: "object", properties: { text: { type: "string" } }, required: ["text"] }),
+    null,
+    "a single required string field takes a typed message",
+  );
+
+  const research = playgroundStructuredInputFields({
+    type: "object",
+    properties: { topic: { type: "string" }, budget: { type: "number" }, include_appendix: { type: "boolean" } },
+    required: ["topic", "budget", "include_appendix"],
+  });
+  assert.deepEqual(research.required, ["topic", "budget", "include_appendix"]);
+
+  const optionalOnly = playgroundStructuredInputFields({
+    type: "object",
+    properties: { query: { type: "string" }, limit: { type: "number" } },
+  });
+  assert.deepEqual(optionalOnly.required, [], "nothing is required here");
+  assert.deepEqual(optionalOnly.properties, ["query", "limit"], "they are available, not required");
+});

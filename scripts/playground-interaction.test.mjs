@@ -402,10 +402,15 @@ test("an Agent that only takes structured input says so before you type", async 
 
   assert.match(input, /export function playgroundStructuredInputFields/);
   assert.match(runner, /playgroundStructuredInputFields\(inputSchema\)/);
-  assert.match(runner, /structuredFields \? copy\.structuredPlaceholder : copy\.placeholder/,
+  assert.match(runner, /structuredInput \? copy\.structuredPlaceholder : copy\.placeholder/,
     "the placeholder must not promise plain text the schema cannot accept");
-  assert.match(runner, /copy\.structuredHint\(structuredFields\.join/,
-    "name the required fields rather than waiting for the error");
+  assert.match(runner, /structuredInput\.required\.length > 0/,
+    "a schema without required fields must not have its properties called 必填");
+  assert.match(runner, /copy\.structuredFieldsHint\(structuredInput\.properties\.join/);
+  assert.match(runner, /flex-1 break-words[^"]*\[overflow-wrap:anywhere\]/,
+    "a long field name must wrap instead of running under the send button");
+  assert.match(input, /return \{ required, properties \};/,
+    "required and available fields are different claims");
 
   assert.match(globalsCss, /body:has\(main\[data-workspace-fill\]\) \.ol-topbar-inner \{\s*\n\s*max-width: 1760px !important;/,
     "the topbar must line up with the width the workspace uses");

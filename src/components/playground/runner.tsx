@@ -114,6 +114,8 @@ export function PlaygroundRunner({
             placeholder: "输入问题，或粘贴 JSON input",
             structuredPlaceholder: "这个 Agent 只接受 JSON input",
             structuredHint: (fields: string) => `该 Agent 需要结构化 input，必填：${fields}`,
+            structuredFieldsHint: (fields: string) => `该 Agent 需要结构化 input，可用字段：${fields}`,
+            structuredBareHint: "该 Agent 需要结构化 input",
             sendHint: "Enter 发送 · Shift+Enter 换行",
             running: "运行中…",
             syncing: "登录状态同步中…",
@@ -154,6 +156,8 @@ export function PlaygroundRunner({
             placeholder: "Enter a message, or paste JSON input",
             structuredPlaceholder: "This Agent only accepts JSON input",
             structuredHint: (fields: string) => `This Agent needs structured input. Required: ${fields}`,
+            structuredFieldsHint: (fields: string) => `This Agent needs structured input. Fields: ${fields}`,
+            structuredBareHint: "This Agent needs structured input",
             sendHint: "Enter to send · Shift+Enter for a new line",
             running: "Running…",
             syncing: "Syncing sign-in state…",
@@ -279,8 +283,15 @@ export function PlaygroundRunner({
     !(detailsOpen && !roomyViewport);
 
   // schema 没有唯一的必填字符串字段时，纯文本无法无歧义映射，输入框必须写 JSON。
-  const structuredFields = playgroundStructuredInputFields(inputSchema);
-  const composerPlaceholder = structuredFields ? copy.structuredPlaceholder : copy.placeholder;
+  const structuredInput = playgroundStructuredInputFields(inputSchema);
+  const composerPlaceholder = structuredInput ? copy.structuredPlaceholder : copy.placeholder;
+  const composerHint = !structuredInput
+    ? copy.sendHint
+    : structuredInput.required.length > 0
+      ? copy.structuredHint(structuredInput.required.join("、"))
+      : structuredInput.properties.length > 0
+        ? copy.structuredFieldsHint(structuredInput.properties.join("、"))
+        : copy.structuredBareHint;
 
   const priceUSD = agent.price_per_call_cents > 0
     ? (agent.price_per_call_cents / 100).toFixed(3)
@@ -726,10 +737,9 @@ export function PlaygroundRunner({
         ))}
 
         <div className="mt-1.5 flex items-center justify-between gap-3">
-          <span className="min-w-0 text-[11.5px] font-extrabold text-[color:var(--ol-subtle)]">
-            {structuredFields && structuredFields.length > 0
-              ? copy.structuredHint(structuredFields.join("、"))
-              : copy.sendHint}
+          {/* 字段名可以很长（include_appendix 这种），不换行就会压到发送按钮上。 */}
+          <span className="min-w-0 flex-1 break-words text-[11.5px] font-extrabold text-[color:var(--ol-subtle)] [overflow-wrap:anywhere]">
+            {composerHint}
           </span>
           <button
             type="button"
