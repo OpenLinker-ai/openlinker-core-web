@@ -33,10 +33,14 @@ test("the playground is an operate-and-observe workspace", async () => {
   const composer = source.indexOf("data-playground-composer");
   const events = source.indexOf("<RunEventStream");
 
-  assert.match(source, /(?:lg|xl):h-full/, "the workspace fills the desktop viewport instead of the page scroll");
+  assert.match(
+    source,
+    /(?:lg|xl|min-\[\d+px\]):h-full/,
+    "the workspace fills the desktop viewport instead of the page scroll",
+  );
   assert.match(source, /overflow-y-auto/, "long conversations and diagnostics scroll inside their own surface");
-  assert.doesNotMatch(source, /(?:lg|xl):sticky/);
-  assert.doesNotMatch(source, /(?:lg|xl):max-h-\[calc\(100vh/);
+  assert.doesNotMatch(source, /(?:lg|xl|min-\[\d+px\]):sticky/);
+  assert.doesNotMatch(source, /(?:lg|xl|min-\[\d+px\]):max-h-\[calc\(100vh/);
   assert.ok(
     composer >= 0 && events > composer,
     "mobile DOM order must expose the composer before the Viewer and diagnostics",
