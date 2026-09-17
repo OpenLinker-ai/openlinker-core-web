@@ -17,6 +17,10 @@ export function playgroundInitialDraft(input: {
   locale?: Locale;
 }): string;
 
+export function playgroundStructuredInputFields(
+  inputSchema: PlaygroundInputSchema | undefined,
+): { required: string[]; properties: string[] } | null;
+
 export function parsePlaygroundDraft(
   text: string,
   inputSchema?: PlaygroundInputSchema,
