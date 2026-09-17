@@ -370,8 +370,19 @@ test("nothing in the workspace can push the page wider than the viewport", async
   assert.match(
     runner,
     /<div className="relative flex min-h-0 min-w-0 flex-col/,
-    "a grid child keeps min-width auto, so nowrap text inside would widen the whole page",
+    "nowrap text inside the workspace must not set a minimum width",
   );
+
+  // The grid children are the breadcrumb and the wrapper around the runner, not the
+  // runner root; min-width: auto on either one is what widened the page at 320px.
+  const shell = await readFile(
+    path.join(root, "src/app/(user)/playground/[slug]/page.tsx"),
+    "utf8",
+  );
+  assert.match(shell, /<div className="min-h-0 min-w-0">/,
+    "the grid child holding the workspace must be allowed to shrink");
+  assert.match(shell, /<nav className="flex min-w-0 flex-wrap items-center/,
+    "a long breadcrumb wraps instead of setting the page's minimum width");
   assert.match(
     runner,
     /order-last ml-auto w-full min-w-0 text-\[11\.5px\][^"]*min-\[900px\]:truncate/,

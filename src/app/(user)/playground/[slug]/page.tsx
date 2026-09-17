@@ -125,7 +125,7 @@ export default async function PlaygroundPage({
       <>
         <Topbar />
         <main className="mx-auto w-full max-w-7xl px-6 py-6">
-          <nav className="flex items-center gap-1.5 text-[13px] font-bold text-[color:var(--ol-muted)]">
+          <nav className="flex min-w-0 flex-wrap items-center gap-1.5 text-[13px] font-bold text-[color:var(--ol-muted)]">
             <Link href="/" className="hover:text-[color:var(--ol-ink)]">
               {copy.home}
             </Link>
@@ -162,7 +162,7 @@ export default async function PlaygroundPage({
       <Topbar />
       <main data-workspace-fill className="mx-auto grid w-full max-w-[1760px] gap-4 px-4 py-4 sm:px-6 min-[1120px]:min-h-0 min-[1120px]:flex-1 min-[1120px]:grid-rows-[auto_minmax(0,1fr)] min-[1120px]:overflow-hidden">
         {/* 面包屑 */}
-        <nav className="flex items-center gap-1.5 text-[13px] font-bold text-[color:var(--ol-muted)]">
+        <nav className="flex min-w-0 flex-wrap items-center gap-1.5 text-[13px] font-bold text-[color:var(--ol-muted)]">
           <Link href="/" className="hover:text-[color:var(--ol-ink)]">
             {copy.home}
           </Link>
@@ -172,11 +172,11 @@ export default async function PlaygroundPage({
           </Link>
           <span className="text-[color:var(--ol-subtle)]">/</span>
           {isPrivateOwnerAgent ? (
-            <span className="text-[color:var(--ol-muted)]">{agent.name}</span>
+            <span className="max-w-full truncate text-[color:var(--ol-muted)]">{agent.name}</span>
           ) : (
             <Link
               href={`/agents/${agent.slug}`}
-              className="hover:text-[color:var(--ol-ink)]"
+              className="max-w-full truncate hover:text-[color:var(--ol-ink)]"
             >
               {agent.name}
             </Link>
@@ -185,7 +185,8 @@ export default async function PlaygroundPage({
           <span className="text-[color:var(--ol-ink)]">{copy.playground}</span>
         </nav>
 
-        <div className="min-h-0">
+        {/* 这一层才是 main 这个 grid 的子项：没有 min-w-0，里面的内容就能把整列撑宽。 */}
+        <div className="min-h-0 min-w-0">
           <PlaygroundRunner
             key={`${session.user?.id ?? ""}:${agent.id}:${example ?? ""}:${prefill ?? ""}`}
             userId={session.user?.id}
