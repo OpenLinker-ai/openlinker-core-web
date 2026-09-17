@@ -593,7 +593,9 @@ export function PlaygroundRunner({
         >
           <Icon name="bulb" size="sm" />
         </button>
-        <span className="ml-auto truncate text-[11.5px] text-[color:var(--ol-subtle)]">
+        {/* flex 项上的 truncate 没有 min-w-0 压不下去；窄屏让它独占一行，
+            既不会把右侧按钮挤出屏幕，也不必把计费口径藏起来。 */}
+        <span className="order-last ml-auto w-full min-w-0 truncate text-[11.5px] text-[color:var(--ol-subtle)] min-[900px]:order-none min-[900px]:w-auto">
           {copy.free} · {priceUSD ? copy.price(priceUSD) : copy.noReferencePrice}
         </span>
         {turns.length > 0 ? (
