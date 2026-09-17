@@ -68,6 +68,25 @@ export function summarizeOutput(output: unknown, locale: Locale): OutputSummary 
   };
 }
 
+/**
+ * The Agent's reply as the conversation should show it: whole, unclamped.
+ *
+ * summarizeOutputText exists for surfaces that only have room for a preview and
+ * clamps to 900 characters. The playground thread is where the reply is read,
+ * so a long answer must not end in an ellipsis there.
+ */
+export function conversationText(output: unknown, locale: Locale): string {
+  const record =
+    output && typeof output === "object" && !Array.isArray(output)
+      ? (output as Record<string, unknown>)
+      : {};
+  const preferred = pickString(record, ["summary", "answer", "text", "message", "output"]);
+  if (preferred) return preferred.trim();
+  const summary = summarizeOutput(output, locale);
+  if (summary.chatText) return summary.chatText;
+  return summarizeOutputText(output, locale);
+}
+
 export function summarizeOutputText(output: unknown, locale: Locale): string {
   const summary = summarizeOutput(output, locale);
   if (summary.chatText) return clampText(summary.chatText, 900);
