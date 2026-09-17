@@ -40,9 +40,11 @@ export default async function RootLayout({
       lang={locale === "zh" ? "zh-CN" : "en"}
       className="h-full antialiased"
     >
-      <body className="min-h-full flex flex-col">
+      {/* 视口高度由 body 持有，页面容器只取剩余空间：页面内容 + footer 正好等于一屏，
+          想铺满的页面用 flex-1 即可，不必各自去减顶栏和 footer 的像素。 */}
+      <body className="flex min-h-screen flex-col">
         <IconSprite />
-        <div className="flex min-h-screen flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col">
           <Providers locale={locale} session={session}>{children}</Providers>
         </div>
         <footer className="shrink-0 border-t border-slate-200/70 bg-white/80 px-6 py-5 text-center text-xs text-slate-500">

@@ -327,6 +327,22 @@ body > main {
     min-height: 84px;
   }
 
+/*
+   * 想要"正好一屏"的页面给 main 标 data-workspace-fill：body 收成视口高度，
+   * 页面容器和 footer 各取所需，工作区拿剩下的。这样不用去猜顶栏和 footer 的像素。
+   * 不支持 :has() 的浏览器退回普通滚动页面。
+   *
+   * 断点必须与页面自身开始铺满的断点一致（当前是 1120px，即顶栏不再多出一行导航的
+   * 宽度）。窄屏页面是自然流、内容高于一屏，此时锁死 body 会让下方内容再也滚不到。
+   */
+  @media (min-width: 1120px) {
+    body:has(main[data-workspace-fill]) {
+      height: 100dvh;
+      overflow: hidden;
+    }
+  }
+
+
   .ol-topbar-inner {
     min-height: 83px;
     width: 100%;
@@ -639,6 +655,27 @@ body > main {
     max-width: 96rem !important;
     padding: 24px 1.5rem 48px !important;
   }
+
+/*
+   * 铺满的工作区自己决定宽度和内边距：上面这条全局规则带 !important，会把它压回
+   * 96rem，并在底部留出 48px，让"正好一屏"多出一条空白带。这里用更高的特异性覆盖，
+   * 宽度须与页面上的 max-w-[…] 保持同一个数字。
+   */
+  main.mx-auto[data-workspace-fill] {
+    max-width: 1760px !important;
+    padding: 16px 1.5rem !important;
+  }
+
+  @media (max-width: 767px) {
+    main.mx-auto[data-workspace-fill] {
+      padding: 16px 1rem !important;
+    }
+  }
+
+  @media (max-width: 767px) {
+    main.mx-auto { padding: 16px 1rem 40px !important; }
+  }
+
 
   @media (max-width: 767px) {
     main.mx-auto { padding: 16px 1rem 40px !important; }
