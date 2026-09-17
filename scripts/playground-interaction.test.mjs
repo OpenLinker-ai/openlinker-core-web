@@ -360,3 +360,21 @@ test("the thread fills its column and the Browser view waits for a picture", asy
     "an explicit open or close always wins over the automatic choice");
   assert.doesNotMatch(runner, /stageHidden/);
 });
+
+test("nothing in the workspace can push the page wider than the viewport", async () => {
+  const runner = await readFile(
+    path.join(root, "src/components/playground/runner.tsx"),
+    "utf8",
+  );
+
+  assert.match(
+    runner,
+    /<div className="relative flex min-h-0 min-w-0 flex-col/,
+    "a grid child keeps min-width auto, so nowrap text inside would widen the whole page",
+  );
+  assert.match(
+    runner,
+    /order-last ml-auto w-full min-w-0 text-\[11\.5px\][^"]*min-\[900px\]:truncate/,
+    "truncating needs room to truncate into; on a phone the note wraps instead",
+  );
+});

@@ -578,8 +578,10 @@ export function PlaygroundRunner({
     setDetailsOpen(true);
   };
 
+  // 这个根节点是页面 grid 的子项：grid 子项的 min-width 默认是 auto，内部任何
+  // nowrap 文本都能把整列撑宽，导致整页横向溢出。min-w-0 让它收缩到容器宽度。
   return (
-    <div className="relative flex min-h-0 flex-col gap-3 min-[1120px]:h-full">
+    <div className="relative flex min-h-0 min-w-0 flex-col gap-3 min-[1120px]:h-full">
       <header className="flex flex-wrap items-center gap-2 text-[12px] font-extrabold text-[color:var(--ol-muted)]">
         <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-[color:var(--ol-line)] bg-white px-2.5 py-1 text-[12px] font-extrabold text-[color:var(--ol-ink)]">
           <Icon name="bot" size="sm" />
@@ -595,7 +597,7 @@ export function PlaygroundRunner({
         </button>
         {/* flex 项上的 truncate 没有 min-w-0 压不下去；窄屏让它独占一行，
             既不会把右侧按钮挤出屏幕，也不必把计费口径藏起来。 */}
-        <span className="order-last ml-auto w-full min-w-0 truncate text-[11.5px] text-[color:var(--ol-subtle)] min-[900px]:order-none min-[900px]:w-auto">
+        <span className="order-last ml-auto w-full min-w-0 text-[11.5px] text-[color:var(--ol-subtle)] min-[900px]:order-none min-[900px]:w-auto min-[900px]:truncate">
           {copy.free} · {priceUSD ? copy.price(priceUSD) : copy.noReferencePrice}
         </span>
         {turns.length > 0 ? (
