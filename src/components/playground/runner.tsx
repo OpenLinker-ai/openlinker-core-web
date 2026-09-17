@@ -6,11 +6,12 @@ import { toast } from "sonner";
 
 import { RunEventStream } from "@/components/run/run-event-stream";
 import type { BrowserObservationSnapshot } from "@/components/run/browser-observation";
+import { AgentMarkdown } from "@/components/ui/agent-markdown";
 import { Icon } from "@/components/ui/icon";
 import { useApi } from "@/hooks/use-api";
 import { ApiError, localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
-import { runDispatchStateLabel, runErrorMessage } from "@/lib/i18n-labels";
+import { runErrorMessage } from "@/lib/i18n-labels";
 import { isPlaygroundSubmitKey } from "@/lib/playground-keyboard.mjs";
 import {
   playgroundA2AContext,
@@ -26,7 +27,8 @@ import {
   acquireRunCreationIntent,
   completeRunCreationIntent,
 } from "@/lib/run-idempotency";
-import { PlaygroundBrowserObservation } from "./browser-observation-panel";
+import { hasPlaygroundBrowserObservation } from "./browser-observation-disclosure.mjs";
+import { PlaygroundBrowserStage } from "./browser-stage";
 import {
   browserObservationHandoffSnapshot,
   browserObservationSnapshotForRun,
@@ -34,8 +36,14 @@ import {
   rememberBrowserObservationSnapshot,
   setBrowserObservationFollow,
 } from "@/lib/browser-observation-coordinator.mjs";
-import { summarizeOutputText } from "./output-summary";
-import { ResultPanel } from "./result-panel";
+import { PlaygroundDetailPanel } from "./detail-panel";
+import {
+  clearedTurnSelection,
+  failureFocusTurnId,
+  pickTurnSelection,
+  selectedTurnIndex,
+} from "./turn-selection.mjs";
+import { conversationText } from "./output-summary";
 import { RunTrace } from "./run-trace";
 import type { RunResult, RunStatus } from "./types";
 import { createPlaygroundSessionStore, playgroundSessionKey, type PlaygroundTurn } from "@/lib/playground-session";
@@ -66,7 +74,8 @@ const minimumWaitResponseMs = 1000;
 const waitRetryDelaysMs = [2000, 4000, 8000, 15000] as const;
 
 function summarizeRunOutput(result: RunResult, locale: Locale): string {
-  return summarizeOutputText(result.output ?? {}, locale);
+  // 对话区就是读回复的地方，这里要完整文本，不能给预览用的截断版。
+  return conversationText(result.output ?? {}, locale);
 }
 
 export function PlaygroundRunner({
@@ -86,21 +95,18 @@ export function PlaygroundRunner({
             authLoading: "正在读取登录状态，请稍候",
             loginRequired: "请先登录后再调用 Agent",
             invalidJson: "JSON 输入格式不正确",
-            emptyInput: "请输入要发送给 Agent 的内容",
             runStarted: "运行已启动，正在接收最新状态",
             success: (ms: number) => `调用成功 · 耗时 ${ms}ms`,
             canceled: "调用已取消",
             failed: "调用失败",
             retry: "调用失败，请稍后再试",
-            threadTitle: "会话记录",
-            threadLead: "仅保存在此浏览器，登出后仍保留；同一 Agent 多标签页以最后保存为准。",
+            sessionNote: "会话保存在本机，刷新可继续；登出不清除，多标签页可能互相覆盖。",
+            sessionNoteLabel: "关于会话保存",
             newConversation: "新会话",
             storageUnavailable: "浏览器未能保存会话，刷新可能丢失草稿；已提交的调用仍可在运行记录中查看。",
             retrySubmission: "重试提交",
-            turnCount: (count: number) => `${count} 轮`,
-            inputTitle: "继续对话",
-            composeTitle: "浏览并选择其他 Agent",
             compose: "Agent 库",
+            composeTitle: "浏览并选择其他 Agent",
             price: (price: string) => `外部参考价格 USD ${price} · 可选兼容元数据`,
             noReferencePrice: "未提供外部参考价格 · 可选兼容元数据",
             free: "OpenLinker Core 不据此扣费",
@@ -108,42 +114,37 @@ export function PlaygroundRunner({
             sendHint: "Enter 发送 · Shift+Enter 换行",
             running: "运行中…",
             syncing: "登录状态同步中…",
-            run: "发送并调用",
+            run: "发送",
             emptyTitle: "还没有会话",
             emptyBody: "发送第一条消息后，这里会出现你的输入、Agent 回复和调用状态。",
-            user: "你",
-            assistant: "Agent",
             pending: "Agent 正在处理…",
-            selectedTurn: (sequence: number) => `第 ${sequence} 轮`,
-            activeTitle: "当前轮次",
-            activeEmpty: "选择或发送一轮后查看输入、回复和 Run ID。",
-            noRunYet: "发送后生成 Run ID",
-            status: "状态",
-            sentAt: "发送",
-            completedAt: "完成",
-            rawInput: "实际 input",
-            viewRunDetails: "查看运行详情",
-            detailsRail: "当前轮次详情",
+            turn: (sequence: number) => `第 ${sequence} 轮`,
+            details: "详情",
+            showStage: "显示画面",
+            hideStage: "隐藏画面",
+            showDetails: "运行详情",
+            hideDetails: "收起详情",
+            showDetailsShort: "详情",
+            hideDetailsShort: "收起",
+            openDetails: (sequence: number) => `查看第 ${sequence} 轮运行详情`,
+            detailsOpen: "详情已打开",
           }
         : {
             authLoading: "Reading sign-in state, please wait",
             loginRequired: "Sign in before running an Agent",
             invalidJson: "JSON input is not valid",
-            emptyInput: "Enter a message for the Agent",
             runStarted: "Run started. Receiving the latest status.",
             success: (ms: number) => `Run succeeded · ${ms}ms`,
             canceled: "Run canceled",
             failed: "Run failed",
             retry: "Run failed. Try again later.",
-            threadTitle: "Conversation history",
-            threadLead: "Saved in this browser, including after sign-out. For the same Agent, the last tab to save wins.",
+            sessionNote: "Chats stay in this browser after refresh and sign-out. Multiple tabs may overwrite each other.",
+            sessionNoteLabel: "About saved chats",
             newConversation: "New chat",
             storageUnavailable: "This browser could not save the conversation. Drafts may be lost on refresh; submitted calls remain in run history.",
             retrySubmission: "Retry submission",
-            turnCount: (count: number) => `${count} turns`,
-            inputTitle: "Continue",
-            composeTitle: "Browse Registry to choose another Agent",
             compose: "Registry",
+            composeTitle: "Browse Registry to choose another Agent",
             price: (price: string) => `External reference price USD ${price} · optional compatibility metadata`,
             noReferencePrice: "No external reference price provided · optional compatibility metadata",
             free: "Not used for OpenLinker Core billing",
@@ -151,22 +152,20 @@ export function PlaygroundRunner({
             sendHint: "Enter to send · Shift+Enter for a new line",
             running: "Running…",
             syncing: "Syncing sign-in state…",
-            run: "Send and invoke",
+            run: "Send",
             emptyTitle: "No conversation yet",
             emptyBody: "After the first message, your input, the Agent response, and run status appear here.",
-            user: "You",
-            assistant: "Agent",
             pending: "Agent is working…",
-            selectedTurn: (sequence: number) => `Turn ${sequence}`,
-            activeTitle: "Selected Turn",
-            activeEmpty: "Select or send a turn to inspect the input, response, and Run ID.",
-            noRunYet: "Run ID appears after sending",
-            status: "Status",
-            sentAt: "Sent",
-            completedAt: "Done",
-            rawInput: "Actual input",
-            viewRunDetails: "View run details",
-            detailsRail: "Selected turn details",
+            turn: (sequence: number) => `Turn ${sequence}`,
+            details: "Details",
+            showStage: "Show browser view",
+            hideStage: "Hide browser view",
+            showDetails: "Run details",
+            hideDetails: "Hide details",
+            showDetailsShort: "Details",
+            hideDetailsShort: "Hide",
+            openDetails: (sequence: number) => `Open run details for turn ${sequence}`,
+            detailsOpen: "Details open",
           },
     [locale],
   );
@@ -180,7 +179,7 @@ export function PlaygroundRunner({
     playgroundSessionKey(userId, agent.id),
     { input: playgroundInitialDraft({ prefill, selectedExample, examples, inputSchema, locale }), conversationID: localID("conversation"), seed: JSON.stringify([prefill ?? null, selectedExample ?? null]) },
   ));
-  const { input, turns, activeTurnId, conversationID, ready: restored, storageError, autorunConsumed } = useSyncExternalStore(
+  const { input, turns, conversationID, ready: restored, storageError, autorunConsumed } = useSyncExternalStore(
     sessionStore.subscribe, sessionStore.getSnapshot, sessionStore.getServerSnapshot,
   );
   const setInput = useCallback((change: string | ((current: string) => string)) => {
@@ -189,12 +188,17 @@ export function PlaygroundRunner({
   const setTurns = useCallback((change: (items: PlaygroundTurn[]) => PlaygroundTurn[]) => {
     sessionStore.update((state) => ({ turns: change(state.turns) }));
   }, [sessionStore]);
-  const setActiveTurnId = (id: string) => sessionStore.update({ activeTurnId: id });
   const [inputError, setInputError] = useState("");
+  // 选中规则见 turn-selection.mjs：选择只在"当时的最新一轮仍是最新"期间有效。
+  const [selection, setSelection] = useState(clearedTurnSelection);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  // null = 由画面本身决定；true/false = 读者自己开过或关过。
+  const [stageChoice, setStageChoice] = useState<boolean | null>(null);
   const autoRunStarted = useRef(false);
   const creationInFlight = useRef(false);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
+  const threadScrollRef = useRef<HTMLDivElement | null>(null);
   const [browserObservationFollow, setBrowserObservationCoordinator] = useState(() =>
     createBrowserObservationCoordinator(conversationID),
   );
@@ -217,38 +221,58 @@ export function PlaygroundRunner({
   );
 
   const running = turns.some((turn) => turn.status === "running");
-  const activeTurn =
-    turns.find((turn) => turn.id === activeTurnId) ??
-    (turns.length > 0 ? turns[turns.length - 1] : null);
-  const activeStatus = activeTurn?.status ?? "idle";
-  const activeResult = activeTurn?.result ?? null;
+  // 详情栏默认收起；打开后没有有效选择就跟最近一轮走。
+  const selectedIndex = selectedTurnIndex(turns, selection);
+  const railTurn = selectedIndex >= 0 ? turns[selectedIndex] : null;
+  const railTurnIndex = selectedIndex;
+  const railStatus = railTurn?.status ?? "idle";
+  const railResult = railTurn?.result ?? null;
   const runningTurn = turns.find(
     (turn) => turn.status === "running" && turn.result?.run_id,
   );
   const pollingTurnId = runningTurn?.id;
   const pollingRunId = runningTurn?.result?.run_id;
-  const selectedLatestTurn = Boolean(
-    activeTurn && turns.length > 0 && activeTurn.id === turns[turns.length - 1].id,
-  );
   const orderedRunIds = turns.flatMap((turn) =>
     turn.result?.run_id ? [turn.result.run_id] : [],
   );
-  const retainedBrowserSnapshot = activeResult?.run_id
-    ? browserObservationSnapshotForRun(
-        browserObservationFollow,
-        conversationID,
-        activeResult.run_id,
-      )
+
+  // 画面栏跟随当前查看的轮次；该轮没有浏览器证据时，跟最近一轮有证据的 Run。
+  const stageTurn =
+    railTurn && hasPlaygroundBrowserObservation(railTurn.result)
+      ? railTurn
+      : [...turns].reverse().find((turn) => hasPlaygroundBrowserObservation(turn.result)) ?? null;
+  const stageResult = stageTurn?.result ?? null;
+  const stageIsLatestTurn = Boolean(
+    stageTurn && turns.length > 0 && stageTurn.id === turns[turns.length - 1].id,
+  );
+  // 断点跟着 Topbar 走：它在 <1120px 会多出一行导航，工作区在那以下不定高，
+  // 也就没有并排的列。<1400px 时画面栏与运行详情互斥，后打开的那个留下。
+  const stageViewport = useMinimumWidth(1120);
+  const roomyViewport = useMinimumWidth(1400);
+  const stageSnapshot = stageResult?.run_id
+    ? browserObservationSnapshotForRun(browserObservationFollow, conversationID, stageResult.run_id)
     : null;
-  const browserHandoffSnapshot = activeResult?.run_id
+  const stageHandoff = stageResult?.run_id
     ? browserObservationHandoffSnapshot(
         browserObservationFollow,
         conversationID,
-        activeResult.run_id,
+        stageResult.run_id,
         orderedRunIds,
-        selectedLatestTurn,
+        stageIsLatestTurn,
       )
     : null;
+
+  // 有画面在传输才默认展开：本轮还在运行，或这一轮已经留下过帧。已经结束又没有留帧的
+  // Run 只保留工具栏入口，不占掉半个工作区。
+  // 交接帧属于"上一轮画面接着这一轮看"的过渡，只在运行中有意义；已结束又没有自己留帧的
+  // Run 不该靠上一轮的画面继续占着画面栏。
+  const stageHasPicture = stageTurn?.status === "running" || Boolean(stageSnapshot);
+  const stageOpen =
+    Boolean(stageResult) &&
+    stageViewport &&
+    (stageChoice ?? stageHasPicture) &&
+    !(detailsOpen && !roomyViewport);
+
   const priceUSD = agent.price_per_call_cents > 0
     ? (agent.price_per_call_cents / 100).toFixed(3)
     : null;
@@ -287,12 +311,14 @@ export function PlaygroundRunner({
       source: "playground",
       client: "multi_turn_runner",
     };
+    const intentScope = `agent:${agent.id}`;
     let turnId = localID("turn");
     try {
-      const intent = await acquireRunCreationIntent(agent.id, {
+      const intent = await acquireRunCreationIntent(intentScope, {
         agent_id: agent.id,
         input: runInput,
         metadata: requestMetadata,
+        task_id: null,
         conversation_context_id: conversationID,
       });
       turnId = intent.intentId;
@@ -378,13 +404,12 @@ export function PlaygroundRunner({
     const request = pendingTurn.request;
     const turnId = turn.id;
     const controller = new AbortController();
-    const intentScope = agent.id;
+    const intentScope = `agent:${agent.id}`;
     const abortOnPageHide = () => controller.abort();
     window.addEventListener("pagehide", abortOnPageHide);
     async function submit() {
       try {
-        const runPath = "/api/v1/runs";
-        const data = await apiFetch<RunResult>(runPath, {
+        const data = await apiFetch<RunResult>("/api/v1/runs", {
           method: "POST",
           headers: { "Idempotency-Key": request.idempotencyKey, Prefer: "wait=0" },
           body: request.body,
@@ -535,17 +560,115 @@ export function PlaygroundRunner({
     void handleRun();
   }, [authLoading, autorun, autorunConsumed, handleRun, isAuthenticated, restored, turns.length]);
 
+  // 只有"最新一轮刚失败"才把详情栏对准它；对准旧的失败轮会永久挡住后续 Run 的跟随。
+  const failedLatestTurnId = failureFocusTurnId(turns);
   useEffect(() => {
-    scrollConversationEnd(threadEndRef.current);
-  }, [turns.length, activeTurn?.status, activeTurn?.result?.run_id]);
+    if (failedLatestTurnId) {
+      setSelection({ turnId: failedLatestTurnId, latestAtPick: failedLatestTurnId });
+    }
+  }, [failedLatestTurnId]);
+
+  useEffect(() => {
+    scrollConversationEnd(threadScrollRef.current);
+  }, [turns.length, railTurn?.status, railTurn?.result?.run_id]);
+
+  const openTurnDetails = (turnId: string) => {
+    sessionStore.update({ activeTurnId: turnId });
+    setSelection(pickTurnSelection(turnId, turns));
+    setDetailsOpen(true);
+  };
 
   return (
-    <div className="grid gap-4 xl:h-full xl:min-h-0 xl:grid-cols-[minmax(0,11fr)_minmax(400px,9fr)] xl:grid-rows-[minmax(0,1fr)_auto]">
-      <section data-playground-composer className="ol-panel bg-white p-3.5 xl:col-start-1 xl:row-start-2">
+    <div className="relative flex min-h-0 flex-col gap-3 min-[1120px]:h-full">
+      <header className="flex flex-wrap items-center gap-2 text-[12px] font-extrabold text-[color:var(--ol-muted)]">
+        <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-[color:var(--ol-line)] bg-white px-2.5 py-1 text-[12px] font-extrabold text-[color:var(--ol-ink)]">
+          <Icon name="bot" size="sm" />
+          <span className="max-w-52 truncate">{agent.name}</span>
+        </span>
+        <button
+          type="button"
+          aria-label={copy.sessionNoteLabel}
+          title={copy.sessionNote}
+          className="grid h-6 w-6 place-items-center rounded-full border border-[color:var(--ol-line)] bg-white text-[color:var(--ol-subtle)] transition hover:text-[color:var(--ol-primary-dark)]"
+        >
+          <Icon name="bulb" size="sm" />
+        </button>
+        <span className="ml-auto truncate text-[11.5px] text-[color:var(--ol-subtle)]">
+          {copy.free} · {priceUSD ? copy.price(priceUSD) : copy.noReferencePrice}
+        </span>
+        {turns.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => setDetailsOpen((open) => !open)}
+            aria-pressed={detailsOpen}
+            className={`inline-flex items-center gap-1 rounded-[10px] border px-2 py-1 text-[12px] font-black transition ${
+              detailsOpen
+                ? "border-[color:var(--ol-primary)]/35 bg-[color:var(--ol-mint)] text-[color:var(--ol-primary-dark)]"
+                : "border-transparent text-[color:var(--ol-muted)] hover:bg-[color:var(--ol-soft)] hover:text-[color:var(--ol-primary-dark)]"
+            }`}
+          >
+            <Icon name="doc" size="sm" />
+            <span className="min-[1000px]:hidden">
+              {detailsOpen ? copy.hideDetailsShort : copy.showDetailsShort}
+            </span>
+            <span className="hidden min-[1000px]:inline">
+              {detailsOpen ? copy.hideDetails : copy.showDetails}
+            </span>
+          </button>
+        ) : null}
+        {stageResult && stageViewport ? (
+          <button
+            type="button"
+            onClick={() => {
+              const next = !stageOpen;
+              setStageChoice(next);
+              if (next && !roomyViewport) setDetailsOpen(false);
+            }}
+            aria-pressed={stageOpen}
+            className={`inline-flex items-center gap-1 rounded-[10px] border px-2 py-1 text-[12px] font-black transition ${
+              stageOpen
+                ? "border-[color:var(--ol-primary)]/35 bg-[color:var(--ol-mint)] text-[color:var(--ol-primary-dark)]"
+                : "border-transparent text-[color:var(--ol-muted)] hover:bg-[color:var(--ol-soft)] hover:text-[color:var(--ol-primary-dark)]"
+            }`}
+          >
+            <Icon name="globe" size="sm" />
+            {stageOpen ? copy.hideStage : copy.showStage}
+          </button>
+        ) : null}
+        <Link
+          href="/registry"
+          title={copy.composeTitle}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 rounded-[10px] px-2 py-1 text-[12px] font-black text-[color:var(--ol-muted)] transition hover:bg-[color:var(--ol-soft)] hover:text-[color:var(--ol-primary-dark)]"
+        >
+          <Icon name="folder" size="sm" />
+          {copy.compose}
+        </Link>
+        <button
+          type="button"
+          className="inline-flex shrink-0 items-center gap-1 rounded-[10px] border border-transparent px-2 py-1 text-[12px] font-black text-[color:var(--ol-muted)] transition hover:bg-[color:var(--ol-soft)] hover:text-[color:var(--ol-primary-dark)] disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!restored || running}
+          onClick={() => {
+            autoRunStarted.current = true;
+            sessionStore.update({ input: "", turns: [], activeTurnId: "", autorunConsumed: true, conversationID: localID("conversation") });
+            setSelection(clearedTurnSelection());
+            setDetailsOpen(false);
+            setStageChoice(null);
+            setInputError("");
+            inputRef.current?.focus();
+          }}
+        >
+          {copy.newConversation}
+        </button>
+      </header>
+
+      <section
+        data-playground-composer
+        className="order-1 ol-panel bg-white p-3 min-[1120px]:order-3"
+      >
         <label className="block">
-          <span className="text-[11px] font-black uppercase tracking-[0.08em] text-[color:var(--ol-primary-dark)]">
-            {copy.inputTitle}
-          </span>
+          <span className="sr-only">{copy.placeholder}</span>
           <textarea
             ref={inputRef}
             disabled={!restored}
@@ -560,7 +683,7 @@ export function PlaygroundRunner({
             spellCheck={false}
             placeholder={copy.placeholder}
             rows={2}
-            className="mt-2 min-h-[64px] max-h-[128px] w-full resize-none rounded-[14px] border border-[color:var(--ol-line)] bg-white px-3.5 py-2.5 text-[13px] leading-[1.6] text-[color:var(--ol-ink)] outline-none transition focus:border-[color:var(--ol-primary)] focus:ring-2 focus:ring-[color:var(--ol-primary)]/20"
+            className="min-h-[56px] max-h-[128px] w-full resize-none rounded-[14px] border border-[color:var(--ol-line)] bg-white px-3.5 py-2.5 text-[13px] leading-[1.6] text-[color:var(--ol-ink)] outline-none transition focus:border-[color:var(--ol-primary)] focus:ring-2 focus:ring-[color:var(--ol-primary)]/20"
             onKeyDown={(event) => {
               if (isPlaygroundSubmitKey({
                 key: event.key,
@@ -585,169 +708,143 @@ export function PlaygroundRunner({
           <button key={turn.id} type="button" className="ol-mini-btn mt-2" disabled={running || authLoading}
             onClick={() => setTurns((items) => items.map((item) => item.id === turn.id
               ? { ...item, status: "running", errorMessage: undefined, completedAt: undefined } : item))}>
-            {copy.retrySubmission} · {copy.selectedTurn(turn.sequence)}
+            {copy.retrySubmission} · {copy.turn(turn.sequence)}
           </button>
         ))}
-        <div className="mt-2.5 flex flex-wrap items-end justify-between gap-2.5">
-          <div className="min-w-0 text-[11.5px] font-extrabold leading-5 text-[color:var(--ol-muted)]">
-            <div>{copy.sendHint}</div>
-            <div className="truncate text-[color:var(--ol-subtle)]">
-              {copy.free} · {priceUSD ? copy.price(priceUSD) : copy.noReferencePrice}
-            </div>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/registry"
-              title={copy.composeTitle}
-              className="inline-flex h-[42px] items-center justify-center gap-2 rounded-[13px] border border-[color:var(--ol-line)] bg-white px-4 text-[13px] font-black text-[color:var(--ol-ink)] transition hover:bg-[color:var(--ol-soft)]"
-            >
-              <Icon name="folder" size="sm" />
-              {copy.compose}
-            </Link>
-            <button
-              type="button"
-              onClick={handleRun}
-              disabled={!restored || running || authLoading || input.trim().length === 0}
-              className="inline-flex h-[42px] items-center justify-center gap-2 rounded-[13px] border border-[color:var(--ol-primary)] bg-[color:var(--ol-primary)] px-4 text-[13px] font-black text-white transition-colors hover:bg-[color:var(--ol-primary-dark)] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {running ? (
-                <>
-                  <span
-                    aria-hidden
-                    className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent motion-reduce:animate-none"
-                  />
-                  {copy.running}
-                </>
-              ) : authLoading ? (
-                copy.syncing
-              ) : (
-                <>
-                  <Icon name="message" size="sm" />
-                  {copy.run}
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section className="ol-panel min-w-0 overflow-hidden xl:col-start-1 xl:row-start-1 xl:grid xl:h-full xl:min-h-0 xl:grid-rows-[auto_minmax(0,1fr)]">
-        <div className="ol-panel-head">
-          <div className="flex min-w-0 items-center gap-2">
-            <strong title={copy.threadLead}>{copy.threadTitle}</strong>
-            <span className="hidden min-w-0 truncate text-[12px] font-bold text-[color:var(--ol-muted)] 2xl:inline">
-              {copy.threadLead}
-            </span>
-          </div>
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] px-2.5 py-1 text-[12px] font-extrabold text-[color:var(--ol-muted)]">
-              <Icon name="bot" size="sm" />
-              <span className="max-w-44 truncate">{agent.name}</span>
-            </span>
-            <button type="button" className="ol-mini-btn shrink-0" disabled={!restored || running}
-              onClick={() => {
-                autoRunStarted.current = true;
-                sessionStore.update({ input: "", turns: [], activeTurnId: "", autorunConsumed: true, conversationID: localID("conversation") });
-                setInputError("");
-                inputRef.current?.focus();
-              }}>{copy.newConversation}</button>
-            <span className="ol-chip ol-chip-blue shrink-0">
-              {copy.turnCount(turns.length)}
-            </span>
-          </div>
-        </div>
-
-        <div className="max-h-[620px] min-h-[320px] overflow-y-auto bg-[linear-gradient(180deg,#fbfdfd_0%,#f6fbfa_100%)] p-4 xl:max-h-none xl:min-h-0">
-          {turns.length === 0 ? (
-            <EmptyThread title={copy.emptyTitle} body={copy.emptyBody} />
-          ) : (
-            <div className="space-y-4">
-              {turns.map((turn) => (
-                <ConversationTurnCard
-                  key={turn.id}
-                  turn={turn}
-                  active={turn.id === activeTurn?.id}
-                  locale={locale}
-                  labels={{
-                    user: copy.user,
-                    assistant: copy.assistant,
-                    pending: copy.pending,
-                    selectedTurn: copy.selectedTurn,
-                  }}
-                  onSelect={() => setActiveTurnId(turn.id)}
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <span className="min-w-0 truncate text-[11.5px] font-extrabold text-[color:var(--ol-subtle)]">
+            {copy.sendHint}
+          </span>
+          <button
+            type="button"
+            onClick={handleRun}
+            disabled={!restored || running || authLoading || input.trim().length === 0}
+            className="inline-flex h-[38px] shrink-0 items-center justify-center gap-2 rounded-[12px] border border-[color:var(--ol-primary)] bg-[color:var(--ol-primary)] px-4 text-[13px] font-black text-white transition-colors hover:bg-[color:var(--ol-primary-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {running ? (
+              <>
+                <span
+                  aria-hidden
+                  className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent motion-reduce:animate-none"
                 />
-              ))}
-              <div ref={threadEndRef} />
-            </div>
-          )}
+                {copy.running}
+              </>
+            ) : authLoading ? (
+              copy.syncing
+            ) : (
+              copy.run
+            )}
+          </button>
         </div>
-
       </section>
 
-      <aside
-        data-playground-detail-rail
-        aria-label={copy.detailsRail}
-        tabIndex={0}
-        className="grid auto-rows-max gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ol-primary)]/35 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-contain xl:pb-2 xl:pr-2 xl:[scrollbar-gutter:stable]"
+      <div
+        className={`relative order-2 flex min-h-0 flex-col gap-3 min-[1120px]:flex-1 min-[1120px]:flex-row ${
+          detailsOpen ? "min-[1120px]:pr-[436px]" : ""
+        }`}
       >
-        <ActiveTurnSummary
-          turn={activeTurn}
-          locale={locale}
-          labels={{
-            title: copy.activeTitle,
-            empty: copy.activeEmpty,
-            selectedTurn: copy.selectedTurn,
-            status: copy.status,
-            sentAt: copy.sentAt,
-            completedAt: copy.completedAt,
-            rawInput: copy.rawInput,
-            noRunYet: copy.noRunYet,
-            viewRunDetails: copy.viewRunDetails,
-          }}
-        />
+        <section className="min-h-0 min-w-0 flex-1 min-[1120px]:min-w-[300px] min-[1120px]:basis-[420px]">
+          <div
+            ref={threadScrollRef}
+            className="h-full max-h-[70dvh] min-h-[320px] overflow-y-auto rounded-[18px] border border-[color:var(--ol-line)] bg-[linear-gradient(180deg,#fbfdfd_0%,#f6fbfa_100%)] p-4 min-[1120px]:max-h-none min-[1120px]:min-h-0"
+          >
+            <div className="mx-auto w-full">
+              {turns.length === 0 ? (
+                <EmptyThread title={copy.emptyTitle} body={copy.emptyBody} />
+              ) : (
+                <div className="space-y-5">
+                  {turns.map((turn) => (
+                    <ConversationTurn
+                      key={turn.id}
+                      turn={turn}
+                      locale={locale}
+                      detailsOpen={detailsOpen && turn.id === railTurn?.id}
+                      labels={{
+                        pending: copy.pending,
+                        turn: copy.turn,
+                        details: copy.details,
+                        openDetails: copy.openDetails,
+                        detailsOpen: copy.detailsOpen,
+                      }}
+                      onOpenDetails={() => openTurnDetails(turn.id)}
+                    />
+                  ))}
+                  <div ref={threadEndRef} />
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
 
-        {activeResult?.run_id ? (
-          <PlaygroundBrowserObservation
-            result={activeResult}
-            status={activeStatus}
-            locale={locale}
-            latestSelected={selectedLatestTurn}
-            followEnabled={browserObservationFollow.enabled}
-            onFollowChange={handleBrowserFollowChange}
-            onFrame={handleBrowserFrame}
-            retainedSnapshot={retainedBrowserSnapshot}
-            handoffSnapshot={browserHandoffSnapshot}
-          />
+        {stageOpen && stageResult ? (
+          <aside className="min-h-0 overflow-y-auto overscroll-contain min-[1120px]:min-w-[320px] min-[1120px]:basis-[44%]">
+            <PlaygroundBrowserStage
+              result={stageResult}
+              status={stageTurn?.status ?? "idle"}
+              locale={locale}
+              latestSelected={stageIsLatestTurn}
+              followEnabled={browserObservationFollow.enabled}
+              onFollowChange={handleBrowserFollowChange}
+              onFrame={handleBrowserFrame}
+              retainedSnapshot={stageSnapshot}
+              handoffSnapshot={stageHandoff}
+              onHide={() => setStageChoice(false)}
+            />
+          </aside>
         ) : null}
 
-        {activeResult?.run_id ? (
-          <RunEventStream
-            key={`run-events:${activeResult.run_id}`}
+        {detailsOpen && railTurn ? (
+          <PlaygroundDetailPanel
+            turn={railTurn}
             locale={locale}
-            runId={activeResult.run_id}
-            enabled
-            fallbackStatus={activeResult.status}
+            statusLabel={statusLabel(railTurn.status, locale)}
+            statusToneClass={statusToneClass(railTurn.status)}
+            formatTime={(value: string) => formatDateTime(value, locale)}
+            hasPrevious={railTurnIndex > 0}
+            hasNext={railTurnIndex >= 0 && railTurnIndex < turns.length - 1}
+            onPrevious={() => openTurnDetails(turns[railTurnIndex - 1].id)}
+            onNext={() => openTurnDetails(turns[railTurnIndex + 1].id)}
+            onClose={() => setDetailsOpen(false)}
+            eventsSlot={
+              railResult?.run_id ? (
+                <RunEventStream
+                  key={`run-events:${railResult.run_id}`}
+                  locale={locale}
+                  runId={railResult.run_id}
+                  enabled
+                  fallbackStatus={railStatus}
+                />
+              ) : (
+                <RunTrace
+                  status={railStatus}
+                  durationMs={railResult?.duration_ms}
+                  errorCode={railResult?.error_code}
+                  locale={locale}
+                />
+              )
+            }
           />
-        ) : (
-          <RunTrace
-            status={activeStatus}
-            durationMs={activeResult?.duration_ms}
-            errorCode={activeResult?.error_code}
-            locale={locale}
-          />
-        )}
-
-        <ResultPanel
-          status={activeStatus}
-          result={activeResult}
-          locale={locale}
-        />
-        <span data-playground-detail-rail-end aria-hidden="true" className="h-px" />
-      </aside>
-
-
+        ) : null}
+      </div>
     </div>
+  );
+}
+
+/** 视口宽度决定画面栏是否出现，服务端渲染时按窄屏处理。 */
+function useMinimumWidth(minimumWidth: number): boolean {
+  const query = `(min-width: ${minimumWidth}px)`;
+  return useSyncExternalStore(
+    useCallback(
+      (onChange: () => void) => {
+        const media = window.matchMedia(query);
+        media.addEventListener("change", onChange);
+        return () => media.removeEventListener("change", onChange);
+      },
+      [query],
+    ),
+    () => window.matchMedia(query).matches,
+    () => false,
   );
 }
 
@@ -767,7 +864,7 @@ function latestRunPredecessor(
 
 function EmptyThread({ title, body }: { title: string; body: string }) {
   return (
-    <div className="grid min-h-[260px] place-items-center rounded-[16px] border border-dashed border-[color:var(--ol-line)] bg-white xl:h-full xl:min-h-0">
+    <div className="grid min-h-[260px] place-items-center rounded-[16px] border border-dashed border-[color:var(--ol-line)] bg-white min-[1120px]:h-full min-[1120px]:min-h-0">
       <div className="max-w-sm px-6 text-center">
         <div className="mx-auto grid h-12 w-12 place-items-center rounded-[16px] bg-[color:var(--ol-mint)] text-[color:var(--ol-primary-dark)]">
           <Icon name="message" size="lg" />
@@ -783,115 +880,86 @@ function EmptyThread({ title, body }: { title: string; body: string }) {
   );
 }
 
-function ConversationTurnCard({
+function ConversationTurn({
   turn,
-  active,
   locale,
+  detailsOpen,
   labels,
-  onSelect,
+  onOpenDetails,
 }: {
   turn: PlaygroundTurn;
-  active: boolean;
   locale: Locale;
+  detailsOpen: boolean;
   labels: {
-    user: string;
-    assistant: string;
     pending: string;
-    selectedTurn: (sequence: number) => string;
+    turn: (sequence: number) => string;
+    details: string;
+    openDetails: (sequence: number) => string;
+    detailsOpen: string;
   };
-  onSelect: () => void;
+  onOpenDetails: () => void;
 }) {
   const assistantText = assistantTextForTurn(turn, locale, labels.pending);
-  const statusTone = statusToneClass(turn.status);
-  const progressStatus = turn.status === "running" && turn.result?.dispatch_state
-    ? runDispatchStateLabel(turn.result.dispatch_state, locale)
-    : statusLabel(turn.status, locale);
+  const failed = turn.status === "failed";
+  const durationMs = turn.result?.duration_ms;
 
   return (
-    <article
-      role="button"
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onSelect();
-        }
-      }}
-      className={`cursor-pointer rounded-[18px] border p-3.5 transition-all duration-200 ${
-        active
-          ? "border-[color:var(--ol-primary)] bg-white shadow-[0_12px_28px_rgba(15,145,135,0.12)]"
-          : "border-[color:var(--ol-line)] bg-white/86 hover:border-[color:var(--ol-primary)]/35 hover:shadow-[0_10px_24px_rgba(25,66,84,0.08)]"
-      }`}
-    >
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <span className="text-[12px] font-black text-[color:var(--ol-ink)]">
-          {labels.selectedTurn(turn.sequence)}
-        </span>
-        <span className={`ol-chip ${statusTone}`}>{progressStatus}</span>
-      </div>
-
-      <div className="space-y-3">
-        <MessageBubble
-          label={labels.user}
-          text={turn.inputText}
-          align="right"
-          tone="user"
-        />
-        <MessageBubble
-          label={labels.assistant}
-          text={assistantText}
-          align="left"
-          tone={turn.status === "failed" ? "failed" : "assistant"}
-          pending={turn.status === "running"}
-        />
-      </div>
-
-      {turn.result?.run_id ? (
-        <div className="mt-3 truncate rounded-[10px] bg-[color:var(--ol-soft)] px-2.5 py-1.5 font-mono text-[11px] font-bold text-[color:var(--ol-subtle)]">
-          {turn.result.run_id}
-        </div>
-      ) : null}
-    </article>
-  );
-}
-
-function MessageBubble({
-  label,
-  text,
-  align,
-  tone,
-  pending = false,
-}: {
-  label: string;
-  text: string;
-  align: "left" | "right";
-  tone: "user" | "assistant" | "failed";
-  pending?: boolean;
-}) {
-  const toneClass =
-    tone === "user"
-      ? "bg-[color:var(--ol-primary)] text-white"
-      : tone === "failed"
-        ? "border border-[#f1c0c0] bg-[#fdecec] text-[#a3382c]"
-        : "border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] text-[color:var(--ol-ink)]";
-
-  return (
-    <div className={`flex ${align === "right" ? "justify-end" : "justify-start"}`}>
-      <div
-        className={`max-w-[88%] rounded-[18px] px-3.5 py-2.5 shadow-sm transition-colors ${
-          align === "right" ? "rounded-br-md" : "rounded-bl-md"
-        } ${toneClass}`}
+    <article className="grid gap-2">
+      <span
+        className={`text-[11px] font-black ${
+          failed ? "text-[#a3382c]" : "text-[color:var(--ol-subtle)]"
+        }`}
       >
-        <div className="mb-1 text-[10.5px] font-black uppercase opacity-70">
-          {label}
-        </div>
-        <p className="whitespace-pre-wrap break-words text-[13px] leading-5">
-          {text}
-          {pending ? <PendingDots /> : null}
+        {labels.turn(turn.sequence)}
+      </span>
+
+      <div className="flex justify-end">
+        <p className="max-w-[min(86%,720px)] whitespace-pre-wrap break-words rounded-[16px] rounded-br-md bg-[color:var(--ol-primary)] px-3.5 py-2.5 text-[13px] leading-5 text-white">
+          {turn.inputText}
         </p>
       </div>
-    </div>
+
+      <div className="flex justify-start">
+        <div
+          className={`min-w-0 max-w-[min(92%,880px)] rounded-[16px] rounded-bl-md border px-3.5 py-2.5 text-[13px] leading-[1.6] ${
+            failed
+              ? "border-[#f1c0c0] bg-[#fdecec] text-[#a3382c]"
+              : "border-[color:var(--ol-line)] bg-white text-[color:var(--ol-ink)]"
+          }`}
+        >
+          {turn.status === "running" ? (
+            <p className="text-[color:var(--ol-muted)]">
+              {assistantText}
+              <PendingDots />
+            </p>
+          ) : (
+            <AgentMarkdown>{assistantText}</AgentMarkdown>
+          )}
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={onOpenDetails}
+        aria-label={labels.openDetails(turn.sequence)}
+        aria-expanded={detailsOpen}
+        className={`justify-self-start rounded-full border px-2.5 py-1 text-[11.5px] font-black transition ${
+          failed
+            ? "border-[#f1c0c0] bg-[#fdecec] text-[#a3382c] hover:bg-[#fbe0e0]"
+            : "border-[color:var(--ol-line)] bg-white text-[color:var(--ol-muted)] hover:border-[color:var(--ol-primary)]/40 hover:text-[color:var(--ol-primary-dark)]"
+        }`}
+      >
+        {[
+          statusLabel(turn.status, locale),
+          turn.status !== "running" && durationMs != null
+            ? `${(durationMs / 1000).toFixed(1)}s`
+            : null,
+          detailsOpen ? labels.detailsOpen : `${labels.details} ›`,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+      </button>
+    </article>
   );
 }
 
@@ -909,127 +977,6 @@ function PendingDots() {
   );
 }
 
-function ActiveTurnSummary({
-  turn,
-  locale,
-  labels,
-}: {
-  turn: PlaygroundTurn | null;
-  locale: Locale;
-  labels: {
-    title: string;
-    empty: string;
-    selectedTurn: (sequence: number) => string;
-    status: string;
-    sentAt: string;
-    completedAt: string;
-    rawInput: string;
-    noRunYet: string;
-    viewRunDetails: string;
-  };
-}) {
-  if (!turn) {
-    return (
-      <section className="ol-panel ol-panel-pad">
-        <div className="flex items-center justify-between gap-3">
-          <strong className="text-[16px] font-black text-[color:var(--ol-ink)]">
-            {labels.title}
-          </strong>
-          <span className="ol-chip">{labels.noRunYet}</span>
-        </div>
-        <p className="mt-2 text-[12.5px] font-semibold leading-5 text-[color:var(--ol-muted)]">
-          {labels.empty}
-        </p>
-      </section>
-    );
-  }
-
-  const progressStatus = turn.status === "running" && turn.result?.dispatch_state
-    ? runDispatchStateLabel(turn.result.dispatch_state, locale)
-    : statusLabel(turn.status, locale);
-
-  return (
-    <section className="ol-panel ol-panel-pad min-w-0 overflow-hidden">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <strong className="block text-[16px] font-black text-[color:var(--ol-ink)]">
-            {labels.title}
-          </strong>
-          <span className="mt-1 block text-[12px] font-black text-[color:var(--ol-muted)]">
-            {labels.selectedTurn(turn.sequence)}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {turn.result?.run_id ? (
-            <Link
-              href={`/run/${encodeURIComponent(turn.result.run_id)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex h-8 items-center justify-center rounded-[10px] border border-[color:var(--ol-primary)] bg-white px-3 text-[11.5px] font-black text-[color:var(--ol-primary-dark)] transition hover:bg-[color:var(--ol-mint)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ol-primary)]/35"
-            >
-              {labels.viewRunDetails}
-            </Link>
-          ) : null}
-          <span className={`ol-chip shrink-0 ${statusToneClass(turn.status)}`}>
-            {progressStatus}
-          </span>
-        </div>
-      </div>
-
-      <div className="mt-3 grid gap-2 rounded-[14px] border border-[color:var(--ol-line)] bg-white p-3 text-[12px] font-bold text-[color:var(--ol-muted)] 2xl:grid-cols-2">
-        <MetaRow label={labels.status} value={progressStatus} />
-        <MetaRow label={labels.sentAt} value={formatDateTime(turn.createdAt, locale)} />
-        {turn.completedAt ? (
-          <MetaRow
-            label={labels.completedAt}
-            value={formatDateTime(turn.completedAt, locale)}
-          />
-        ) : null}
-        <MetaRow
-          label="Run ID"
-          value={turn.result?.run_id ?? labels.noRunYet}
-          mono={Boolean(turn.result?.run_id)}
-        />
-      </div>
-
-      <details className="mt-3 rounded-[14px] border border-[color:var(--ol-line)] bg-white">
-        <summary className="cursor-pointer px-3 py-2 text-[12px] font-black text-[color:var(--ol-ink)]">
-          {labels.rawInput}
-        </summary>
-        <pre className="max-h-[220px] overflow-auto border-t border-[color:var(--ol-line)] p-3 text-[11.5px] leading-5 text-[color:var(--ol-ink)]">
-          <code>{stringifyShort(turn.runInput)}</code>
-        </pre>
-      </details>
-    </section>
-  );
-}
-
-function MetaRow({
-  label,
-  value,
-  mono = false,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
-  return (
-    <div className="grid grid-cols-[82px_minmax(0,1fr)] gap-2">
-      <span className="text-[color:var(--ol-subtle)]">{label}</span>
-      <span
-        className={`min-w-0 text-right text-[color:var(--ol-ink)] ${
-          mono
-            ? "break-all font-mono text-[11px] [overflow-wrap:anywhere]"
-            : "truncate"
-        }`}
-        title={value}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
-
 function inputTextForDisplay(input: unknown): string {
   if (isPlainRecord(input) && typeof input.text === "string") {
     return input.text;
@@ -1042,11 +989,7 @@ function assistantTextForTurn(
   locale: Locale,
   pendingText: string,
 ): string {
-  if (turn.status === "running") {
-    return turn.result?.dispatch_state
-      ? runDispatchStateLabel(turn.result.dispatch_state, locale)
-      : pendingText;
-  }
+  if (turn.status === "running") return pendingText;
   if (turn.errorMessage) return turn.errorMessage;
   if (turn.result?.status === "success") return summarizeRunOutput(turn.result, locale);
   if (turn.result) {
@@ -1115,9 +1058,13 @@ function localID(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function scrollConversationEnd(node: HTMLDivElement | null) {
-  if (!node) return;
+/**
+ * 只滚对话容器自己。scrollIntoView 会把每一层可滚动祖先都带着滚，页面因此
+ * 在每条新事件到达时上下弹动。
+ */
+function scrollConversationEnd(container: HTMLDivElement | null) {
+  if (!container) return;
   const reduceMotion =
     window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
-  node.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "end" });
+  container.scrollTo({ top: container.scrollHeight, behavior: reduceMotion ? "auto" : "smooth" });
 }

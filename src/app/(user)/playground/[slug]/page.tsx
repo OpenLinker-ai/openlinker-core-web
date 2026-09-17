@@ -11,7 +11,6 @@
  * 视觉：参考 prototype/openlinker-flow-10-playground.png
  *   - 顶部 Topbar
  *   - 面包屑：首页 / Registry / [Agent 名] / Playground
- *   - page-head：kicker + h1 + 副标题
  *   - <PlaygroundRunner /> 渲染会话、Trace 和结果主区
  */
 
@@ -161,7 +160,7 @@ export default async function PlaygroundPage({
   return (
     <>
       <Topbar />
-      <main className="mx-auto grid w-full max-w-7xl gap-4 px-4 py-4 sm:px-6 xl:h-[calc(100dvh-84px)] xl:grid-rows-[auto_auto_minmax(0,1fr)] xl:overflow-hidden">
+      <main data-workspace-fill className="mx-auto grid w-full max-w-[1760px] gap-4 px-4 py-4 sm:px-6 min-[1120px]:min-h-0 min-[1120px]:flex-1 min-[1120px]:grid-rows-[auto_minmax(0,1fr)] min-[1120px]:overflow-hidden">
         {/* 面包屑 */}
         <nav className="flex items-center gap-1.5 text-[13px] font-bold text-[color:var(--ol-muted)]">
           <Link href="/" className="hover:text-[color:var(--ol-ink)]">
@@ -185,12 +184,6 @@ export default async function PlaygroundPage({
           <span className="text-[color:var(--ol-subtle)]">/</span>
           <span className="text-[color:var(--ol-ink)]">{copy.playground}</span>
         </nav>
-
-        <header className="ol-page-title">
-          <div className="ol-kicker">{copy.playground}</div>
-          <h1>{copy.heading}</h1>
-          <p>{copy.lead}</p>
-        </header>
 
         <div className="min-h-0">
           <PlaygroundRunner
