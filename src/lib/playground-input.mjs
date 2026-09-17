@@ -30,6 +30,23 @@ export function playgroundInitialDraft({
   return locale === "zh" ? "这里写你的任务描述" : "Write your task description here";
 }
 
+/**
+ * 该 Agent 是否只能接受结构化 input。
+ *
+ * 只有当 schema 恰好有一个必填字符串字段时，一句话才能无歧义地放进去；六个必填字段
+ * 无法从自然语言推断，这时输入框必须写 JSON，界面应当直说，而不是等到报错。
+ */
+export function playgroundStructuredInputFields(inputSchema) {
+  if (preferredTextField(inputSchema)) return null;
+  if (!isPlainRecord(inputSchema)) return null;
+  const required = Array.isArray(inputSchema.required)
+    ? inputSchema.required.filter((value) => typeof value === "string")
+    : [];
+  if (required.length > 0) return required;
+  const properties = isPlainRecord(inputSchema.properties) ? Object.keys(inputSchema.properties) : [];
+  return properties.length > 0 ? properties : [];
+}
+
 export function parsePlaygroundDraft(text, inputSchema) {
   const trimmed = String(text ?? "").trim();
   if (!trimmed) throw new PlaygroundInputError("input", "empty_input");

@@ -323,8 +323,10 @@ test("the thread fills its column and the Browser view waits for a picture", asy
     /max-w-\[980px\]/,
     "capping the panel leaves empty bands; the reading measure belongs on the messages",
   );
-  assert.match(runner, /max-w-\[min\(86%,720px\)\]/);
-  assert.match(runner, /max-w-\[min\(92%,880px\)\]/);
+  // Percent first so the bubbles follow the column when a side panel opens; the pixel
+  // ceiling only stops a line from running the full width of a very wide screen.
+  assert.match(runner, /max-w-\[min\(86%,1100px\)\]/);
+  assert.match(runner, /max-w-\[min\(92%,1280px\)\]/);
   assert.match(page, /max-w-\[1760px\]/, "the workspace uses the width a wide screen offers");
 
   // globals.css carries `main.mx-auto { max-width: 96rem !important }`, which silently
@@ -388,4 +390,25 @@ test("nothing in the workspace can push the page wider than the viewport", async
     /order-last ml-auto w-full min-w-0 text-\[11\.5px\][^"]*min-\[900px\]:truncate/,
     "truncating needs room to truncate into; on a phone the note wraps instead",
   );
+});
+
+test("an Agent that only takes structured input says so before you type", async () => {
+  const runner = await readFile(
+    path.join(root, "src/components/playground/runner.tsx"),
+    "utf8",
+  );
+  const input = await readFile(path.join(root, "src/lib/playground-input.mjs"), "utf8");
+  const globalsCss = await readFile(path.join(root, "src/app/globals.css"), "utf8");
+
+  assert.match(input, /export function playgroundStructuredInputFields/);
+  assert.match(runner, /playgroundStructuredInputFields\(inputSchema\)/);
+  assert.match(runner, /structuredFields \? copy\.structuredPlaceholder : copy\.placeholder/,
+    "the placeholder must not promise plain text the schema cannot accept");
+  assert.match(runner, /copy\.structuredHint\(structuredFields\.join/,
+    "name the required fields rather than waiting for the error");
+
+  assert.match(globalsCss, /body:has\(main\[data-workspace-fill\]\) \.ol-topbar-inner \{\s*\n\s*max-width: 1760px !important;/,
+    "the topbar must line up with the width the workspace uses");
+  assert.match(globalsCss, /body:has\(main\[data-workspace-fill\]\) > footer \{/,
+    "the footer keeps its own band small on a one-screen page");
 });

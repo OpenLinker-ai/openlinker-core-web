@@ -21,6 +21,7 @@ import {
   PlaygroundInputError,
   parsePlaygroundDraft,
   playgroundInitialDraft,
+  playgroundStructuredInputFields,
   playgroundViolationMessage,
 } from "@/lib/playground-input.mjs";
 import {
@@ -111,6 +112,8 @@ export function PlaygroundRunner({
             noReferencePrice: "未提供外部参考价格 · 可选兼容元数据",
             free: "OpenLinker Core 不据此扣费",
             placeholder: "输入问题，或粘贴 JSON input",
+            structuredPlaceholder: "这个 Agent 只接受 JSON input",
+            structuredHint: (fields: string) => `该 Agent 需要结构化 input，必填：${fields}`,
             sendHint: "Enter 发送 · Shift+Enter 换行",
             running: "运行中…",
             syncing: "登录状态同步中…",
@@ -149,6 +152,8 @@ export function PlaygroundRunner({
             noReferencePrice: "No external reference price provided · optional compatibility metadata",
             free: "Not used for OpenLinker Core billing",
             placeholder: "Enter a message, or paste JSON input",
+            structuredPlaceholder: "This Agent only accepts JSON input",
+            structuredHint: (fields: string) => `This Agent needs structured input. Required: ${fields}`,
             sendHint: "Enter to send · Shift+Enter for a new line",
             running: "Running…",
             syncing: "Syncing sign-in state…",
@@ -272,6 +277,10 @@ export function PlaygroundRunner({
     stageViewport &&
     (stageChoice ?? stageHasPicture) &&
     !(detailsOpen && !roomyViewport);
+
+  // schema 没有唯一的必填字符串字段时，纯文本无法无歧义映射，输入框必须写 JSON。
+  const structuredFields = playgroundStructuredInputFields(inputSchema);
+  const composerPlaceholder = structuredFields ? copy.structuredPlaceholder : copy.placeholder;
 
   const priceUSD = agent.price_per_call_cents > 0
     ? (agent.price_per_call_cents / 100).toFixed(3)
@@ -669,14 +678,14 @@ export function PlaygroundRunner({
 
       <section
         data-playground-composer
-        className="order-1 ol-panel bg-white p-3 min-[1120px]:order-3"
+        className="order-1 ol-panel bg-white p-2.5 min-[1120px]:order-3"
       >
         <label className="block">
-          <span className="sr-only">{copy.placeholder}</span>
+          <span className="sr-only">{composerPlaceholder}</span>
           <textarea
             ref={inputRef}
             disabled={!restored}
-            aria-label={copy.placeholder}
+            aria-label={composerPlaceholder}
             aria-invalid={inputError ? true : undefined}
             aria-describedby={inputError ? "playground-input-error" : undefined}
             value={input}
@@ -685,9 +694,9 @@ export function PlaygroundRunner({
               if (inputError) setInputError("");
             }}
             spellCheck={false}
-            placeholder={copy.placeholder}
+            placeholder={composerPlaceholder}
             rows={2}
-            className="min-h-[56px] max-h-[128px] w-full resize-none rounded-[14px] border border-[color:var(--ol-line)] bg-white px-3.5 py-2.5 text-[13px] leading-[1.6] text-[color:var(--ol-ink)] outline-none transition focus:border-[color:var(--ol-primary)] focus:ring-2 focus:ring-[color:var(--ol-primary)]/20"
+            className="min-h-[48px] max-h-[120px] w-full resize-none rounded-[14px] border border-[color:var(--ol-line)] bg-white px-3.5 py-2.5 text-[13px] leading-[1.6] text-[color:var(--ol-ink)] outline-none transition focus:border-[color:var(--ol-primary)] focus:ring-2 focus:ring-[color:var(--ol-primary)]/20"
             onKeyDown={(event) => {
               if (isPlaygroundSubmitKey({
                 key: event.key,
@@ -716,9 +725,11 @@ export function PlaygroundRunner({
           </button>
         ))}
 
-        <div className="mt-2 flex items-center justify-between gap-3">
-          <span className="min-w-0 truncate text-[11.5px] font-extrabold text-[color:var(--ol-subtle)]">
-            {copy.sendHint}
+        <div className="mt-1.5 flex items-center justify-between gap-3">
+          <span className="min-w-0 text-[11.5px] font-extrabold text-[color:var(--ol-subtle)]">
+            {structuredFields && structuredFields.length > 0
+              ? copy.structuredHint(structuredFields.join("、"))
+              : copy.sendHint}
           </span>
           <button
             type="button"
@@ -918,14 +929,14 @@ function ConversationTurn({
       </span>
 
       <div className="flex justify-end">
-        <p className="max-w-[min(86%,720px)] whitespace-pre-wrap break-words rounded-[16px] rounded-br-md bg-[color:var(--ol-primary)] px-3.5 py-2.5 text-[13px] leading-5 text-white">
+        <p className="max-w-[min(86%,1100px)] whitespace-pre-wrap break-words rounded-[16px] rounded-br-md bg-[color:var(--ol-primary)] px-3.5 py-2.5 text-[13px] leading-5 text-white">
           {turn.inputText}
         </p>
       </div>
 
       <div className="flex justify-start">
         <div
-          className={`min-w-0 max-w-[min(92%,880px)] rounded-[16px] rounded-bl-md border px-3.5 py-2.5 text-[13px] leading-[1.6] ${
+          className={`min-w-0 max-w-[min(92%,1280px)] rounded-[16px] rounded-bl-md border px-3.5 py-2.5 text-[13px] leading-[1.6] ${
             failed
               ? "border-[#f1c0c0] bg-[#fdecec] text-[#a3382c]"
               : "border-[color:var(--ol-line)] bg-white text-[color:var(--ol-ink)]"

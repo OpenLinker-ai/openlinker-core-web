@@ -663,12 +663,22 @@ body > main {
    */
   main.mx-auto[data-workspace-fill] {
     max-width: 1760px !important;
-    padding: 16px 1.5rem !important;
+    padding: 12px 1.5rem !important;
+  }
+
+  /* 顶栏和页脚跟着铺满页面走：顶栏内容对齐同一宽度，页脚不再占掉一屏里的一大条。 */
+  body:has(main[data-workspace-fill]) .ol-topbar-inner {
+    max-width: 1760px !important;
+  }
+
+  body:has(main[data-workspace-fill]) > footer {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
   }
 
   @media (max-width: 767px) {
     main.mx-auto[data-workspace-fill] {
-      padding: 16px 1rem !important;
+      padding: 12px 1rem !important;
     }
   }
 
