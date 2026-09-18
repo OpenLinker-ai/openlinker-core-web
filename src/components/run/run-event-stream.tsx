@@ -17,6 +17,7 @@ import {
   runStatusLabel,
   streamStateLabel as localizedStreamStateLabel,
 } from "@/lib/i18n-labels";
+import { providerToolProgressPresentation } from "@/lib/provider-tool-progress.mjs";
 
 type RunEvent = {
   event_id: string;
@@ -625,7 +626,7 @@ function eventMeta(event: RunEvent, locale: Locale): {
       };
     case "run.status.changed":
       {
-        const providerTool = providerToolEventMeta(event.payload, locale);
+        const providerTool = providerToolProgressPresentation(event.payload, locale);
         if (providerTool) return providerTool;
         const providerFailure = providerFailureEventMeta(event.payload, locale);
         if (providerFailure) return providerFailure;
@@ -693,58 +694,6 @@ function eventMeta(event: RunEvent, locale: Locale): {
         tone: "bg-[color:var(--ol-soft)] text-[color:var(--ol-ink)]",
       };
   }
-}
-
-function providerToolEventMeta(
-  payload: Record<string, unknown>,
-  locale: Locale,
-): {
-  title: string;
-  detail: string;
-  icon: IconName;
-  tone: string;
-} | null {
-  if (payload.provider !== "codex") return null;
-  const phase = String(payload.phase ?? "");
-  const toolKind = String(payload.tool_kind ?? "");
-  if (!["started", "completed", "failed"].includes(phase)) return null;
-  const isZh = locale === "zh";
-  const tool = isZh
-    ? ({
-        web_search: "联网搜索",
-        command: "运行工具",
-        mcp_tool: "MCP 工具",
-      } as Record<string, string>)[toolKind]
-    : ({
-        web_search: "Web search",
-        command: "Tool command",
-        mcp_tool: "MCP tool",
-      } as Record<string, string>)[toolKind];
-  if (!tool) return null;
-  if (phase === "failed") {
-    return {
-      title: isZh ? `${tool}失败` : `${tool} failed`,
-      detail: isZh
-        ? "Codex 未能完成这次工具操作，正在决定是否继续或降级处理。"
-        : "Codex could not complete this tool operation and is deciding whether to continue or fall back.",
-      icon: "warn",
-      tone: "bg-[#FFF4D8] text-[#9A6200]",
-    };
-  }
-  if (phase === "completed") {
-    return {
-      title: isZh ? `${tool}完成` : `${tool} completed`,
-      detail: isZh ? "Codex 已收到工具结果。" : "Codex received the tool result.",
-      icon: "check",
-      tone: "bg-[color:var(--ol-mint)] text-[color:var(--ol-primary-dark)]",
-    };
-  }
-  return {
-    title: isZh ? `正在${tool}` : `${tool} in progress`,
-    detail: isZh ? "Codex 已启动工具，正在等待结果。" : "Codex started the tool and is waiting for its result.",
-    icon: toolKind === "web_search" ? "globe" : "refresh",
-    tone: "bg-[color:var(--ol-blue-soft)] text-[color:var(--ol-blue)]",
-  };
 }
 
 /**

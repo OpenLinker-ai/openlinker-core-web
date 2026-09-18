@@ -158,19 +158,13 @@ test("provider tool progress has localized safe rendering", async () => {
     path.join(root, "src/components/run/run-event-stream.tsx"),
     "utf8",
   );
-  assert.match(stream, /payload\.provider !== "codex"/);
-  for (const value of [
-    "web_search",
-    "command",
-    "mcp_tool",
-    "browser",
-    "联网搜索",
-    "Web search",
-    "providerToolEventMeta",
-  ]) {
-    assert.ok(stream.includes(value), `missing provider progress value: ${value}`);
+  // 工具进度文案在共享模块里，Codex 与 Claude 走同一条路径（行为见 playground-provider-tool-progress.test.mjs）。
+  assert.match(stream, /providerToolProgressPresentation\(event\.payload, locale\)/);
+  assert.doesNotMatch(stream, /payload\.provider !== "codex"/, "Claude tool progress must not fall through to a generic row");
+  const progress = await readFile(path.join(root, "src/lib/provider-tool-progress.mjs"), "utf8");
+  for (const source of [stream, progress]) {
+    assert.doesNotMatch(source, /payload\.(?:command|arguments|thread_id)/);
   }
-  assert.doesNotMatch(stream, /payload\.(?:command|arguments|thread_id)/);
 
   assert.match(stream, /provider_error_kind/, "an interrupted provider run must say why it stopped");
   assert.match(stream, /max_messages/);
