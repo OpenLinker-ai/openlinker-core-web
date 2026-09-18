@@ -28,13 +28,19 @@ const TOOL_LABELS = {
 
 const PHASES = new Set(["started", "completed", "failed"]);
 
+// 负载来自网络，只认字符串自有键：String(["codex"]) 会变成 "codex"，
+// "toString"、"constructor" 这类键会从原型链上查到函数。
+function lookup(table, value) {
+  return typeof value === "string" && Object.hasOwn(table, value) ? table[value] : null;
+}
+
 export function providerToolProgressPresentation(payload, locale) {
-  const provider = PROVIDER_NAMES[String(payload?.provider ?? "")];
+  const provider = lookup(PROVIDER_NAMES, payload?.provider);
   if (!provider) return null;
-  const phase = String(payload.phase ?? "");
-  if (!PHASES.has(phase)) return null;
+  const phase = payload.phase;
+  if (typeof phase !== "string" || !PHASES.has(phase)) return null;
   const isZh = locale === "zh";
-  const tool = TOOL_LABELS[isZh ? "zh" : "en"][String(payload.tool_kind ?? "")];
+  const tool = lookup(TOOL_LABELS[isZh ? "zh" : "en"], payload.tool_kind);
   if (!tool) return null;
 
   if (phase === "failed") {

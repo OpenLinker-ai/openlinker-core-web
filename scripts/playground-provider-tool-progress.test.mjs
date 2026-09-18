@@ -46,6 +46,26 @@ test("unknown providers, phases and tool kinds fall back to the caller", () => {
   );
 });
 
+test("only exact string fields select a row", () => {
+  // 数组会被 String() 拍平成合法键，原型链上的键会查到函数；都必须回退给调用方。
+  for (const payload of [
+    { provider: ["codex"], phase: "started", tool_kind: "command" },
+    { provider: "codex", phase: ["started"], tool_kind: "command" },
+    { provider: "codex", phase: "started", tool_kind: ["web_search"] },
+    { provider: { toString: () => "claude" }, phase: "started", tool_kind: "command" },
+    { provider: "toString", phase: "started", tool_kind: "command" },
+    { provider: "__proto__", phase: "started", tool_kind: "command" },
+    { provider: "codex", phase: "started", tool_kind: "constructor" },
+    { provider: "claude", phase: "completed", tool_kind: "hasOwnProperty" },
+  ]) {
+    for (const locale of ["zh", "en"]) {
+      assert.equal(providerToolProgressPresentation(payload, locale), null, JSON.stringify(payload));
+    }
+  }
+  assert.equal(providerToolProgressPresentation(null, "zh"), null);
+  assert.equal(providerToolProgressPresentation(undefined, "en"), null);
+});
+
 test("the row never echoes tool arguments or results", () => {
   const row = providerToolProgressPresentation(
     { ...event("claude", "completed", "command"), command: "rm -rf /secret", arguments: "token=abc", result: "leak" },
