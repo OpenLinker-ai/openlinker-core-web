@@ -880,7 +880,10 @@ body > main {
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-end;
-    gap: 4px;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 999px;
+    background: #eef3f5;
   }
 
   @media (max-width: 720px) {
@@ -898,21 +901,29 @@ body > main {
     }
   }
 
+  /* 分段控件：灰色轨道 + 白色选中段，与状态 chip（薄荷底）和按钮区分 */
   .ol-code-tab {
     height: 26px;
     padding: 0 10px;
     border-radius: 999px;
-    background: var(--ol-soft);
+    background: transparent;
     color: var(--ol-muted);
     font-size: 12px;
     font-weight: 850;
     line-height: 26px;
     border: none;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+  }
+
+  .ol-code-tab:hover {
+    color: var(--ol-ink);
   }
 
   .ol-code-tab.active {
-    background: var(--ol-mint);
-    color: var(--ol-primary-dark);
+    background: #ffffff;
+    color: var(--ol-ink);
+    box-shadow: 0 1px 2px rgba(25, 66, 84, 0.12);
   }
 
   .ol-code-tab[disabled] {
@@ -1140,27 +1151,32 @@ body > main {
     height: 30px;
     padding: 0 12px;
     border-radius: 999px;
-    background: var(--ol-mint);
-    color: var(--ol-primary-dark);
+    /* 次要按钮：白底描边；薄荷底只留给状态 chip，避免按钮和标签混淆 */
+    background: #ffffff;
+    color: var(--ol-ink);
     font-size: 12px;
     font-weight: 950;
     white-space: nowrap;
-    border: none;
+    border: 1px solid var(--ol-line);
     cursor: pointer;
-    transition: background-color 0.15s;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
   }
 
   .ol-mini-btn:hover {
-    background: var(--ol-mint-2);
+    border-color: color-mix(in oklab, var(--ol-primary) 45%, white);
+    color: var(--ol-primary-dark);
   }
 
   .ol-mini-btn-primary {
     background: var(--ol-primary);
+    border-color: var(--ol-primary);
     color: #ffffff;
   }
 
   .ol-mini-btn-primary:hover {
     background: var(--ol-primary-dark);
+    border-color: var(--ol-primary-dark);
+    color: #ffffff;
   }
 
   @container ol-agent-list (max-width: 620px) {
