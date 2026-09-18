@@ -215,7 +215,7 @@ function VisibilityBadge({
     },
     unlisted: {
       label: locale === "zh" ? "链接可见" : "Unlisted",
-      className: "bg-blue-100 text-blue-700",
+      className: "bg-[color:var(--ol-blue-soft)] text-[color:var(--ol-blue)]",
     },
     private: {
       label: locale === "zh" ? "私有" : "Private",

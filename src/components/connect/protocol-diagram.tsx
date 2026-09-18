@@ -82,7 +82,7 @@ export function ProtocolDiagram({ locale = "zh" }: { locale?: Locale }) {
     >
       <div className="ol-kicker">{copy.kicker}</div>
       <div className="mt-4 grid items-stretch gap-5 xl:grid-cols-[1fr_minmax(320px,1.5fr)_1fr]">
-        <div className="ol-panel" style={{ padding: 18, boxShadow: "none", borderColor: "rgba(49,118,237,0.3)" }}>
+        <div className="ol-panel" style={{ padding: 18, boxShadow: "none", borderColor: "rgba(44,106,114,0.3)" }}>
           <div className="flex items-center gap-2.5">
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-[12px] bg-[color:var(--ol-blue)] text-white">
               <Icon name="bot" size="lg" />
