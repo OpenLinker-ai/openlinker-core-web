@@ -22,12 +22,13 @@ body > main {
 
   /* 原型设计 token —— 直接对应原型 :root */
   --ol-bg: #f3fbfa;
-  --ol-bg-blue: #eef6ff;
+  /* --ol-blue* 保留旧名以兼容 ol-chip-blue / tone="blue"，取值为青色系 info 色，不再使用蓝色 */
+  --ol-bg-blue: #eef7f6;
   --ol-surface: #ffffff;
   --ol-soft: #f7fbfc;
   --ol-mint: #e5f7f3;
   --ol-mint-2: #c9eee7;
-  --ol-blue-soft: #eaf3ff;
+  --ol-blue-soft: #e7f2f3;
   --ol-amber-soft: #fff5df;
   --ol-green-soft: #e8f8ef;
   --ol-ink: #102033;
@@ -36,7 +37,7 @@ body > main {
   --ol-line: #dbe8ef;
   --ol-primary: #17857b;
   --ol-primary-dark: #0f6f67;
-  --ol-blue: #3176ed;
+  --ol-blue: #2c6a72;
   --ol-amber: #c8830d;
   --ol-green: #218a52;
   --ol-violet: #715bd9;
@@ -114,10 +115,15 @@ body > main {
     min-height: 100%;
   }
 
+  /* 原生 checkbox / radio / range 默认是浏览器蓝，统一为品牌色 */
+  html {
+    accent-color: var(--ol-primary);
+  }
+
   body {
     background:
       radial-gradient(circle at 12% 12%, rgba(15, 145, 135, 0.08), transparent 30%),
-      radial-gradient(circle at 92% 5%, rgba(49, 118, 237, 0.06), transparent 30%),
+      radial-gradient(circle at 92% 5%, rgba(44, 106, 114, 0.05), transparent 30%),
       linear-gradient(180deg, #fbfefe, var(--ol-bg));
     background-attachment: fixed;
     color: var(--ol-ink);
@@ -1785,10 +1791,10 @@ body > main {
     border-color: rgba(15, 145, 135, 0.3);
   }
 
-  /* 蓝色变体：买方视角 stat-card 强调（如本月调用次数） */
+  /* info 变体（沿用 blue 类名，已映射为品牌青色系）：买方视角 stat-card 强调 */
   .ol-stat-card.blue {
-    background: linear-gradient(135deg, #ffffff, #eaf3ff);
-    border-color: rgba(49, 118, 237, 0.25);
+    background: linear-gradient(135deg, #ffffff, var(--ol-blue-soft));
+    border-color: rgba(44, 106, 114, 0.25);
   }
 
   /* item-row：横排 dash-list 单条（38 字母 + 文字 + 右侧 meta） */

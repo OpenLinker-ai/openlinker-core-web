@@ -573,14 +573,14 @@ function eventMeta(event: RunEvent, locale: Locale): {
         title: isZh ? "调用 Agent" : "Agent invoked",
         detail: startedDetail(event.payload, locale),
         icon: "refresh",
-        tone: "bg-[#EAF1FF] text-[#2952A3]",
+        tone: "bg-[color:var(--ol-blue-soft)] text-[color:var(--ol-blue)]",
       };
     case "run.dispatch.pending":
       return {
         title: isZh ? "等待 Runtime Worker" : "Waiting for Runtime Worker",
         detail: dispatchDetail(event.payload, locale, "pending"),
         icon: "refresh",
-        tone: "bg-[#EAF1FF] text-[#2952A3]",
+        tone: "bg-[color:var(--ol-blue-soft)] text-[color:var(--ol-blue)]",
       };
     case "run.dispatch.waiting_runtime":
       return {
@@ -603,7 +603,7 @@ function eventMeta(event: RunEvent, locale: Locale): {
           ? `Skill/MCP 需求是否满足：${coverageStatusLabel(String(event.payload.coverage_status ?? ""), locale)}`
           : `Skill/MCP requirements met: ${coverageStatusLabel(String(event.payload.coverage_status ?? ""), locale)}`,
         icon: "target",
-        tone: "bg-[#EAF1FF] text-[#2952A3]",
+        tone: "bg-[color:var(--ol-blue-soft)] text-[color:var(--ol-blue)]",
       };
     case "run.browser.lifecycle":
       return browserLifecyclePresentation(event.payload, locale);
@@ -621,7 +621,7 @@ function eventMeta(event: RunEvent, locale: Locale): {
         title: messageDeltaTitle(event.payload, locale),
         detail: messageDeltaDetail(event.payload, locale),
         icon: "message",
-        tone: "bg-[#EAF1FF] text-[#2952A3]",
+        tone: "bg-[color:var(--ol-blue-soft)] text-[color:var(--ol-blue)]",
       };
     case "run.status.changed":
       {
@@ -743,7 +743,7 @@ function providerToolEventMeta(
     title: isZh ? `正在${tool}` : `${tool} in progress`,
     detail: isZh ? "Codex 已启动工具，正在等待结果。" : "Codex started the tool and is waiting for its result.",
     icon: toolKind === "web_search" ? "globe" : "refresh",
-    tone: "bg-[#EAF1FF] text-[#2952A3]",
+    tone: "bg-[color:var(--ol-blue-soft)] text-[color:var(--ol-blue)]",
   };
 }
 
