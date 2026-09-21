@@ -39,6 +39,10 @@ export function browserObservationRequestPath(operation, runId, after = 0) {
     const cursor = Number.isSafeInteger(after) && after >= 0 ? after : 0;
     return `${base}/frame?after=${cursor}`;
   }
+  // The snapshot an ended observation finished on. Read once after a terminal
+  // state instead of through the live poll, so "still watching" and "this is what
+  // the round ended on" cannot be confused for one another.
+  if (operation === "final-frame") return `${base}/final-frame`;
   throw new TypeError("unknown Browser observation operation");
 }
 
@@ -59,6 +63,13 @@ export function browserObservationFailureStatus(failure) {
 }
 
 function failureKind(operation, status) {
+  // 503 is the one answer a final-frame read has of its own: the observation ran
+  // on another Core instance, so no snapshot is recoverable rather than none
+  // existing. A 204 is not a failure at all and never reaches here.
+  if (operation === "final-frame" && status === 503) return "unreachable";
+  // 425: Core has not settled whether this round leaves a picture, because the
+  // observation has not closed there yet. Retriable, and never a conclusion.
+  if (operation === "final-frame" && status === 425) return "unsettled";
   if (operation === "frame" && status === 429) return "viewer-capacity";
   if (operation === "frame" && status === 409) return "inactive";
   if (operation === "start" && status === 409) return "conflict";

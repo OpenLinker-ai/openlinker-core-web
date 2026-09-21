@@ -76,3 +76,50 @@ test("the row never echoes tool arguments or results", () => {
     assert.ok(!text.includes(leaked), `presentation must not include ${leaked}`);
   }
 });
+
+// tool_kind 对每个 MCP 调用都是 mcp_tool，而可配置的 MCP 服务器不止浏览器，
+// 所以「这一轮用了浏览器还是只搜索了」必须靠 Plugin 可信 broker 带的 tool_scope，
+// 不能从 kind 推断。缺少该字段时退回通用 MCP 文案，不做猜测。
+test("a Browser-scoped MCP marker is named as page browsing, not a generic MCP tool", () => {
+  const browser = (phase, locale) =>
+    providerToolProgressPresentation(
+      { ...event("codex", phase, "mcp_tool"), tool_scope: "browser_session" },
+      locale,
+    );
+  assert.equal(browser("started", "zh")?.title, "正在浏览网页");
+  assert.equal(browser("started", "zh")?.icon, "globe");
+  assert.equal(browser("started", "en")?.title, "Page browsing in progress");
+  assert.equal(browser("completed", "zh")?.title, "浏览网页完成");
+  assert.equal(browser("failed", "en")?.title, "Page browsing failed");
+
+  // 没有 scope 的 MCP 调用仍是通用文案：另一个 MCP 服务器不该被说成浏览器。
+  assert.equal(providerToolProgressPresentation(event("codex", "started", "mcp_tool"), "zh")?.title, "正在MCP 工具");
+
+  // scope 也只认精确字符串自有键，和其他字段同一条规则。
+  for (const scope of [["browser_session"], "toString", "__proto__", "browser", ""]) {
+    assert.equal(
+      providerToolProgressPresentation(
+        { ...event("codex", "started", "mcp_tool"), tool_scope: scope },
+        "zh",
+      )?.title,
+      "正在MCP 工具",
+      `scope ${JSON.stringify(scope)} must not select the Browser row`,
+    );
+  }
+
+  // scope 不放宽其他字段：没有已知阶段或已知 provider 的负载仍然回退给调用方。
+  assert.equal(
+    providerToolProgressPresentation(
+      { provider: "codex", status: "provider_tool_started", tool_scope: "browser_session" },
+      "zh",
+    ),
+    null,
+  );
+  assert.equal(
+    providerToolProgressPresentation(
+      { provider: "gemini", status: "provider_tool_started", phase: "started", tool_scope: "browser_session" },
+      "zh",
+    ),
+    null,
+  );
+});

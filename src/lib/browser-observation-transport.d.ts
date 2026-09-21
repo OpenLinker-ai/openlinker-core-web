@@ -1,5 +1,5 @@
-export type BrowserObservationOperation = "state" | "start" | "stop" | "frame";
-export type BrowserObservationFailureKind = "viewer-capacity" | "inactive" | "conflict" | "start-capacity" | "forbidden" | "failed";
+export type BrowserObservationOperation = "state" | "start" | "stop" | "frame" | "final-frame";
+export type BrowserObservationFailureKind = "viewer-capacity" | "inactive" | "conflict" | "start-capacity" | "forbidden" | "unreachable" | "unsettled" | "failed";
 export const browserObservationFrameCapacityRetryMS: 5000;
 export class BrowserObservationRequestFailure extends Error {
   operation: BrowserObservationOperation;

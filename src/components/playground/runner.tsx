@@ -29,6 +29,7 @@ import {
   completeRunCreationIntent,
 } from "@/lib/run-idempotency";
 import { hasPlaygroundBrowserObservation } from "./browser-observation-disclosure.mjs";
+import { BrowserObservationFinalFrameReader } from "@/components/run/browser-final-frame";
 import { PlaygroundBrowserStage } from "./browser-stage";
 import {
   browserObservationHandoffSnapshot,
@@ -801,6 +802,17 @@ export function PlaygroundRunner({
             </div>
           </div>
         </section>
+
+        {/* 读末帧的动作挂在这里，不挂在画面栏里：本轮没有实时帧时画面栏默认收起，
+            挂在里面的读取恰好在最需要它的那些轮次里永远不会执行。 */}
+        {stageResult?.run_id &&
+        (stageTurn?.status === "success" || stageTurn?.status === "failed") ? (
+          <BrowserObservationFinalFrameReader
+            runId={stageResult.run_id}
+            terminal
+            onSnapshot={handleBrowserFrame}
+          />
+        ) : null}
 
         {stageOpen && stageResult ? (
           <aside className="min-h-0 overflow-y-auto overscroll-contain min-[1120px]:min-w-[320px] min-[1120px]:basis-[44%]">

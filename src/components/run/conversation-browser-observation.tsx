@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { BrowserObservationFinalFrameReader } from "@/components/run/browser-final-frame";
 import {
   BrowserObservation,
   type BrowserObservationSnapshot,
@@ -195,6 +196,12 @@ export function ConversationBrowserObservation({
     ? browserConversationItem(coordinator, targetRunId)
     : null;
   const targetTerminal = Boolean(targetItem && targetItem.status !== "running");
+  // Live authority ends as soon as the Run stops running, but a Run that has not
+  // started yet is not a round that ended: reading its final frame would ask about
+  // a picture that cannot exist yet.
+  const targetEnded = Boolean(
+    targetItem && ["success", "failed", "canceled", "timeout"].includes(targetItem.status),
+  );
   const targetSnapshot = targetRunId
     ? browserObservationSnapshotForRun(coordinator, coordinator.scopeKey, targetRunId)
     : null;
@@ -241,6 +248,18 @@ export function ConversationBrowserObservation({
           {coordinator.enabled ? text.current : projectionLoaded ? text.anchored : "…"}
         </span>
       </header>
+
+      {/* Mounted here rather than inside the viewer below: every branch under this
+          point can hide the viewer -- a suppressed viewer, a projection that has
+          not loaded, a turn that produced no picture -- and the frame a round
+          ended on has to be read back in exactly those cases. */}
+      {targetRunId && targetEnded ? (
+        <BrowserObservationFinalFrameReader
+          runId={targetRunId}
+          terminal
+          onSnapshot={handleFrame}
+        />
+      ) : null}
 
       <div className="grid gap-4 p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-[13px] border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)]/65 px-3 py-2.5 text-[11.5px] font-bold text-[color:var(--ol-muted)]">
