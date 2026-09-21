@@ -145,7 +145,10 @@ test("terminal releases authority but retains the Run-keyed last frame", () => {
   assert.ok(source.includes("sessionRef.current.terminal(runId)"));
   assert.ok(source.includes('if (terminal && action === "start") return'));
   assert.ok(source.includes("const observed = !terminal &&"));
-  assert.match(source, /const statusText = terminal[\s\S]{0,120}frozenLabel/);
+  // The terminal status now names which picture is on screen. The claim it used
+  // to make -- any frame in hand is "the frame this ended on" -- is what the
+  // separate final-snapshot read replaced.
+  assert.match(source, /const statusText = terminal[\s\S]{0,120}text\.finalSnapshot/);
   assert.ok(source.includes("{displayed ? ("), "a frozen frame must render without a live lease");
   assert.ok(source.includes("retainedSnapshot?.runId === runId"));
   assert.ok(source.includes("handoffSnapshot?.runId !== runId"));
@@ -187,4 +190,117 @@ test("passive attachment has no lease-level stop control", () => {
   assert.ok(source.includes(': owned ? ('));
   assert.ok(source.includes(': passive ? null : ('));
   assert.ok(source.includes('browserObservationFailureKind(cause) === "conflict"'));
+});
+
+const reader = readFileSync(
+  new URL("../components/run/browser-final-frame.tsx", import.meta.url),
+  "utf8",
+);
+const runner = readFileSync(
+  new URL("../components/playground/runner.tsx", import.meta.url),
+  "utf8",
+);
+const conversation = readFileSync(
+  new URL("../components/run/conversation-browser-observation.tsx", import.meta.url),
+  "utf8",
+);
+
+// The frame a page last received is not the frame a round ended on: the final one
+// is delivered around the same terminal update that stops the poll. It has to be
+// read back from its own surface, through the shared store so two views of one
+// Run are one request.
+test("a terminal Run reads its final snapshot back instead of trusting the last frame", () => {
+  assert.ok(
+    reader.includes('operation: "final-frame"') === false,
+    "the operation belongs to the transport call, not a literal here",
+  );
+  assert.ok(
+    reader.includes("browserFinalFrameStore"),
+    "the read must go through the shared store, or two views become two requests",
+  );
+  assert.ok(
+    reader.includes("classify: browserObservationFailureKind"),
+    "failure classification stays in the transport module",
+  );
+  assert.ok(
+    reader.includes('frame: settled.frame, final: true'),
+    "only a Core-confirmed snapshot may be marked final",
+  );
+  assert.ok(
+    source.includes("useBrowserObservationFinalFrame({"),
+    "the viewer must use the shared hook rather than its own read",
+  );
+});
+
+// The read cannot live inside the viewer: a turn with no live frame leaves the
+// Playground stage collapsed and the disclosure closed, so a read mounted in
+// there would never run for exactly the rounds that need it. It is mounted by the
+// views that own the conversation's snapshots, outside every collapse.
+test("the final-frame read is mounted outside the collapsible viewer", () => {
+  for (const [name, code, gate] of [
+    ["runner", runner, "{stageOpen && stageResult ? ("],
+    ["conversation", conversation, ") : targetRunId ? ("],
+  ]) {
+    const mount = code.indexOf("<BrowserObservationFinalFrameReader");
+    assert.notEqual(mount, -1, `${name} does not mount the final-frame reader`);
+    const collapse = code.indexOf(gate);
+    assert.notEqual(collapse, -1, `${name} no longer has its ${gate} branch`);
+    assert.ok(
+      mount < collapse,
+      `${name} mounts the reader inside the branch that hides the viewer`,
+    );
+  }
+  // And it is only mounted for a round that has ended, not while frames are live.
+  // Only a round that actually ended. A Run that has not started yet is not an
+  // empty round, and asking about it would answer a picture that cannot exist.
+  assert.match(
+    runner,
+    /stageTurn\?\.status === "success" \|\| stageTurn\?\.status === "failed"\) \? \(\s*<BrowserObservationFinalFrameReader/,
+  );
+  assert.match(conversation, /targetEnded \? \(\s*<BrowserObservationFinalFrameReader/);
+  assert.match(
+    conversation,
+    /targetEnded = Boolean\([\s\S]{0,200}"success", "failed", "canceled", "timeout"/,
+  );
+});
+
+// A cancelled effect must not leave the Run unaskable. The marker that used to be
+// set before the request is gone: the store owns in-flight state, so a re-running
+// effect joins the same request instead of being locked out by its own cleanup.
+test("a cancelled read does not prevent the next one", () => {
+  assert.equal(
+    source.includes("finalReadRef"),
+    false,
+    "a component-level read marker cannot gate a request the store owns",
+  );
+  assert.equal(
+    reader.includes("finalReadRef"),
+    false,
+    "the reader must not reintroduce a marker its own cleanup would strand",
+  );
+  assert.match(
+    reader,
+    /return \(\) => \{[\s\S]{0,400}cancelled = true;/,
+    "cleanup may only stop this view listening",
+  );
+});
+
+// Three outcomes, three sentences. Presenting any frame in hand as "the final
+// frame" is the claim the diagnosis found unfounded.
+test("the terminal label separates a final snapshot from the last frame received", () => {
+  assert.ok(
+    source.includes("const showingFinal = Boolean(shown && finalConfirmed && shown === finalConfirmed)"),
+  );
+  const statusStart = source.indexOf("const statusText");
+  const statusEnd = source.indexOf("return (", statusStart);
+  const status = source.slice(statusStart, statusEnd);
+  assert.match(status, /showingFinal\s*\? text\.finalSnapshot/);
+  assert.match(status, /shown\s*\n?\s*\? text\.lastReceived/);
+  assert.match(status, /finalKind === "unreachable"/);
+  assert.match(status, /finalKind === "unsettled"/);
+  assert.equal(
+    /\? frozenLabel/.test(status),
+    false,
+    "an unconfirmed frame must not be labelled as the round's final frame",
+  );
 });

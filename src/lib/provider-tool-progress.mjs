@@ -26,6 +26,16 @@ const TOOL_LABELS = {
   },
 };
 
+// tool_kind 对所有 MCP 调用都是 mcp_tool，而可配置的 MCP 服务器不止浏览器，
+// 所以「这一轮到底用了浏览器还是只是搜索」不能从 kind 读出来。Plugin 的可信
+// broker 会在负载上带 tool_scope，只有它出现时才按浏览器出文案；缺失就退回
+// 通用 MCP 文案，不做推断。
+// 标签要同时能填进三个阶段模板（正在X / X完成 / X失败），所以用动名词而不是工具名。
+const TOOL_SCOPE_LABELS = {
+  zh: { browser_session: "浏览网页" },
+  en: { browser_session: "Page browsing" },
+};
+
 const PHASES = new Set(["started", "completed", "failed"]);
 
 // 负载来自网络，只认字符串自有键：String(["codex"]) 会变成 "codex"，
@@ -40,8 +50,11 @@ export function providerToolProgressPresentation(payload, locale) {
   const phase = payload.phase;
   if (typeof phase !== "string" || !PHASES.has(phase)) return null;
   const isZh = locale === "zh";
-  const tool = lookup(TOOL_LABELS[isZh ? "zh" : "en"], payload.tool_kind);
+  const tool =
+    lookup(TOOL_SCOPE_LABELS[isZh ? "zh" : "en"], payload.tool_scope) ??
+    lookup(TOOL_LABELS[isZh ? "zh" : "en"], payload.tool_kind);
   if (!tool) return null;
+  const browser = lookup(TOOL_SCOPE_LABELS.en, payload.tool_scope) !== null;
 
   if (phase === "failed") {
     return {
@@ -66,7 +79,7 @@ export function providerToolProgressPresentation(payload, locale) {
     detail: isZh
       ? `${provider} 已启动工具，正在等待结果。`
       : `${provider} started the tool and is waiting for its result.`,
-    icon: payload.tool_kind === "web_search" ? "globe" : "refresh",
+    icon: payload.tool_kind === "web_search" || browser ? "globe" : "refresh",
     tone: "bg-[color:var(--ol-blue-soft)] text-[color:var(--ol-blue)]",
   };
 }

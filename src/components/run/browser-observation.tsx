@@ -14,6 +14,7 @@ import {
   releaseBusy,
   startObservationWithFollowIntent,
 } from "@/lib/browser-observation-session.mjs";
+import { useBrowserObservationFinalFrame } from "./browser-final-frame";
 import {
   browserObservationFailureCause,
   browserObservationFailureKind,
@@ -46,6 +47,11 @@ export type ObservationFrame = {
 export type BrowserObservationSnapshot = {
   runId: string;
   frame: ObservationFrame;
+  // True only for a snapshot Core confirmed is the one its observation ended on.
+  // A frame that merely happens to be the last one this page received is not
+  // that, and must not be presented as it: the two differ exactly when the final
+  // frame arrives after a viewer stops polling.
+  final?: boolean;
 };
 
 type ObservationPreparingState = {
@@ -62,6 +68,16 @@ const copy = {
     live: "实时",
     readOnly: "只读",
     frozen: "任务结束时画面",
+    finalSnapshot: "本轮最终画面（已由 Core 保留）",
+    lastReceived: "最后收到的画面（非本轮最终画面）",
+    finalUnreachable: "本轮最终画面在另一 Core 实例上，无法取回；下面是本页最后收到的画面。",
+    finalUnreachableNoFrame: "本轮最终画面在另一 Core 实例上，无法取回。",
+    finalChecking: "正在取回本轮最终画面…",
+    finalUnsettled: "本轮最终画面尚未确定（结束流程未完成）；下面是本页最后收到的画面。",
+    finalUnsettledNoFrame: "本轮最终画面尚未确定：结束流程还没完成，稍后重新打开可再试。",
+    finalFailed: "无法确认本轮最终画面；下面是本页最后收到的画面。",
+    finalFailedNoFrame: "无法确认本轮是否留下最终画面。",
+    finalFrameAlt: "本轮由 Core 保留的最终浏览器画面",
     stoppedFrame: "画面已停止更新",
     runEnded: "运行已结束",
     turnEnded: "本轮已完成",
@@ -96,6 +112,16 @@ const copy = {
     live: "Live",
     readOnly: "Read only",
     frozen: "Task-end frame",
+    finalSnapshot: "Final frame of this turn (retained by Core)",
+    lastReceived: "Last frame received (not the final frame)",
+    finalUnreachable: "The final frame is held by another Core instance and cannot be retrieved; below is the last frame this page received.",
+    finalUnreachableNoFrame: "The final frame is held by another Core instance and cannot be retrieved.",
+    finalChecking: "Retrieving the final frame of this turn…",
+    finalUnsettled: "The final frame is not settled yet (the round is still closing); below is the last frame this page received.",
+    finalUnsettledNoFrame: "The final frame is not settled yet: the round is still closing. Reopen this view to try again.",
+    finalFailed: "The final frame could not be confirmed; below is the last frame this page received.",
+    finalFailedNoFrame: "Whether this turn retained a final frame could not be confirmed.",
+    finalFrameAlt: "Final Browser frame retained by Core for this turn",
     stoppedFrame: "Frame updates stopped",
     runEnded: "Run ended",
     turnEnded: "Turn completed",
@@ -172,6 +198,14 @@ export function BrowserObservation({
     null,
   );
   const [expandedView, setExpandedView] = useState(false);
+  // The frame Core says this round's observation ended on, read back through the
+  // shared store so a collapsed view's reader and this one are one request.
+  const finalFrame = useBrowserObservationFinalFrame({
+    runId,
+    terminal,
+    enabled,
+    onSnapshot: onFrame,
+  });
   const [leaseMode, setLeaseMode] = useState<"owned" | "passive" | "none">("none");
   const [, setPreparingRevision] = useState(0);
   const sequenceRef = useRef(0);
@@ -602,7 +636,20 @@ export function BrowserObservation({
   const retained = retainedSnapshot?.runId === runId
     ? retainedSnapshot.frame
     : null;
-  const shown = liveOrLocal ?? (!observed ? retained : null);
+  // A snapshot is "final" only when Core said so: either this viewer read it back
+  // after the terminal state, or the surrounding view is handing back the one it
+  // remembered from that read. The distinction is the whole point -- the last
+  // frame a page received is not the frame a round ended on.
+  const finalConfirmed =
+    (finalFrame?.kind === "snapshot" ? finalFrame.frame : null) ??
+    (retainedSnapshot?.runId === runId && retainedSnapshot.final
+      ? retainedSnapshot.frame
+      : null);
+  const finalKind = finalFrame?.kind ?? null;
+  const shown = terminal
+    ? finalConfirmed ?? liveOrLocal ?? retained
+    : liveOrLocal ?? (!observed ? retained : null);
+  const showingFinal = Boolean(shown && finalConfirmed && shown === finalConfirmed);
   const handoff = !shown && handoffSnapshot?.runId !== runId
     ? handoffSnapshot
     : null;
@@ -612,11 +659,27 @@ export function BrowserObservation({
   const terminalLabel = conversationMode ? text.turnEnded : text.runEnded;
   const frozenLabel = conversationMode ? text.turnFrozen : text.frozen;
   const statusText = terminal
-    ? shown
-      ? frozenLabel
-      : conversationMode
-        ? text.turnEndedNoFrame
-        : text.endedNoFrame
+    ? showingFinal
+      ? text.finalSnapshot
+      : finalKind === "pending"
+        ? text.finalChecking
+        : finalKind === "unsettled"
+          ? shown
+            ? text.finalUnsettled
+            : text.finalUnsettledNoFrame
+        : finalKind === "unreachable"
+          ? shown
+            ? text.finalUnreachable
+            : text.finalUnreachableNoFrame
+          : finalKind === "failed"
+            ? shown
+              ? text.finalFailed
+              : text.finalFailedNoFrame
+            : shown
+              ? text.lastReceived
+              : conversationMode
+                ? text.turnEndedNoFrame
+                : text.endedNoFrame
     : passive
       ? text.passive
       : observed
@@ -710,9 +773,11 @@ export function BrowserObservation({
               alt={
                 displayingHandoff
                   ? text.previousFrameAlt
-                  : terminal
-                    ? text.frozenFrameAlt
-                    : text.frameAlt
+                  : showingFinal
+                    ? text.finalFrameAlt
+                    : terminal
+                      ? text.frozenFrameAlt
+                      : text.frameAlt
               }
               draggable={false}
               className="pointer-events-none h-full w-full select-none object-contain"
@@ -729,7 +794,13 @@ export function BrowserObservation({
           )}
           {displayed && (displayingHandoff || !observed) ? (
             <span className="pointer-events-none absolute left-3 top-3 rounded-full border border-white/15 bg-[color:var(--ol-ink)]/82 px-2.5 py-1 text-[10.5px] font-black text-white shadow-sm backdrop-blur-sm">
-              {displayingHandoff ? text.previousTurnFrame : terminal ? frozenLabel : text.stoppedFrame}
+              {displayingHandoff
+                ? text.previousTurnFrame
+                : terminal
+                  ? showingFinal
+                    ? frozenLabel
+                    : text.lastReceived
+                  : text.stoppedFrame}
             </span>
           ) : null}
         </div>
@@ -777,9 +848,11 @@ export function BrowserObservation({
             alt={
               displayingHandoff
                 ? text.previousFrameAlt
-                : terminal
-                  ? text.frozenFrameAlt
-                  : text.frameAlt
+                : showingFinal
+                  ? text.finalFrameAlt
+                  : terminal
+                    ? text.frozenFrameAlt
+                    : text.frameAlt
             }
             draggable={false}
             className="h-full min-h-0 w-full select-none object-contain"
