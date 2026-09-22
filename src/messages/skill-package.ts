@@ -58,7 +58,7 @@ export const skillPackageMessages = {
     bindingHint:
       "保存后在后续运行中加载。正在执行的任务继续使用原版本。每个 Agent 最多关联 5 个技能包。",
     unsupported:
-      "此 Agent 尚未接入支持技能包的 Plugin 执行端。请先连接新版 Codex / Claude Plugin Host。",
+      "此 Agent 尚未接入支持技能包的执行端。请连接支持该功能的 Plugin Host 或 Agent Node（Codex / Claude）。",
     incompatible: "此版本不支持所选 Agent 的执行环境。",
     noAgents: "先接入一个 Agent，再关联技能包。",
     connectAgent: "接入 Agent",
@@ -153,7 +153,7 @@ export const skillPackageMessages = {
     bindingHint:
       "Loads in subsequent runs. Active runs keep their original versions. Each Agent can associate up to 5 packages.",
     unsupported:
-      "This Agent has not connected a package-compatible Plugin host. Connect an updated Codex / Claude Plugin Host first.",
+      "Connect a package-compatible Plugin Host or Agent Node using Codex / Claude.",
     incompatible:
       "This version is incompatible with the selected Agent's environment.",
     noAgents: "Connect an Agent before associating packages.",
