@@ -37,8 +37,7 @@ export async function fetchCreatorAgentByParam<
     (path) => apiFetchAuthed<CreatorAgentLookup>(path),
     param,
     (error) =>
-      error instanceof ApiError &&
-      (error.status === 403 || error.status === 404),
+      error instanceof ApiError && (error.status === 403 || error.status === 404),
   );
   return agent ? (normalizeCreatorAgent(agent) as T) : null;
 }
