@@ -1,17 +1,52 @@
+import { skillPackageMessages } from "@/messages/skill-package";
+import {
+  SkillDirectoryTabs,
+  SkillPackagesIntro,
+} from "@/components/skills/skill-directory-tabs";
 import { Topbar } from "@/components/layout/topbar";
 import { SkillsRegistry } from "@/components/skills/skills-registry";
 import { getLocale } from "@/lib/i18n-server";
 import { fetchSkills } from "@/lib/skills";
 
-export async function generateMetadata() {
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const locale = await getLocale();
+  if ((await searchParams).tab === "packages")
+    return {
+      title: skillPackageMessages[locale].packages,
+      description: skillPackageMessages[locale].publicDescription,
+    };
   return locale === "zh"
     ? { title: "Skill 目录", description: "OpenLinker Skill 目录入口" }
-    : { title: "Skill Directory", description: "OpenLinker Skill directory entry" };
+    : {
+        title: "Skill Directory",
+        description: "OpenLinker Skill directory entry",
+      };
 }
 
-export default async function SkillsPage() {
+export default async function SkillsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const locale = await getLocale();
+  const sp = await searchParams;
+  if (sp.tab === "packages") {
+    const copy = skillPackageMessages[locale];
+    return (
+      <>
+        <Topbar />
+        <main className="mx-auto max-w-7xl px-6 py-10">
+          <h1 className="mb-6 text-3xl font-black">{copy.packages}</h1>
+          <SkillDirectoryTabs locale={locale} packages />
+          <SkillPackagesIntro locale={locale} />
+        </main>
+      </>
+    );
+  }
   const skills = await fetchSkills({ locale }).catch(() => []);
   const copy =
     locale === "zh"
@@ -43,6 +78,7 @@ export default async function SkillsPage() {
         </div>
 
         <div className="mt-8">
+          <SkillDirectoryTabs locale={locale} />
           <SkillsRegistry locale={locale} skills={skills} />
         </div>
       </main>

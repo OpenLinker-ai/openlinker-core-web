@@ -2,11 +2,13 @@ import { redirect } from "next/navigation";
 
 import type { AgentResponse } from "@/components/agent/my-agents-card";
 import { CreatorHubFrame } from "@/components/creator/creator-hub-frame";
+import { fetchCompleteSkillCatalog } from "@/lib/skill-package-catalog";
+import { SkillPackages } from "@/components/skills/skill-packages";
 import { SkillPlaceholder } from "@/components/creator/skill-placeholder";
 import { auth } from "@/lib/auth";
-import { fetchActiveCreatorAgents } from "@/lib/creator-agent";
+import { fetchSkillPackageAgents } from "@/lib/creator-agent";
 import { getLocale } from "@/lib/i18n-server";
-import { fetchSkills, type Skill } from "@/lib/skills";
+import { type Skill } from "@/lib/skills";
 
 interface AgentDetailSkill {
   id: string;
@@ -21,14 +23,25 @@ export default async function CreatorHubSkillsPage() {
 
   const locale = await getLocale();
   const [agents, skills] = await Promise.all([
-    fetchActiveCreatorAgents<AgentResponse>(["public"]),
-    fetchSkills({ size: 200 }),
+    fetchSkillPackageAgents<AgentResponse>(),
+    fetchCompleteSkillCatalog(locale),
   ]);
-  const agentSkills = buildAgentSkills(agents, skills);
+  const declarationAgents = agents.filter(
+    (agent) =>
+      agent.lifecycle_status === "active" && agent.visibility === "public",
+  );
+  const agentSkills = buildAgentSkills(declarationAgents, skills);
 
   return (
     <CreatorHubFrame active="skills" locale={locale} coreCopy>
-      <SkillPlaceholder locale={locale} agents={agents} agentSkills={agentSkills} />
+      <div className="space-y-6">
+        <SkillPackages locale={locale} agents={agents} skills={skills} />
+        <SkillPlaceholder
+          locale={locale}
+          agents={declarationAgents}
+          agentSkills={agentSkills}
+        />
+      </div>
     </CreatorHubFrame>
   );
 }
@@ -40,9 +53,7 @@ function buildAgentSkills(
   const skillByID = new Map(skills.map((skill) => [skill.id, skill]));
   return Object.fromEntries(
     agents
-      .filter(
-        (agent) => agent.lifecycle_status === "active" && agent.visibility === "public",
-      )
+      .filter((agent) => agent.lifecycle_status === "active")
       .map((agent) => [
         agent.id,
         (agent.skill_ids ?? [])

@@ -30,26 +30,47 @@ export type CreatorAgentLookup = {
 export type CreatorAgentVisibility = "public" | "unlisted" | "private";
 export const CREATOR_AGENT_MAX_CONCURRENCY = 4;
 
-export async function fetchCreatorAgentByParam<T extends CreatorAgentLookup = CreatorAgentLookup>(
-  param: string,
-): Promise<T | null> {
+export async function fetchCreatorAgentByParam<
+  T extends CreatorAgentLookup = CreatorAgentLookup,
+>(param: string): Promise<T | null> {
   const agent = await fetchCreatorAgentByParamWith(
     (path) => apiFetchAuthed<CreatorAgentLookup>(path),
     param,
-    (error) => error instanceof ApiError && (error.status === 403 || error.status === 404),
+    (error) =>
+      error instanceof ApiError &&
+      (error.status === 403 || error.status === 404),
   );
-  return agent ? normalizeCreatorAgent(agent) as T : null;
+  return agent ? (normalizeCreatorAgent(agent) as T) : null;
 }
 
 export function isCreatorAgentUnauthorized(error: unknown): error is ApiError {
   return error instanceof ApiError && error.status === 401;
 }
 
-export async function fetchActiveCreatorAgents<T extends CreatorAgentLookup = CreatorAgentLookup>(
+export function fetchActiveCreatorAgents<
+  T extends CreatorAgentLookup = CreatorAgentLookup,
+>(
+  visibilities: CreatorAgentVisibility[] = ["public", "unlisted", "private"],
+): Promise<T[]> {
+  return fetchCreatorAgentsByStatus<T>("active", visibilities);
+}
+export async function fetchSkillPackageAgents<
+  T extends CreatorAgentLookup = CreatorAgentLookup,
+>(): Promise<T[]> {
+  const active = await fetchCreatorAgentsByStatus<T>("active");
+  const disabled = await fetchCreatorAgentsByStatus<T>("disabled");
+  return [...active, ...disabled];
+}
+
+async function fetchCreatorAgentsByStatus<
+  T extends CreatorAgentLookup = CreatorAgentLookup,
+>(
+  lifecycle: "active" | "disabled",
   visibilities: CreatorAgentVisibility[] = ["public", "unlisted", "private"],
 ): Promise<T[]> {
   const groups = await fetchCreatorAgentPagesWith(
-    fetchActiveCreatorAgentPage,
+    (visibility, limit, offset) =>
+      fetchActiveCreatorAgentPage(visibility, limit, offset, lifecycle),
     visibilities,
     { limit: 100, maxConcurrency: CREATOR_AGENT_MAX_CONCURRENCY },
   );
@@ -59,7 +80,7 @@ export async function fetchActiveCreatorAgents<T extends CreatorAgentLookup = Cr
     for (const page of pages) {
       for (const agent of normalizeAgentPage(page)) {
         if (
-          agent.lifecycle_status !== "active" ||
+          agent.lifecycle_status !== lifecycle ||
           agent.visibility !== visibility ||
           seen.has(agent.id)
         ) {
@@ -77,9 +98,10 @@ function fetchActiveCreatorAgentPage(
   visibility: CreatorAgentVisibility,
   limit: number,
   offset: number,
+  lifecycle: "active" | "disabled" = "active",
 ) {
   const params = new URLSearchParams({
-    status: "active",
+    status: lifecycle,
     visibility,
     sort_by: "name",
     limit: String(limit),
@@ -90,8 +112,10 @@ function fetchActiveCreatorAgentPage(
   );
 }
 
-function normalizeAgentPage(payload: CreatorAgentLookup[] | { items?: CreatorAgentLookup[] }) {
-  return Array.isArray(payload) ? payload : payload.items ?? [];
+function normalizeAgentPage(
+  payload: CreatorAgentLookup[] | { items?: CreatorAgentLookup[] },
+) {
+  return Array.isArray(payload) ? payload : (payload.items ?? []);
 }
 
 function normalizeCreatorAgent(agent: CreatorAgentLookup): CreatorAgentLookup {

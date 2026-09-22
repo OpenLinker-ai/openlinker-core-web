@@ -291,7 +291,7 @@ export function SkillsRegistry({ locale, skills }: { locale: Locale; skills: Ski
                 <tr key={skill.id} className="border-t border-[color:var(--ol-line)] bg-white">
                   <td className="px-4 py-4">
                     <div className="text-[14px] font-black text-[color:var(--ol-ink)]">
-                      {skill.name}
+                      <Link href={`/skills/capabilities/${skill.id.split("/").map(encodeURIComponent).join("/")}`} className="hover:underline">{skill.name}</Link>
                     </div>
                     <div className="mt-1 max-w-[360px] text-[12.5px] leading-relaxed text-[color:var(--ol-muted)]">
                       {skill.description}
