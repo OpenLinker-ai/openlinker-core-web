@@ -751,6 +751,11 @@ function AgentPackages({
                   {copy.refresh}
                 </button>
               </div>
+              {agents.find((agent) => agent.id === current)?.visibility !== "private" && (
+                <p role="note" className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+                  {copy.contentExposure}
+                </p>
+              )}
               {!bindings.data.supported && (
                 <p className="rounded-xl bg-amber-50 p-3 text-sm">
                   {copy.unsupported}
@@ -982,6 +987,11 @@ function BindDialog({
               <Link className="underline" href="/hub/access">
                 {copy.connectAgent}
               </Link>
+            </p>
+          )}
+          {agentId && agents.find((agent) => agent.id === agentId)?.visibility !== "private" && (
+            <p role="note" className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+              {copy.contentExposure}
             </p>
           )}
           {agentId && bindings.isPending && <p role="status">{copy.loading}</p>}

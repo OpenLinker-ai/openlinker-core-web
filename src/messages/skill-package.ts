@@ -13,7 +13,7 @@ export const skillPackageMessages = {
     description: "把可复用的指令与资料关联到 Agent，按版本管理实际执行能力。",
     capabilities: "能力目录",
     packages: "技能包",
-    private: "仅自己可见",
+    private: "不在目录公开",
     import: "导入技能包",
     newVersion: "导入新版本",
     empty: "还没有技能包",
@@ -57,6 +57,8 @@ export const skillPackageMessages = {
     choose: "请选择",
     bindingHint:
       "保存后在后续运行中加载。正在执行的任务继续使用原版本。每个 Agent 最多关联 5 个技能包。",
+    contentExposure:
+      "此 Agent 可被其他人调用，调用方可能通过模型输出获取 SKILL.md 和附属文件。请勿关联密码、密钥或需要对调用方保密的内容。",
     unsupported:
       "此 Agent 尚未接入支持技能包的执行端。请连接支持该功能的 Plugin Host 或 Agent Node（Codex / Claude）。",
     incompatible: "此版本不支持所选 Agent 的执行环境。",
@@ -82,7 +84,7 @@ export const skillPackageMessages = {
       "导入技能指令、脚本与资料，选择兼容的 Agent，并查看实际加载结果。",
     publicAction: "打开我的技能工作台",
     publicNote:
-      "技能包默认私有。公开能力目录用于发现 Agent；技能包用于配置自己的 Agent。",
+      "技能包不在目录公开。关联后，Agent 的调用方仍可能通过模型输出获取包内容。",
     search: "搜索技能包",
     noMatches: "没有匹配的技能包。",
     evidence: "能力声明与测评",
@@ -106,7 +108,7 @@ export const skillPackageMessages = {
       "Associate reusable instructions and resources with Agents, with explicit versions and load evidence.",
     capabilities: "Capability directory",
     packages: "Skill packages",
-    private: "Private",
+    private: "Not listed publicly",
     import: "Import package",
     newVersion: "Import new version",
     empty: "No skill packages yet",
@@ -152,6 +154,8 @@ export const skillPackageMessages = {
     choose: "Select…",
     bindingHint:
       "Loads in subsequent runs. Active runs keep their original versions. Each Agent can associate up to 5 packages.",
+    contentExposure:
+      "Other people can call this Agent and may obtain SKILL.md or supporting files through model output. Do not associate passwords, keys, or content that must stay secret from callers.",
     unsupported:
       "Connect a package-compatible Plugin Host or Agent Node using Codex / Claude.",
     incompatible:
@@ -180,7 +184,7 @@ export const skillPackageMessages = {
       "Import instructions, scripts and resources, choose compatible Agents, and inspect actual load evidence.",
     publicAction: "Open my skill workbench",
     publicNote:
-      "Packages are private by default. The public capability directory helps discover Agents; packages configure your own Agents.",
+      "Packages are not listed publicly. Once associated, an Agent’s callers may still obtain package contents through model output.",
     search: "Search packages",
     noMatches: "No matching packages.",
     evidence: "Capability declarations and benchmarks",

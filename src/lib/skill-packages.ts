@@ -38,4 +38,9 @@ export type SkillPackageBindings = {
   supported: boolean;
   providers: string[];
 };
-export type SkillPackageAgent = { id: string; slug: string; name: string };
+export type SkillPackageAgent = {
+  id: string;
+  slug: string;
+  name: string;
+  visibility?: "public" | "unlisted" | "private";
+};

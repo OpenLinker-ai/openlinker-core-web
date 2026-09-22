@@ -839,7 +839,16 @@ export function AgentOnboardingPanel({
 
         <A2AAccessPanel agentId={agent.id} locale={locale} />
       </aside>
-      {agent.connection_mode === "runtime" && <div className="col-span-full"><SkillPackages locale={locale} agents={[agent]} skills={[]} agentId={agent.id} /></div>}
+      {agentState.connection_mode === "runtime" && (
+        <div className="col-span-full">
+          <SkillPackages
+            locale={locale}
+            agents={[agentState]}
+            skills={[]}
+            agentId={agentState.id}
+          />
+        </div>
+      )}
       {skillsOpen ? (
         <SkillsDialog
           agentId={agent.id}
