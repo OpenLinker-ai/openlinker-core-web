@@ -9,6 +9,11 @@ API and UI route contracts are declared stable.
 
 ### Added
 
+- Add private skill package import, version browsing and runtime Agent bindings,
+  with explicit upgrades, load status and actionable validation errors. Requires
+  Core schema 093 and a compatible native Codex/Claude Plugin Host.
+- Add public capability detail pages with metadata and verified Agent links.
+
 - Added end-to-end User Token management backed by the Core API, including
   listing, creation, one-time plaintext secret display, permission tightening,
   expiry shortening, replacement, and revocation.

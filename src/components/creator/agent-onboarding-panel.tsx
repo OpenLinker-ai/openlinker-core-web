@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { A2AAccessPanel } from "@/components/creator/a2a-access-panel";
+import { SkillPackages } from "@/components/skills/skill-packages";
 import { SkillsDialog } from "@/components/creator/skills-dialog";
 import { useApi } from "@/hooks/use-api";
 import { localizedErrorMessage } from "@/lib/api";
@@ -838,6 +839,16 @@ export function AgentOnboardingPanel({
 
         <A2AAccessPanel agentId={agent.id} locale={locale} />
       </aside>
+      {agentState.connection_mode === "runtime" && (
+        <div className="col-span-full">
+          <SkillPackages
+            locale={locale}
+            agents={[agentState]}
+            skills={[]}
+            agentId={agentState.id}
+          />
+        </div>
+      )}
       {skillsOpen ? (
         <SkillsDialog
           agentId={agent.id}

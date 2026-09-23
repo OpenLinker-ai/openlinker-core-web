@@ -46,8 +46,8 @@ const NAV_ITEMS: ReadonlyArray<{
   },
   {
     id: "skills",
-    label: { zh: "Skill 声明", en: "Skill Claims" },
-    desc: { zh: "能力声明、Agent 筛选", en: "Capabilities, Registry filters" },
+    label: { zh: "能力与技能", en: "Capabilities & Skills" },
+    desc: { zh: "能力声明、技能包与关联", en: "Declarations, packages, associations" },
     href: "/hub/skills",
   },
 ];
@@ -65,14 +65,15 @@ export function CreatorHubFrame({
   aside?: ReactNode;
   coreCopy?: boolean;
 }) {
+  const isSkills = active === "skills";
   const copy =
     locale === "zh"
       ? {
           mine: "我的",
           creator: "Agent 管理",
           kicker: coreCopy ? "自托管 Agent 管理" : "Agent 所有者工作台",
-          heading: coreCopy ? "接入、验证并维护你的 Agent" : "管理你拥有的 Agent",
-          lead: coreCopy
+          heading: isSkills ? "能力与技能" : coreCopy ? "接入、验证并维护你的 Agent" : "管理你拥有的 Agent",
+          lead: isSkills ? "导入技能包、固定关联版本，并管理 Agent 的能力声明。" : coreCopy
             ? "在一个工作区管理 Agent 状态、连接方式、Agent Token、Skill、能力测评、运行记录与跨节点同步。"
             : "查看 Agent 状态，维护连接方式、Agent Token、跨节点同步、审批和 Skill 声明。",
           publish: "+ 接入 Agent",
@@ -81,8 +82,8 @@ export function CreatorHubFrame({
           mine: "My",
           creator: "Agent Console",
           kicker: coreCopy ? "Self-hosted Agent Console" : "Agent owner workspace",
-          heading: coreCopy ? "Connect, verify, and maintain your Agents" : "Manage the Agents you own",
-          lead: coreCopy
+          heading: isSkills ? "Capabilities & Skills" : coreCopy ? "Connect, verify, and maintain your Agents" : "Manage the Agents you own",
+          lead: isSkills ? "Import skill packages, pin associated versions, and manage Agent capability declarations." : coreCopy
             ? "Manage Agent status, connection modes, Agent Tokens, Skills, benchmarks, run records, and cross-node sync in one workspace."
             : "Review Agent status and maintain connection modes, Agent Tokens, cross-node sync, approvals, and Skill claims.",
           publish: "+ Connect Agent",
@@ -155,7 +156,7 @@ export function CreatorHubGuide({
             tokens: "查看 Agent Token 状态，并撤销不再使用的 Token。",
             bridge: "选择 Registry Node，把允许公开的 Agent 条目同步到其他节点。",
             approvals: "集中确认需要人工审核的高风险动作。",
-            skills: "为 Agent 声明 Skill，方便按能力查找，也用于能力校验。",
+            skills: "能力声明用于发现 Agent；技能包把指令与资料交给 Agent 执行。关联后在下一次运行加载，加载状态不等于能力认证。",
           } satisfies Record<CreatorHubSection, string>,
           bridge: "跨节点 Bridge",
           bridgeHref: "/hub/bridge",
@@ -171,7 +172,7 @@ export function CreatorHubGuide({
             tokens: "Review Agent Token status and revoke Tokens that are no longer needed.",
             bridge: "Choose a Registry Node and sync Agent records that are allowed to be public.",
             approvals: "Review high-risk actions that require a person to approve them.",
-            skills: "Declare Agent Skills for Registry search and capability checks.",
+            skills: "Capability declarations help discover Agents. Packages supply instructions and resources in subsequent runs. Loading a package is not a capability certification.",
           } satisfies Record<CreatorHubSection, string>,
           bridge: "Cross-node Bridge",
           bridgeHref: "/hub/bridge",
