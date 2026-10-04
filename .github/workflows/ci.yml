@@ -44,7 +44,7 @@ jobs:
         run: npm run test:server-pages
 
       - name: Check Skill directory counts
-        run: npm run test:skills
+        run: npm run test:skills && npm run test:cli-auth
 
       - name: Check Core navigation route contract
         run: npm run test:core-navigation-routes

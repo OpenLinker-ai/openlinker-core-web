@@ -228,3 +228,10 @@ independently usable in self-hosted deployments.
 ## License
 
 Apache-2.0. See [LICENSE](./LICENSE).
+
+## CLI 登录授权
+
+`/cli/authorize` 复用网页登录，展示账号、目标实例、终端验证码、权限和 30 天有效期。
+用户主动确认后调用 Core `/api/v1/cli-auth/*`；需配套 Core migration 094。
+Hosted 网页继续使用 Cloud 登录，CLI 凭据签发与撤销仍由 Core 负责。
+验证真实页面交互：`npm run test:cli-auth`。
