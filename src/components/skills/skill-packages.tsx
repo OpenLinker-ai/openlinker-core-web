@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { SkillPublicationControls, SkillReferenceImport } from "@/components/skills/public-skill-actions";
+import { resourceSharingMessages } from "@/messages/resource-sharing";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -8,7 +10,7 @@ import { Package, Plus, ArrowUpRight } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { useApi } from "@/hooks/use-api";
-import { localizedErrorMessage } from "@/lib/api";
+import { skillPackageErrorText as packageErrorText } from "@/lib/skill-packages";
 import type { Locale } from "@/lib/i18n";
 import { localizedSkill, type Skill } from "@/lib/skills";
 import type {
@@ -33,20 +35,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-
-function packageErrorText(
-  error: unknown,
-  locale: Locale,
-  fallback: string,
-): string {
-  const code =
-    error && typeof error === "object" && "code" in error
-      ? String(error.code)
-      : "";
-  const messages = skillPackageErrorMessages[locale];
-  if (code in messages) return messages[code as keyof typeof messages];
-  return localizedErrorMessage(error, locale, fallback);
-}
 
 const inputClass =
   "w-full rounded-xl border border-[color:var(--ol-line)] bg-white px-3 py-2 text-sm";
@@ -98,6 +86,7 @@ export function SkillPackages({
   );
   return (
     <section className="ol-panel overflow-hidden" aria-label={copy.title}>
+      {!packageId && <div className="p-5"><SkillReferenceImport locale={locale}/></div>}
       <div className="ol-panel-head flex flex-wrap gap-3">
         <div>
           <h2 className="flex items-center gap-2 font-bold">
@@ -176,7 +165,7 @@ export function SkillPackages({
                         {item.description}
                       </p>
                       <div className="mt-4 flex flex-wrap gap-2">
-                        <span className="ol-chip">{copy.private}</span>
+                        <span className="ol-chip">{resourceSharingMessages[locale][item.visibility ?? "private"]}</span>
                         <span className="ol-chip">
                           {item.versions[0]?.version}
                         </span>
@@ -520,7 +509,7 @@ function PackageDetail({
       </Link>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <span className="ol-chip">{copy.private}</span>
+          <span className="ol-chip">{resourceSharingMessages[locale][item.visibility ?? "private"]}</span>
           <h2 className="mt-3 text-2xl font-black">
             {contents?.name ?? item.name}
           </h2>
@@ -626,6 +615,7 @@ function PackageDetail({
           </details>
         </aside>
       </div>
+      {version && contents && <SkillPublicationControls key={`${item.id}:${version.id}:${item.visibility}`} {...{item,version,contents,locale}} />}
       {importOpen && (
         <ImportDialog
           {...{ locale, skills, packageId }}

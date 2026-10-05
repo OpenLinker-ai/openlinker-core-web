@@ -1,5 +1,8 @@
 export const skillPackageErrorMessages = {
   "zh": {
+    "SKILL_PACKAGE_VISIBILITY_INVALID": "请选择私有、仅链接可见或公开目录。",
+    "SKILL_PACKAGE_DIGEST_MISMATCH": "引用摘要与发布版本不符，请重新打开分享页核对内容并复制引用。",
+    "SKILL_PACKAGE_SOURCE_INVALID": "此版本未通过完整性校验。请发布者检查原始内容并创建新版本。",
     "SKILL_PACKAGE_VERSION_INVALID": "版本号需为 1–64 位字母、数字、点、连字符或下划线。",
     "SKILL_PACKAGE_VERSION_CONFLICT": "此版本已存在，请更换版本号。",
     "SKILL_PACKAGE_FILE_COUNT": "最多导入 32 个文件（不含跳过的系统文件）。",
@@ -24,6 +27,9 @@ export const skillPackageErrorMessages = {
     "SKILL_PACKAGE_REQUEST_INVALID": "请求格式无效或超过大小限制。"
   },
   "en": {
+    "SKILL_PACKAGE_VISIBILITY_INVALID": "Choose private, unlisted or public visibility.",
+    "SKILL_PACKAGE_DIGEST_MISMATCH": "The reference digest does not match the published version. Reopen the shared page, verify its contents and copy the reference again.",
+    "SKILL_PACKAGE_SOURCE_INVALID": "This version failed integrity verification. The publisher needs to check the source contents and create a new version.",
     "SKILL_PACKAGE_VERSION_INVALID": "Use 1–64 letters, numbers, dots, hyphens or underscores for the version.",
     "SKILL_PACKAGE_VERSION_CONFLICT": "This version exists. Choose a new version.",
     "SKILL_PACKAGE_FILE_COUNT": "Import at most 32 files, excluding skipped system files.",

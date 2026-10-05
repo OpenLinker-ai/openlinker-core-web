@@ -107,7 +107,12 @@ export function RouteTransitionFeedback({ locale = "en" }: { locale?: Locale }) 
     const handleClick = (event: MouseEvent) => {
       if (getNavigableInternalUrl(event)) start();
     };
-    const handlePopState = () => start();
+    const handlePopState = () => {
+      const destination = `${window.location.pathname}?${new URLSearchParams(window.location.search).toString()}`;
+      // Native in-page anchors emit popstate too, without changing the route.
+      if (destination === routeKeyRef.current) reset();
+      else start();
+    };
     const handlePageShow = () => reset();
     const originalPushState = window.history.pushState;
     const originalReplaceState = window.history.replaceState;

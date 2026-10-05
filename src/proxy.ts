@@ -12,6 +12,7 @@
 
 import { safeAuthCallback } from "@/components/auth/callback-url";
 import { auth } from "@/lib/auth";
+import { mcpPageMethodResponse } from "@/lib/resource-sharing.mjs";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PROTECTED_PREFIXES = [
@@ -31,6 +32,8 @@ const AUTH_PAGES = ["/login"];
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const methodResponse = mcpPageMethodResponse(pathname, req.method);
+  if (methodResponse) return methodResponse;
   if (pathname === "/hub") {
     return NextResponse.redirect(hubCompatibilityUrl(req));
   }
