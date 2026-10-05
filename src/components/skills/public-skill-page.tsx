@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ResourceMetadataCard } from "@/components/resources/resource-metadata";
 import { notFound, redirect } from "next/navigation";
 import { Topbar } from "@/components/layout/topbar";
 import { PublicSkillActions } from "@/components/skills/public-skill-actions";
@@ -141,6 +142,11 @@ export async function PublicSkillPage({
                 </p>
               )}
             </section>
+            <ResourceMetadataCard
+              metadata={version.publication_metadata}
+              version={version.version}
+              locale={locale}
+            />
             <div id="skill-files" className="scroll-mt-32">
               <PublicSkillFiles
                 key={version.id}

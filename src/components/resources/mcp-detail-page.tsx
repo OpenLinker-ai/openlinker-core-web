@@ -1,4 +1,7 @@
 import Link from "next/link";
+import type { ResourceMetadata } from "@/lib/resource-metadata";
+import { ResourceMetadataCard } from "./resource-metadata";
+import { resourceMetadataMessages } from "@/messages/resource-metadata";
 import { notFound } from "next/navigation";
 import { Topbar } from "@/components/layout/topbar";
 import { McpConnection } from "@/components/resources/mcp-connection";
@@ -41,6 +44,8 @@ export async function McpDetailPage({
   const c = resourceSharingMessages[locale];
   const u = resourceUseMessages[locale];
   let agent: Agent | undefined;
+  let metadata: ResourceMetadata | undefined;
+  let metadataUnavailable = false;
   if (slug) {
     try {
       agent = await apiFetch<Agent>(
@@ -52,6 +57,16 @@ export async function McpDetailPage({
       throw e;
     }
     if (agent.connection_mode !== "mcp_server") notFound();
+    try {
+      metadata = (
+        await apiFetch<{ metadata: ResourceMetadata }>(
+          `/api/v1/mcp-services/${encodeURIComponent(slug)}/metadata`,
+          { cache: "no-store" },
+        )
+      ).metadata;
+    } catch {
+      metadataUnavailable = true;
+    }
   }
   const status = agent?.availability?.status ?? "unknown";
   return (
@@ -116,6 +131,7 @@ export async function McpDetailPage({
                         c.health.unknown}
                     </span>
                     <span className="break-words text-sm">
+                      {resourceMetadataMessages[locale].platformAccount}:{" "}
                       {agent.creator.display_name}
                     </span>
                   </div>
@@ -131,6 +147,11 @@ export async function McpDetailPage({
                     {agent.description}
                   </AgentMarkdown>
                 </section>
+                <ResourceMetadataCard
+                  metadata={metadata}
+                  unavailable={metadataUnavailable}
+                  locale={locale}
+                />
                 <section
                   id="business-capability"
                   className="ol-panel min-w-0 scroll-mt-32 space-y-6 p-6 md:p-8"

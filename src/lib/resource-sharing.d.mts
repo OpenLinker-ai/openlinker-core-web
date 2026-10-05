@@ -25,12 +25,23 @@ export function skillReadingPrompt(
   digest: string,
   locale: string,
 ): string;
-export function schemaFields(
-  schema: unknown,
-): {
+export function schemaFields(schema: unknown): {
   name: string;
   type: string;
   required: boolean;
   description: string;
   defaultValue: string;
 }[];
+
+export function resourceDirectoryQuery(
+  sp?: Record<string, unknown>,
+  mcp?: boolean,
+): {
+  invalidFilters: boolean;
+  query: string;
+  page: number;
+  provider: string;
+  capability: string;
+  tag: string;
+  sort: string;
+};

@@ -1,3 +1,4 @@
+import { McpMetadataEditor } from "@/components/resources/mcp-metadata-editor";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -8,7 +9,10 @@ import {
 import { Topbar } from "@/components/layout/topbar";
 import { auth } from "@/lib/auth";
 import { fetchCreatorAgentByParam } from "@/lib/creator-agent";
-import { redirectCreatorAgentLogin, rethrowCreatorAgentPageError } from "@/lib/creator-agent-page";
+import {
+  redirectCreatorAgentLogin,
+  rethrowCreatorAgentPageError,
+} from "@/lib/creator-agent-page";
 import { getLocale } from "@/lib/i18n-server";
 
 function normalizeAgent(agent: EditableAgent): EditableAgent {
@@ -77,7 +81,9 @@ export default async function AgentSettingsPage({
         <div className="ol-page-head">
           <div className="ol-page-title">
             <div className="ol-kicker">{copy.kicker}</div>
-            <h1>{agent.name} · {copy.title}</h1>
+            <h1>
+              {agent.name} · {copy.title}
+            </h1>
             <p>{copy.lead}</p>
           </div>
           <Link
@@ -89,6 +95,13 @@ export default async function AgentSettingsPage({
         </div>
 
         <AgentSettingsPanel agent={agent} locale={locale} />
+        {agent.connection_mode === "mcp_server" && (
+          <McpMetadataEditor
+            key={agent.id}
+            agentId={agent.id}
+            locale={locale}
+          />
+        )}
       </main>
     </>
   );

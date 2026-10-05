@@ -119,3 +119,58 @@ test("directory return paths are restricted and reconstructed, never arbitrary r
     "/skills?tab=packages&q=x&page=2",
   );
 });
+
+test("filter normalization handles duplicate arrays and return navigation preserves only valid filters", async () => {
+  const { resourceDirectoryQuery, resourceReturnPath } = await import(
+    "../src/lib/resource-sharing.mjs"
+  );
+  assert.deepEqual(
+    resourceDirectoryQuery({
+      q: ["bad", "other"],
+      provider: ["codex", "claude"],
+      capability: "data/analysis",
+      sort: "popular",
+      page: "2",
+    }),
+    {
+      invalidFilters: true,
+      query: "",
+      page: 2,
+      provider: "",
+      capability: "data/analysis",
+      tag: "",
+      sort: "newest",
+    },
+  );
+  const back = resourceReturnPath(
+    "/skills?tab=packages&provider=claude&capability=data%2Fanalysis&sort=name&page=2",
+  );
+  const u = new URL(back, "https://example.test");
+  assert.equal(u.searchParams.get("provider"), "claude");
+  assert.equal(u.searchParams.get("sort"), "name");
+  for (const path of [
+    "/skills?tab=packages&provider=claude&provider=codex",
+    "/skills?tab=packages&sort=popular",
+    "/skills?tab=packages&capability=bad%20id",
+  ])
+    assert.equal(resourceReturnPath(path), "/skills?tab=packages");
+});
+
+test("invalid capability input stays visible and never becomes an unfiltered query", async () => {
+  const { resourceDirectoryQuery, resourceReturnPath } = await import(
+    "../src/lib/resource-sharing.mjs"
+  );
+  for (const capability of ["Data/Analysis", "bad id", "a".repeat(201)]) {
+    const parsed = resourceDirectoryQuery({ capability });
+    assert.equal(parsed.invalidFilters, true);
+    assert.equal(parsed.capability, capability.slice(0, 200));
+    assert.equal(
+      resourceReturnPath("/mcps?" + new URLSearchParams({ capability }), true),
+      "/mcps",
+    );
+  }
+  assert.equal(
+    resourceDirectoryQuery({ capability: "unknown/valid-id" }).invalidFilters,
+    false,
+  );
+});

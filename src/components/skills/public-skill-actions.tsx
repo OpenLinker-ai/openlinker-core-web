@@ -1,4 +1,7 @@
 "use client";
+import { ResourceMetadataFields } from "@/components/resources/resource-metadata-fields";
+import type { ResourceMetadata } from "@/lib/resource-metadata";
+import { resourceMetadataMessages } from "@/messages/resource-metadata";
 import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -259,6 +262,10 @@ export function SkillPublicationControls({
   locale: Locale;
 }) {
   const c = resourceSharingMessages[locale];
+  const m = resourceMetadataMessages[locale];
+  const frozen =
+    version.publication_metadata != null || Boolean(version.published_at);
+  const [metadata, setMetadata] = useState<ResourceMetadata>({});
   const api = useApi();
   const cache = useQueryClient();
   const [visibility, setVisibility] = useState(item.visibility ?? "private");
@@ -345,6 +352,20 @@ export function SkillPublicationControls({
             ))}
         </ul>
       </details>
+      <div className="space-y-3">
+        <h3 className="font-semibold">{m.title}</h3>
+        <p className="text-xs text-[color:var(--ol-muted)]">{m.freeze}</p>
+        {frozen && <p className="text-sm">{m.frozen}</p>}
+        <ResourceMetadataFields
+          value={frozen ? (version.publication_metadata ?? {}) : metadata}
+          onChange={(v) => {
+            setMetadata(v);
+            setConfirmed(false);
+          }}
+          disabled={busy || frozen}
+          locale={locale}
+        />
+      </div>
       <label className="flex items-start gap-2 text-sm">
         <input
           type="checkbox"
@@ -363,7 +384,11 @@ export function SkillPublicationControls({
             void mutate(
               `${base}/versions/${version.id}/publication`,
               version.published_at ? "DELETE" : "PUT",
-              version.published_at ? undefined : {},
+              version.published_at
+                ? undefined
+                : !frozen && Object.values(metadata).some((v) => v?.trim())
+                  ? { metadata }
+                  : {},
             )
           }
         >

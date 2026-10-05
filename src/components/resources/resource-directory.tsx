@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { resourceMetadataMessages } from "@/messages/resource-metadata";
 import {
   resourceReturnPath,
   withResourceReturn,
@@ -15,17 +16,31 @@ export async function ResourceDirectory({
   mcp = false,
   query = "",
   page = 1,
+  provider = "",
+  capability = "",
+  tag = "",
+  sort = "newest",
+  invalidFilters = false,
 }: {
   locale: Locale;
   mcp?: boolean;
   query?: string;
   page?: number;
+  provider?: string;
+  capability?: string;
+  tag?: string;
+  sort?: string;
+  invalidFilters?: boolean;
 }) {
   const c = resourceSharingMessages[locale];
+  const m = resourceMetadataMessages[locale];
+  const filtered = Boolean(query || provider || capability || tag);
+  const filters = { capability, sort, ...(mcp ? { tag } : { provider }) };
   const u = resourceUseMessages[locale];
   const current =
     Number.isSafeInteger(page) && page > 0 ? Math.min(page, 10000) : 1;
   const params = new URLSearchParams({
+    ...filters,
     q: query,
     page: String(current),
     size: "12",
@@ -37,16 +52,17 @@ export async function ResourceDirectory({
     size: number;
   } | null = null;
   try {
-    data = await apiFetch(
-      mcp
-        ? `/api/v1/mcp-services?${params}`
-        : `/api/v1/skill-packages?${params}`,
-      { cache: "no-store" },
-    );
+    if (!invalidFilters)
+      data = await apiFetch(
+        mcp
+          ? `/api/v1/mcp-services?${params}`
+          : `/api/v1/skill-packages?${params}`,
+        { cache: "no-store" },
+      );
   } catch {}
   const path = mcp ? "/mcps" : "/skills";
   const pageURL = (n: number) =>
-    `${path}?${new URLSearchParams({ ...(!mcp ? { tab: "packages" } : {}), q: query, page: String(n) })}`;
+    `${path}?${new URLSearchParams({ ...(!mcp ? { tab: "packages" } : {}), ...filters, q: query, page: String(n) })}`;
   return (
     <div className="space-y-7">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -76,9 +92,12 @@ export async function ResourceDirectory({
           <ArrowUpRight className="ml-auto shrink-0" size={18} />
         </Link>
       )}
-      <form action={path} className="flex flex-wrap gap-3">
+      <form
+        action={path}
+        className="grid grid-cols-2 items-end gap-3 lg:grid-cols-[minmax(180px,1fr)_auto_minmax(180px,1fr)_auto_auto_auto]"
+      >
         {!mcp && <input type="hidden" name="tab" value="packages" />}
-        <label className="min-w-0 flex-1">
+        <label className="col-span-2 min-w-0 lg:col-span-1">
           <span className="sr-only">{c.query}</span>
           <input
             key={query}
@@ -89,17 +108,72 @@ export async function ResourceDirectory({
             className="w-full rounded-xl border border-[color:var(--ol-line)] bg-[color:var(--ol-surface)] p-3 text-sm"
           />
         </label>
+        {!mcp && (
+          <label className="min-w-0 space-y-1">
+            <span className="block text-xs">{m.provider}</span>
+            <select
+              key={provider}
+              name="provider"
+              defaultValue={provider}
+              className="rounded-xl border border-[color:var(--ol-line)] p-3 text-sm"
+            >
+              <option value="">{m.all}</option>
+              <option value="codex">{m.codex}</option>
+              <option value="claude">{m.claude}</option>
+            </select>
+          </label>
+        )}
+        <label className="min-w-0 space-y-1">
+          <span className="block text-xs">{m.capability}</span>
+          <input
+            name="capability"
+            key={capability}
+            defaultValue={capability}
+            maxLength={200}
+            placeholder={m.capabilityExample}
+            className="w-full rounded-xl border border-[color:var(--ol-line)] p-3 text-sm"
+          />
+        </label>
+        {mcp && (
+          <label className="min-w-0 space-y-1">
+            <span className="block text-xs">{m.tag}</span>
+            <input
+              key={tag}
+              name="tag"
+              defaultValue={tag}
+              maxLength={100}
+              className="w-full rounded-xl border border-[color:var(--ol-line)] p-3 text-sm"
+            />
+          </label>
+        )}
+        <label className="min-w-0 space-y-1">
+          <span className="block text-xs">{m.sort}</span>
+          <select
+            key={sort}
+            name="sort"
+            defaultValue={sort}
+            className="rounded-xl border border-[color:var(--ol-line)] p-3 text-sm"
+          >
+            <option value="newest">{m.newest}</option>
+            <option value="name">{m.name}</option>
+          </select>
+        </label>
         <button className="ol-mini-btn shrink-0">{c.search}</button>
-        {query && (
+        {(filtered || invalidFilters || sort !== "newest") && (
           <Link
             href={mcp ? "/mcps" : "/skills?tab=packages"}
             className="ol-mini-btn shrink-0"
           >
-            {u.clear}
+            {m.reset}
           </Link>
         )}
       </form>
-      {!data ? (
+      <p className="text-xs text-[color:var(--ol-muted)]">{m.filterHint}</p>
+      {invalidFilters ? (
+        <div className="ol-panel p-8" role="alert">
+          <p>{m.invalidFilters}</p>
+        </div>
+      ) : !data ? (
         <div className="ol-panel p-8" role="alert">
           <p>{c.failed}</p>
           <Link className="ol-mini-btn mt-4" href={pageURL(current)}>
@@ -109,16 +183,16 @@ export async function ResourceDirectory({
       ) : !data.items.length ? (
         <div className="ol-panel p-10 text-center">
           <h2 className="text-lg font-bold">
-            {query || current > 1 ? u.noResults : mcp ? c.mcpEmpty : c.empty}
+            {filtered || current > 1 ? u.noResults : mcp ? c.mcpEmpty : c.empty}
           </h2>
           <p className="mt-3 text-sm text-[color:var(--ol-muted)]">
-            {query || current > 1
+            {filtered || current > 1
               ? u.noResultsHint
               : mcp
                 ? c.mcpEmptyHint
                 : c.emptyHint}
           </p>
-          {(query || current > 1) && (
+          {(filtered || current > 1) && (
             <Link
               href={mcp ? "/mcps" : "/skills?tab=packages"}
               className="ol-mini-btn mt-4"
@@ -150,6 +224,11 @@ export async function ResourceDirectory({
               <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-[color:var(--ol-muted)]">
                 {item.description}
               </p>
+              {!mcp && item.metadata?.publisher_name && (
+                <p className="mt-3 break-words text-xs text-[color:var(--ol-muted)]">
+                  {m.publisher_name}: {item.metadata.publisher_name}
+                </p>
+              )}
               <div className="mt-5 flex flex-wrap gap-2">
                 {mcp && item.mcp_tool_name && (
                   <code className="break-all text-xs text-[color:var(--ol-muted)]">

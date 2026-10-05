@@ -1,8 +1,7 @@
+import { resourceDirectoryQuery } from "@/lib/resource-sharing.mjs";
 import { ResourceDirectory } from "@/components/resources/resource-directory";
 import { skillPackageMessages } from "@/messages/skill-package";
-import {
-  SkillDirectoryTabs,
-} from "@/components/skills/skill-directory-tabs";
+import { SkillDirectoryTabs } from "@/components/skills/skill-directory-tabs";
 import { Topbar } from "@/components/layout/topbar";
 import { SkillsRegistry } from "@/components/skills/skills-registry";
 import { getLocale } from "@/lib/i18n-server";
@@ -11,7 +10,7 @@ import { fetchSkills } from "@/lib/skills";
 export async function generateMetadata({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; q?: string; page?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const locale = await getLocale();
   if ((await searchParams).tab === "packages")
@@ -30,7 +29,7 @@ export async function generateMetadata({
 export default async function SkillsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; q?: string; page?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const locale = await getLocale();
   const sp = await searchParams;
@@ -42,7 +41,7 @@ export default async function SkillsPage({
         <main className="mx-auto max-w-7xl px-6 py-10">
           <h1 className="mb-6 text-3xl font-black">{copy.packages}</h1>
           <SkillDirectoryTabs locale={locale} packages />
-          <ResourceDirectory locale={locale} query={sp.q?.trim().slice(0,200)} page={Number(sp.page??1)} />
+          <ResourceDirectory locale={locale} {...resourceDirectoryQuery(sp)} />
         </main>
       </>
     );

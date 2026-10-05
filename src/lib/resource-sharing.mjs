@@ -75,6 +75,42 @@ export function skillLocalNameCompatible(name, description) {
   );
 }
 
+// Next searchParams can contain arrays. Duplicate or invalid filters produce an error;
+// each directory has an independent sort grammar.
+export function resourceDirectoryQuery(sp = {}, mcp = false) {
+  const text = (key) => (typeof sp[key] === "string" ? sp[key].trim() : "");
+  const provider = text("provider"),
+    capability = text("capability"),
+    tag = text("tag");
+  const page = Number(text("page") || 1);
+  const invalidFilters =
+    ["q", "page", "provider", "capability", "tag", "sort"].some((key) =>
+      Array.isArray(sp[key]),
+    ) ||
+    Boolean(
+      capability &&
+        (capability.length > 200 ||
+          !/^[a-z][a-z0-9]*(?:[/_-][a-z0-9]+)*$/.test(capability)),
+    ) ||
+    Boolean(provider && (mcp || !["codex", "claude"].includes(provider))) ||
+    Boolean(
+      tag &&
+        (!mcp ||
+          [...tag].length > 100 ||
+          /[\u0000-\u001f\u007f-\u009f]/.test(tag)),
+    ) ||
+    Boolean(text("sort") && !["newest", "name"].includes(text("sort")));
+  return {
+    invalidFilters,
+    query: [...text("q")].slice(0, 200).join(""),
+    page: Number.isSafeInteger(page) && page > 0 ? Math.min(page, 10000) : 1,
+    provider: !mcp && ["codex", "claude"].includes(provider) ? provider : "",
+    capability: capability.slice(0, 200),
+    tag: mcp ? [...tag].slice(0, 100).join("") : "",
+    sort: text("sort") === "name" ? "name" : "newest",
+  };
+}
+
 // Return navigation is local UI state. Never accept an arbitrary redirect URL.
 export function resourceReturnPath(value, mcp = false) {
   const path = mcp ? "/mcps" : "/skills";
@@ -88,7 +124,9 @@ export function resourceReturnPath(value, mcp = false) {
     return fallback;
   try {
     const url = new URL(value, "https://navigation.invalid");
-    const allowed = mcp ? ["q", "page"] : ["tab", "q", "page"];
+    const allowed = mcp
+      ? ["q", "page", "capability", "tag", "sort"]
+      : ["tab", "q", "page", "provider", "capability", "sort"];
     if (
       url.origin !== "https://navigation.invalid" ||
       url.pathname !== path ||
@@ -112,6 +150,16 @@ export function resourceReturnPath(value, mcp = false) {
     const params = new URLSearchParams(mcp ? {} : { tab: "packages" });
     if (q) params.set("q", q);
     if (page !== "1") params.set("page", page);
+    const filters = resourceDirectoryQuery(
+      Object.fromEntries(url.searchParams),
+      mcp,
+    );
+    if (filters.invalidFilters) return fallback;
+    for (const key of ["provider", "capability", "tag", "sort"]) {
+      const raw = url.searchParams.get(key);
+      if (raw && raw !== filters[key]) return fallback;
+      if (raw && raw !== "newest") params.set(key, raw);
+    }
     return path + (params.size ? "?" + params : "");
   } catch {
     return fallback;

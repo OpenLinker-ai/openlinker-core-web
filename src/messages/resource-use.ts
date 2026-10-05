@@ -107,7 +107,7 @@ export const resourceUseMessages = {
     publishedAt: "发布时间（UTC）",
     sourceTitle: "版本与来源",
     sourceNote:
-      "这里只展示已发布的内容；重新发布的副本不代表原作者。本页未提供经过验证的原作者或许可证资料。",
+      "这里只展示已发布的内容；重新发布的副本不代表原作者。来源资料由发布者自述，不代表平台核验。",
     clear: "清空搜索",
     noResults: "没有找到匹配的资源",
     noResultsHint: "尝试其他关键词，或清空搜索查看目录。",
@@ -228,7 +228,7 @@ export const resourceUseMessages = {
     publishedAt: "Published (UTC)",
     sourceTitle: "Version and provenance",
     sourceNote:
-      "Only published contents appear here. Republishing a copy does not establish original authorship. Verified original-author and license information is not provided on this page.",
+      "Only published contents appear here. Republishing a copy does not establish original authorship. Source information is publisher supplied and has not been verified by the platform.",
     clear: "Clear search",
     noResults: "No matching resources",
     noResultsHint:

@@ -8,7 +8,7 @@ import ts from "typescript";
 const sourceRoot = new URL("../src/", import.meta.url);
 const mocks = {
   "@/hooks/use-api":
-    "export const useApi=()=>({isAuthenticated:globalThis.resourceTestAuthenticated!==false,fetch:(...a)=>globalThis.resourceTestFetch(...a)});",
+    "const fetch=(...a)=>globalThis.resourceTestFetch(...a);export const useApi=()=>({isAuthenticated:globalThis.resourceTestAuthenticated!==false,fetch:globalThis.resourceTestFetchOverride??fetch});",
   "@tanstack/react-query":
     "export const useQueryClient=()=>({invalidateQueries:async()=>{}});",
   "next/navigation":
@@ -534,7 +534,10 @@ test("MCP service shows business schema and trial link without invoking it", asy
         "/playground/demo",
       );
       assert.ok(container.querySelector('a[href="/mcps?q=docs&page=2"]'));
-      assert.deepEqual(calls, ["/api/v1/agents/demo"]);
+      assert.deepEqual(calls, [
+        "/api/v1/agents/demo",
+        "/api/v1/mcp-services/demo/metadata",
+      ]);
     },
   );
 });
@@ -634,5 +637,383 @@ test("directory results retain query/page and distinguish a search miss from an 
         /No public skill packages yet/,
       );
     },
+  );
+});
+
+const { ResourceMetadataCard } = await import(
+  "../src/components/resources/resource-metadata.tsx"
+);
+const { McpMetadataEditor } = await import(
+  "../src/components/resources/mcp-metadata-editor.tsx"
+);
+function editValue(input, value) {
+  Object.getOwnPropertyDescriptor(
+    input.tagName === "TEXTAREA"
+      ? window.HTMLTextAreaElement.prototype
+      : window.HTMLInputElement.prototype,
+    "value",
+  ).set.call(input, value);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+test("publisher claims stay inert, external links are bounded, and unavailable differs from absent", async () => {
+  await mount(
+    ResourceMetadataCard,
+    {
+      locale: "en",
+      version: "1.2.0",
+      metadata: {
+        publisher_name: "<img src=x>",
+        repository_url: "javascript:alert(1)",
+        license: "MIT",
+        release_notes: "<script>bad</script>",
+      },
+    },
+    async (c) => {
+      assert.equal(c.querySelectorAll("a,img,script").length, 0);
+      assert.match(c.textContent, /not been verified/);
+      assert.match(c.textContent, /1.2.0/);
+      assert.match(c.textContent, /Not provided/);
+    },
+  );
+  await mount(
+    ResourceMetadataCard,
+    { locale: "en", metadata: { repository_url: "https://example.com/repo" } },
+    async (c) =>
+      assert.equal(
+        c.querySelector("a").rel,
+        "noopener noreferrer nofollow ugc",
+      ),
+  );
+  await mount(
+    ResourceMetadataCard,
+    { locale: "en", unavailable: true },
+    async (c) => {
+      assert.match(c.textContent, /temporarily unavailable/);
+      assert.doesNotMatch(c.textContent, /Not provided/);
+    },
+  );
+});
+test("publishing snapshots explicit metadata only after confirming, frozen versions stay readonly", async () => {
+  const calls = [];
+  globalThis.resourceTestFetch = async (path, options) => {
+    calls.push({ path, ...options });
+    return {};
+  };
+  await mount(
+    SkillPublicationControls,
+    { item, version, contents, locale: "en" },
+    async (c) => {
+      const publisher = [...c.querySelectorAll("input")].find((x) =>
+        x.id.endsWith("-publisher_name"),
+      );
+      await act(async () => editValue(publisher, "Synthetic publisher"));
+      const publish = [...c.querySelectorAll("button")].find(
+        (b) => b.textContent === "Publish selected version",
+      );
+      assert.equal(publish.disabled, true);
+      await act(async () => c.querySelector('input[type="checkbox"]').click());
+      await act(async () => publish.click());
+      assert.deepEqual(calls[0].body, {
+        metadata: { publisher_name: "Synthetic publisher" },
+      });
+    },
+  );
+  await mount(
+    SkillPublicationControls,
+    {
+      item,
+      version: {
+        ...version,
+        publication_metadata: { publisher_name: "Frozen" },
+      },
+      contents,
+      locale: "en",
+    },
+    async (c) => {
+      const field = [...c.querySelectorAll("input")].find((x) =>
+        x.id.endsWith("-publisher_name"),
+      );
+      assert.equal(field.disabled, true);
+      assert.equal(field.value, "Frozen");
+    },
+  );
+});
+test("MCP metadata requires successful owner read and preserves edits on CAS conflict", async () => {
+  const calls = [];
+  let revision = 2;
+  globalThis.resourceTestFetch = async (path, options) => {
+    calls.push({ path, ...options });
+    if (options?.method === "PUT") {
+      const error = new Error("conflict");
+      error.status = 409;
+      throw error;
+    }
+    return {
+      metadata: { publisher_name: "Server publisher" },
+      revision,
+      updated_at: null,
+    };
+  };
+  await mount(
+    McpMetadataEditor,
+    { agentId: "agent-id", locale: "en" },
+    async (c, root) => {
+      const field = [...c.querySelectorAll("input")].find((x) =>
+        x.id.endsWith("-publisher_name"),
+      );
+      assert.ok(field);
+      assert.equal(calls.length, 1);
+      await act(async () => editValue(field, "My unsaved text"));
+      globalThis.resourceTestFetchOverride = (...args) =>
+        globalThis.resourceTestFetch(...args);
+      await act(async () =>
+        root.render(
+          createElement(McpMetadataEditor, {
+            agentId: "agent-id",
+            locale: "en",
+          }),
+        ),
+      );
+      assert.equal(calls.length, 1, "token refresh must not trigger a GET");
+      assert.equal(field.value, "My unsaved text");
+      await act(async () =>
+        c
+          .querySelector("form")
+          .dispatchEvent(
+            new Event("submit", { bubbles: true, cancelable: true }),
+          ),
+      );
+      assert.equal(calls[1].body.expected_revision, 2);
+      assert.equal(field.value, "My unsaved text");
+      assert.match(
+        c.querySelector('[role="alert"]').textContent,
+        /local edits are preserved/,
+      );
+      globalThis.resourceTestFetchOverride = (...args) =>
+        globalThis.resourceTestFetch(...args);
+      await act(async () =>
+        root.render(
+          createElement(McpMetadataEditor, {
+            agentId: "agent-id",
+            locale: "en",
+          }),
+        ),
+      );
+      assert.equal(calls.length, 2);
+      assert.equal(field.value, "My unsaved text");
+      assert.match(
+        c.querySelector('[role="alert"]').textContent,
+        /local edits are preserved/,
+      );
+      revision = 3;
+      const reload = [...c.querySelectorAll("button")].find((b) =>
+        b.textContent.startsWith("Reload"),
+      );
+      await act(async () => reload.click());
+      assert.equal(
+        [...c.querySelectorAll("input")].find((x) =>
+          x.id.endsWith("-publisher_name"),
+        ).value,
+        "Server publisher",
+      );
+    },
+  );
+  delete globalThis.resourceTestFetchOverride;
+  globalThis.resourceTestFetch = async () => {
+    throw new Error("unavailable");
+  };
+  await mount(
+    McpMetadataEditor,
+    { agentId: "agent-id", locale: "en" },
+    async (c) => {
+      assert.equal(c.querySelectorAll("input").length, 0);
+      assert.equal(
+        [...c.querySelectorAll("button")].find(
+          (b) => b.textContent === "Save information",
+        ).disabled,
+        true,
+      );
+    },
+  );
+});
+test("directory passes filters to Core and preserves them through detail and pagination", async () => {
+  let path;
+  globalThis.resourceTestPublicFetch = async (p) => {
+    path = p;
+    return {
+      items: [{ ...item, versions: [version] }],
+      total: 25,
+      page: 2,
+      size: 12,
+    };
+  };
+  const element = await ResourceDirectory({
+    locale: "en",
+    provider: "claude",
+    capability: "data/analysis",
+    sort: "name",
+    page: 2,
+  });
+  const requested = new URL(path, "https://fixture.invalid");
+  assert.equal(requested.searchParams.get("provider"), "claude");
+  assert.equal(requested.searchParams.get("capability"), "data/analysis");
+  await mount(
+    () => element,
+    {},
+    async (c) => {
+      assert.equal(c.querySelector('select[name="provider"]').value, "claude");
+      const detail = [...c.querySelectorAll("a")].find((a) =>
+        a.href.includes("/skills/packages/"),
+      );
+      const back = new URL(
+        new URL(detail.href).searchParams.get("returnTo"),
+        "https://fixture.invalid",
+      );
+      assert.equal(back.searchParams.get("sort"), "name");
+      assert.equal(back.searchParams.get("capability"), "data/analysis");
+    },
+  );
+});
+
+test("MCP detail survives an unavailable metadata endpoint without disguising it as empty", async () => {
+  const { ApiError } = await import("@/lib/api");
+  globalThis.resourceTestPublicFetch = async (path) => {
+    if (path.includes("/metadata")) throw new ApiError(404);
+    return {
+      id: item.id,
+      slug: "demo",
+      name: "Visible service",
+      description: "Example",
+      connection_mode: "mcp_server",
+      creator: { display_name: "Example" },
+    };
+  };
+  const element = await McpDetailPage({ slug: "demo" });
+  await mount(
+    () => element,
+    {},
+    async (c) => {
+      assert.equal(c.querySelector("h1").textContent, "Visible service");
+      assert.match(c.textContent, /temporarily unavailable/);
+      assert.ok(c.querySelector("#mcp-connection"));
+    },
+  );
+});
+
+test("token refresh during MCP save cannot roll back the saved revision", async () => {
+  const calls = [];
+  let finishSave;
+  globalThis.resourceTestFetch = async (path, options) => {
+    calls.push(options);
+    if (options?.method === "PUT")
+      return new Promise((resolve) => {
+        finishSave = resolve;
+      });
+    return {
+      metadata: { publisher_name: "Original" },
+      revision: 1,
+      updated_at: null,
+    };
+  };
+  try {
+    await mount(
+      McpMetadataEditor,
+      { agentId: "agent-id", locale: "en" },
+      async (c, root) => {
+        const submit = () =>
+          c
+            .querySelector("form")
+            .dispatchEvent(
+              new Event("submit", { bubbles: true, cancelable: true }),
+            );
+        await act(async () => submit());
+        globalThis.resourceTestFetchOverride = (...args) =>
+          globalThis.resourceTestFetch(...args);
+        await act(async () =>
+          root.render(
+            createElement(McpMetadataEditor, {
+              agentId: "agent-id",
+              locale: "en",
+            }),
+          ),
+        );
+        assert.equal(calls.length, 2);
+        await act(async () =>
+          finishSave({
+            metadata: { publisher_name: "Saved" },
+            revision: 2,
+            updated_at: null,
+          }),
+        );
+        assert.match(c.textContent, /Information saved/);
+        await act(async () => submit());
+        assert.equal(calls[2].body.expected_revision, 2);
+        await act(async () =>
+          finishSave({
+            metadata: { publisher_name: "Saved" },
+            revision: 3,
+            updated_at: null,
+          }),
+        );
+      },
+    );
+  } finally {
+    delete globalThis.resourceTestFetchOverride;
+  }
+});
+
+test("invalid directory filters show a correctable error without fetching all resources", async () => {
+  const { resourceDirectoryQuery } = await import(
+    "../src/lib/resource-sharing.mjs"
+  );
+  let calls = 0;
+  globalThis.resourceTestPublicFetch = async () => {
+    calls++;
+    throw new Error("must not fetch");
+  };
+  const element = await ResourceDirectory({
+    locale: "en",
+    ...resourceDirectoryQuery({ capability: "Data/Analysis" }),
+  });
+  await mount(
+    () => element,
+    {},
+    async (c) => {
+      assert.equal(calls, 0);
+      assert.equal(
+        c.querySelector('input[name="capability"]').value,
+        "Data/Analysis",
+      );
+      assert.match(
+        c.querySelector('[role="alert"]').textContent,
+        /Invalid filters/,
+      );
+      assert.ok(
+        [...c.querySelectorAll("a")].some(
+          (a) => a.textContent === "Clear filters",
+        ),
+      );
+    },
+  );
+});
+
+test("repository links reject whitespace consistently with Core metadata validation", async () => {
+  const { repositoryLink } = await import("../src/lib/resource-metadata.ts");
+  for (const space of [
+    " ",
+    "\u00a0",
+    "\u0085",
+    "\u2003",
+    "\ufeff",
+    "\u200b",
+    "\u009f",
+  ])
+    assert.equal(
+      repositoryLink("https://example.com/a" + space + "b"),
+      undefined,
+    );
+  assert.equal(
+    repositoryLink("https://example.com/a%20b"),
+    "https://example.com/a%20b",
   );
 });
