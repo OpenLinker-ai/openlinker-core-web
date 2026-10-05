@@ -11,12 +11,14 @@ import { skillPackageErrorText } from "@/lib/skill-packages";
 import {
   parseSkillReference,
   skillVersionPath,
+  skillReadingPrompt,
 } from "@/lib/resource-sharing.mjs";
 import type {
   SkillPackage,
   SkillPackageVersion,
   SkillPackageContents,
 } from "@/lib/skill-packages";
+import { resourceUseMessages } from "@/messages/resource-use";
 import type { Locale } from "@/lib/i18n";
 import { resourceSharingMessages } from "@/messages/resource-sharing";
 const inputClass =
@@ -39,48 +41,99 @@ export function PublicSkillActions({
   locale: Locale;
 }) {
   const c = resourceSharingMessages[locale];
+  const u = resourceUseMessages[locale];
   const origin = useBrowserOrigin();
   const path = skillVersionPath(packageId, version.id);
   const apiBase = `/api/v1/skill-packages/${packageId}/versions/${version.id}`;
   return (
-    <div className="space-y-5">
-      <ImportVersion
-        locale={locale}
-        reference={{
-          source_package_id: packageId,
-          source_version_id: version.id,
-          expected_digest: version.digest,
-        }}
-      />
-      <p className="text-xs text-[color:var(--ol-muted)]">{c.importHint}</p>
-      <CopyContent
-        locale={locale}
-        label={c.copyReference}
-        value={origin ? `${origin}${path}#sha256=${version.digest}` : ""}
-      />
-      <CopyContent
-        locale={locale}
-        compact
-        label={c.copyLink}
-        value={origin ? `${origin}${path}` : ""}
-      />
-      <div className="flex flex-wrap gap-2">
+    <div className="space-y-6">
+      <section className="space-y-3">
+        <h3 className="font-bold">{u.platformUse}</h3>
+        <ImportVersion
+          locale={locale}
+          reference={{
+            source_package_id: packageId,
+            source_version_id: version.id,
+            expected_digest: version.digest,
+          }}
+        />
+        <p className="text-xs leading-relaxed text-[color:var(--ol-muted)]">
+          {c.importHint}
+        </p>
+        <ol className="list-inside list-decimal space-y-2 text-sm">
+          {u.platformSteps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
+        <p className="text-xs leading-relaxed text-[color:var(--ol-muted)]">
+          {u.platformHint}
+        </p>
+        <CopyContent
+          key={version.id + "-reference"}
+          locale={locale}
+          label={c.copyReference}
+          value={origin ? `${origin}${path}#sha256=${version.digest}` : ""}
+          compact
+        />
+        <CopyContent
+          key={version.id + "-link"}
+          locale={locale}
+          compact
+          label={c.copyLink}
+          value={origin ? `${origin}${path}` : ""}
+        />
+      </section>
+      <section className="space-y-3 border-t border-[color:var(--ol-line)] pt-5">
+        <h3 className="font-bold">{u.localUse}</h3>
+        <p className="text-xs leading-relaxed text-[color:var(--ol-muted)]">
+          {u.localSteps}
+        </p>
         <a className="ol-mini-btn" href={`${apiBase}/archive.zip`} download>
           {c.zip}
         </a>
+      </section>
+      <details className="rounded-xl border border-[color:var(--ol-line)] p-3">
+        <summary className="cursor-pointer text-sm font-bold">
+          {u.reading}
+        </summary>
+        <p className="my-3 text-xs leading-relaxed text-[color:var(--ol-muted)]">
+          {u.readingHint}
+        </p>
+        <CopyContent
+          key={version.id + "-reading"}
+          locale={locale}
+          label={u.copyReading}
+          value={
+            origin
+              ? skillReadingPrompt(
+                  origin,
+                  packageId,
+                  version.id,
+                  version.digest,
+                  locale,
+                )
+              : ""
+          }
+        />
+      </details>
+      <details className="space-y-3 text-sm">
+        <summary className="cursor-pointer font-semibold">{u.advanced}</summary>
         <a className="ol-mini-btn" href={`${apiBase}/bundle.json`} download>
           {c.bundle}
         </a>
-      </div>
-      <CopyContent
-        locale={locale}
-        compact
-        label={c.copyRaw}
-        value={origin ? `${origin}${apiBase}/files/SKILL.md` : ""}
-      />
+        <p className="text-xs text-[color:var(--ol-muted)]">{c.digestHint}</p>
+        <CopyContent
+          key={version.id + "-raw"}
+          locale={locale}
+          compact
+          label={c.copyRaw}
+          value={origin ? `${origin}${apiBase}/files/SKILL.md` : ""}
+        />
+      </details>
     </div>
   );
 }
+
 type Reference = ReturnType<typeof parseSkillReference>;
 function ImportVersion({
   locale,
@@ -97,7 +150,10 @@ function ImportVersion({
   const [error, setError] = useState("");
   if (!api.isAuthenticated)
     return (
-      <AuthLink href="/login" className="ol-mini-btn bg-[color:var(--ol-primary)]! text-white!">
+      <AuthLink
+        href="/login"
+        className="ol-mini-btn bg-[color:var(--ol-primary)]! text-white!"
+      >
         {c.login}
       </AuthLink>
     );
@@ -228,8 +284,18 @@ export function SkillPublicationControls({
       <h2 className="font-bold">{c.visibility}</h2>
       {item.source_package_id && version.source_version_id && (
         <div className="text-sm">
-          <Link className="underline" href={skillVersionPath(item.source_package_id, version.source_version_id)}>{c.importedFrom}</Link>
-          <p className="mt-1 text-xs text-[color:var(--ol-muted)]">{c.sourceHint}</p>
+          <Link
+            className="underline"
+            href={skillVersionPath(
+              item.source_package_id,
+              version.source_version_id,
+            )}
+          >
+            {c.importedFrom}
+          </Link>
+          <p className="mt-1 text-xs text-[color:var(--ol-muted)]">
+            {c.sourceHint}
+          </p>
         </div>
       )}
       <p className="text-sm text-[color:var(--ol-muted)]">{c.publishHint}</p>

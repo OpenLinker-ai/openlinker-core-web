@@ -22,7 +22,8 @@ export const resourceSharingMessages = {
     importing: "正在校验并导入…",
     login: "登录后导入",
     imported: "已导入私有副本，可继续关联 Agent。",
-    importHint: "导入创建自己的私有副本；原作者后续更新不会自动改变它。",
+    importHint:
+      "导入创建自己的私有副本并占用技能包配额；发布者后续更新不会自动改变它。",
     copyLink: "复制版本链接",
     copyReference: "复制固定引用",
     copyRaw: "复制 SKILL.md 地址",
@@ -31,7 +32,8 @@ export const resourceSharingMessages = {
     zip: "下载技能文件夹 ZIP",
     bundle: "下载校验用 JSON",
     digest: "内容 SHA-256",
-    digestHint: "摘要对应下载的 JSON 原始字节，不是 ZIP。",
+    digestHint:
+      "摘要对应 HTTP 内容解码后的 JSON 原始响应体字节，不是 ZIP，也不是重新序列化后的 JSON。",
     requirements: "前置命令",
     none: "无",
     providers: "适用执行环境",
@@ -50,9 +52,11 @@ export const resourceSharingMessages = {
     publish: "发布所选版本",
     withdraw: "撤回所选版本",
     publishing: "正在保存…",
-    confirm: "我已检查所选版本的全部文件；调整可见范围时也已检查所有已发布版本，确认有权分享且不含密钥或私密内容。",
+    confirm:
+      "我已检查所选版本的全部文件；调整可见范围时也已检查所有已发布版本，确认有权分享且不含密钥或私密内容。",
     importedFrom: "导入来源版本",
-    sourceHint: "来源可能已撤回；自己的副本仍可继续使用。",
+    sourceHint:
+      "来源不可访问时，自己的副本仍可使用；重新发布的副本不代表原作者。",
     publishHint:
       "只发布当前版本。私有包仍仅自己可见；改为公开或仅链接可见后，已发布版本可被他人读取、下载和复制。",
     withdrawHint:
@@ -77,7 +81,8 @@ export const resourceSharingMessages = {
     token: "管理 User Token",
     tokenHint:
       "使用自己的 User Token，浏览器登录凭据不能用于 MCP。调用需要 agents:run，读取结果需要 runs:read，取消需要 runs:cancel。可以限定 Agent 的运行权限。",
-    taskTokenHint: "平台发现与详情工具需要 agents:read，create_task 工具需要 tasks:create。",
+    taskTokenHint:
+      "平台发现与详情工具需要 agents:read，create_task 工具需要 tasks:create。",
     scoped: "此连接固定调用当前 Agent，运行结果也限定在此 Agent 内。",
     platformUse: "平台连接需要在调用时传入 agent_id。",
     procedure: "调用流程",
@@ -131,7 +136,7 @@ export const resourceSharingMessages = {
     login: "Sign in to import",
     imported: "Imported a private copy. You can now associate an Agent.",
     importHint:
-      "Import creates your own private copy. Publisher updates never change it automatically.",
+      "Import creates your own private copy and uses package quota. Publisher updates never change it automatically.",
     copyLink: "Copy version link",
     copyReference: "Copy pinned reference",
     copyRaw: "Copy SKILL.md URL",
@@ -140,7 +145,8 @@ export const resourceSharingMessages = {
     zip: "Download skill folder ZIP",
     bundle: "Download JSON for verification",
     digest: "Content SHA-256",
-    digestHint: "The digest covers downloaded JSON bytes, not the ZIP.",
+    digestHint:
+      "The digest covers the original JSON response body after HTTP content decoding, not the ZIP or reserialized JSON.",
     requirements: "Required commands",
     none: "None",
     providers: "Execution environments",
@@ -162,7 +168,8 @@ export const resourceSharingMessages = {
     confirm:
       "I have reviewed every file in this version and, when changing visibility, all published versions. I can share them and they contain no credentials or private content.",
     importedFrom: "Imported source version",
-    sourceHint: "The source may be withdrawn; your own copy remains usable.",
+    sourceHint:
+      "Your copy remains usable if the source becomes unavailable. Republishing a copy does not establish original authorship.",
     publishHint:
       "Publishes only this version. Private packages remain private; public or unlisted packages let others read, download and copy published versions.",
     withdrawHint:
@@ -192,7 +199,8 @@ export const resourceSharingMessages = {
     token: "Manage User Tokens",
     tokenHint:
       "Use your own User Token; browser credentials do not authenticate MCP. Calling requires agents:run, reading results requires runs:read, and cancellation requires runs:cancel. Agent run access can be restricted.",
-    taskTokenHint: "Platform discovery and detail tools require agents:read; create_task requires tasks:create.",
+    taskTokenHint:
+      "Platform discovery and detail tools require agents:read; create_task requires tasks:create.",
     scoped:
       "This connection calls only this Agent and limits run results to it.",
     platformUse:

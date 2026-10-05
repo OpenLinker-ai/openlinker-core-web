@@ -1,4 +1,9 @@
 import Link from "next/link";
+import {
+  resourceReturnPath,
+  withResourceReturn,
+} from "@/lib/resource-sharing.mjs";
+import { resourceUseMessages } from "@/messages/resource-use";
 import { Package, Plug, ArrowUpRight } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
@@ -17,6 +22,7 @@ export async function ResourceDirectory({
   page?: number;
 }) {
   const c = resourceSharingMessages[locale];
+  const u = resourceUseMessages[locale];
   const current =
     Number.isSafeInteger(page) && page > 0 ? Math.min(page, 10000) : 1;
   const params = new URLSearchParams({
@@ -54,7 +60,10 @@ export async function ResourceDirectory({
       </div>
       {mcp && (
         <Link
-          href="/mcps/platform"
+          href={withResourceReturn(
+            "/mcps/platform",
+            resourceReturnPath(pageURL(current), true),
+          )}
           className="ol-panel flex items-center gap-5 p-6"
         >
           <Plug className="shrink-0 text-[color:var(--ol-primary)]" size={30} />
@@ -67,11 +76,12 @@ export async function ResourceDirectory({
           <ArrowUpRight className="ml-auto shrink-0" size={18} />
         </Link>
       )}
-      <form action={path} className="flex gap-3">
+      <form action={path} className="flex flex-wrap gap-3">
         {!mcp && <input type="hidden" name="tab" value="packages" />}
         <label className="min-w-0 flex-1">
           <span className="sr-only">{c.query}</span>
           <input
+            key={query}
             name="q"
             defaultValue={query}
             placeholder={c.query}
@@ -80,6 +90,14 @@ export async function ResourceDirectory({
           />
         </label>
         <button className="ol-mini-btn shrink-0">{c.search}</button>
+        {query && (
+          <Link
+            href={mcp ? "/mcps" : "/skills?tab=packages"}
+            className="ol-mini-btn shrink-0"
+          >
+            {u.clear}
+          </Link>
+        )}
       </form>
       {!data ? (
         <div className="ol-panel p-8" role="alert">
@@ -90,21 +108,36 @@ export async function ResourceDirectory({
         </div>
       ) : !data.items.length ? (
         <div className="ol-panel p-10 text-center">
-          <h2 className="text-lg font-bold">{mcp ? c.mcpEmpty : c.empty}</h2>
+          <h2 className="text-lg font-bold">
+            {query || current > 1 ? u.noResults : mcp ? c.mcpEmpty : c.empty}
+          </h2>
           <p className="mt-3 text-sm text-[color:var(--ol-muted)]">
-            {mcp ? c.mcpEmptyHint : c.emptyHint}
+            {query || current > 1
+              ? u.noResultsHint
+              : mcp
+                ? c.mcpEmptyHint
+                : c.emptyHint}
           </p>
+          {(query || current > 1) && (
+            <Link
+              href={mcp ? "/mcps" : "/skills?tab=packages"}
+              className="ol-mini-btn mt-4"
+            >
+              {c.returnDirectory}
+            </Link>
+          )}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {data.items.map((item) => (
             <Link
               key={item.id}
-              href={
+              href={withResourceReturn(
                 mcp
                   ? `/mcps/services/${encodeURIComponent(item.slug ?? "")}`
-                  : `/skills/packages/${item.id}`
-              }
+                  : `/skills/packages/${item.id}`,
+                resourceReturnPath(pageURL(current), mcp),
+              )}
               className="ol-panel min-w-0 p-6 transition hover:border-[color:var(--ol-primary)]"
             >
               <div className="mb-5 flex items-center justify-between">
@@ -118,6 +151,11 @@ export async function ResourceDirectory({
                 {item.description}
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
+                {mcp && item.mcp_tool_name && (
+                  <code className="break-all text-xs text-[color:var(--ol-muted)]">
+                    {item.mcp_tool_name}
+                  </code>
+                )}
                 {!mcp &&
                   item.versions[0]?.providers.map((p) => (
                     <span key={p} className="ol-chip">
@@ -135,7 +173,7 @@ export async function ResourceDirectory({
       )}
       {data && data.total > 12 && (
         <nav
-          aria-label={c.browse}
+          aria-label={mcp ? u.mcpBrowse : c.browse}
           className="flex items-center justify-between"
         >
           {current > 1 ? (

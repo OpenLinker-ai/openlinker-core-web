@@ -1,4 +1,7 @@
-export function mcpPageMethodResponse(pathname: string, method: string): Response | null;
+export function mcpPageMethodResponse(
+  pathname: string,
+  method: string,
+): Response | null;
 export function parseSkillReference(
   value: string,
   origin: string,
@@ -13,3 +16,21 @@ export function skillLocalNameCompatible(
   name: string,
   description: string,
 ): boolean;
+export function resourceReturnPath(value: unknown, mcp?: boolean): string;
+export function withResourceReturn(path: string, returnTo: string): string;
+export function skillReadingPrompt(
+  origin: string,
+  packageId: string,
+  versionId: string,
+  digest: string,
+  locale: string,
+): string;
+export function schemaFields(
+  schema: unknown,
+): {
+  name: string;
+  type: string;
+  required: boolean;
+  description: string;
+  defaultValue: string;
+}[];

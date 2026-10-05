@@ -46,6 +46,9 @@ jobs:
       - name: Check Skill directory counts
         run: npm run test:skills && npm run test:cli-auth
 
+      - name: Check Skill and MCP resource interactions
+        run: npm run test:resources
+
       - name: Check Core navigation route contract
         run: npm run test:core-navigation-routes
 
