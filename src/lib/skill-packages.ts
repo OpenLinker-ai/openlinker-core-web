@@ -1,4 +1,27 @@
+import type { ResourceMetadata } from "@/lib/resource-metadata";
+import { localizedErrorMessage } from "@/lib/api";
+import type { Locale } from "@/lib/i18n";
+import { skillPackageErrorMessages } from "@/messages/skill-package-errors";
+
+export function skillPackageErrorText(
+  error: unknown,
+  locale: Locale,
+  fallback: string,
+): string {
+  const code =
+    error && typeof error === "object" && "code" in error
+      ? String(error.code)
+      : "";
+  const messages = skillPackageErrorMessages[locale];
+  if (Object.hasOwn(messages, code))
+    return messages[code as keyof typeof messages];
+  return localizedErrorMessage(error, locale, fallback);
+}
+
 export type SkillPackageVersion = {
+  publication_metadata?: ResourceMetadata | null;
+  published_at?: string | null;
+  source_version_id?: string | null;
   id: string;
   version: string;
   digest: string;
@@ -13,6 +36,9 @@ export type SkillPackageContents = {
   required_commands: string[];
 };
 export type SkillPackage = {
+  metadata?: ResourceMetadata;
+  visibility?: "private" | "unlisted" | "public";
+  source_package_id?: string | null;
   id: string;
   name: string;
   description: string;

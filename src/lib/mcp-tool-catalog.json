@@ -1,0 +1,65 @@
+[
+  {
+    "name": "search_agents",
+    "scope": "platform",
+    "required": [],
+    "scopedRequired": [],
+    "permission": "agents:read"
+  },
+  {
+    "name": "get_agent",
+    "scope": "platform",
+    "required": ["slug"],
+    "scopedRequired": [],
+    "permission": "agents:read"
+  },
+  {
+    "name": "run_agent",
+    "scope": "both",
+    "required": ["agent_id", "input", "idempotency_key"],
+    "scopedRequired": ["input", "idempotency_key"],
+    "permission": "agents:run"
+  },
+  {
+    "name": "start_agent_run",
+    "scope": "both",
+    "required": ["agent_id", "input", "idempotency_key"],
+    "scopedRequired": ["input", "idempotency_key"],
+    "permission": "agents:run"
+  },
+  {
+    "name": "get_run",
+    "scope": "both",
+    "required": ["run_id"],
+    "scopedRequired": ["run_id"],
+    "permission": "runs:read"
+  },
+  {
+    "name": "list_run_events",
+    "scope": "both",
+    "required": ["run_id"],
+    "scopedRequired": ["run_id"],
+    "permission": "runs:read"
+  },
+  {
+    "name": "list_run_artifacts",
+    "scope": "both",
+    "required": ["run_id"],
+    "scopedRequired": ["run_id"],
+    "permission": "runs:read"
+  },
+  {
+    "name": "cancel_run",
+    "scope": "both",
+    "required": ["run_id"],
+    "scopedRequired": ["run_id"],
+    "permission": "runs:cancel"
+  },
+  {
+    "name": "create_task",
+    "scope": "platform",
+    "required": ["query"],
+    "scopedRequired": [],
+    "permission": "tasks:create"
+  }
+]

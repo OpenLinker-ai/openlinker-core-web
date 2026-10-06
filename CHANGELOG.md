@@ -9,6 +9,16 @@ API and UI route contracts are declared stable.
 
 ### Added
 
+- Independent Skill version and MCP service detail pages with fixed references,
+  package downloads, connection configuration, tool schemas and usage guidance.
+- Publisher declarations, Skill publication metadata and revision-protected MCP
+  owner editing. Authentication refresh preserves unsaved edits and conflicts.
+- Provider/capability/tag discovery filters and sorting backed by Core queries,
+  with return-navigation state, invalid-input feedback and responsive bilingual UI.
+  These resource features require Core schemas 096/097; coordinate rollout with
+  Core. Display declarations are unverified and outside bundle SHA-256.
+
+
 - Add private skill package import, version browsing and runtime Agent bindings,
   with explicit upgrades, load status and actionable validation errors. Requires
   Core schema 093 and a compatible native Codex/Claude Plugin Host.

@@ -1,50 +1,97 @@
 export const skillPackageErrorMessages = {
-  "zh": {
-    "SKILL_PACKAGE_VERSION_INVALID": "版本号需为 1–64 位字母、数字、点、连字符或下划线。",
-    "SKILL_PACKAGE_VERSION_CONFLICT": "此版本已存在，请更换版本号。",
-    "SKILL_PACKAGE_FILE_COUNT": "最多导入 32 个文件（不含跳过的系统文件）。",
-    "SKILL_PACKAGE_PATH_UNSAFE": "文件路径不安全：请使用相对路径，避免点文件、路径跳转或文件与目录重名。",
-    "SKILL_PACKAGE_FRONTMATTER_REQUIRED": "SKILL.md 缺少 YAML 头部：请用 --- 包围 name 和 description，并在后面填写指令。",
-    "SKILL_PACKAGE_FRONTMATTER_INVALID": "SKILL.md 的 YAML 头部无效，请检查缩进、引号和重复字段。",
-    "SKILL_PACKAGE_MANIFEST_INVALID": "请填写名称（最多 120 个字符）、说明（最多 2000 个字符）及正文指令。",
-    "SKILL_PACKAGE_CAPABILITY_LIMIT": "最多映射 5 个标准能力。",
-    "SKILL_PACKAGE_CAPABILITY_UNKNOWN": "所选能力已不存在，请刷新能力目录后重新选择。",
-    "SKILL_PACKAGE_PROVIDER_REQUIRED": "至少选择一种执行环境。",
-    "SKILL_PACKAGE_PROVIDER_UNSUPPORTED": "当前仅支持 Codex 和 Claude。",
-    "SKILL_PACKAGE_COMMAND_LIMIT": "最多声明 16 个依赖命令。",
-    "SKILL_PACKAGE_COMMAND_INVALID": "依赖命令只能填写命令名，不能包含路径或参数。",
-    "SKILL_PACKAGE_ENCODING_INVALID": "文件必须是有效的 UTF-8 文本。",
-    "SKILL_PACKAGE_MANIFEST_MISSING": "选择的文件中没有 SKILL.md。",
-    "SKILL_PACKAGE_PAYLOAD_TOO_LARGE": "技能包 JSON 编码后超过 64 KiB；转义字符和清单元数据也计入大小，请减少内容。",
-    "SKILL_PACKAGE_PACKAGE_LIMIT": "已达到每个账号 200 个技能包的上限。",
-    "SKILL_PACKAGE_VERSION_LIMIT": "此技能包已达到 50 个版本的上限。",
-    "SKILL_PACKAGE_BINDING_LIMIT": "每个 Agent 最多关联 5 个技能包，请先解除不需要的关联。",
-    "SKILL_PACKAGE_HOST_INCOMPATIBLE": "当前执行端与此技能版本不兼容，请连接支持该技能包的 Codex / Claude Host。",
-    "SKILL_PACKAGE_AGENT_DISABLED": "Agent 已停用；可查看和解除关联，重新启用后才能新增或更换版本。",
-    "SKILL_PACKAGE_REQUEST_INVALID": "请求格式无效或超过大小限制。"
+  zh: {
+    SKILL_PACKAGE_METADATA_INVALID:
+      "来源资料不符合格式或长度要求，请检查后重试。",
+    SKILL_PACKAGE_METADATA_FROZEN: "该版本资料已固定，请创建新版本后修改。",
+    SKILL_PACKAGE_VISIBILITY_INVALID: "请选择私有、仅链接可见或公开目录。",
+    SKILL_PACKAGE_DIGEST_MISMATCH:
+      "引用摘要与发布版本不符，请重新打开分享页核对内容并复制引用。",
+    SKILL_PACKAGE_SOURCE_INVALID:
+      "此版本未通过完整性校验。请发布者检查原始内容并创建新版本。",
+    SKILL_PACKAGE_VERSION_INVALID:
+      "版本号需为 1–64 位字母、数字、点、连字符或下划线。",
+    SKILL_PACKAGE_VERSION_CONFLICT: "此版本已存在，请更换版本号。",
+    SKILL_PACKAGE_FILE_COUNT: "最多导入 32 个文件（不含跳过的系统文件）。",
+    SKILL_PACKAGE_PATH_UNSAFE:
+      "文件路径不安全：请使用相对路径，避免点文件、路径跳转或文件与目录重名。",
+    SKILL_PACKAGE_FRONTMATTER_REQUIRED:
+      "SKILL.md 缺少 YAML 头部：请用 --- 包围 name 和 description，并在后面填写指令。",
+    SKILL_PACKAGE_FRONTMATTER_INVALID:
+      "SKILL.md 的 YAML 头部无效，请检查缩进、引号和重复字段。",
+    SKILL_PACKAGE_MANIFEST_INVALID:
+      "请填写名称（最多 120 个字符）、说明（最多 2000 个字符）及正文指令。",
+    SKILL_PACKAGE_CAPABILITY_LIMIT: "最多映射 5 个标准能力。",
+    SKILL_PACKAGE_CAPABILITY_UNKNOWN:
+      "所选能力已不存在，请刷新能力目录后重新选择。",
+    SKILL_PACKAGE_PROVIDER_REQUIRED: "至少选择一种执行环境。",
+    SKILL_PACKAGE_PROVIDER_UNSUPPORTED: "当前仅支持 Codex 和 Claude。",
+    SKILL_PACKAGE_COMMAND_LIMIT: "最多声明 16 个依赖命令。",
+    SKILL_PACKAGE_COMMAND_INVALID:
+      "依赖命令只能填写命令名，不能包含路径或参数。",
+    SKILL_PACKAGE_ENCODING_INVALID: "文件必须是有效的 UTF-8 文本。",
+    SKILL_PACKAGE_MANIFEST_MISSING: "选择的文件中没有 SKILL.md。",
+    SKILL_PACKAGE_PAYLOAD_TOO_LARGE:
+      "技能包 JSON 编码后超过 64 KiB；转义字符和清单元数据也计入大小，请减少内容。",
+    SKILL_PACKAGE_PACKAGE_LIMIT: "已达到每个账号 200 个技能包的上限。",
+    SKILL_PACKAGE_VERSION_LIMIT: "此技能包已达到 50 个版本的上限。",
+    SKILL_PACKAGE_BINDING_LIMIT:
+      "每个 Agent 最多关联 5 个技能包，请先解除不需要的关联。",
+    SKILL_PACKAGE_HOST_INCOMPATIBLE:
+      "当前执行端与此技能版本不兼容，请连接支持该技能包的 Codex / Claude Host。",
+    SKILL_PACKAGE_AGENT_DISABLED:
+      "Agent 已停用；可查看和解除关联，重新启用后才能新增或更换版本。",
+    SKILL_PACKAGE_REQUEST_INVALID: "请求格式无效或超过大小限制。",
   },
-  "en": {
-    "SKILL_PACKAGE_VERSION_INVALID": "Use 1–64 letters, numbers, dots, hyphens or underscores for the version.",
-    "SKILL_PACKAGE_VERSION_CONFLICT": "This version exists. Choose a new version.",
-    "SKILL_PACKAGE_FILE_COUNT": "Import at most 32 files, excluding skipped system files.",
-    "SKILL_PACKAGE_PATH_UNSAFE": "Use safe relative paths without hidden files, traversal, or file/directory collisions.",
-    "SKILL_PACKAGE_FRONTMATTER_REQUIRED": "SKILL.md needs YAML frontmatter with name and description between --- lines, followed by instructions.",
-    "SKILL_PACKAGE_FRONTMATTER_INVALID": "Invalid YAML frontmatter. Check indentation, quotes and duplicate keys.",
-    "SKILL_PACKAGE_MANIFEST_INVALID": "Provide a name (up to 120 characters), description (up to 2000 characters), and instructions.",
-    "SKILL_PACKAGE_CAPABILITY_LIMIT": "Map at most 5 standard capabilities.",
-    "SKILL_PACKAGE_CAPABILITY_UNKNOWN": "A selected capability no longer exists. Refresh the catalog and select again.",
-    "SKILL_PACKAGE_PROVIDER_REQUIRED": "Choose at least one execution environment.",
-    "SKILL_PACKAGE_PROVIDER_UNSUPPORTED": "Only Codex and Claude are supported.",
-    "SKILL_PACKAGE_COMMAND_LIMIT": "Declare at most 16 required commands.",
-    "SKILL_PACKAGE_COMMAND_INVALID": "Use executable names without paths or arguments.",
-    "SKILL_PACKAGE_ENCODING_INVALID": "Files must contain valid UTF-8 text.",
-    "SKILL_PACKAGE_MANIFEST_MISSING": "The selected files do not include SKILL.md.",
-    "SKILL_PACKAGE_PAYLOAD_TOO_LARGE": "The JSON-encoded package exceeds 64 KiB. Escapes and manifest metadata count toward the limit; reduce the contents.",
-    "SKILL_PACKAGE_PACKAGE_LIMIT": "The account has reached its 200-package limit.",
-    "SKILL_PACKAGE_VERSION_LIMIT": "This package has reached its 50-version limit.",
-    "SKILL_PACKAGE_BINDING_LIMIT": "Each Agent can associate at most 5 packages. Remove an unused association first.",
-    "SKILL_PACKAGE_HOST_INCOMPATIBLE": "The current host cannot load this version. Connect a compatible Codex / Claude host.",
-    "SKILL_PACKAGE_AGENT_DISABLED": "The Agent is disabled. You can inspect or remove associations; enable it before adding or changing versions.",
-    "SKILL_PACKAGE_REQUEST_INVALID": "The request is malformed or exceeds the request size limit."
-  }
+  en: {
+    SKILL_PACKAGE_METADATA_INVALID:
+      "Information has an invalid format or exceeds a field limit.",
+    SKILL_PACKAGE_METADATA_FROZEN:
+      "Information for this version is frozen. Create a new version to change it.",
+    SKILL_PACKAGE_VISIBILITY_INVALID:
+      "Choose private, unlisted or public visibility.",
+    SKILL_PACKAGE_DIGEST_MISMATCH:
+      "The reference digest does not match the published version. Reopen the shared page, verify its contents and copy the reference again.",
+    SKILL_PACKAGE_SOURCE_INVALID:
+      "This version failed integrity verification. The publisher needs to check the source contents and create a new version.",
+    SKILL_PACKAGE_VERSION_INVALID:
+      "Use 1–64 letters, numbers, dots, hyphens or underscores for the version.",
+    SKILL_PACKAGE_VERSION_CONFLICT:
+      "This version exists. Choose a new version.",
+    SKILL_PACKAGE_FILE_COUNT:
+      "Import at most 32 files, excluding skipped system files.",
+    SKILL_PACKAGE_PATH_UNSAFE:
+      "Use safe relative paths without hidden files, traversal, or file/directory collisions.",
+    SKILL_PACKAGE_FRONTMATTER_REQUIRED:
+      "SKILL.md needs YAML frontmatter with name and description between --- lines, followed by instructions.",
+    SKILL_PACKAGE_FRONTMATTER_INVALID:
+      "Invalid YAML frontmatter. Check indentation, quotes and duplicate keys.",
+    SKILL_PACKAGE_MANIFEST_INVALID:
+      "Provide a name (up to 120 characters), description (up to 2000 characters), and instructions.",
+    SKILL_PACKAGE_CAPABILITY_LIMIT: "Map at most 5 standard capabilities.",
+    SKILL_PACKAGE_CAPABILITY_UNKNOWN:
+      "A selected capability no longer exists. Refresh the catalog and select again.",
+    SKILL_PACKAGE_PROVIDER_REQUIRED:
+      "Choose at least one execution environment.",
+    SKILL_PACKAGE_PROVIDER_UNSUPPORTED: "Only Codex and Claude are supported.",
+    SKILL_PACKAGE_COMMAND_LIMIT: "Declare at most 16 required commands.",
+    SKILL_PACKAGE_COMMAND_INVALID:
+      "Use executable names without paths or arguments.",
+    SKILL_PACKAGE_ENCODING_INVALID: "Files must contain valid UTF-8 text.",
+    SKILL_PACKAGE_MANIFEST_MISSING:
+      "The selected files do not include SKILL.md.",
+    SKILL_PACKAGE_PAYLOAD_TOO_LARGE:
+      "The JSON-encoded package exceeds 64 KiB. Escapes and manifest metadata count toward the limit; reduce the contents.",
+    SKILL_PACKAGE_PACKAGE_LIMIT:
+      "The account has reached its 200-package limit.",
+    SKILL_PACKAGE_VERSION_LIMIT:
+      "This package has reached its 50-version limit.",
+    SKILL_PACKAGE_BINDING_LIMIT:
+      "Each Agent can associate at most 5 packages. Remove an unused association first.",
+    SKILL_PACKAGE_HOST_INCOMPATIBLE:
+      "The current host cannot load this version. Connect a compatible Codex / Claude host.",
+    SKILL_PACKAGE_AGENT_DISABLED:
+      "The Agent is disabled. You can inspect or remove associations; enable it before adding or changing versions.",
+    SKILL_PACKAGE_REQUEST_INVALID:
+      "The request is malformed or exceeds the request size limit.",
+  },
 } as const;

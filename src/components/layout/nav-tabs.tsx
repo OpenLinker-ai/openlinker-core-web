@@ -20,6 +20,8 @@ interface NavItem {
 
 const ITEMS: NavItem[] = [
   { label: { zh: "首页", en: "Home" }, href: "/", match: (p) => p === "/" },
+  { label: { zh: "Skill", en: "Skills" }, href: "/skills?tab=packages", match: (p) => p.startsWith("/skills") },
+  { label: { zh: "MCP", en: "MCP" }, href: "/mcps", match: (p) => p.startsWith("/mcps") },
   {
     label: { zh: "Agent 库", en: "Registry" },
     href: "/registry",
@@ -30,8 +32,7 @@ const ITEMS: NavItem[] = [
     href: "/connect",
     match: (p) =>
       p.startsWith("/connect") ||
-      p.startsWith("/publish") ||
-      p.startsWith("/skills"),
+      p.startsWith("/publish"),
   },
   {
     label: { zh: "A2A", en: "A2A" },

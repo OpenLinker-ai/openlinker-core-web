@@ -4,7 +4,10 @@ import remarkGfm from "remark-gfm";
 
 import { remarkJSONAutolinkBoundaries, safeMarkdownURL } from "@/lib/markdown-url.mjs";
 
-export function AgentMarkdown({ children, className = "" }: { children: string; className?: string }) {
+export function AgentMarkdown({ children, className = "", headingOffset = 0 }: { children: string; className?: string; headingOffset?: 0 | 1 | 2 }) {
+  const H1 = headingOffset === 2 ? "h3" : headingOffset === 1 ? "h2" : "h1";
+  const H2 = headingOffset === 2 ? "h4" : headingOffset === 1 ? "h3" : "h2";
+  const H3 = headingOffset === 2 ? "h5" : headingOffset === 1 ? "h4" : "h3";
   return (
     <div className={`min-w-0 break-words text-[13px] leading-[1.65] text-[color:var(--ol-ink)] ${className}`}>
       <ReactMarkdown
@@ -15,9 +18,9 @@ export function AgentMarkdown({ children, className = "" }: { children: string; 
           a: SafeLink,
           blockquote: ({ children: content }) => <blockquote className="my-3 border-l-4 border-[color:var(--ol-primary)]/35 pl-3 text-[color:var(--ol-muted)]">{content}</blockquote>,
           code: ({ children: content, className: codeClass }) => <code className={`${codeClass ?? ""} rounded bg-[color:var(--ol-soft)] px-1 py-0.5 font-mono text-[0.92em]`}>{content}</code>,
-          h1: ({ children: content }) => <h1 className="mb-2 mt-4 text-lg font-black first:mt-0">{content}</h1>,
-          h2: ({ children: content }) => <h2 className="mb-2 mt-4 text-base font-black first:mt-0">{content}</h2>,
-          h3: ({ children: content }) => <h3 className="mb-1.5 mt-3 font-black first:mt-0">{content}</h3>,
+          h1: ({ children: content }) => <H1 className="mb-2 mt-4 text-lg font-black first:mt-0">{content}</H1>,
+          h2: ({ children: content }) => <H2 className="mb-2 mt-4 text-base font-black first:mt-0">{content}</H2>,
+          h3: ({ children: content }) => <H3 className="mb-1.5 mt-3 font-black first:mt-0">{content}</H3>,
           img: ({ alt }) => <span className="text-[color:var(--ol-muted)]">[{alt || "image"}]</span>,
           li: ({ children: content }) => <li className="my-1">{content}</li>,
           ol: ({ children: content }) => <ol className="my-3 list-decimal space-y-1 pl-6">{content}</ol>,
