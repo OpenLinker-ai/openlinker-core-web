@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { SkillTrialPanel } from "@/components/skills/skill-trial-panel";
+import type { SkillTrial } from "@/lib/skill-association";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 
@@ -68,6 +70,7 @@ interface Props {
   examples?: { input_json: Record<string, unknown> }[];
   inputSchema?: Record<string, unknown>;
   autorun?: boolean;
+  skillTrial?: SkillTrial;
   locale?: Locale;
 }
 
@@ -88,6 +91,7 @@ export function PlaygroundRunner({
   examples = [],
   inputSchema,
   autorun = false,
+  skillTrial,
   locale = "zh",
 }: Props) {
   const copy = useMemo(
@@ -198,6 +202,8 @@ export function PlaygroundRunner({
   const setTurns = useCallback((change: (items: PlaygroundTurn[]) => PlaygroundTurn[]) => {
     sessionStore.update((state) => ({ turns: change(state.turns) }));
   }, [sessionStore]);
+  const [trialTurn, setTrialTurn] = useState<{ id: string; startedAt: number } | null>(null);
+  const trialResult = turns.find((turn) => turn.id === trialTurn?.id);
   const [inputError, setInputError] = useState("");
   // 选中规则见 turn-selection.mjs：选择只在"当时的最新一轮仍是最新"期间有效。
   const [selection, setSelection] = useState(clearedTurnSelection);
@@ -372,6 +378,7 @@ export function PlaygroundRunner({
             },
         },
       };
+      if (skillTrial && !existingTurn) setTrialTurn({ id: turnId, startedAt: Date.now() });
       sessionStore.update((state) => ({
         turns: state.turns.some((item) => item.id === turnId)
           ? state.turns.map((item) => item.id === turnId ? turn : item)
@@ -412,6 +419,7 @@ export function PlaygroundRunner({
     inputSchema,
     turns,
     restored,
+    skillTrial,
     running,
     sessionStore,
     setInput,
@@ -569,6 +577,7 @@ export function PlaygroundRunner({
     if (
       !restored ||
       !autorun ||
+      Boolean(skillTrial) ||
       autorunConsumed ||
       autoRunStarted.current ||
       turns.length > 0 ||
@@ -579,7 +588,7 @@ export function PlaygroundRunner({
     }
     autoRunStarted.current = true;
     void handleRun();
-  }, [authLoading, autorun, autorunConsumed, handleRun, isAuthenticated, restored, turns.length]);
+  }, [authLoading, autorun, autorunConsumed, handleRun, isAuthenticated, restored, skillTrial, turns.length]);
 
   // 只有"最新一轮刚失败"才把详情栏对准它；对准旧的失败轮会永久挡住后续 Run 的跟随。
   const failedLatestTurnId = failureFocusTurnId(turns);
@@ -603,6 +612,7 @@ export function PlaygroundRunner({
   // nowrap 文本都能把整列撑宽，导致整页横向溢出。min-w-0 让它收缩到容器宽度。
   return (
     <div className="relative flex min-h-0 min-w-0 flex-col gap-3 min-[1120px]:h-full">
+      {skillTrial && <SkillTrialPanel key={`${skillTrial.binding_id}:${trialTurn?.id ?? "idle"}`} agentId={agent.id} renderedUserId={userId} expected={skillTrial} run={trialResult?.result} startedAt={trialResult ? trialTurn?.startedAt : undefined} submitting={trialResult?.status === "running"} locale={locale} />}
       <header className="flex flex-wrap items-center gap-2 text-[12px] font-extrabold text-[color:var(--ol-muted)]">
         <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-[color:var(--ol-line)] bg-white px-2.5 py-1 text-[12px] font-extrabold text-[color:var(--ol-ink)]">
           <Icon name="bot" size="sm" />
@@ -676,6 +686,7 @@ export function PlaygroundRunner({
           disabled={!restored || running}
           onClick={() => {
             autoRunStarted.current = true;
+            setTrialTurn(null);
             sessionStore.update({ input: "", turns: [], activeTurnId: "", autorunConsumed: true, conversationID: localID("conversation") });
             setSelection(clearedTurnSelection());
             setDetailsOpen(false);

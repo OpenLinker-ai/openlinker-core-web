@@ -15,6 +15,7 @@
  */
 
 import Link from "next/link";
+import { parseSkillTrial } from "@/lib/skill-association";
 import { notFound, redirect } from "next/navigation";
 
 import { Topbar } from "@/components/layout/topbar";
@@ -65,10 +66,16 @@ export default async function PlaygroundPage({
     prefill?: string;
     example?: string;
     autorun?: string;
+    skill_package?: string | string[];
+    skill_version?: string | string[];
+    skill_binding?: string | string[];
+    skill_digest?: string | string[];
   }>;
 }) {
   const { slug } = await params;
   const query = await searchParams;
+  const hasSkillContext = ["skill_package", "skill_version", "skill_binding", "skill_digest"].some((key) => key in query);
+  const skillTrial = parseSkillTrial(query);
   const { prefill, example, autorun } = query;
 
   const session = await auth();
@@ -188,14 +195,15 @@ export default async function PlaygroundPage({
         {/* 这一层才是 main 这个 grid 的子项：没有 min-w-0，里面的内容就能把整列撑宽。 */}
         <div className="min-h-0 min-w-0">
           <PlaygroundRunner
-            key={`${session.user?.id ?? ""}:${agent.id}:${example ?? ""}:${prefill ?? ""}`}
+            key={`${session.user?.id ?? ""}:${agent.id}:${example ?? ""}:${prefill ?? ""}:${JSON.stringify(skillTrial)}`}
             userId={session.user?.id}
             agent={agent}
             prefill={prefill}
             selectedExample={selectedExample?.input_json}
             examples={agent.examples ?? []}
             inputSchema={agent.capability?.input_schema}
-            autorun={autorun === "1"}
+            autorun={autorun === "1" && !hasSkillContext}
+            skillTrial={skillTrial}
             locale={locale}
           />
         </div>
