@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { SkillPublicationControls, SkillReferenceImport } from "@/components/skills/public-skill-actions";
+import { skillAssociationMessages } from "@/messages/skill-association";
+import { skillAssociationIssue, skillTrialHref } from "@/lib/skill-association";
+import type { SkillPackageBinding } from "@/lib/skill-packages";
 import { resourceSharingMessages } from "@/messages/resource-sharing";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -53,6 +56,8 @@ type Props = {
   skills: Skill[];
   packageId?: string;
   agentId?: string;
+  initialVersionId?: string;
+  associate?: boolean;
 };
 
 export function SkillPackages({
@@ -61,6 +66,8 @@ export function SkillPackages({
   skills: initialSkills,
   packageId,
   agentId,
+  initialVersionId,
+  associate,
 }: Props) {
   const copy = skillPackageMessages[locale];
   const api = usePackageApi();
@@ -115,7 +122,7 @@ export function SkillPackages({
         )}
         {packages.isSuccess &&
           (packageId ? (
-            <PackageDetail {...{ locale, agents, skills, packageId }} />
+            <PackageDetail key={`${packageId}:${initialVersionId ?? ""}:${associate}`} {...{ locale, agents, skills, packageId, initialVersionId, associate }} />
           ) : agentId ? (
             <AgentPackages {...{ locale, agents, skills, items, agentId }} />
           ) : (
@@ -464,6 +471,8 @@ function PackageDetail({
   agents,
   skills,
   packageId,
+  initialVersionId = "",
+  associate = false,
 }: Props & { packageId: string }) {
   const api = usePackageApi();
   const copy = skillPackageMessages[locale];
@@ -472,13 +481,13 @@ function PackageDetail({
     queryFn: () =>
       api.fetch<SkillPackage>(`/api/v1/creator/skill-packages/${packageId}`),
   });
-  const [versionId, setVersionId] = useState("");
+  const [versionId, setVersionId] = useState(initialVersionId);
   const [file, setFile] = useState("SKILL.md");
   const [importOpen, setImportOpen] = useState(false);
-  const [bindOpen, setBindOpen] = useState(false);
+  const [bindOpen, setBindOpen] = useState(associate);
   const item = data.data;
   const version =
-    item?.versions.find((v) => v.id === versionId) ?? item?.versions[0];
+    versionId ? item?.versions.find((v) => v.id === versionId) : item?.versions[0];
   const contentQuery = useQuery({
     queryKey: [...key, "contents", packageId, version?.id, api.ownerId],
     enabled: Boolean(version),
@@ -525,12 +534,13 @@ function PackageDetail({
           >
             {copy.newVersion}
           </button>
-          <button className={primaryClass} onClick={() => setBindOpen(true)}>
+          <button className={primaryClass} disabled={!version} onClick={() => setBindOpen(true)}>
             {copy.associate}
           </button>
         </div>
       </div>
-      {contentQuery.isPending && <p role="status">{copy.loading}</p>}
+      {!version && <p role="alert">{skillAssociationMessages[locale].versionMissing}</p>}
+      {version && contentQuery.isPending && <p role="status">{copy.loading}</p>}
       {contentQuery.isError && (
         <ErrorState
           text={copy.loadError}
@@ -570,6 +580,7 @@ function PackageDetail({
               value={version?.id ?? ""}
               onChange={(e) => setVersionId(e.target.value)}
             >
+              {!version && <option value="">{copy.choose}</option>}
               {item.versions.map((v) => (
                 <option key={v.id} value={v.id}>
                   {v.version}
@@ -624,7 +635,7 @@ function PackageDetail({
           onClose={() => setImportOpen(false)}
         />
       )}
-      {bindOpen && (
+      {bindOpen && version && (
         <BindDialog
           {...{ locale, agents }}
           items={[item]}
@@ -803,7 +814,10 @@ function AgentPackages({
                       </p>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    {agents.find((agent) => agent.id === current)?.slug && (
+                      <Link className={buttonClass} href={skillTrialHref(agents.find((agent) => agent.id === current)!.slug, binding)}>{skillAssociationMessages[locale].trial}</Link>
+                    )}
                     <button
                       className={buttonClass}
                       onClick={() => {
@@ -862,6 +876,7 @@ function BindDialog({
   onClose: () => void;
 }) {
   const copy = skillPackageMessages[locale];
+  const flow = skillAssociationMessages[locale];
   const api = usePackageApi();
   const cache = useQueryClient();
   const [agentId, setAgentId] = useState(initialAgentId);
@@ -869,36 +884,40 @@ function BindDialog({
   const [versionId, setVersionId] = useState(initialVersionId);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [saved, setSaved] = useState<SkillPackageBinding | null>(null);
+  const [unchanged, setUnchanged] = useState(false);
   const item = items.find((p) => p.id === packageId);
   const version =
-    item?.versions.find((v) => v.id === versionId) ?? item?.versions[0];
+    versionId ? item?.versions.find((v) => v.id === versionId) : item?.versions[0];
   const bindings = useQuery({
     queryKey: [...key, "bindings", agentId, api.ownerId],
-    enabled: Boolean(agentId),
+    enabled: Boolean(agentId) && api.isAuthenticated,
     queryFn: () =>
       api.fetch<SkillPackageBindings>(
         `/api/v1/creator/agents/${agentId}/skill-packages`,
       ),
   });
-  const compatible = Boolean(
-    bindings.data?.supported &&
-    version?.providers.some((p) => bindings.data.providers.includes(p)),
-  );
+  const issue = bindings.data && version ? skillAssociationIssue(bindings.data, packageId, version) : null;
+  const compatible = Boolean(bindings.data && version && !bindings.isError && !issue);
+  const selectedAgent = agents.find((agent) => agent.id === agentId);
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    if (!compatible || !version) return;
+    if (busy || !compatible || !version) return;
     setBusy(true);
     setError("");
     try {
-      await api.fetch(
+      const result = await api.fetch<SkillPackageBindings>(
         `/api/v1/creator/agents/${agentId}/skill-packages/${packageId}`,
         { method: "PUT", body: { version_id: version.id } },
       );
       await cache.invalidateQueries({
         queryKey: [...key, "bindings", agentId],
       });
+      const binding = result.items.find((value) => value.package_id === packageId && value.version_id === version.id);
+      if (!binding) throw new Error("binding response missing");
+      setUnchanged(bindings.data?.items.some((value) => value.binding_id === binding.binding_id && value.version_id === binding.version_id) ?? false);
+      setSaved(binding);
       toast.success(copy.saved);
-      onClose();
     } catch (e) {
       setError(packageErrorText(e, locale, copy.saveError));
     } finally {
@@ -914,16 +933,26 @@ function BindDialog({
     >
       <DialogContent closeLabel={copy.close}>
         <DialogHeader>
-          <DialogTitle>{copy.associate}</DialogTitle>
+          <DialogTitle>{saved ? (unchanged ? flow.already : flow.saved) : copy.associate}</DialogTitle>
           <DialogDescription>{copy.bindingHint}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={save} className="space-y-4">
+        {saved ? (
+          <div className="space-y-4">
+            <p className="font-semibold">{selectedAgent?.name} · {saved.name} · {saved.version}</p>
+            <p className="text-sm text-[color:var(--ol-muted)]">{flow.nextRun}</p>
+            <details className="text-xs"><summary>{copy.digest}</summary><code className="break-all">{saved.digest}</code></details>
+            <div className="flex flex-wrap justify-end gap-2">
+              <button className={buttonClass} onClick={onClose}>{flow.done}</button>
+              {selectedAgent?.slug && <Link className={primaryClass} href={skillTrialHref(selectedAgent.slug, saved)}>{flow.trial}</Link>}
+            </div>
+          </div>
+        ) : <form onSubmit={save} className="space-y-4">
           <label className="block space-y-1 text-sm">
             <span>{copy.selectAgent}</span>
             <select
               className={inputClass}
               required
-              disabled={editing}
+              disabled={editing || busy}
               value={agentId}
               onChange={(e) => setAgentId(e.target.value)}
             >
@@ -940,7 +969,7 @@ function BindDialog({
             <select
               className={inputClass}
               required
-              disabled={editing}
+              disabled={editing || busy}
               value={packageId}
               onChange={(e) => {
                 setPackageId(e.target.value);
@@ -960,9 +989,11 @@ function BindDialog({
               <span>{copy.selectVersion}</span>
               <select
                 className={inputClass}
-                value={version?.id}
+                disabled={busy}
+                value={version?.id ?? ""}
                 onChange={(e) => setVersionId(e.target.value)}
               >
+                {!version && <option value="">{copy.choose}</option>}
                 {item.versions.map((v) => (
                   <option key={v.id} value={v.id}>
                     {v.version} · {v.providers.join(" / ")}
@@ -992,15 +1023,15 @@ function BindDialog({
               onRetry={() => void bindings.refetch()}
             />
           )}
-          {bindings.data && !bindings.data.supported && (
-            <p role="status" className="text-sm text-amber-800">
-              {copy.unsupported}
-            </p>
-          )}
-          {bindings.data?.supported && version && !compatible && (
-            <p role="status" className="text-sm text-amber-800">
-              {copy.incompatible}
-            </p>
+          {item && !version && <p role="alert">{flow.versionMissing}</p>}
+          {bindings.data && version && (
+            <div className="space-y-2 rounded-xl bg-[color:var(--ol-soft)] p-3 text-sm">
+              <p role="status">{issue === "unsupported" ? (bindings.data.host_status === "none" ? flow.hostNone : bindings.data.host_status === "incompatible" ? flow.hostIncompatible : copy.unsupported) : issue === "incompatible" ? copy.incompatible : issue ? flow[issue] : flow.ready}</p>
+              <div className="flex flex-wrap gap-3">
+                <button type="button" className="underline" disabled={busy || bindings.isFetching} onClick={() => void bindings.refetch()}>{copy.refresh}</button>
+                {issue === "disabled" && selectedAgent && <Link className="underline" href={`/hub/agents/${encodeURIComponent(selectedAgent.id)}`}>{flow.manageAgent}</Link>}
+              </div>
+            </div>
           )}
           {error && (
             <p role="alert" className="text-sm text-red-700">
@@ -1020,7 +1051,7 @@ function BindDialog({
               {busy ? copy.saving : copy.associate}
             </button>
           </div>
-        </form>
+        </form>}
       </DialogContent>
     </Dialog>
   );

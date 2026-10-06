@@ -9,6 +9,10 @@ API and UI route contracts are declared stable.
 
 ### Added
 
+- Continue exact-version Skill imports into association, explain compatibility
+  limits, and verify accepted load receipts for explicitly started Playground runs.
+  Idle bindings remain free of polling; trial observation stops after two minutes.
+
 - Independent Skill version and MCP service detail pages with fixed references,
   package downloads, connection configuration, tool schemas and usage guidance.
 - Publisher declarations, Skill publication metadata and revision-protected MCP

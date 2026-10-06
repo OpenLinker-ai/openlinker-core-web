@@ -21,6 +21,7 @@ import type {
   SkillPackageVersion,
   SkillPackageContents,
 } from "@/lib/skill-packages";
+import { skillAssociationMessages } from "@/messages/skill-association";
 import { resourceUseMessages } from "@/messages/resource-use";
 import type { Locale } from "@/lib/i18n";
 import { resourceSharingMessages } from "@/messages/resource-sharing";
@@ -160,36 +161,36 @@ function ImportVersion({
         {c.login}
       </AuthLink>
     );
+  async function importVersion(associate: boolean) {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const result = await api.fetch<{ id: string; version_id: string }>(
+        "/api/v1/creator/skill-packages/imports",
+        { method: "POST", body: reference },
+      );
+      await cache.invalidateQueries({ queryKey: ["skill-packages"] });
+      toast.success(c.imported);
+      const query = new URLSearchParams({ version: result.version_id });
+      if (associate) query.set("associate", "1");
+      router.push(`/hub/skills/${encodeURIComponent(result.id)}?${query}`);
+    } catch (e) {
+      setError(skillPackageErrorText(e, locale, c.failed));
+    } finally {
+      setBusy(false);
+    }
+  }
+  const flow = skillAssociationMessages[locale];
   return (
     <div>
-      <button
-        className="ol-mini-btn bg-[color:var(--ol-primary)]! text-white!"
-        disabled={busy}
-        onClick={async () => {
-          setBusy(true);
-          setError("");
-          try {
-            const result = await api.fetch<{ id: string }>(
-              "/api/v1/creator/skill-packages/imports",
-              { method: "POST", body: reference },
-            );
-            await cache.invalidateQueries({ queryKey: ["skill-packages"] });
-            toast.success(c.imported);
-            router.push(`/hub/skills/${result.id}`);
-          } catch (e) {
-            setError(skillPackageErrorText(e, locale, c.failed));
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        {busy ? c.importing : c.import}
-      </button>
-      {error && (
-        <p role="alert" className="mt-2 text-sm text-red-700">
-          {error}
-        </p>
-      )}
+      <div className="flex flex-wrap gap-2">
+        <button className="ol-mini-btn bg-[color:var(--ol-primary)]! text-white!" disabled={busy} onClick={() => void importVersion(true)}>
+          {busy ? c.importing : flow.importAssociate}
+        </button>
+        <button className="ol-mini-btn" disabled={busy} onClick={() => void importVersion(false)}>{flow.importOnly}</button>
+      </div>
+      {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
     </div>
   );
 }

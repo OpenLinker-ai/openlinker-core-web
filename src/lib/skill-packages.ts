@@ -60,6 +60,9 @@ export type SkillPackageBinding = {
   loaded_at: string | null;
 };
 export type SkillPackageBindings = {
+  lifecycle_status?: "active" | "disabled";
+  max_bindings?: number;
+  host_status?: "none" | "incompatible" | "compatible";
   items: SkillPackageBinding[];
   supported: boolean;
   providers: string[];

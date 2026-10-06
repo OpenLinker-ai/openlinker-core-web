@@ -173,14 +173,14 @@ test("public detail imports a digest-pinned private copy and returns to its mana
   const calls = [];
   globalThis.resourceTestFetch = async (path, options) => {
     calls.push({ path, ...options });
-    return { id: "new-private-copy" };
+    return { id: "new-private-copy", version_id: version.id };
   };
   await mount(
     PublicSkillActions,
     { packageId: item.id, version, locale: "en" },
     async (container) => {
       const button = [...container.querySelectorAll("button")].find(
-        (b) => b.textContent === "Import to my packages",
+        (b) => b.textContent === "Import only",
       );
       await act(async () => button.click());
       assert.deepEqual(calls[0], {
@@ -194,7 +194,7 @@ test("public detail imports a digest-pinned private copy and returns to its mana
       });
       assert.equal(
         globalThis.resourceTestDestination,
-        "/hub/skills/new-private-copy",
+        `/hub/skills/new-private-copy?version=${version.id}`,
       );
     },
   );
@@ -322,7 +322,7 @@ test("anonymous viewing cannot import and reading instructions are inert", async
         );
         assert.ok(
           ![...container.querySelectorAll("button")].some(
-            (b) => b.textContent === "Import to my packages",
+            (b) => b.textContent === "Import only",
           ),
         );
         let copied = "";
