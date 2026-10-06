@@ -3,8 +3,10 @@ import {
   capabilityPath,
 } from "@/lib/skill-package-catalog";
 import type { MetadataRoute } from "next";
+import { notFound } from "next/navigation";
 
 import {
+  publicIndexingEnabled,
   publicSitemapEntries,
   publicWebOrigin,
 } from "@/lib/public-discovery.mjs";
@@ -23,6 +25,8 @@ const stablePublicPaths = [
 ] as const;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  if (!publicIndexingEnabled()) notFound();
+
   const skills = await fetchCompleteSkillCatalog().catch(() => []);
   return publicSitemapEntries(publicWebOrigin(), [
     ...stablePublicPaths,

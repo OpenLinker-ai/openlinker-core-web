@@ -201,3 +201,16 @@ openlinker-core-web/
 ## 许可证
 
 Apache-2.0。详见 [LICENSE](./LICENSE)。
+
+## 搜索引擎收录
+
+默认关闭索引，仅希望公开收录的实例设置运行时变量 `OPENLINKER_INDEXING_ENABLED=true`。
+只有精确值 `true` 生效，测试、预览和私有实例保持未设置或 `false`；不根据 `NODE_ENV` 推断。
+修改后重启即可，无需重新构建。
+
+关闭时，Web 响应附带 `X-Robots-Tag: noindex, nofollow`，HTML 另有 robots meta；
+`/robots.txt` 允许抓取以读取 noindex，不声明 sitemap，`/sitemap.xml` 返回 404，且不请求公开目录。
+开启时公开页可索引，sitemap 仅列公开 URL；账号、授权和工作台入口仍 noindex。
+公开实例升级前应先明确配置开关，并核对 `OPENLINKER_PUBLIC_ORIGIN`（若设置）或 `NEXTAUTH_URL`。
+切换时使 CDN 的旧 HTML、robots 和 sitemap 缓存失效。此声明不能替代鉴权，也不覆盖直连 Core
+或入口代理绕过 Web 的请求。构建后可运行 `npm run test:runtime-indexing` 验证运行时切换。

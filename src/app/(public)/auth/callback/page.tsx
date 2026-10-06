@@ -5,7 +5,10 @@ import { getLocale } from "@/lib/i18n-server";
 
 export async function generateMetadata() {
   const locale = await getLocale();
-  return { title: locale === "zh" ? "登录" : "Sign In" };
+  return {
+    title: locale === "zh" ? "登录" : "Sign In",
+    robots: { index: false, follow: false },
+  };
 }
 
 export default async function AuthCallbackPage({

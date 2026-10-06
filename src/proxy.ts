@@ -13,6 +13,7 @@
 import { safeAuthCallback } from "@/components/auth/callback-url";
 import { auth } from "@/lib/auth";
 import { mcpPageMethodResponse } from "@/lib/resource-sharing.mjs";
+import { shouldNoIndex } from "@/lib/public-discovery.mjs";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PROTECTED_PREFIXES = [
@@ -31,9 +32,24 @@ const PROTECTED_PREFIXES = [
 const AUTH_PAGES = ["/login"];
 
 export async function proxy(req: NextRequest) {
+  const response = await routeRequest(req);
+  const { pathname } = req.nextUrl;
+  if (shouldNoIndex(pathname, PROTECTED_PREFIXES)) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
+  return response;
+}
+
+async function routeRequest(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const methodResponse = mcpPageMethodResponse(pathname, req.method);
   if (methodResponse) return methodResponse;
+  if (
+    pathname.startsWith("/api/auth/") || pathname === "/api/auth" ||
+    pathname.startsWith("/_next/") || pathname === "/favicon.ico"
+  ) {
+    return NextResponse.next();
+  }
   if (pathname === "/hub") {
     return NextResponse.redirect(hubCompatibilityUrl(req));
   }
@@ -62,9 +78,8 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/auth).*)",
-  ],
+  // Include assets and NextAuth responses in the runtime indexing policy.
+  matcher: ["/:path*"],
 };
 
 function hubCompatibilityUrl(req: NextRequest) {

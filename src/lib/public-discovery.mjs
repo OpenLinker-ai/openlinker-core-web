@@ -9,6 +9,32 @@ function normalizeOrigin(value) {
   }
 }
 
+// Runtime-only and fail closed: production mode alone never enables indexing.
+export function publicIndexingEnabled(env = process.env) {
+  return env.OPENLINKER_INDEXING_ENABLED === "true";
+}
+
+const NO_INDEX_PREFIXES = [
+  "/api",
+  "/auth",
+  "/cli",
+  "/creator",
+  "/forgot-password",
+  "/healthz",
+  "/_openlinker",
+  "/login",
+  "/readyz",
+  "/register",
+  "/tasks",
+];
+
+// Each frontend supplies its own workspace paths; account/diagnostic rules are shared.
+export function shouldNoIndex(pathname, privatePrefixes = [], env = process.env) {
+  return !publicIndexingEnabled(env) || [...NO_INDEX_PREFIXES, ...privatePrefixes].some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
 export function publicWebOrigin(env = process.env) {
   const explicit = normalizeOrigin(env.OPENLINKER_PUBLIC_ORIGIN);
   if (explicit) return explicit;
