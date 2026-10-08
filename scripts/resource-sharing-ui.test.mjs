@@ -7,12 +7,14 @@ import { JSDOM } from "jsdom";
 import ts from "typescript";
 const sourceRoot = new URL("../src/", import.meta.url);
 const mocks = {
+  "@/lib/auth": 'export const auth=async()=>globalThis.resourceTestSession===null?null:{jwt:"synthetic",user:{id:"owner"}};',
+  "@/components/playground/runner": 'import React from "react"; export const PlaygroundRunner=p=>{globalThis.resourceTestRunnerProps=p;return React.createElement("div", {"data-testid":"runner"});};',
   "@/hooks/use-api":
     "const fetch=(...a)=>globalThis.resourceTestFetch(...a);export const useApi=()=>({isAuthenticated:globalThis.resourceTestAuthenticated!==false,fetch:globalThis.resourceTestFetchOverride??fetch});",
   "@tanstack/react-query":
     "export const useQueryClient=()=>({invalidateQueries:async()=>{}});",
   "next/navigation":
-    'export const notFound=()=>{throw new Error("NOT_FOUND")}; export const redirect=url=>{throw new Error("REDIRECT:"+url)}; export const usePathname=()=>window.location.pathname;export const useSearchParams=()=>new URLSearchParams(window.location.search);export const useRouter=()=>({push:(url)=>{globalThis.resourceTestDestination=url;}});',
+    'export const notFound=()=>{throw new Error("NOT_FOUND")}; export const redirect=url=>{throw new Error("REDIRECT:"+url)}; export const usePathname=()=>window.location.pathname;export const useSearchParams=()=>new URLSearchParams(window.location.search);export const useRouter=()=>({push:(url)=>{globalThis.resourceTestDestination=url;},replace:(url)=>{globalThis.resourceTestDestination=url;}});',
   "next/link":
     'import React from "react"; export default function Link(p){return React.createElement("a",p,p.children);}',
   "@/components/auth/auth-link":
@@ -263,7 +265,7 @@ test("skill downloads do not trigger global navigation feedback", async () => {
   await mount(RouteTransitionFeedback, { locale: "en" }, async (feedback) => {
     await mount(
       PublicSkillActions,
-      { packageId: item.id, version, locale: "en" },
+      { packageId: item.id, version, locale: "en", mode: "local" },
       async (container) => {
         const links = [...container.querySelectorAll("a[download]")];
         assert.equal(links.length, 2);
@@ -303,51 +305,24 @@ const { ResourceDirectory } = await import(
   "../src/components/resources/resource-directory.tsx"
 );
 
-test("anonymous viewing cannot import and reading instructions are inert", async () => {
+test("anonymous viewing separates platform import from inert local reading", async () => {
   globalThis.resourceTestAuthenticated = false;
-  let calls = 0;
-  globalThis.resourceTestFetch = async () => {
-    calls++;
-  };
+  let calls = 0, copied = "";
+  globalThis.resourceTestFetch = async () => { calls++; };
+  Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async v => { copied = v; } } });
   try {
-    await mount(
-      PublicSkillActions,
-      { packageId: item.id, version, locale: "en" },
-      async (container) => {
-        assert.equal(calls, 0);
-        assert.ok(
-          [...container.querySelectorAll("a")].some(
-            (a) => a.textContent === "Sign in to import",
-          ),
-        );
-        assert.ok(
-          ![...container.querySelectorAll("button")].some(
-            (b) => b.textContent === "Import only",
-          ),
-        );
-        let copied = "";
-        Object.defineProperty(navigator, "clipboard", {
-          configurable: true,
-          value: {
-            writeText: async (value) => {
-              copied = value;
-            },
-          },
-        });
-        await act(async () =>
-          [...container.querySelectorAll("button")]
-            .find((b) => b.textContent === "Copy reading instructions")
-            .click(),
-        );
-        assert.match(copied, new RegExp(version.id + "/bundle.json"));
-        assert.ok(copied.includes(version.digest));
-        assert.match(copied, /does not authorize/);
-        assert.equal(calls, 0);
-      },
-    );
-  } finally {
-    globalThis.resourceTestAuthenticated = true;
-  }
+    await mount(PublicSkillActions, { packageId:item.id, version, locale:"en" }, async host => {
+      assert.ok([...host.querySelectorAll("a")].some(a=>a.textContent==="Sign in to import"));
+      assert.ok(![...host.querySelectorAll("button")].some(b=>b.textContent==="Import only"));
+      assert.equal(host.querySelector('a[download]'),null);
+    });
+    await mount(PublicSkillActions, { packageId:item.id, version, locale:"en",mode:"local" }, async host => {
+      assert.ok(![...host.querySelectorAll("a")].some(a=>a.textContent==="Sign in to import"));
+      await act(async()=>[...host.querySelectorAll("button")].find(b=>b.textContent==="Copy reading instructions").click());
+      assert.match(copied,new RegExp(version.id+"/bundle.json"));
+      assert.ok(copied.includes(version.digest)); assert.match(copied,/does not authorize/); assert.equal(calls,0);
+    });
+  } finally { globalThis.resourceTestAuthenticated = true; }
 });
 
 test("switching versions changes every actionable target and clears old copy status", async () => {
@@ -362,7 +337,7 @@ test("switching versions changes every actionable target and clears old copy sta
   });
   await mount(
     PublicSkillActions,
-    { packageId: item.id, version, locale: "en" },
+    { packageId: item.id, version, locale: "en", mode: "local" },
     async (container, root) => {
       const click = (label) =>
         act(async () =>
@@ -382,6 +357,7 @@ test("switching versions changes every actionable target and clears old copy sta
           createElement(PublicSkillActions, {
             packageId: item.id,
             version: next,
+            mode: "local",
             locale: "en",
           }),
         ),
@@ -487,59 +463,32 @@ test("platform MCP keeps the developer guide available in both products", async 
       assert.equal(container.querySelector('a[href="/market"]'), null);
       assert.equal(
         container.querySelectorAll('section[id^="tool-"]').length,
-        9,
+        0,
       );
     },
   );
 });
 
-test("MCP service shows business schema and trial link without invoking it", async () => {
-  const calls = [];
-  globalThis.resourceTestPublicFetch = async (path) => {
-    calls.push(path);
-    return {
-      id: item.id,
-      slug: "demo",
-      name: "Demo MCP",
-      description: "Read docs",
-      connection_mode: "mcp_server",
-      mcp_tool_name: "search_docs",
-      creator: { display_name: "Demo" },
-      readiness: { callable: true },
-      capability: {
-        input_schema: {
-          type: "object",
-          properties: { query: { type: "string" } },
-          required: ["query"],
-        },
-        output_schema: { type: "object" },
-      },
-    };
+test("MCP overview and call reference are independent and retain directory context", async () => {
+  const calls=[];
+  globalThis.resourceTestPublicFetch=async(path)=>{
+    calls.push(path); return {id:item.id,slug:"demo",name:"Demo MCP",description:"Read docs",connection_mode:"mcp_server",mcp_tool_name:"search_docs",creator:{display_name:"Demo"},readiness:{callable:true},capability:{input_schema:{type:"object",properties:{query:{type:"string",enum:["docs"]}},required:["query"]},output_schema:{type:"object"}},examples:[{id:"valid",title:"Read",input_json:{query:"docs"}},{id:"invalid",title:"Old",input_json:{query:"old"}}]};
   };
-  const element = await McpDetailPage({
-    slug: "demo",
-    returnTo: "/mcps?q=docs&page=2",
+  const props={slug:"demo",returnTo:"/mcps?q=docs&page=2"};
+  await mount(()=>null,{},async(host,root)=>{
+    await act(async()=>root.render(await McpDetailPage(props)));
+    assert.equal(host.querySelector("#business-capability"),null);
+    const trial=host.querySelector('a[href*="/try?"]'); assert.equal(new URL(trial.href).pathname,"/mcps/services/demo/try");
+    assert.ok(host.querySelector('a[href="/mcps?q=docs&page=2"]'));
+    assert.deepEqual(calls,["/api/v1/agents/demo","/api/v1/mcp-services/demo/metadata"]);
+    await act(async()=>root.render(await McpDetailPage({...props,section:"reference"})));
+    assert.match(host.querySelector("#business-capability").textContent,/search_docs/);
+    assert.match(host.querySelector("tbody").textContent,/Allowed values.*docs/);
+    const examples=[...host.querySelectorAll("#call-examples a")]; assert.equal(examples.length,1);
+    assert.equal(new URL(examples[0].href).searchParams.get("example"),"valid");
+    assert.equal(new URL(examples[0].href).searchParams.get("returnTo"),props.returnTo);
+    assert.match(host.textContent,/does not match/); assert.equal(host.querySelector('[data-testid="runner"]'),null);
   });
-  await mount(
-    () => element,
-    {},
-    async (container) => {
-      assert.ok(
-        container
-          .querySelector("#business-capability")
-          .textContent.includes("search_docs"),
-      );
-      assert.equal(
-        container.querySelector('a[href^="/playground/"]').getAttribute("href"),
-        "/playground/demo",
-      );
-      assert.ok(container.querySelector('a[href="/mcps?q=docs&page=2"]'));
-      assert.deepEqual(calls, [
-        "/api/v1/agents/demo",
-        "/api/v1/mcp-services/demo/metadata",
-      ]);
-    },
-  );
 });
 
 test("Skill detail preserves directory context through version links while only reading public APIs", async () => {
@@ -573,6 +522,7 @@ test("Skill detail preserves directory context through version links while only 
     packageId: item.id,
     versionId: version.id,
     returnTo: back,
+    section: "versions",
   });
   await mount(
     () => element,
@@ -584,8 +534,10 @@ test("Skill detail preserves directory context through version links while only 
       const links = [...container.querySelectorAll("#skill-versions a")];
       for (const a of links)
         assert.equal(new URL(a.href).searchParams.get("returnTo"), back);
-      assert.equal(container.querySelectorAll("#skill-overview h2").length, 1);
-      assert.equal(container.querySelectorAll("#skill-overview h3").length, 3);
+      assert.equal(container.querySelector("#skill-overview"),null);
+      assert.equal(container.querySelector("#skill-files"),null);
+      assert.equal(container.querySelector("#use-version"),null);
+      for(const a of links) assert.ok(new URL(a.href).pathname.endsWith("/versions"));
       assert.equal(calls.length, 2);
       assert.ok(calls.every((p) => !p.includes("creator")));
     },
@@ -895,7 +847,8 @@ test("MCP detail survives an unavailable metadata endpoint without disguising it
     async (c) => {
       assert.equal(c.querySelector("h1").textContent, "Visible service");
       assert.match(c.textContent, /temporarily unavailable/);
-      assert.ok(c.querySelector("#mcp-connection"));
+      assert.equal(c.querySelector("#mcp-connection"),null);
+      assert.ok(c.querySelector('a[href*="/connect?"]'));
     },
   );
 });
@@ -1016,4 +969,51 @@ test("repository links reject whitespace consistently with Core metadata validat
     repositoryLink("https://example.com/a%20b"),
     "https://example.com/a%20b",
   );
+});
+
+test('MCP trial sanitizes login callback, ignores autorun and preserves its resource context',async()=>{
+ const fixture={id:item.id,slug:'demo',name:'MCP',description:'Read',creator:{display_name:'Demo'},connection_mode:'mcp_server',readiness:{callable:true},capability:{input_schema:{type:'object',properties:{run_id:{enum:['current']}},required:['run_id']}},examples:[{id:'good',input_json:{run_id:'current'}},{id:'old',input_json:{run_id:'old'}}]};
+ globalThis.resourceTestPublicFetch=async()=>fixture;
+ globalThis.resourceTestSession=null;
+ try {await assert.rejects(()=>McpDetailPage({slug:'demo',section:'try',returnTo:'https://evil.test',example:'good',autorun:true}),e=>{
+   const login=new URL(e.message.slice('REDIRECT:'.length),'https://web.test');const callback=new URL(login.searchParams.get('callbackUrl'),'https://web.test');
+   assert.equal(callback.pathname,'/mcps/services/demo/try');assert.equal(callback.searchParams.get('example'),'good');assert.equal(callback.searchParams.get('returnTo'),'/mcps');assert.equal(callback.searchParams.has('autorun'),false);return true;
+ });}finally{globalThis.resourceTestSession=undefined;}
+ const page=await McpDetailPage({slug:'demo',section:'try',example:'good'});
+ await mount(()=>page,{},async host=>{
+  assert.ok(host.querySelector('[data-testid="runner"]'));assert.equal(globalThis.resourceTestRunnerProps.inputMode,'json');
+  assert.deepEqual(globalThis.resourceTestRunnerProps.selectedExample,{run_id:'current'});assert.equal(globalThis.resourceTestRunnerProps.autorun,undefined);
+  assert.equal(host.querySelector('a[href^="/market"]'),null);
+ });
+ for(const section of ['overview','reference','try','connect']){
+  globalThis.resourceTestPublicFetch=async()=>({...fixture,connection_mode:'http'});
+  await assert.rejects(()=>McpDetailPage({slug:'demo',section}),/NOT_FOUND/);
+ }
+});
+test('connect drops stale examples and platform tool instructions live on their own page',async()=>{
+ globalThis.resourceTestPublicFetch=async()=>({id:item.id,slug:'demo',name:'MCP',description:'',creator:{display_name:'Owner'},connection_mode:'mcp_server',examples:[{input_json:{run_id:'old'}}],capability:{input_schema:{properties:{run_id:{const:'current'}}}}});
+ await mount(()=>null,{},async(host,root)=>{
+  await act(async()=>root.render(await McpDetailPage({slug:'demo',section:'connect'})));
+  assert.match(host.textContent,/No example matches/);assert.doesNotMatch(host.textContent,/"old"/);
+  await act(async()=>root.render(await McpDetailPage({section:'connect'})));
+  assert.equal(host.querySelectorAll('section[id^="tool-"]').length,9);
+ });
+});
+test('legacy anchors redirect to specific child pages while digest fragments remain fixed',async()=>{
+ const {ResourceAnchorRedirect}=await import('../src/components/resources/resource-anchor-redirect.tsx');
+ for(const [hash,expected] of [['#use-version','/fixed/use'],['#mcp-connection','/mcp/connect'],['#sha256='+version.digest,undefined]]){
+  window.history.replaceState(null,'','/skills'+hash);globalThis.resourceTestDestination=undefined;
+  await mount(ResourceAnchorRedirect,{targets:{'#use-version':'/fixed/use','#mcp-connection':'/mcp/connect'}},async()=>assert.equal(globalThis.resourceTestDestination,expected));
+ }
+ window.history.replaceState(null,'','/skills');
+});
+test('resource route boundaries reject unknown child pages and child metadata does not duplicate overview indexing',async()=>{
+ const {default:SkillRoute}=await import('../src/app/skills/packages/[packageId]/versions/[versionId]/[...section]/page.tsx');
+ const {default:McpRoute,generateMetadata}=await import('../src/app/mcps/services/[slug]/[section]/page.tsx');
+ const {default:PlatformRoute}=await import('../src/app/mcps/platform/[section]/page.tsx');
+ for(const section of [['unknown'],['files','extra'],['overview']])await assert.rejects(()=>SkillRoute({params:Promise.resolve({packageId:item.id,versionId:version.id,section}),searchParams:Promise.resolve({})}),/NOT_FOUND/);
+ for(const section of ['unknown','overview'])await assert.rejects(()=>McpRoute({params:Promise.resolve({slug:'demo',section}),searchParams:Promise.resolve({})}),/NOT_FOUND/);
+ for(const section of ['try','reference','overview'])await assert.rejects(()=>PlatformRoute({params:Promise.resolve({section}),searchParams:Promise.resolve({})}),/NOT_FOUND/);
+ globalThis.resourceTestPublicFetch=async()=>({name:'Demo',description:'Description',visibility:'public',connection_mode:'mcp_server'});
+ assert.equal((await generateMetadata({params:Promise.resolve({slug:'demo',section:'reference'})})).robots.index,false);
 });

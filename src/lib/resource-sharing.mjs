@@ -212,6 +212,7 @@ export function schemaFields(schema) {
       required: required.includes(name),
       description:
         typeof field.description === "string" ? field.description : "",
+      allowedValues: Object.hasOwn(field, "const") ? [field.const] : Array.isArray(field.enum) ? field.enum : [],
       defaultValue: Object.hasOwn(field, "default")
         ? JSON.stringify(field.default)
         : "—",

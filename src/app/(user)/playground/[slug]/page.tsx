@@ -15,6 +15,9 @@
  */
 
 import Link from "next/link";
+import { resourceJourneyMessages } from "@/messages/resource-journey";
+import { playgroundPrefillIsValid } from "@/lib/playground-input.mjs";
+import { resourceAgentCallable } from "@/lib/resource-journey";
 import { parseSkillTrial } from "@/lib/skill-association";
 import { notFound, redirect } from "next/navigation";
 
@@ -36,6 +39,7 @@ interface AgentDetail {
   price_per_call_cents: number;
   tags: string[];
   visibility?: string;
+  connection_mode?: string;
   availability?: {
     status?: "unknown" | "healthy" | "degraded" | "unreachable" | string;
     label?: string;
@@ -112,9 +116,9 @@ export default async function PlaygroundPage({
 
   const agent = await fetchPlaygroundAgent(slug, session.jwt);
   const isPrivateOwnerAgent = agent.visibility === "private";
-  const collectionHref = isPrivateOwnerAgent ? "/hub/agents" : "/registry";
-  const collectionLabel = isPrivateOwnerAgent ? copy.myAgent : copy.market;
-  const callable = isPlaygroundAgentCallable(agent);
+  const collectionHref = skillTrial ? `/hub/skills/${encodeURIComponent(skillTrial.package_id)}/associate?${new URLSearchParams({ version: skillTrial.version_id })}` : isPrivateOwnerAgent ? "/hub/agents" : "/registry";
+  const collectionLabel = skillTrial ? resourceJourneyMessages[locale].associate : isPrivateOwnerAgent ? copy.myAgent : copy.market;
+  const callable = resourceAgentCallable(agent);
   const availabilityStatus = agent.availability?.status ?? "unknown";
   const availabilityLabel = availabilityStatusLabel(
     availabilityStatus,
@@ -164,6 +168,7 @@ export default async function PlaygroundPage({
     ? agent.examples?.find((item) => item.id === example)
     : undefined;
 
+  const invalidAutorunPrefill = autorun === "1" && (Boolean(example) || !playgroundPrefillIsValid(prefill, agent.capability?.input_schema));
   return (
     <>
       <Topbar />
@@ -194,6 +199,7 @@ export default async function PlaygroundPage({
 
         {/* 这一层才是 main 这个 grid 的子项：没有 min-w-0，里面的内容就能把整列撑宽。 */}
         <div className="min-h-0 min-w-0">
+          {invalidAutorunPrefill && <p role="alert" className="mb-3 break-words text-sm text-[color:var(--ol-amber)]">{resourceJourneyMessages[locale].reviewPrefill}</p>}
           <PlaygroundRunner
             key={`${session.user?.id ?? ""}:${agent.id}:${example ?? ""}:${prefill ?? ""}:${JSON.stringify(skillTrial)}`}
             userId={session.user?.id}
@@ -202,7 +208,7 @@ export default async function PlaygroundPage({
             selectedExample={selectedExample?.input_json}
             examples={agent.examples ?? []}
             inputSchema={agent.capability?.input_schema}
-            autorun={autorun === "1" && !hasSkillContext}
+            autorun={autorun === "1" && !hasSkillContext && !invalidAutorunPrefill}
             skillTrial={skillTrial}
             locale={locale}
           />
@@ -242,13 +248,4 @@ async function fetchPlaygroundAgent(slug: string, token?: string): Promise<Agent
     if (e instanceof ApiError && e.status === 404) notFound();
     throw e;
   }
-}
-
-function isPlaygroundAgentCallable(agent: AgentDetail): boolean {
-  return (
-    agent.readiness?.callable ??
-    (agent.availability?.status === "healthy" ||
-      (Boolean(agent.availability?.last_successful_run_at) &&
-        agent.availability?.status !== "unreachable"))
-  );
 }

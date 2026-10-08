@@ -107,3 +107,18 @@ test("starting a new chat keeps autorun consumed across refreshes", () => {
   assert.equal(restored.autorunConsumed, true);
   assert.equal(restored.input, "unsent draft");
 });
+
+test('MCP URL example preserves a nonempty draft and the original conversation; empty drafts may use the example',()=>{
+ const storage=fixture(); const first=open('mcp',storage);
+ const turns=[turn({status:'success',result:{run_id:'run-1',status:'success'}})];
+ first.update({input:'{"unfinished":"mine"}',turns,activeTurnId:'turn-1',autorunConsumed:true});
+ const options={preserveDraftOnSeedChange:true};
+ const restored=createPlaygroundSessionStore('mcp',{input:'{"example":"new"}',seed:'new-example',conversationID:'new-id'},()=>storage,options);
+ restored.subscribe(()=>{});
+ assert.equal(restored.getSnapshot().input,'{"unfinished":"mine"}');
+ assert.equal(restored.getSnapshot().conversationID,'conversation-1');
+ assert.deepEqual(restored.getSnapshot().turns,turns);assert.equal(restored.getSnapshot().autorunConsumed,true);
+ restored.update({input:''});
+ const empty=createPlaygroundSessionStore('mcp',{input:'{"example":"next"}',seed:'next-example',conversationID:'other'},()=>storage,options);
+ empty.subscribe(()=>{});assert.equal(empty.getSnapshot().input,'{"example":"next"}');assert.deepEqual(empty.getSnapshot().turns,turns);
+});

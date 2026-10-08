@@ -12,6 +12,7 @@ export interface PlaygroundTurn {
   completedAt?: string;
   errorMessage?: string;
   resumeOnReload?: boolean;
+  submissionAction?: "edit" | "conflict" | "none";
   request?: { idempotencyKey: string; body: Record<string, unknown> };
 }
 
@@ -24,6 +25,7 @@ export interface PlaygroundSession {
   ready: boolean;
   storageError: boolean;
   autorunConsumed: boolean;
+  preservedInput?: string;
 }
 
 type Storage = Pick<globalThis.Storage, "getItem" | "setItem">;
@@ -51,6 +53,7 @@ export function createPlaygroundSessionStore(
   key: string | null,
   initial: Pick<PlaygroundSession, "input" | "conversationID"> & { seed?: string },
   getStorage: () => Storage = () => window.localStorage,
+  options: { preserveDraftOnSeedChange?: boolean } = {},
 ) {
   const serverSnapshot: PlaygroundSession = {
     ...initial, seed: initial.seed ?? initial.input, turns: [], activeTurnId: "", ready: false, storageError: false, autorunConsumed: false,
@@ -95,7 +98,8 @@ export function createPlaygroundSessionStore(
                 autorunConsumed: saved.autorunConsumed === true || saved.turns.length > 0,
                 turns: saved.turns.map((turn: PlaygroundTurn) => turn.status === "failed" && turn.request && turn.resumeOnReload
                   ? { ...turn, status: "running", errorMessage: undefined, completedAt: undefined } : turn),
-                activeTurnId: saved.activeTurnId, input: saved.seed === serverSnapshot.seed ? saved.input : initial.input };
+                preservedInput: options.preserveDraftOnSeedChange && saved.seed !== serverSnapshot.seed && saved.input.trim() && saved.input !== initial.input ? saved.input : undefined,
+                activeTurnId: saved.activeTurnId, input: saved.seed === serverSnapshot.seed || (options.preserveDraftOnSeedChange && saved.input.trim()) ? saved.input : initial.input };
             }
           } catch {
             state = { ...state, storageError: true };

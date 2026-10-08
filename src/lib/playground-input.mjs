@@ -12,22 +12,21 @@ export function playgroundInitialDraft({
   selectedExample,
   examples = [],
   inputSchema,
-  locale = "zh",
+  inputMode = "auto",
 }) {
-  if (isPlainRecord(selectedExample)) {
+  if (isPlainRecord(selectedExample) && !playgroundExampleIssue(selectedExample, inputSchema)) {
     return JSON.stringify(selectedExample, null, 2);
   }
 
-  const textField = preferredTextField(inputSchema);
+  const textField = inputMode === "json" ? null : preferredTextField(inputSchema);
   const prefillDraft = normalizedPrefillDraft(prefill, textField);
   if (prefillDraft !== null) return prefillDraft;
-  if (!textField && isPlainRecord(examples[0]?.input_json)) {
-    return JSON.stringify(examples[0].input_json, null, 2);
-  }
+  const example = examples.find(item => !playgroundExampleIssue(item.input_json, inputSchema));
+  if (!textField && example) return JSON.stringify(example.input_json, null, 2);
   if (!textField && isPlainRecord(inputSchema)) {
     return JSON.stringify(schemaObjectSkeleton(inputSchema), null, 2);
   }
-  return locale === "zh" ? "这里写你的任务描述" : "Write your task description here";
+  return "";
 }
 
 /**
@@ -37,9 +36,9 @@ export function playgroundInitialDraft({
  * 无法从自然语言推断，这时输入框必须写 JSON，界面应当直说，而不是等到报错。
  * 返回 required 与 properties 两组：没有 required 的 schema 不能把属性说成必填。
  */
-export function playgroundStructuredInputFields(inputSchema) {
-  if (preferredTextField(inputSchema)) return null;
-  if (!isPlainRecord(inputSchema)) return null;
+export function playgroundStructuredInputFields(inputSchema, inputMode = "auto") {
+  if (inputMode !== "json" && preferredTextField(inputSchema)) return null;
+  if (!isPlainRecord(inputSchema)) return inputMode === "json" ? { required: [], properties: [] } : null;
   const required = Array.isArray(inputSchema.required)
     ? inputSchema.required.filter((value) => typeof value === "string")
     : [];
@@ -48,7 +47,7 @@ export function playgroundStructuredInputFields(inputSchema) {
   return { required, properties };
 }
 
-export function parsePlaygroundDraft(text, inputSchema) {
+export function parsePlaygroundDraft(text, inputSchema, inputMode = "auto") {
   const trimmed = String(text ?? "").trim();
   if (!trimmed) throw new PlaygroundInputError("input", "empty_input");
 
@@ -62,15 +61,17 @@ export function parsePlaygroundDraft(text, inputSchema) {
     if (!isPlainRecord(parsed)) {
       throw new PlaygroundInputError("input", "object_required");
     }
-    assertRequiredFields(parsed, inputSchema);
+    assertInputConstraints(parsed, inputSchema);
     return parsed;
   }
 
-  const textField = preferredTextField(inputSchema);
+  const textField = inputMode === "json" ? null : preferredTextField(inputSchema);
   if (!textField) {
     throw new PlaygroundInputError("input", "structured_input_required");
   }
-  return { [textField]: trimmed };
+  const value = { [textField]: trimmed };
+  assertInputConstraints(value, inputSchema);
+  return value;
 }
 
 export function playgroundViolationMessage(details, locale) {
@@ -108,13 +109,67 @@ export function inputSchemaAllowsProperty(inputSchema, property) {
   return inputSchema.additionalProperties !== false;
 }
 
-function assertRequiredFields(value, inputSchema) {
-  if (!isPlainRecord(inputSchema) || !Array.isArray(inputSchema.required)) return;
-  for (const field of inputSchema.required) {
-    if (typeof field === "string" && !Object.hasOwn(value, field)) {
-      throw new PlaygroundInputError(`input.${field}`, "missing_required");
+// UX preflight only: conditional schemas, refs and other keywords remain Core-owned.
+// Traversal is bounded; unsupported/deep constraints are deferred to the server.
+function assertInputConstraints(value, schema, path = "input", depth = 0) {
+  if (!isPlainRecord(schema) || depth > 32) return;
+  if (["$ref", "oneOf", "anyOf", "allOf", "if", "patternProperties"].some(key => Object.hasOwn(schema, key))) return;
+  const types = typeof schema.type === "string" ? [schema.type] : Array.isArray(schema.type) ? schema.type : [];
+  if (types.length && !types.some(type => matchesType(value, type))) throw new PlaygroundInputError(path, "type_mismatch");
+  if (Array.isArray(schema.enum) && !schema.enum.some(allowed => sameJSON(value, allowed))) throw new PlaygroundInputError(path, "enum_mismatch");
+  if (Object.hasOwn(schema, "const") && !sameJSON(value, schema.const)) throw new PlaygroundInputError(path, "enum_mismatch");
+  if (isPlainRecord(value)) {
+    const properties = isPlainRecord(schema.properties) ? schema.properties : {};
+    if (Array.isArray(schema.required)) for (const field of schema.required) {
+      if (typeof field === "string" && !Object.hasOwn(value, field)) throw new PlaygroundInputError(`${path}.${field}`, "missing_required");
     }
+    for (const [field, entry] of Object.entries(value)) {
+      if (!Object.hasOwn(properties, field)) {
+        // patternProperties can explicitly admit fields outside properties.
+        if (schema.additionalProperties === false && !schema.patternProperties && (Object.hasOwn(schema, "properties") || schema.required != null)) throw new PlaygroundInputError(`${path}.${field}`, "additional_property");
+      } else assertInputConstraints(entry, properties[field], `${path}.${field}`, depth + 1);
+    }
+  } else if (Array.isArray(value) && isPlainRecord(schema.items)) {
+    value.slice(0, 128).forEach((entry, i) => assertInputConstraints(entry, schema.items, `${path}[${i}]`, depth + 1));
   }
+}
+function matchesType(value, type) {
+  switch (type) {
+    case "null": return value === null;
+    case "object": return isPlainRecord(value);
+    case "array": return Array.isArray(value);
+    case "integer": return Number.isInteger(value);
+    case "number": return typeof value === "number" && Number.isFinite(value);
+    case "string": return typeof value === "string";
+    case "boolean": return typeof value === "boolean";
+    default: return true;
+  }
+}
+function sameJSON(a, b) {
+  if (a === b) return true;
+  if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((v, i) => sameJSON(v, b[i]));
+  if (isPlainRecord(a) && isPlainRecord(b)) {
+    const keys = Object.keys(a);
+    return keys.length === Object.keys(b).length && keys.every(key => Object.hasOwn(b, key) && sameJSON(a[key], b[key]));
+  }
+  return false;
+}
+export function playgroundExampleIssue(value, inputSchema) {
+  if (!isPlainRecord(value)) return new PlaygroundInputError("input", "object_required");
+  try { assertInputConstraints(value, inputSchema); return null; }
+  catch (error) { if (error instanceof PlaygroundInputError) return error; throw error; }
+}
+export function playgroundSubmissionCanRetry(status) {
+  return typeof status !== "number" || [401, 408, 429].includes(status) || status >= 500;
+}
+export function playgroundSubmissionAction(status, code) {
+  const normalized = typeof code === "string" ? code.trim().replaceAll("-", "_").toUpperCase() : "";
+  if (status === 409 && normalized === "IDEMPOTENCY_KEY_REUSED") return "conflict";
+  if ([400, 422].includes(status) && ["RUN_INPUT_SCHEMA_MISMATCH", "IDEMPOTENCY_INPUT_NOT_IJSON"].includes(normalized)) return "edit";
+  return "none";
+}
+function freeTextSchema(schema) {
+  return schemaAllowsType(schema, "string") && !["enum", "const"].some(key => Object.hasOwn(schema, key));
 }
 
 function preferredTextField(inputSchema) {
@@ -123,11 +178,11 @@ function preferredTextField(inputSchema) {
   const required = Array.isArray(inputSchema.required)
     ? inputSchema.required.filter((value) => typeof value === "string")
     : [];
-  if (required.length === 1 && schemaAllowsType(properties[required[0]], "string")) {
+  if (required.length === 1 && freeTextSchema(properties[required[0]])) {
     return required[0];
   }
   const propertyNames = Object.keys(properties);
-  if (required.length === 0 && propertyNames.length === 1 && schemaAllowsType(properties[propertyNames[0]], "string")) {
+  if (required.length === 0 && propertyNames.length === 1 && freeTextSchema(properties[propertyNames[0]])) {
     return propertyNames[0];
   }
   return null;
@@ -158,6 +213,7 @@ function schemaObjectSkeleton(schema) {
 
 function schemaValueSkeleton(schema) {
   if (!isPlainRecord(schema)) return null;
+  if (Object.hasOwn(schema, "const")) return schema.const;
   if (Array.isArray(schema.enum) && schema.enum.length > 0) return schema.enum[0];
   if (schemaAllowsType(schema, "string")) return "";
   if (schemaAllowsType(schema, "integer") || schemaAllowsType(schema, "number")) return 0;
@@ -177,4 +233,9 @@ function schemaAllowsType(schema, expected) {
 
 function isPlainRecord(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+export function playgroundPrefillIsValid(prefill, inputSchema) {
+  if (typeof prefill !== "string") return false;
+  try { parsePlaygroundDraft(prefill, inputSchema); return true; } catch { return false; }
 }

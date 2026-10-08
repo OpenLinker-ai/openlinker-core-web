@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { skillVersionPath } from "@/lib/resource-sharing.mjs";
+import { ResourceNavigation, ResourceNextStep } from "@/components/resources/resource-navigation";
+import { resourceJourneyMessages } from "@/messages/resource-journey";
 import { SkillPublicationControls, SkillReferenceImport } from "@/components/skills/public-skill-actions";
 import { skillAssociationMessages } from "@/messages/skill-association";
 import { skillAssociationIssue, skillTrialHref } from "@/lib/skill-association";
@@ -58,6 +61,7 @@ type Props = {
   agentId?: string;
   initialVersionId?: string;
   associate?: boolean;
+  managementSection?: "content" | "associate" | "publish";
 };
 
 export function SkillPackages({
@@ -68,6 +72,7 @@ export function SkillPackages({
   agentId,
   initialVersionId,
   associate,
+  managementSection = "content",
 }: Props) {
   const copy = skillPackageMessages[locale];
   const api = usePackageApi();
@@ -122,7 +127,7 @@ export function SkillPackages({
         )}
         {packages.isSuccess &&
           (packageId ? (
-            <PackageDetail key={`${packageId}:${initialVersionId ?? ""}:${associate}`} {...{ locale, agents, skills, packageId, initialVersionId, associate }} />
+            <PackageDetail key={`${packageId}:${initialVersionId ?? ""}:${associate}:${managementSection}`} {...{ locale, agents, skills, packageId, initialVersionId, associate, managementSection }} />
           ) : agentId ? (
             <AgentPackages {...{ locale, agents, skills, items, agentId }} />
           ) : (
@@ -448,14 +453,7 @@ function ImportDialog({
             </p>
           )}
           <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              className={buttonClass}
-              disabled={busy}
-              onClick={onClose}
-            >
-              {copy.cancel}
-            </button>
+            <button type="button" className={buttonClass} disabled={busy} onClick={onClose}>{copy.cancel}</button>
             <button className={primaryClass} disabled={busy}>
               {busy ? copy.saving : copy.import}
             </button>
@@ -473,6 +471,7 @@ function PackageDetail({
   packageId,
   initialVersionId = "",
   associate = false,
+  managementSection = "content",
 }: Props & { packageId: string }) {
   const api = usePackageApi();
   const copy = skillPackageMessages[locale];
@@ -507,6 +506,8 @@ function PackageDetail({
       />
     );
   if (!item) return null;
+  const j = resourceJourneyMessages[locale];
+  const manageHref = (view: "content" | "associate" | "publish") => `/hub/skills/${encodeURIComponent(packageId)}${view === "content" ? "" : `/${view}`}?${new URLSearchParams(version ? { version: version.id } : {})}`;
   const selectedFile = contents?.files[file] !== undefined ? file : "SKILL.md";
   return (
     <>
@@ -527,18 +528,13 @@ function PackageDetail({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            className={buttonClass}
-            disabled={!contents}
-            onClick={() => setImportOpen(true)}
-          >
-            {copy.newVersion}
-          </button>
-          <button className={primaryClass} disabled={!version} onClick={() => setBindOpen(true)}>
-            {copy.associate}
-          </button>
+          {managementSection === "content" && <button className={buttonClass} disabled={!contents} onClick={() => setImportOpen(true)}>{copy.newVersion}</button>}
+          {managementSection !== "associate" && version && <Link className={primaryClass} href={manageHref("associate")}>{copy.associate}</Link>}
         </div>
       </div>
+      <ResourceNavigation locale={locale} links={([ ["content", j.content], ["associate", j.associate], ["publish", j.publish] ] as const).map(([view, label]) => ({ href: manageHref(view), label, current: managementSection === view }))} />
+      {version && <p className="text-sm font-semibold">{copy.version}: {version.version} · {version.providers.join(" / ")}</p>}
+      {item.source_package_id && version?.source_version_id && <Link className="text-sm underline" href={skillVersionPath(item.source_package_id, version.source_version_id)}>{j.source}</Link>}
       {!version && <p role="alert">{skillAssociationMessages[locale].versionMissing}</p>}
       {version && contentQuery.isPending && <p role="status">{copy.loading}</p>}
       {contentQuery.isError && (
@@ -548,7 +544,7 @@ function PackageDetail({
           onRetry={() => void contentQuery.refetch()}
         />
       )}
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_240px]">
+      {managementSection === "content" && <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_240px]">
         <div className="min-w-0 rounded-xl border border-[color:var(--ol-line)] p-4">
           <h2 className="mb-3 font-bold">{copy.source}</h2>
           <label>
@@ -625,8 +621,10 @@ function PackageDetail({
             <code className="mt-2 block break-all">{version?.digest}</code>
           </details>
         </aside>
-      </div>
-      {version && contents && <SkillPublicationControls key={`${item.id}:${version.id}:${item.visibility}`} {...{item,version,contents,locale}} />}
+      </div>}
+      {managementSection === "content" && version && <ResourceNextStep title={j.imported} hint={j.importedHint} href={manageHref("associate")} label={j.associate} />}
+      {managementSection === "associate" && version && <section className="space-y-4"><p className="text-sm text-[color:var(--ol-muted)]">{j.associateHint}</p><BindDialog key={version.id} locale={locale} agents={agents} items={[item]} initialPackageId={packageId} initialVersionId={version.id} embedded onClose={() => {}} /></section>}
+      {managementSection === "publish" && version && contents && <SkillPublicationControls key={`${item.id}:${version.id}:${item.visibility}`} {...{item,version,contents,locale}} />}
       {importOpen && (
         <ImportDialog
           {...{ locale, skills, packageId }}
@@ -864,6 +862,7 @@ function BindDialog({
   initialPackageId = "",
   initialVersionId = "",
   editing = false,
+  embedded = false,
   onClose,
 }: {
   locale: Locale;
@@ -873,6 +872,7 @@ function BindDialog({
   initialPackageId?: string;
   initialVersionId?: string;
   editing?: boolean;
+  embedded?: boolean;
   onClose: () => void;
 }) {
   const copy = skillPackageMessages[locale];
@@ -924,25 +924,18 @@ function BindDialog({
       setBusy(false);
     }
   }
-  return (
-    <Dialog
-      open
-      onOpenChange={(open) => {
-        if (!open && !busy) onClose();
-      }}
-    >
-      <DialogContent closeLabel={copy.close}>
-        <DialogHeader>
+  const content = <>
+        {embedded ? <header className="space-y-2"><h3 className="text-lg font-bold">{saved ? (unchanged ? flow.already : flow.saved) : copy.associate}</h3><p className="text-sm text-[color:var(--ol-muted)]">{copy.bindingHint}</p></header> : <DialogHeader>
           <DialogTitle>{saved ? (unchanged ? flow.already : flow.saved) : copy.associate}</DialogTitle>
           <DialogDescription>{copy.bindingHint}</DialogDescription>
-        </DialogHeader>
+        </DialogHeader>}
         {saved ? (
           <div className="space-y-4">
             <p className="font-semibold">{selectedAgent?.name} · {saved.name} · {saved.version}</p>
             <p className="text-sm text-[color:var(--ol-muted)]">{flow.nextRun}</p>
             <details className="text-xs"><summary>{copy.digest}</summary><code className="break-all">{saved.digest}</code></details>
             <div className="flex flex-wrap justify-end gap-2">
-              <button className={buttonClass} onClick={onClose}>{flow.done}</button>
+              <button className={buttonClass} onClick={() => embedded ? setSaved(null) : onClose()}>{embedded ? resourceJourneyMessages[locale].changeAgent : flow.done}</button>
               {selectedAgent?.slug && <Link className={primaryClass} href={skillTrialHref(selectedAgent.slug, saved)}>{flow.trial}</Link>}
             </div>
           </div>
@@ -969,7 +962,7 @@ function BindDialog({
             <select
               className={inputClass}
               required
-              disabled={editing || busy}
+              disabled={embedded || editing || busy}
               value={packageId}
               onChange={(e) => {
                 setPackageId(e.target.value);
@@ -989,7 +982,7 @@ function BindDialog({
               <span>{copy.selectVersion}</span>
               <select
                 className={inputClass}
-                disabled={busy}
+                disabled={embedded || busy}
                 value={version?.id ?? ""}
                 onChange={(e) => setVersionId(e.target.value)}
               >
@@ -1029,6 +1022,7 @@ function BindDialog({
               <p role="status">{issue === "unsupported" ? (bindings.data.host_status === "none" ? flow.hostNone : bindings.data.host_status === "incompatible" ? flow.hostIncompatible : copy.unsupported) : issue === "incompatible" ? copy.incompatible : issue ? flow[issue] : flow.ready}</p>
               <div className="flex flex-wrap gap-3">
                 <button type="button" className="underline" disabled={busy || bindings.isFetching} onClick={() => void bindings.refetch()}>{copy.refresh}</button>
+                {issue === "unsupported" && selectedAgent && <Link className="underline" href={`/hub/agents/${encodeURIComponent(selectedAgent.id)}/onboarding`}>{resourceJourneyMessages[locale].connectHost}</Link>}
                 {issue === "disabled" && selectedAgent && <Link className="underline" href={`/hub/agents/${encodeURIComponent(selectedAgent.id)}`}>{flow.manageAgent}</Link>}
               </div>
             </div>
@@ -1039,20 +1033,12 @@ function BindDialog({
             </p>
           )}
           <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              className={buttonClass}
-              disabled={busy}
-              onClick={onClose}
-            >
-              {copy.cancel}
-            </button>
+{!embedded && <button type="button" className={buttonClass} disabled={busy} onClick={onClose}>{copy.cancel}</button>}
             <button className={primaryClass} disabled={busy || !compatible}>
               {busy ? copy.saving : copy.associate}
             </button>
           </div>
         </form>}
-      </DialogContent>
-    </Dialog>
-  );
+      </>;
+  return embedded ? <div className="max-w-2xl space-y-5 rounded-xl border border-[color:var(--ol-line)] p-5">{content}</div> : <Dialog open onOpenChange={open => { if (!open && !busy) onClose(); }}><DialogContent closeLabel={copy.close}>{content}</DialogContent></Dialog>;
 }
