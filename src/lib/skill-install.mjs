@@ -1,9 +1,4 @@
 const uuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-const clients = Object.freeze({ claude: 'claude-code', codex: 'codex' });
-export const SKILLS_INSTALLER_VERSION = '1.7.1';
-export function skillInstallClients(providers) {
-  return ['claude', 'codex'].filter(p => providers.includes(p)).map(p => clients[p]);
-}
 // Command literals deliberately use a restricted origin grammar, not escaping
 // arbitrary strings. No publisher name, description or version label is shell code.
 export function skillCommandOrigin(origin) {
@@ -24,10 +19,28 @@ function versionURL(origin, packageId, versionId) {
   if (!base || !uuid.test(packageId) || !uuid.test(versionId) || [packageId, versionId].includes('00000000-0000-0000-0000-000000000000')) return '';
   return `${base}/api/v1/skill-packages/${packageId}/versions/${versionId}`;
 }
-export function skillInstallCommand({ origin, packageId, versionId, client, scope, providers, compatible }) {
-  if (compatible !== true || !skillInstallClients(providers).includes(client) || !['project', 'global'].includes(scope)) return '';
-  const url = versionURL(origin, packageId, versionId);
-  return url ? `npx skills@${SKILLS_INSTALLER_VERSION} add "${url}/archive.zip" --agent ${client} --copy${scope === 'global' ? ' -g' : ''}` : '';
+// A generic repository link is display metadata, not a declared Skill source.
+// Only an explicit GitHub Skill directory (or its SKILL.md) yields a command.
+// Validate raw text before URL normalization; all command tokens use restricted grammar.
+export function skillInstallSource({ repositoryUrl, name, compatible }) {
+  if (compatible !== true) return null;
+  if (typeof name !== 'string' || name.length > 64 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name)) return null;
+  if (typeof repositoryUrl !== 'string' || repositoryUrl.length > 2048) return null;
+  const match = repositoryUrl.match(/^https:\/\/github\.com\/([A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?)\/([A-Za-z0-9_][A-Za-z0-9_.-]{0,99})\/(tree|blob)\/([A-Za-z0-9_][A-Za-z0-9_.-]*)\/(.+?)\/?$/);
+  if (!match) return null;
+  const [, owner, rawRepo, kind, ref, path] = match;
+  const repo = rawRepo.endsWith('.git') ? rawRepo.slice(0, -4) : rawRepo;
+  const parts = path.split('/');
+  if (!repo || [repo, ref, ...parts].some(part => part === '.' || part === '..' || !/^[A-Za-z0-9_][A-Za-z0-9_.-]*$/.test(part))) return null;
+  if (kind === 'blob') {
+    if (parts.pop() !== 'SKILL.md') return null;
+  }
+  if (parts.at(-1) !== name) return null;
+  return { repository: `https://github.com/${owner}/${repo}`, directory: parts.join('/'), url: repositoryUrl };
+}
+export function skillInstallCommand(options) {
+  const source = skillInstallSource(options);
+  return source ? `npx skills add ${source.repository} --skill ${options.name}` : '';
 }
 export function skillPlatformCommands({ origin, packageId, versionId, digest }) {
   const url = versionURL(origin, packageId, versionId);

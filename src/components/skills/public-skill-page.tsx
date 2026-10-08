@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { SkillQuickInstall } from "@/components/skills/skill-quick-install";
-import { SkillPlatformCLI } from "@/components/skills/skill-platform-cli";
+import { skillInstallMessages } from "@/messages/skill-install";
 import { ResourceNavigation, ResourceNextStep } from "@/components/resources/resource-navigation";
 import { ResourceAnchorRedirect } from "@/components/resources/resource-anchor-redirect";
 import { skillSectionHref, type SkillSection } from "@/lib/resource-journey";
@@ -51,6 +51,7 @@ export async function PublicSkillPage({
   const locale = await getLocale();
   const c = resourceSharingMessages[locale];
   const u = resourceUseMessages[locale];
+  const install = skillInstallMessages[locale];
   const directory = resourceReturnPath(returnTo);
   const j = resourceJourneyMessages[locale];
   const href = (view: SkillSection, id = versionId!) => skillSectionHref(packageId, id, view, directory);
@@ -76,7 +77,7 @@ export async function PublicSkillPage({
     id: version.id, version: version.version, digest: version.digest,
     providers: version.providers, capability_ids: version.capability_ids, created_at: version.created_at,
   };
-  const quickInstall = <SkillQuickInstall key={version.id} packageId={item.id} versionId={version.id} providers={version.providers} compatible={compatible} locale={locale} filesHref={href("files")} />;
+  const quickInstall = <SkillQuickInstall key={version.id} repositoryUrl={version.publication_metadata?.repository_url} name={content.name} compatible={compatible} locale={locale} filesHref={href("files")} />;
   const published = version.published_at
     ? new Date(version.published_at)
     : null;
@@ -105,7 +106,7 @@ export async function PublicSkillPage({
           <p className="mt-4 text-[color:var(--ol-muted)]">
             {content.description}
           </p>
-          {section !== "use" && <Link className="ol-mini-btn ol-mini-btn-primary mt-5" href={href("use")}>{c.use}</Link>}
+          {section !== "use" && <Link className="ol-mini-btn ol-mini-btn-primary mt-5" href={href("use")}>{install.associate}</Link>}
           {item.versions.length > 1 && section !== "versions" && <details className="mt-4 text-sm">
             <summary className="cursor-pointer font-semibold">{c.versions} · {version.version}</summary>
             <div className="mt-3 flex flex-wrap gap-2">{item.versions.map(v => <Link key={v.id} href={href(section, v.id)} aria-current={v.id === version.id ? "page" : undefined} className="ol-chip">{v.version}</Link>)}</div>
@@ -115,7 +116,7 @@ export async function PublicSkillPage({
           "#use-version": href("use"), "#skill-files": href("files"), "#skill-versions": href("versions"),
         }} />}
         <ResourceNavigation locale={locale} links={([
-          ["overview", j.overview], ["files", j.files], ["versions", j.versions], ["use", u.platformUse], ["install", j.local],
+          ["overview", j.overview], ["files", j.files], ["versions", j.versions], ["use", install.associate], ["install", install.title],
         ] as [SkillSection, string][]).map(([view, label]) => ({ href: href(view), label, current: section === view }))} />
         <div className="max-w-4xl space-y-6">
           {section === "overview" && <>
@@ -147,12 +148,9 @@ export async function PublicSkillPage({
                   </div>
                 </>
               )}
-              <p className="text-sm text-[color:var(--ol-muted)]">
-                {c.localHint}
-              </p>
               {!compatible && (
                 <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-                  {c.incompatible}
+                  {install.incompatible}
                 </p>
               )}
             </section>
@@ -171,7 +169,7 @@ export async function PublicSkillPage({
                 locale={locale}
               />
             </div>
-            <ResourceNextStep title={j.nextUse} hint={j.nextHint} href={href("use")} label={c.use} />
+            <ResourceNextStep title={j.nextUse} hint={j.nextHint} href={href("use")} label={install.associate} />
           </>}
           {section === "versions" && <section
               id="skill-versions"
@@ -209,13 +207,12 @@ export async function PublicSkillPage({
               </p>
             </section>}
           {section === "install" && quickInstall}
-          {(section === "use" || section === "install") && <>
+          {section === "use" && <>
             <section id="use-version" className="ol-panel p-6">
-              <h2 className="mb-5 text-lg font-bold">{section === "use" ? u.platformUse : u.localUse}</h2>
-              <PublicSkillActions key={version.id} packageId={item.id} version={actionVersion} locale={locale} mode={section === "use" ? "platform" : "local"} />
+              <h2 className="mb-5 text-lg font-bold">{install.associate}</h2>
+              <PublicSkillActions key={version.id} packageId={item.id} version={actionVersion} locale={locale} associateOnly />
             </section>
-            {section === "use" && <SkillPlatformCLI packageId={item.id} versionId={version.id} digest={version.digest} locale={locale} />}
-            <ResourceNextStep title={section === "use" ? j.local : j.platform} hint={section === "use" ? j.localHint : j.platformHint} href={href(section === "use" ? "install" : "use")} label={section === "use" ? j.local : j.platform} />
+            <ResourceNextStep title={install.title} hint={install.upstream} href={href("install")} label={install.title} />
           </>}
         </div>
       </main>

@@ -1019,21 +1019,47 @@ test('resource route boundaries reject unknown child pages and child metadata do
 });
 
 const {SkillQuickInstall}=await import('../src/components/skills/skill-quick-install.tsx');
-test('quick install changes client/scope and copies exactly without network or execution',async()=>{
+test('local install copies the upstream command without selection, network or execution',async()=>{
  let copied='',calls=0;Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async(value)=>{copied=value}}});
  globalThis.resourceTestFetch=async()=>{calls++;};
- await mount(SkillQuickInstall,{packageId:item.id,versionId:version.id,providers:['claude','codex'],compatible:true,locale:'en',filesHref:'/fixed/files'},async(host,root)=>{
-  let [client,scope]=host.querySelectorAll('select');assert.equal(client.value,'claude-code');assert.equal(scope.value,'project');
-  await act(async()=>{client.value='codex';client.dispatchEvent(new Event('change',{bubbles:true}));scope.value='global';scope.dispatchEvent(new Event('change',{bubbles:true}));});
-  const button=host.querySelector('button');await act(async()=>button.click());
-  assert.match(copied,/npx skills@1.7.1 add "https:\/\/web.example.test\/api\/v1\/skill-packages\/.*\/archive.zip" --agent codex --copy -g$/);
-  assert.match(host.textContent,/~\/\.agents\/skills/);assert.equal(calls,0);assert.ok(host.querySelector('a[href="/fixed/files"]'));
-  const changed={packageId:item.id,versionId:'00000000-0000-4000-8000-000000000004',providers:['claude'],compatible:true,locale:'en',filesHref:'/new/files'};
-  await act(async()=>root.render(createElement(SkillQuickInstall,{...changed,key:changed.versionId})));
-  assert.equal(host.querySelectorAll('option').length,3);assert.equal(host.querySelector('select').value,'claude-code');assert.equal(host.querySelectorAll('select')[1].value,'project');
-  assert.match(host.querySelector('pre').textContent,/000000000004\/archive.zip/);assert.doesNotMatch(host.querySelector('pre').textContent,/--copy -g/);
+ const props={repositoryUrl:'https://github.com/wshobson/agents/tree/main/plugins/ui-design/skills/accessibility-compliance',name:'accessibility-compliance',compatible:true,locale:'en',filesHref:'/fixed/files'};
+ await mount(SkillQuickInstall,props,async(host,root)=>{
+  assert.equal(host.querySelectorAll('select').length,0);assert.equal(host.querySelectorAll('button').length,1);
+  await act(async()=>host.querySelector('button').click());
+  assert.equal(copied,'npx skills add https://github.com/wshobson/agents --skill accessibility-compliance');assert.equal(calls,0);
+  assert.match(host.textContent,/not verified by OpenLinker/);assert.match(host.textContent,/current upstream contents/);
+  assert.equal(host.querySelector('a[target="_blank"]').getAttribute('href'),props.repositoryUrl);
+  assert.equal(host.querySelector('a[href="/fixed/files"]').textContent,'Read the fixed platform version');
+  await act(async()=>root.render(createElement(SkillQuickInstall,{...props,repositoryUrl:'https://github.com/obra/superpowers/tree/main/skills/brainstorming',name:'brainstorming',filesHref:'/new/files'})));
+  await act(async()=>host.querySelector('button').click());assert.equal(copied,'npx skills add https://github.com/obra/superpowers --skill brainstorming');assert.equal(calls,0);
  });
- await mount(SkillQuickInstall,{packageId:item.id,versionId:version.id,providers:['claude'],compatible:false,locale:'en',filesHref:'/fixed/files'},async(host)=>{assert.equal(host.querySelector('select'),null);assert.equal(host.querySelector('button'),null);assert.match(host.textContent,/does not meet local client conventions/);});
+ for(const patch of [{repositoryUrl:'https://github.com/OpenLinker-ai/openlinker-core'},{compatible:false},{name:'different'}])await mount(SkillQuickInstall,{...props,...patch},async(host)=>{assert.equal(host.querySelector('button'),null);assert.match(host.textContent,patch.compatible===false?/does not meet local install requirements/:/no recognized GitHub Skill directory source/);});
+});
+test('public association has one action, imports a pinned private copy, and proceeds to owned association',async()=>{
+ const calls=[];globalThis.resourceTestAuthenticated=true;globalThis.resourceTestDestination=undefined;
+ globalThis.resourceTestFetch=async(path,options)=>{calls.push({path,...options});return {id:'owned-copy',version_id:'owned-version'};};
+ await mount(PublicSkillActions,{packageId:item.id,version,locale:'en',associateOnly:true},async(host)=>{
+  const associate=[...host.querySelectorAll('button')].filter(b=>b.textContent==='Associate Agent');assert.equal(associate.length,1);
+  assert.equal([...host.querySelectorAll('button')].some(b=>b.textContent==='Import only'),false);
+  const share=host.querySelector('details');assert.equal(share.open,false);assert.match(share.textContent,/fixed-version reference/);
+  assert.match(host.textContent,/private copy of this fixed version/);assert.equal(calls.length,0);
+  await act(async()=>associate[0].click());
+  assert.deepEqual(calls,[{path:'/api/v1/creator/skill-packages/imports',method:'POST',body:{source_package_id:item.id,source_version_id:version.id,expected_digest:version.digest}}]);
+  assert.equal(globalThis.resourceTestDestination,'/hub/skills/owned-copy/associate?version=owned-version');
+ });
+});
+test('selected metadata source drives the public local install route without platform downloads or CLI tutorial',async()=>{
+ let selected=version.id;const newer='00000000-0000-4000-8000-000000000004';
+ globalThis.resourceTestPublicFetch=async(path)=>path.includes('/versions/')?{...version,id:selected,contents:{name:selected===version.id?'brainstorming':'find-skills',description:'selected',required_commands:[]},local_install_compatible:true,publication_metadata:{repository_url:selected===version.id?'https://github.com/obra/superpowers/tree/main/skills/brainstorming':'https://github.com/vercel-labs/skills/tree/main/skills/find-skills'}}:{...item,versions:[version,{...version,id:newer}]};
+ for(selected of [version.id,newer]){
+  const element=await PublicSkillPage({packageId:item.id,versionId:selected,section:'install',returnTo:'/skills?tab=packages&sort=name'});
+  await mount(()=>element,{},async(host)=>{
+   assert.equal(host.querySelector('pre').textContent,selected===version.id?'npx skills add https://github.com/obra/superpowers --skill brainstorming':'npx skills add https://github.com/vercel-labs/skills --skill find-skills');
+   assert.equal(host.querySelector('a[download]'),null);assert.equal(host.querySelectorAll('select').length,0);assert.equal(host.querySelector('#use-version'),null);
+   assert.doesNotMatch(host.textContent,/Use the OpenLinker CLI|reading prompt|Download ZIP/);
+   assert.ok([...host.querySelectorAll('a')].filter(a=>a.textContent==='Associate Agent').every(a=>new URL(a.href).searchParams.get('returnTo')==='/skills?tab=packages&sort=name'));
+  });
+ }
 });
 test('public non-file pages load metadata and never pass full contents to client actions',async()=>{
  const calls=[];const fixture={...version,local_install_compatible:true,contents:{name:'fixed-title',description:'fixed-description',required_commands:[]},publication_metadata:{release_notes:'Public notes'},published_at:'2026-10-08T00:00:00Z'};
