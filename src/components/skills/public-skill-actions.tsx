@@ -39,10 +39,12 @@ export function PublicSkillActions({
   packageId,
   version,
   locale,
+  mode = "platform",
 }: {
   packageId: string;
   version: SkillPackageVersion;
   locale: Locale;
+  mode?: "platform" | "local";
 }) {
   const c = resourceSharingMessages[locale];
   const u = resourceUseMessages[locale];
@@ -51,8 +53,7 @@ export function PublicSkillActions({
   const apiBase = `/api/v1/skill-packages/${packageId}/versions/${version.id}`;
   return (
     <div className="space-y-6">
-      <section className="space-y-3">
-        <h3 className="font-bold">{u.platformUse}</h3>
+      {mode === "platform" && <section className="space-y-3">
         <ImportVersion
           locale={locale}
           reference={{
@@ -72,6 +73,8 @@ export function PublicSkillActions({
         <p className="text-xs leading-relaxed text-[color:var(--ol-muted)]">
           {u.platformHint}
         </p>
+      </section>}
+      <section className="space-y-3">
         <CopyContent
           key={version.id + "-reference"}
           locale={locale}
@@ -87,8 +90,8 @@ export function PublicSkillActions({
           value={origin ? `${origin}${path}` : ""}
         />
       </section>
+      {mode === "local" && <>
       <section className="space-y-3 border-t border-[color:var(--ol-line)] pt-5">
-        <h3 className="font-bold">{u.localUse}</h3>
         <p className="text-xs leading-relaxed text-[color:var(--ol-muted)]">
           {u.localSteps}
         </p>
@@ -134,6 +137,7 @@ export function PublicSkillActions({
           value={origin ? `${origin}${apiBase}/files/SKILL.md` : ""}
         />
       </details>
+      </>}
     </div>
   );
 }
@@ -173,8 +177,7 @@ function ImportVersion({
       await cache.invalidateQueries({ queryKey: ["skill-packages"] });
       toast.success(c.imported);
       const query = new URLSearchParams({ version: result.version_id });
-      if (associate) query.set("associate", "1");
-      router.push(`/hub/skills/${encodeURIComponent(result.id)}?${query}`);
+      router.push(`/hub/skills/${encodeURIComponent(result.id)}${associate ? "/associate" : ""}?${query}`);
     } catch (e) {
       setError(skillPackageErrorText(e, locale, c.failed));
     } finally {

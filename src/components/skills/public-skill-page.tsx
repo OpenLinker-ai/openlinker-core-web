@@ -1,4 +1,8 @@
 import Link from "next/link";
+import { ResourceNavigation, ResourceNextStep } from "@/components/resources/resource-navigation";
+import { ResourceAnchorRedirect } from "@/components/resources/resource-anchor-redirect";
+import { skillSectionHref, type SkillSection } from "@/lib/resource-journey";
+import { resourceJourneyMessages } from "@/messages/resource-journey";
 import { ResourceMetadataCard } from "@/components/resources/resource-metadata";
 import { notFound, redirect } from "next/navigation";
 import { Topbar } from "@/components/layout/topbar";
@@ -35,15 +39,19 @@ export async function PublicSkillPage({
   packageId,
   versionId,
   returnTo,
+  section = "overview",
 }: {
   packageId: string;
   versionId?: string;
   returnTo?: unknown;
+  section?: SkillSection;
 }) {
   const locale = await getLocale();
   const c = resourceSharingMessages[locale];
   const u = resourceUseMessages[locale];
   const directory = resourceReturnPath(returnTo);
+  const j = resourceJourneyMessages[locale];
+  const href = (view: SkillSection, id = versionId!) => skillSectionHref(packageId, id, view, directory);
   const item = await load<SkillPackage>(
     `/api/v1/skill-packages/${encodeURIComponent(packageId)}`,
   );
@@ -88,24 +96,20 @@ export async function PublicSkillPage({
           <p className="mt-4 text-[color:var(--ol-muted)]">
             {content.description}
           </p>
-          <a
-            className="ol-mini-btn ol-mini-btn-primary mt-5"
-            href="#use-version"
-          >
-            {c.use}
-          </a>
+          {section !== "use" && <Link className="ol-mini-btn ol-mini-btn-primary mt-5" href={href("use")}>{c.use}</Link>}
+          {item.versions.length > 1 && section !== "versions" && <details className="mt-4 text-sm">
+            <summary className="cursor-pointer font-semibold">{c.versions} · {version.version}</summary>
+            <div className="mt-3 flex flex-wrap gap-2">{item.versions.map(v => <Link key={v.id} href={href(section, v.id)} aria-current={v.id === version.id ? "page" : undefined} className="ol-chip">{v.version}</Link>)}</div>
+          </details>}
         </header>
-        <nav
-          aria-label={u.navigation}
-          className="mb-6 flex flex-wrap gap-4 border-b border-[color:var(--ol-line)] pb-4 text-sm font-semibold"
-        >
-          <a href="#skill-overview">{u.overview}</a>
-          <a href="#skill-files">{c.files}</a>
-          <a href="#skill-versions">{c.versions}</a>
-          <a href="#use-version">{c.use}</a>
-        </nav>
-        <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="min-w-0 space-y-6">
+        {section === "overview" && <ResourceAnchorRedirect targets={{
+          "#use-version": href("use"), "#skill-files": href("files"), "#skill-versions": href("versions"),
+        }} />}
+        <ResourceNavigation locale={locale} links={([
+          ["overview", j.overview], ["files", j.files], ["versions", j.versions], ["use", u.platformUse], ["install", j.local],
+        ] as [SkillSection, string][]).map(([view, label]) => ({ href: href(view), label, current: section === view }))} />
+        <div className="max-w-4xl space-y-6">
+          {section === "overview" && <>
             <section
               id="skill-overview"
               className="ol-panel scroll-mt-32 space-y-4 p-6"
@@ -147,6 +151,9 @@ export async function PublicSkillPage({
               version={version.version}
               locale={locale}
             />
+            <ResourceNextStep title={j.readFirst} hint={j.readHint} href={href("files")} label={j.files} />
+          </>}
+          {section === "files" && <>
             <div id="skill-files" className="scroll-mt-32">
               <PublicSkillFiles
                 key={version.id}
@@ -154,7 +161,9 @@ export async function PublicSkillPage({
                 locale={locale}
               />
             </div>
-            <section
+            <ResourceNextStep title={j.nextUse} hint={j.nextHint} href={href("use")} label={c.use} />
+          </>}
+          {section === "versions" && <section
               id="skill-versions"
               className="ol-panel scroll-mt-32 space-y-4 p-6"
             >
@@ -176,10 +185,7 @@ export async function PublicSkillPage({
                   <Link
                     className="ol-chip"
                     aria-current={v.id === version.id ? "page" : undefined}
-                    href={withResourceReturn(
-                      skillVersionPath(item.id, v.id),
-                      directory,
-                    )}
+                    href={href(section, v.id)}
                     key={v.id}
                   >
                     {v.version}
@@ -191,19 +197,14 @@ export async function PublicSkillPage({
               <p className="text-xs text-[color:var(--ol-muted)]">
                 {c.digestHint}
               </p>
+            </section>}
+          {(section === "use" || section === "install") && <>
+            <section id="use-version" className="ol-panel p-6">
+              <h2 className="mb-5 text-lg font-bold">{section === "use" ? u.platformUse : u.localUse}</h2>
+              <PublicSkillActions key={version.id} packageId={item.id} version={version} locale={locale} mode={section === "use" ? "platform" : "local"} />
             </section>
-          </div>
-          <aside id="use-version" className="min-w-0 scroll-mt-40 space-y-6">
-            <section className="ol-panel p-6">
-              <h2 className="mb-5 text-lg font-bold">{c.use}</h2>
-              <PublicSkillActions
-                key={version.id}
-                packageId={item.id}
-                version={version}
-                locale={locale}
-              />
-            </section>
-          </aside>
+            <ResourceNextStep title={section === "use" ? j.local : j.platform} hint={section === "use" ? j.localHint : j.platformHint} href={href(section === "use" ? "install" : "use")} label={section === "use" ? j.local : j.platform} />
+          </>}
         </div>
       </main>
     </>

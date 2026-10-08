@@ -395,7 +395,7 @@ test("an Agent that only takes structured input says so before you type", async 
   const globalsCss = await readFile(path.join(root, "src/app/globals.css"), "utf8");
 
   assert.match(input, /export function playgroundStructuredInputFields/);
-  assert.match(runner, /playgroundStructuredInputFields\(inputSchema\)/);
+  assert.match(runner, /playgroundStructuredInputFields\(inputSchema, inputMode\)/);
   assert.match(runner, /structuredInput \? copy\.structuredPlaceholder : copy\.placeholder/,
     "the placeholder must not promise plain text the schema cannot accept");
   assert.match(runner, /structuredInput\.required\.length > 0/,

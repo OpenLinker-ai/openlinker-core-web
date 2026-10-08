@@ -29,7 +29,7 @@ const mocks = {
   "@/components/auth/auth-link":
     'import React from "react"; export const AuthLink=(p)=>React.createElement("a",p,p.children);',
   "@/lib/api":
-    "export const apiFetch=(...a)=>globalThis.resourceTestPublicFetch(...a); export class ApiError extends Error {constructor(status){super();this.status=status;}}; export const localizedErrorMessage=(e,l,f)=>f;",
+    "export const apiFetch=(...a)=>globalThis.resourceTestPublicFetch(...a); export class ApiError extends Error {constructor(status){super('Synthetic rejection');this.status=status;this.code='SYNTHETIC_ERROR';}}; export const localizedErrorMessage=(e,l,f)=>f;",
   "@/lib/i18n-server": 'export const getLocale=async()=>"en";',
   "@/components/layout/topbar": "export const Topbar=()=>null;",
   sonner: "export const toast={success:()=>{},error:()=>{}};",
@@ -150,7 +150,7 @@ test("import and associate preserves returned private version and requires a cli
  await mount(PublicSkillActions,{locale:"en",packageId:pkg,version},async host=>{
    assert.equal(calls.length,0);await act(async()=>button(host,"Import and associate").click());
    assert.equal(calls.length,1);assert.equal(calls[0].body.source_version_id,vid);
-   assert.equal(globalThis.resourceTestDestination,`/hub/skills/${pkg}?version=${vid}&associate=1`);
+   assert.equal(globalThis.resourceTestDestination,`/hub/skills/${pkg}/associate?version=${vid}`);
  });
 });
 test("older version opens association without writing and survives token refresh",async()=>{
@@ -183,6 +183,7 @@ for(const [label,data,message,disabled] of [
  await mount(SkillPackages,pageProps,async host=>{
   await chooseAgent(host);const dialog=host.querySelector('[role="dialog"]');
   assert.match(dialog.textContent,new RegExp(message,"i"));assert.equal(button(dialog,"Associate with Agent").disabled,disabled);
+  if(label==="no host"||label==="incompatible host")assert.ok(dialog.querySelector(`a[href="/hub/agents/${agent.id}/onboarding"]`));
  });
 });
 test("same-version save reports current version without claiming fresh loading",async()=>{
@@ -296,4 +297,76 @@ test("previous Run receipt is waiting while active, inconclusive only after comp
   assert.match(host.textContent,/No matching load receipt/);assert.doesNotMatch(host.textContent,/cannot be confirmed/);
   await render({...props,run:{...run,status:"success"}});assert.match(host.textContent,/cannot be confirmed/);
  });
+});
+
+test('Skill management gives content, association and publication separate pages with exact version navigation',async()=>{
+ const writes=[];globalThis.resourceTestFetch=fixtureFetch(eligible,writes);
+ await mount(SkillPackages,{...pageProps,associate:false},async(host,render)=>{
+  assert.match(host.textContent,/# Fixture|Fixture/);assert.equal(button(host,'Publish selected version'),undefined);
+  assert.equal(host.querySelector('[role="dialog"]'),null);
+  assert.ok(host.querySelector(`a[href="/hub/skills/${pkg}/associate?version=${vid}"]`));
+  await render({...pageProps,associate:false,managementSection:'associate'});
+  assert.equal(host.querySelector('[role="dialog"]'),null);assert.equal(button(host,'Publish selected version'),undefined);
+  const select=host.querySelector('select');await act(async()=>{select.value=agent.id;select.dispatchEvent(new Event('change',{bubbles:true}));});await settle();
+  assert.match(host.textContent,/passed/);assert.equal(writes.length,0);
+  await act(async()=>button(host,'Associate with Agent').click());await settle();
+  assert.deepEqual(writes[0].body,{version_id:vid});assert.ok(host.querySelector('a[href^="/playground/"]'));
+  await render({...pageProps,associate:false,managementSection:'publish'});
+  assert.ok(button(host,'Publish selected version'));assert.equal(button(host,'Associate with Agent'),undefined);
+  assert.equal(button(host,'Publish selected version').disabled,true);assert.equal(writes.length,1);
+ });
+});
+test('MCP examples update only the draft, can undo, and URL-selected examples preserve saved history and draft',async()=>{
+ const writes=[];globalThis.resourceTestFetch=async(path,options={})=>{if(options.method){writes.push({path,...options});return {...run,status:'success'};}return {...run,status:'success'};};
+ const schema={type:'object',properties:{run_id:{type:'string',enum:['first','next']}},required:['run_id']};
+ const examples=[{id:'first',title:'First',input_json:{run_id:'first'}},{id:'next',title:'Next',input_json:{run_id:'next'}},{id:'bad',title:'Stale',input_json:{run_id:'bad'}}];
+ const key='openlinker.playground.v1:'+JSON.stringify(['owner',agent.id,'']);
+ localStorage.setItem(key,JSON.stringify({version:1,conversationID:'preserved-conversation',input:'{"run_id":"unfinished"}',turns:[{id:'saved',sequence:1,inputText:'first',inputPayload:{run_id:'first'},runInput:{run_id:'first'},status:'success',result:{...run,run_id:'00000000-0000-4000-8000-000000000099',status:'success'},createdAt:'2026-10-08T00:00:00Z'}],activeTurnId:'saved',seed:'old',autorunConsumed:true}));
+ await mount(PlaygroundRunner,{agent,userId:'owner',inputMode:'json',inputSchema:schema,examples,selectedExample:examples[1].input_json,locale:'en'},async host=>{
+  const input=host.querySelector('textarea');assert.equal(input.value,'{"run_id":"unfinished"}');assert.match(host.textContent,/existing draft has been kept/);
+  assert.equal(writes.length,0);assert.equal(button(host,'Load example · Stale').disabled,true);
+  await act(async()=>button(host,'Send').click());assert.match(host.textContent,/not one of the values/);assert.equal(writes.length,0);
+  await act(async()=>button(host,'Load example · Next').click());assert.deepEqual(JSON.parse(input.value),{run_id:'next'});assert.equal(writes.length,0);assert.equal(host.querySelector('#playground-input-error'),null);
+  let saved=JSON.parse(localStorage.getItem(key));assert.equal(saved.conversationID,'preserved-conversation');assert.equal(saved.turns.length,1);assert.equal(saved.autorunConsumed,true);
+  await act(async()=>button(host,'Undo example').click());assert.equal(input.value,'{"run_id":"unfinished"}');
+  await act(async()=>button(host,'Load example · Next').click());await act(async()=>button(host,'Send').click());await settle();
+  for(let i=0;i<10&&!writes.length;i++)await settle();assert.equal(writes.length,1,host.textContent);assert.deepEqual(writes[0].body.input,{run_id:'next'});assert.equal(writes[0].body.a2a_context.protocol_context_id,'preserved-conversation');
+  saved=JSON.parse(localStorage.getItem(key));assert.equal(saved.turns.length,2);
+ });
+});
+for(const [status,action] of [[400,'edit'],[422,'edit'],[403,'none'],[404,'none'],[409,'conflict'],[429,'retry'],[503,'retry']])test('MCP submission '+status+' has the correct recovery action and durable request',async()=>{
+ const {ApiError}=await import('@/lib/api');const writes=[];
+ globalThis.resourceTestFetch=async(path,options={})=>{if(options.method){writes.push({path,...options});const error=new ApiError(status);error.code=status===409?'IDEMPOTENCY_KEY_REUSED':'RUN_INPUT_SCHEMA_MISMATCH';throw error;}return run;};
+ await mount(PlaygroundRunner,{agent,userId:'owner',inputMode:'json',inputSchema:{type:'object'},prefill:'{"query":"first"}',locale:'en'},async(host,render)=>{
+  await act(async()=>button(host,'Send').click());await settle();assert.equal(writes.length,1);
+  const edit=[...host.querySelectorAll('button')].find(b=>b.textContent.startsWith('Edit input'));
+  const retry=[...host.querySelectorAll('button')].find(b=>b.textContent.startsWith('Retry submission'));
+  assert.equal(Boolean(edit),action==='edit');assert.equal(Boolean(retry),action==='retry');
+  if(retry){await act(async()=>retry.click());await settle();assert.equal(writes.length,2);assert.equal(writes[0].headers['Idempotency-Key'],writes[1].headers['Idempotency-Key']);assert.deepEqual(writes[0].body,writes[1].body);}
+  const conflict=[...host.querySelectorAll('button')].find(b=>b.textContent.startsWith('Prepare to resend'));assert.equal(Boolean(conflict),action==='conflict');
+  if(conflict){await render({agent,userId:'owner',inputMode:'json',inputSchema:{type:'object'},prefill:'{"query":"first"}',locale:'en',key:'refreshed'});assert.equal(writes.length,1,'409 does not submit on restore');await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent.startsWith('Prepare to resend')).click());await act(async()=>button(host,'Send').click());await settle();assert.equal(writes.length,2);assert.notEqual(writes[0].headers['Idempotency-Key'],writes[1].headers['Idempotency-Key']);}
+  if(edit){await act(async()=>edit.click());assert.deepEqual(JSON.parse(host.querySelector('textarea').value),{query:'first'});assert.equal(writes.length,1);}
+ });
+});
+
+
+test('legacy MCP task prefill preserves free-text mapping and never autoruns a substituted example',async()=>{
+ const {default:Page}=await import('../src/app/(user)/playground/[slug]/page.tsx');
+ function runner(tree){if(!tree||typeof tree!=="object")return;if(tree.type===PlaygroundRunner)return tree.props;for(const child of [tree.props?.children].flat(Infinity)){const found=runner(child);if(found)return found;}}
+ const query={prefill:'User task',autorun:'1',task_id:'fixture'};
+ globalThis.resourceTestPublicFetch=async()=>({...agent,connection_mode:'mcp_server',readiness:{callable:true},capability:{input_schema:{type:'object',properties:{query:{type:'string'}},required:['query']}}});
+ const valid=runner(await Page({params:Promise.resolve({slug:agent.slug}),searchParams:Promise.resolve(query)}));assert.equal(valid.autorun,true);assert.equal(valid.inputMode,undefined);assert.equal(valid.prefill,'User task');
+ globalThis.resourceTestPublicFetch=async()=>({...agent,connection_mode:'mcp_server',readiness:{callable:true},capability:{input_schema:{type:'object',properties:{query:{type:'string',enum:['published-example']}},required:['query']}},examples:[{id:'e',input_json:{query:'published-example'}}]});
+ const invalid=runner(await Page({params:Promise.resolve({slug:agent.slug}),searchParams:Promise.resolve(query)}));assert.equal(invalid.autorun,false,'a task cannot silently become a published example');
+});
+
+test('ordinary format/pattern Agent keeps natural task mapping; examples and missing prefill cannot autorun',async()=>{
+ const {default:Page}=await import('../src/app/(user)/playground/[slug]/page.tsx');
+ function runner(tree){if(!tree||typeof tree!=="object")return;if(tree.type===PlaygroundRunner)return tree.props;for(const child of [tree.props?.children].flat(Infinity)){const found=runner(child);if(found)return found;}}
+ globalThis.resourceTestPublicFetch=async()=>({...agent,connection_mode:'http',readiness:{callable:true},capability:{input_schema:{type:'object',properties:{query:{type:'string',format:'uri',pattern:'^https://'}},required:['query']}},examples:[{id:'e',input_json:{query:'example'}}]});
+ const invoke=q=>Page({params:Promise.resolve({slug:agent.slug}),searchParams:Promise.resolve(q)});
+ assert.equal(runner(await invoke({prefill:'Original text',autorun:'1',task_id:'fixture'})).autorun,true);
+ assert.equal(runner(await invoke({example:'e',autorun:'1'})).autorun,false);
+ assert.equal(runner(await invoke({prefill:'Original text',example:'e',autorun:'1'})).autorun,false);
+ assert.equal(runner(await invoke({autorun:'1'})).autorun,false);
 });

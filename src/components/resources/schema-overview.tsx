@@ -1,5 +1,6 @@
 import type { Locale } from "@/lib/i18n";
 import { schemaFields } from "@/lib/resource-sharing.mjs";
+import { resourceJourneyMessages } from "@/messages/resource-journey";
 import { resourceUseMessages } from "@/messages/resource-use";
 
 export function SchemaOverview({
@@ -42,6 +43,7 @@ export function SchemaOverview({
                     className="max-w-64 break-words p-3 font-normal"
                   >
                     <code>{field.name}</code>
+                    {field.allowedValues.length > 0 && <p className="mt-2 break-all text-xs"><span className="font-semibold">{resourceJourneyMessages[locale].allowedValues}: </span><code>{field.allowedValues.map(value => JSON.stringify(value)).join(" | ")}</code></p>}
                     {field.description && (
                       <p className="mt-1 text-xs text-[color:var(--ol-muted)]">
                         {field.description}

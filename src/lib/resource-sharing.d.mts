@@ -31,6 +31,7 @@ export function schemaFields(schema: unknown): {
   required: boolean;
   description: string;
   defaultValue: string;
+  allowedValues: unknown[];
 }[];
 
 export function resourceDirectoryQuery(

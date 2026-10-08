@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { PlaygroundExamples } from "@/components/resources/playground-examples";
+import { resourceJourneyMessages } from "@/messages/resource-journey";
 import { SkillTrialPanel } from "@/components/skills/skill-trial-panel";
 import type { SkillTrial } from "@/lib/skill-association";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
@@ -23,6 +25,8 @@ import {
   PlaygroundInputError,
   parsePlaygroundDraft,
   playgroundInitialDraft,
+  playgroundSubmissionCanRetry,
+  playgroundSubmissionAction,
   playgroundStructuredInputFields,
   playgroundViolationMessage,
 } from "@/lib/playground-input.mjs";
@@ -67,7 +71,8 @@ interface Props {
   userId?: string;
   prefill?: string;
   selectedExample?: Record<string, unknown>;
-  examples?: { input_json: Record<string, unknown> }[];
+  examples?: { id?: string; title?: string; input_json: Record<string, unknown> }[];
+  inputMode?: "auto" | "json";
   inputSchema?: Record<string, unknown>;
   autorun?: boolean;
   skillTrial?: SkillTrial;
@@ -90,6 +95,7 @@ export function PlaygroundRunner({
   selectedExample,
   examples = [],
   inputSchema,
+  inputMode = "auto",
   autorun = false,
   skillTrial,
   locale = "zh",
@@ -191,9 +197,10 @@ export function PlaygroundRunner({
   } = useApi();
   const [sessionStore] = useState(() => createPlaygroundSessionStore(
     playgroundSessionKey(userId, agent.id),
-    { input: playgroundInitialDraft({ prefill, selectedExample, examples, inputSchema, locale }), conversationID: localID("conversation"), seed: JSON.stringify([prefill ?? null, selectedExample ?? null]) },
+    { input: playgroundInitialDraft({ prefill, selectedExample, examples, inputSchema, locale, inputMode }), conversationID: localID("conversation"), seed: JSON.stringify([prefill ?? null, selectedExample ?? null]) },
+    undefined, { preserveDraftOnSeedChange: inputMode === "json" },
   ));
-  const { input, turns, conversationID, ready: restored, storageError, autorunConsumed } = useSyncExternalStore(
+  const { input, turns, conversationID, ready: restored, storageError, autorunConsumed, preservedInput } = useSyncExternalStore(
     sessionStore.subscribe, sessionStore.getSnapshot, sessionStore.getServerSnapshot,
   );
   const setInput = useCallback((change: string | ((current: string) => string)) => {
@@ -290,7 +297,7 @@ export function PlaygroundRunner({
     !(detailsOpen && !roomyViewport);
 
   // schema 没有唯一的必填字符串字段时，纯文本无法无歧义映射，输入框必须写 JSON。
-  const structuredInput = playgroundStructuredInputFields(inputSchema);
+  const structuredInput = playgroundStructuredInputFields(inputSchema, inputMode);
   const composerPlaceholder = structuredInput ? copy.structuredPlaceholder : copy.placeholder;
   const composerHint = !structuredInput
     ? copy.sendHint
@@ -317,7 +324,7 @@ export function PlaygroundRunner({
 
     let parsedInput: unknown;
     try {
-      parsedInput = parsePlaygroundDraft(input, inputSchema);
+      parsedInput = parsePlaygroundDraft(input, inputSchema, inputMode);
     } catch (error) {
       const message = error instanceof PlaygroundInputError
         ? playgroundViolationMessage(error, locale)
@@ -417,6 +424,7 @@ export function PlaygroundRunner({
     isAuthenticated,
     locale,
     inputSchema,
+    inputMode,
     turns,
     restored,
     skillTrial,
@@ -477,10 +485,13 @@ export function PlaygroundRunner({
 
       } catch (error) {
         if (controller.signal.aborted) return;
-        const message = errorMessage(error, locale, copy.retry);
+        const action = playgroundSubmissionAction(error instanceof ApiError ? error.status : undefined, error instanceof ApiError ? error.code : undefined);
+        if (action === "conflict") completeRunCreationIntent(intentScope, turn.id);
+        const message = action === "conflict" ? resourceJourneyMessages[locale].conflictHint : errorMessage(error, locale, copy.retry);
         setTurns((items) => items.map((item) => item.id === turnId
           ? { ...item, status: "failed", errorMessage: message, completedAt: new Date().toISOString(),
-              resumeOnReload: !(error instanceof ApiError) || [401, 408, 429].includes(error.status) || error.status >= 500 }
+              resumeOnReload: playgroundSubmissionCanRetry(error instanceof ApiError ? error.status : undefined),
+              submissionAction: action }
           : item));
         toast.error(message);
       }
@@ -703,12 +714,13 @@ export function PlaygroundRunner({
         data-playground-composer
         className="order-1 ol-panel bg-white p-2.5 min-[1120px]:order-3"
       >
+        <PlaygroundExamples preservedInput={preservedInput} examples={examples} inputSchema={inputSchema} value={input} onChange={value => { setInput(value); setInputError(""); }} disabled={!restored || running} locale={locale} />
         <label className="block">
-          <span className="sr-only">{composerPlaceholder}</span>
+          <span className={inputMode === "json" ? "mb-2 block text-sm font-bold" : "sr-only"}>{inputMode === "json" ? resourceJourneyMessages[locale].parameters : composerPlaceholder}</span>
           <textarea
             ref={inputRef}
             disabled={!restored}
-            aria-label={composerPlaceholder}
+            aria-label={inputMode === "json" ? resourceJourneyMessages[locale].parameters : composerPlaceholder}
             aria-invalid={inputError ? true : undefined}
             aria-describedby={inputError ? "playground-input-error" : undefined}
             value={input}
@@ -718,8 +730,8 @@ export function PlaygroundRunner({
             }}
             spellCheck={false}
             placeholder={composerPlaceholder}
-            rows={2}
-            className="min-h-[48px] max-h-[120px] w-full resize-none rounded-[14px] border border-[color:var(--ol-line)] bg-white px-3.5 py-2.5 text-[13px] leading-[1.6] text-[color:var(--ol-ink)] outline-none transition focus:border-[color:var(--ol-primary)] focus:ring-2 focus:ring-[color:var(--ol-primary)]/20"
+            rows={inputMode === "json" ? 6 : 2}
+            className={`${inputMode === "json" ? "min-h-[140px] max-h-[320px] font-mono" : "min-h-[48px] max-h-[120px]"} w-full resize-none rounded-[14px] border border-[color:var(--ol-line)] bg-white px-3.5 py-2.5 text-[13px] leading-[1.6] text-[color:var(--ol-ink)] outline-none transition focus:border-[color:var(--ol-primary)] focus:ring-2 focus:ring-[color:var(--ol-primary)]/20`}
             onKeyDown={(event) => {
               if (isPlaygroundSubmitKey({
                 key: event.key,
@@ -740,7 +752,7 @@ export function PlaygroundRunner({
         </label>
 
         {storageError && <p role="status" className="mt-2 text-[12px] text-[color:var(--ol-amber)]">{copy.storageUnavailable}</p>}
-        {turns.filter((turn) => turn.status === "failed" && turn.request).map((turn) => (
+        {turns.filter((turn) => turn.status === "failed" && turn.request && turn.resumeOnReload !== false).map((turn) => (
           <button key={turn.id} type="button" className="ol-mini-btn mt-2" disabled={running || authLoading}
             onClick={() => setTurns((items) => items.map((item) => item.id === turn.id
               ? { ...item, status: "running", errorMessage: undefined, completedAt: undefined } : item))}>
@@ -748,6 +760,7 @@ export function PlaygroundRunner({
           </button>
         ))}
 
+        {turns.filter(turn => turn.status === "failed" && turn.request && turn.resumeOnReload === false && ["edit", "conflict"].includes(turn.submissionAction ?? "none")).map(turn => <button key={turn.id} type="button" className="ol-mini-btn mt-2" disabled={running || authLoading} onClick={() => { setInput(JSON.stringify(turn.inputPayload, null, 2)); setInputError(""); inputRef.current?.focus(); }}>{turn.submissionAction === "conflict" ? resourceJourneyMessages[locale].prepareResend : resourceJourneyMessages[locale].editInput} · {copy.turn(turn.sequence)}</button>)}
         <div className="mt-1.5 flex items-center justify-between gap-3">
           {/* 字段名可以很长（include_appendix 这种），不换行就会压到发送按钮上。 */}
           <span className="min-w-0 flex-1 break-words text-[11.5px] font-extrabold text-[color:var(--ol-subtle)] [overflow-wrap:anywhere]">

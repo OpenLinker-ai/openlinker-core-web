@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getLocale } from "@/lib/i18n-server";
 import { fetchSkillPackageAgents } from "@/lib/creator-agent";
@@ -11,18 +11,16 @@ export default async function SkillPackagePage({
   params,
   searchParams,
 }: {
-  params: Promise<{ packageId: string }>;
+  params: Promise<{ packageId: string; section: string }>;
   searchParams: Promise<{ version?: string | string[]; associate?: string | string[] }>;
 }) {
-  const { packageId } = await params;
+  const { packageId, section } = await params;
+  if (section !== "associate" && section !== "publish") notFound();
   const query = await searchParams;
   const initialVersionId = typeof query.version === "string" ? query.version : query.version ? "invalid" : "";
-  const associate = query.associate === "1";
-  if (associate) redirect(`/hub/skills/${encodeURIComponent(packageId)}/associate${initialVersionId ? `?${new URLSearchParams({ version: initialVersionId })}` : ""}`);
   const context = new URLSearchParams();
   if (initialVersionId) context.set("version", initialVersionId);
-  if (associate) context.set("associate", "1");
-  const callback = `/hub/skills/${encodeURIComponent(packageId)}${context.size ? `?${context}` : ""}`;
+  const callback = `/hub/skills/${encodeURIComponent(packageId)}/${section}${context.size ? `?${context}` : ""}`;
   const session = await auth();
   if (!session?.jwt)
     redirect(
@@ -35,7 +33,7 @@ export default async function SkillPackagePage({
   ]);
   return (
     <CreatorHubFrame active="skills" locale={locale} coreCopy>
-      <SkillPackages {...{ locale, agents, skills, packageId, initialVersionId, associate }} />
+      <SkillPackages {...{ locale, agents, skills, packageId, initialVersionId }} managementSection={section} />
     </CreatorHubFrame>
   );
 }
