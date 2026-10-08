@@ -23,6 +23,7 @@ import type {
   SkillPackageVersion,
   SkillPackageContents,
 } from "@/lib/skill-packages";
+import { skillInstallMessages } from "@/messages/skill-install";
 import { skillAssociationMessages } from "@/messages/skill-association";
 import { resourceUseMessages } from "@/messages/resource-use";
 import type { Locale } from "@/lib/i18n";
@@ -34,41 +35,22 @@ export function PublicSkillActions({
   version,
   locale,
   mode = "platform",
+  associateOnly = false,
 }: {
   packageId: string;
   version: SkillPackageVersion;
   locale: Locale;
   mode?: "platform" | "local";
+  associateOnly?: boolean;
 }) {
   const c = resourceSharingMessages[locale];
   const u = resourceUseMessages[locale];
+  const install = skillInstallMessages[locale];
   const origin = useBrowserOrigin();
   const path = skillVersionPath(packageId, version.id);
   const apiBase = `/api/v1/skill-packages/${packageId}/versions/${version.id}`;
-  return (
-    <div className="space-y-6">
-      {mode === "platform" && <section className="space-y-3">
-        <ImportVersion
-          locale={locale}
-          reference={{
-            source_package_id: packageId,
-            source_version_id: version.id,
-            expected_digest: version.digest,
-          }}
-        />
-        <p className="text-xs leading-relaxed text-[color:var(--ol-muted)]">
-          {c.importHint}
-        </p>
-        <ol className="list-inside list-decimal space-y-2 text-sm">
-          {u.platformSteps.map((step) => (
-            <li key={step}>{step}</li>
-          ))}
-        </ol>
-        <p className="text-xs leading-relaxed text-[color:var(--ol-muted)]">
-          {u.platformHint}
-        </p>
-      </section>}
-      <section className="space-y-3">
+  const sharing = (
+      <div className="space-y-3">
         <CopyContent
           key={version.id + "-reference"}
           locale={locale}
@@ -83,7 +65,38 @@ export function PublicSkillActions({
           label={c.copyLink}
           value={origin ? `${origin}${path}` : ""}
         />
-      </section>
+      </div>
+  );
+  return (
+    <div className="space-y-6">
+      {mode === "platform" && <section className="space-y-3">
+        <ImportVersion
+          locale={locale}
+          associateOnly={associateOnly}
+          reference={{
+            source_package_id: packageId,
+            source_version_id: version.id,
+            expected_digest: version.digest,
+          }}
+        />
+        {associateOnly ? <p className="text-sm text-[color:var(--ol-muted)]">{install.associateHint}</p> : <>
+        <p className="text-xs leading-relaxed text-[color:var(--ol-muted)]">
+          {c.importHint}
+        </p>
+        <ol className="list-inside list-decimal space-y-2 text-sm">
+          {u.platformSteps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
+        <p className="text-xs leading-relaxed text-[color:var(--ol-muted)]">
+          {u.platformHint}
+        </p>
+        </>}
+      </section>}
+      {associateOnly ? <details className="space-y-3 text-sm">
+        <summary className="cursor-pointer font-semibold">{install.share}</summary>
+        {sharing}
+      </details> : <section>{sharing}</section>}
       {mode === "local" && <>
       <section className="space-y-3 border-t border-[color:var(--ol-line)] pt-5">
         <p className="text-xs leading-relaxed text-[color:var(--ol-muted)]">
@@ -140,9 +153,11 @@ type Reference = ReturnType<typeof parseSkillReference>;
 function ImportVersion({
   locale,
   reference,
+  associateOnly = false,
 }: {
   locale: Locale;
   reference: Reference;
+  associateOnly?: boolean;
 }) {
   const c = resourceSharingMessages[locale];
   const api = useApi();
@@ -156,7 +171,7 @@ function ImportVersion({
         href="/login"
         className="ol-mini-btn bg-[color:var(--ol-primary)]! text-white!"
       >
-        {c.login}
+        {associateOnly ? skillInstallMessages[locale].associate : c.login}
       </AuthLink>
     );
   async function importVersion(associate: boolean) {
@@ -183,9 +198,9 @@ function ImportVersion({
     <div>
       <div className="flex flex-wrap gap-2">
         <button className="ol-mini-btn bg-[color:var(--ol-primary)]! text-white!" disabled={busy} onClick={() => void importVersion(true)}>
-          {busy ? c.importing : flow.importAssociate}
+          {busy ? c.importing : associateOnly ? skillInstallMessages[locale].associate : flow.importAssociate}
         </button>
-        <button className="ol-mini-btn" disabled={busy} onClick={() => void importVersion(false)}>{flow.importOnly}</button>
+        {!associateOnly && <button className="ol-mini-btn" disabled={busy} onClick={() => void importVersion(false)}>{flow.importOnly}</button>}
       </div>
       {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
     </div>
