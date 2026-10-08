@@ -202,9 +202,14 @@ export const coreUserTokenMessages = {
       run: "Run",
       task: "Task",
       workflow: "Workflow",
-      agentToken: "Agent Token",
+      agentToken: "Agent Token", skillPackage: "Skill Package", skillBinding: "Skill Binding",
     },
     permissionCopy: {
+      "skill-packages:read": { label: "读取私有技能文件", description: "读取自己的技能包元数据与全部私有文件内容。" },
+      "skill-packages:import": { label: "导入公开技能版本", description: "将指定公开或不列出的已发布版本复制到自己的私有空间。" },
+      "skill-bindings:read": { label: "查看 Agent 技能关联", description: "读取自有 Agent 的技能版本关联与加载状态；可限定 Agent。" },
+      "skill-bindings:manage": { label: "管理 Agent 技能关联", description: "关联、切换固定版本或解除自有 Agent 的技能包；可限定 Agent。" },
+
       "agents:read": { label: "读取 Agent", description: "通过需鉴权入口查看 Agent。" },
       "agents:run": { label: "调用 Agent", description: "创建 Agent Run，可限制到指定 Agent。" },
       "agents:create": { label: "接入新 Agent", description: "进入自动接入流程；让 Agent 自行注册还需要 Agent Token 签发权限。" },
@@ -323,9 +328,14 @@ export const coreUserTokenMessages = {
       run: "Run",
       task: "Task",
       workflow: "Workflow",
-      agentToken: "Agent Token",
+      agentToken: "Agent Token", skillPackage: "Skill Package", skillBinding: "Skill Binding",
     },
     permissionCopy: {
+      "skill-packages:read": { label: "Read private skill files", description: "Read your package metadata and all private skill file contents." },
+      "skill-packages:import": { label: "Import published skill versions", description: "Copy a fixed public or unlisted published version into your private space." },
+      "skill-bindings:read": { label: "Read Agent skill bindings", description: "Read your Agents’ fixed-version bindings and load status; can be scoped to an Agent." },
+      "skill-bindings:manage": { label: "Manage Agent skill bindings", description: "Bind, change a fixed version or detach packages on your Agents; can be scoped to an Agent." },
+
       "agents:read": { label: "Read Agents", description: "View Agents through authenticated entry points." },
       "agents:run": { label: "Invoke Agents", description: "Create Agent Runs, optionally limited to selected Agents." },
       "agents:create": { label: "Connect new Agents", description: "Enter automated onboarding. Self-registration also requires an Agent Token." },

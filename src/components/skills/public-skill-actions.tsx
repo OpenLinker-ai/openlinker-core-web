@@ -2,7 +2,9 @@
 import { ResourceMetadataFields } from "@/components/resources/resource-metadata-fields";
 import type { ResourceMetadata } from "@/lib/resource-metadata";
 import { resourceMetadataMessages } from "@/messages/resource-metadata";
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
+import { useBrowserOrigin } from "@/components/resources/use-browser-origin";
+export { useBrowserOrigin } from "@/components/resources/use-browser-origin";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -27,14 +29,6 @@ import type { Locale } from "@/lib/i18n";
 import { resourceSharingMessages } from "@/messages/resource-sharing";
 const inputClass =
   "w-full rounded-xl border border-[color:var(--ol-line)] bg-[color:var(--ol-surface)] px-3 py-2 text-sm";
-const subscribe = () => () => {};
-export function useBrowserOrigin() {
-  return useSyncExternalStore(
-    subscribe,
-    () => window.location.origin,
-    () => "",
-  );
-}
 export function PublicSkillActions({
   packageId,
   version,

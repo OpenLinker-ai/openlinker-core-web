@@ -61,5 +61,8 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
+      - name: Test complete Core Web frontend suite
+        run: node --no-warnings --test scripts/*.test.mjs
+
       - name: Build
         run: npm run build

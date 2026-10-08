@@ -20,8 +20,8 @@ export async function skillResourceMetadata(params: { packageId: string; version
   let description = item.description;
   if (params.versionId) {
     const version = (await readPublicResource(
-      `${path}/versions/${encodeURIComponent(params.versionId)}`,
-    )) as { contents: SkillPackageContents };
+      `${path}/versions/${encodeURIComponent(params.versionId)}/metadata`,
+    )) as { contents: Pick<SkillPackageContents, "name" | "description"> };
     name = version.contents.name;
     description = version.contents.description;
   }

@@ -1,4 +1,6 @@
 export const CORE_PERMISSION_GROUPS = [
+ { id: "skillPackage", permissions: ["skill-packages:read", "skill-packages:import"] },
+ { id: "skillBinding", permissions: ["skill-bindings:read", "skill-bindings:manage"] },
   {
     id: "agent",
     permissions: ["agents:read", "agents:run", "agents:create"],
@@ -37,6 +39,10 @@ export const CORE_PERMISSIONS = CORE_PERMISSION_GROUPS.flatMap((group) => [
 ]) as CorePermission[];
 
 export const CORE_RESOURCE_TYPE: Record<CorePermission, string> = {
+ "skill-packages:read": "skill_package",
+ "skill-packages:import": "skill_package",
+ "skill-bindings:read": "agent",
+ "skill-bindings:manage": "agent",
   "agents:read": "agent",
   "agents:run": "agent",
   "agents:create": "agent",
@@ -54,6 +60,7 @@ export const CORE_RESOURCE_TYPE: Record<CorePermission, string> = {
 };
 
 export const AGENT_SCOPED_PERMISSIONS = new Set<CorePermission>([
+ "skill-bindings:read", "skill-bindings:manage",
   "agents:run",
   "agent-tokens:read",
   "agent-tokens:issue",

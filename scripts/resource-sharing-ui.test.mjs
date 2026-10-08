@@ -507,7 +507,7 @@ test("Skill detail preserves directory context through version links while only 
   const calls = [];
   globalThis.resourceTestPublicFetch = async (path) => {
     calls.push(path);
-    return path.endsWith(version.id)
+    return path.endsWith(version.id + "/metadata")
       ? {
           ...version,
           contents,
@@ -1016,4 +1016,33 @@ test('resource route boundaries reject unknown child pages and child metadata do
  for(const section of ['try','reference','overview'])await assert.rejects(()=>PlatformRoute({params:Promise.resolve({section}),searchParams:Promise.resolve({})}),/NOT_FOUND/);
  globalThis.resourceTestPublicFetch=async()=>({name:'Demo',description:'Description',visibility:'public',connection_mode:'mcp_server'});
  assert.equal((await generateMetadata({params:Promise.resolve({slug:'demo',section:'reference'})})).robots.index,false);
+});
+
+const {SkillQuickInstall}=await import('../src/components/skills/skill-quick-install.tsx');
+test('quick install changes client/scope and copies exactly without network or execution',async()=>{
+ let copied='',calls=0;Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async(value)=>{copied=value}}});
+ globalThis.resourceTestFetch=async()=>{calls++;};
+ await mount(SkillQuickInstall,{packageId:item.id,versionId:version.id,providers:['claude','codex'],compatible:true,locale:'en',filesHref:'/fixed/files'},async(host,root)=>{
+  let [client,scope]=host.querySelectorAll('select');assert.equal(client.value,'claude-code');assert.equal(scope.value,'project');
+  await act(async()=>{client.value='codex';client.dispatchEvent(new Event('change',{bubbles:true}));scope.value='global';scope.dispatchEvent(new Event('change',{bubbles:true}));});
+  const button=host.querySelector('button');await act(async()=>button.click());
+  assert.match(copied,/npx skills@1.7.1 add "https:\/\/web.example.test\/api\/v1\/skill-packages\/.*\/archive.zip" --agent codex --copy -g$/);
+  assert.match(host.textContent,/~\/\.agents\/skills/);assert.equal(calls,0);assert.ok(host.querySelector('a[href="/fixed/files"]'));
+  const changed={packageId:item.id,versionId:'00000000-0000-4000-8000-000000000004',providers:['claude'],compatible:true,locale:'en',filesHref:'/new/files'};
+  await act(async()=>root.render(createElement(SkillQuickInstall,{...changed,key:changed.versionId})));
+  assert.equal(host.querySelectorAll('option').length,3);assert.equal(host.querySelector('select').value,'claude-code');assert.equal(host.querySelectorAll('select')[1].value,'project');
+  assert.match(host.querySelector('pre').textContent,/000000000004\/archive.zip/);assert.doesNotMatch(host.querySelector('pre').textContent,/--copy -g/);
+ });
+ await mount(SkillQuickInstall,{packageId:item.id,versionId:version.id,providers:['claude'],compatible:false,locale:'en',filesHref:'/fixed/files'},async(host)=>{assert.equal(host.querySelector('select'),null);assert.equal(host.querySelector('button'),null);assert.match(host.textContent,/does not meet local client conventions/);});
+});
+test('public non-file pages load metadata and never pass full contents to client actions',async()=>{
+ const calls=[];const fixture={...version,local_install_compatible:true,contents:{name:'fixed-title',description:'fixed-description',required_commands:[]},publication_metadata:{release_notes:'Public notes'},published_at:'2026-10-08T00:00:00Z'};
+ globalThis.resourceTestPublicFetch=async(path)=>{calls.push(path);return path.includes('/versions/')?(path.endsWith('/metadata')?fixture:{...fixture,contents:{...fixture.contents,files:{'SKILL.md':'FULL-SENTINEL'}}}):{...item,visibility:'public',versions:[version]};};
+ for(const section of ['overview','install','use','versions']){
+  const element=await PublicSkillPage({packageId:item.id,versionId:version.id,section});
+  const visit=node=>{if(!node||typeof node!=='object')return;if(node.type===PublicSkillActions){assert.equal(Object.hasOwn(node.props.version,'contents'),false);assert.equal(Object.hasOwn(node.props.version,'source_version_id'),false);}for(const child of [node.props?.children].flat(Infinity))visit(child);};visit(element);
+  await mount(()=>element,{},async(host)=>{assert.match(host.textContent,/fixed-title/);assert.doesNotMatch(host.textContent,/FULL-SENTINEL/);});
+  assert.ok(calls.at(-1).endsWith('/metadata'));
+ }
+ const element=await PublicSkillPage({packageId:item.id,versionId:version.id,section:'files'});await mount(()=>element,{},async(host)=>assert.match(host.textContent,/FULL-SENTINEL/));assert.ok(calls.at(-1).endsWith(version.id));
 });
