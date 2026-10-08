@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { SkillQuickInstall } from "@/components/skills/skill-quick-install";
+import { SkillPlatformCLI } from "@/components/skills/skill-platform-cli";
 import { ResourceNavigation, ResourceNextStep } from "@/components/resources/resource-navigation";
 import { ResourceAnchorRedirect } from "@/components/resources/resource-anchor-redirect";
 import { skillSectionHref, type SkillSection } from "@/lib/resource-journey";
@@ -12,7 +14,6 @@ import { apiFetch, ApiError } from "@/lib/api";
 import { getLocale } from "@/lib/i18n-server";
 import {
   skillVersionPath,
-  skillLocalNameCompatible,
   resourceReturnPath,
   withResourceReturn,
 } from "@/lib/resource-sharing.mjs";
@@ -24,7 +25,8 @@ import type {
 import { resourceSharingMessages } from "@/messages/resource-sharing";
 import { resourceUseMessages } from "@/messages/resource-use";
 type Version = SkillPackageVersion & {
-  contents: SkillPackageContents;
+  contents: Omit<SkillPackageContents, "files"> & { files?: Record<string, string> };
+  local_install_compatible?: boolean;
   visibility: string;
 };
 async function load<T>(path: string): Promise<T> {
@@ -65,9 +67,16 @@ export async function PublicSkillPage({
     );
   }
   const version = await load<Version>(
-    `/api/v1/skill-packages/${encodeURIComponent(packageId)}/versions/${encodeURIComponent(versionId)}`,
+    `/api/v1/skill-packages/${encodeURIComponent(packageId)}/versions/${encodeURIComponent(versionId)}${section === "files" ? "" : "/metadata"}`,
   );
   const content = version.contents;
+  const compatible = version.local_install_compatible === true;
+  // Only explicit metadata crosses a client component boundary outside /files.
+  const actionVersion: SkillPackageVersion = {
+    id: version.id, version: version.version, digest: version.digest,
+    providers: version.providers, capability_ids: version.capability_ids, created_at: version.created_at,
+  };
+  const quickInstall = <SkillQuickInstall key={version.id} packageId={item.id} versionId={version.id} providers={version.providers} compatible={compatible} locale={locale} filesHref={href("files")} />;
   const published = version.published_at
     ? new Date(version.published_at)
     : null;
@@ -110,6 +119,7 @@ export async function PublicSkillPage({
         ] as [SkillSection, string][]).map(([view, label]) => ({ href: href(view), label, current: section === view }))} />
         <div className="max-w-4xl space-y-6">
           {section === "overview" && <>
+            {quickInstall}
             <section
               id="skill-overview"
               className="ol-panel scroll-mt-32 space-y-4 p-6"
@@ -140,7 +150,7 @@ export async function PublicSkillPage({
               <p className="text-sm text-[color:var(--ol-muted)]">
                 {c.localHint}
               </p>
-              {!skillLocalNameCompatible(content.name, content.description) && (
+              {!compatible && (
                 <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
                   {c.incompatible}
                 </p>
@@ -157,7 +167,7 @@ export async function PublicSkillPage({
             <div id="skill-files" className="scroll-mt-32">
               <PublicSkillFiles
                 key={version.id}
-                files={content.files}
+                files={content.files ?? {}}
                 locale={locale}
               />
             </div>
@@ -198,11 +208,13 @@ export async function PublicSkillPage({
                 {c.digestHint}
               </p>
             </section>}
+          {section === "install" && quickInstall}
           {(section === "use" || section === "install") && <>
             <section id="use-version" className="ol-panel p-6">
               <h2 className="mb-5 text-lg font-bold">{section === "use" ? u.platformUse : u.localUse}</h2>
-              <PublicSkillActions key={version.id} packageId={item.id} version={version} locale={locale} mode={section === "use" ? "platform" : "local"} />
+              <PublicSkillActions key={version.id} packageId={item.id} version={actionVersion} locale={locale} mode={section === "use" ? "platform" : "local"} />
             </section>
+            {section === "use" && <SkillPlatformCLI packageId={item.id} versionId={version.id} digest={version.digest} locale={locale} />}
             <ResourceNextStep title={section === "use" ? j.local : j.platform} hint={section === "use" ? j.localHint : j.platformHint} href={href(section === "use" ? "install" : "use")} label={section === "use" ? j.local : j.platform} />
           </>}
         </div>

@@ -12,7 +12,7 @@ export const cliLoginMessages = {
     requestFailed: "无法读取授权请求。请核对验证码，或在终端重新发起登录。",
     decisionFailed: "无法确认授权结果。请查看终端状态，必要时重新发起登录。",
     quotaExceeded: "有效 User Token 已达上限。请先在 User Token 设置页撤销旧凭据，再重试授权。",
-    scopes: { "agents:read": "查看可访问的 Agent", "agents:run": "调用可访问的 Agent", "runs:read": "查看运行记录和结果", "runs:cancel": "取消有权操作的运行", "tasks:create": "创建任务" },
+    scopes: { "agents:read": "查看可访问的 Agent", "agents:run": "调用可访问的 Agent", "runs:read": "查看运行记录和结果", "runs:cancel": "取消有权操作的运行", "tasks:create": "创建任务", "skill-packages:read": "读取自己的技能包及全部私有技能文件内容", "skill-packages:import": "导入已发布技能版本到私有空间", "skill-bindings:read": "查看自有 Agent 的技能关联", "skill-bindings:manage": "管理自有 Agent 的固定版本技能关联" },
   },
   en: {
     title: "Authorize OpenLinker CLI", account: "Signed in as", instance: "Instance",
@@ -27,6 +27,6 @@ export const cliLoginMessages = {
     requestFailed: "Could not load this request. Check the code or start a new sign-in from your terminal.",
     decisionFailed: "Could not confirm the result. Check your terminal and start a new sign-in if needed.",
     quotaExceeded: "Your active User Token limit has been reached. Revoke an old token in User Token settings, then retry authorization.",
-    scopes: { "agents:read": "View accessible Agents", "agents:run": "Call accessible Agents", "runs:read": "View runs and results", "runs:cancel": "Cancel runs you can manage", "tasks:create": "Create tasks" },
+    scopes: { "agents:read": "View accessible Agents", "agents:run": "Call accessible Agents", "runs:read": "View runs and results", "runs:cancel": "Cancel runs you can manage", "tasks:create": "Create tasks", "skill-packages:read": "Read your packages and all private skill file contents", "skill-packages:import": "Import published skill versions into your private space", "skill-bindings:read": "Read your Agents’ skill bindings", "skill-bindings:manage": "Manage your Agents’ fixed-version skill bindings" },
   },
 };
