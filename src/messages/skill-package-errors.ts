@@ -1,5 +1,7 @@
 export const skillPackageErrorMessages = {
   zh: {
+    SKILL_PACKAGE_BINDING_CONFLICT: "关联已在其他页面更新或解除。本次操作未执行，请查看最新关联后重新确认。",
+    SKILL_PACKAGE_COMBINATION_INCOMPATIBLE: "没有同一个执行端能加载这组技能包。请调整版本或解除不兼容的包。",
     SKILL_PACKAGE_METADATA_INVALID:
       "来源资料不符合格式或长度要求，请检查后重试。",
     SKILL_PACKAGE_METADATA_FROZEN: "该版本资料已固定，请创建新版本后修改。",
@@ -43,6 +45,8 @@ export const skillPackageErrorMessages = {
     SKILL_PACKAGE_REQUEST_INVALID: "请求格式无效或超过大小限制。",
   },
   en: {
+    SKILL_PACKAGE_BINDING_CONFLICT: "This association was changed or removed elsewhere. Nothing was changed by this request. Review the latest association before confirming again.",
+    SKILL_PACKAGE_COMBINATION_INCOMPATIBLE: "No single execution host can load this package combination. Choose compatible versions or remove a conflicting package.",
     SKILL_PACKAGE_METADATA_INVALID:
       "Information has an invalid format or exceeds a field limit.",
     SKILL_PACKAGE_METADATA_FROZEN:

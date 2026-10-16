@@ -10,13 +10,13 @@ import type { SkillPackageAgent } from "@/lib/skill-packages";
 export function AgentResourcesPanel({ agent, locale }: { agent: SkillPackageAgent; locale: Locale }) {
   const [section, setSection] = useState<"skills" | "mcp">("skills");
   const copy = locale === "zh" ? {
-    title: "Skill 与 MCP", skills: "Skill 技能包", mcp: "MCP 工具",
+    title: "技能与工具", skills: "Skill 技能包", mcp: "MCP 接入说明",
     hint: "为当前 Agent 选择技能指令，或查看 MCP 工具的配置方式。",
-    browse: "浏览 MCP 服务", connect: "查看客户端连接步骤",
+    browse: "浏览 MCP 服务", connect: "外部客户端连接平台",
   } : {
-    title: "Skills and MCP", skills: "Skill packages", mcp: "MCP tools",
+    title: "Skills and tools", skills: "Skill packages", mcp: "MCP setup guide",
     hint: "Choose skill instructions for this Agent or review how to configure MCP tools.",
-    browse: "Browse MCP services", connect: "View client setup steps",
+    browse: "Browse MCP services", connect: "Connect an external client to the platform",
   };
   return <section id="agent-resources" className="col-span-full min-w-0 scroll-mt-28 space-y-4" aria-label={copy.title}>
     <header className="space-y-2">

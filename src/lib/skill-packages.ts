@@ -63,6 +63,9 @@ export type SkillPackageBindings = {
   lifecycle_status?: "active" | "disabled";
   max_bindings?: number;
   host_status?: "none" | "incompatible" | "compatible";
+  provider_sets?: string[][];
+  bindings_compatible?: boolean;
+  compatible_session_online?: boolean;
   items: SkillPackageBinding[];
   supported: boolean;
   providers: string[];
