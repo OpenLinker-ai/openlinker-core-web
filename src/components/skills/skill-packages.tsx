@@ -935,7 +935,7 @@ function BindDialog({
   const currentBinding = bindings.data?.items.find((binding) => binding.package_id === packageId);
   // Re-selecting a bound package must not silently upgrade it to the newest version.
   const pinnedVersionId = versionId || currentBinding?.version_id;
-  const version = pinnedVersionId ? item?.versions.find((v) => v.id === pinnedVersionId) : item?.versions[0];
+  const version = pinnedVersionId ? item?.versions.find((v) => v.id === pinnedVersionId) : editing ? undefined : item?.versions[0];
   const preview = useQuery({
     queryKey: [...key, "contents", packageId, version?.id, api.ownerId],
     enabled: Boolean(version) && api.isAuthenticated,
@@ -948,7 +948,7 @@ function BindDialog({
   const changeKey = currentBinding && version && currentBinding.version_id !== version.id ? `${agentId}:${packageId}:${currentBinding.binding_id}:${version.id}` : "";
   const compatible = Boolean(selectedAgent && !wrongAgentMode && bindings.data && version && !bindings.isError && !bindings.isFetching && !issue && !conflict && (!changeKey || confirmedChange === changeKey));
   async function reviewLatest() {
-    setVersionId("");
+    setVersionId(editing ? "" : initialVersionId);
     setConfirmedChange("");
     const result = await bindings.refetch();
     if (!result.isError) { setConflict(false); setError(""); }
@@ -967,7 +967,7 @@ function BindDialog({
         queryKey: [...key, "bindings", agentId],
       });
       const binding = result.items.find((value) => value.package_id === packageId && value.version_id === version.id);
-      if (!binding) throw new Error("binding response missing");
+      if (!binding) throw Object.assign(new Error(copy.bindingConflict), { code: "SKILL_PACKAGE_BINDING_CONFLICT" });
       setUnchanged(bindings.data?.items.some((value) => value.binding_id === binding.binding_id && value.version_id === binding.version_id) ?? false);
       setSaved(binding);
       toast.success(copy.saved);
@@ -1098,7 +1098,7 @@ function BindDialog({
               onRetry={() => void bindings.refetch()}
             />
           )}
-          {item && !version && <p role="alert">{flow.versionMissing}</p>}
+          {item && !version && <p role="alert">{editing && !currentBinding ? copy.removedBeforeEdit : flow.versionMissing}</p>}
           {bindings.data && version && (
             <div className="space-y-2 rounded-xl bg-[color:var(--ol-soft)] p-3 text-sm">
               <p role="status">{wrongAgentMode ? copy.runtimeOnly : issue === "unsupported" ? (bindings.data.host_status === "none" ? flow.hostNone : bindings.data.host_status === "incompatible" ? flow.hostIncompatible : copy.unsupported) : issue === "incompatible" ? copy.incompatible : issue === "combination" ? copy.combinationIncompatible : issue ? flow[issue] : flow.ready}</p>

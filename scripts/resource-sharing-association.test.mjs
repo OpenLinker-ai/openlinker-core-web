@@ -585,3 +585,36 @@ test("offline compatibility is distinct from no sessions and incompatible bindin
     assert.doesNotMatch(host.textContent,/No execution session is available/);
   });
 });
+
+for(const removed of [false,true]) test(`embedded conflict preserves explicit version after ${removed?'removal':'upgrade'}`,async()=>{
+ let server={...binding};const writes=[];
+ globalThis.resourceTestFetch=async(path,options={})=>{
+  if(options.method){writes.push(options);if(options.body.expected_binding_id!==(server?.binding_id??""))throw Object.assign(new Error("conflict"),{code:"SKILL_PACKAGE_BINDING_CONFLICT"});server={...binding,binding_id:"saved-generation",version_id:options.body.version_id};return {...eligible,items:[server]};}
+  return fixtureFetch({...eligible,items:server?[server]:[]})(path,options);
+ };
+ await mount(SkillPackages,{...pageProps,associate:false,managementSection:"associate"},async host=>{
+  const select=host.querySelector('select');await act(async()=>{select.value=agent.id;select.dispatchEvent(new Event('change',{bubbles:true}));});await settle();
+  server=removed?null:{...binding,version_id:"new-version",version:"2.0.0",binding_id:"new-binding"};
+  await act(async()=>button(host,"Associate with Agent").click());await settle();
+  assert.equal(writes.length,1);assert.equal(button(host,"Associate with Agent").disabled,true);
+  await act(async()=>button(host,"Review latest association").click());await settle();
+  assert.equal(host.querySelectorAll('select')[2].value,vid);assert.equal(host.querySelectorAll('select')[2].disabled,true);
+  if(!removed){assert.equal(button(host,"Associate with Agent").disabled,true);await act(async()=>host.querySelector('input[type="checkbox"]').click());await settle();}
+  await act(async()=>button(host,"Associate with Agent").click());await settle();
+  assert.deepEqual(writes[1].body,{version_id:vid,expected_binding_id:removed?"":"new-binding"});
+ });
+});
+
+test("managing a removed cached card requires an explicit version choice",async()=>{
+ let server={...binding};const writes=[];
+ globalThis.resourceTestFetch=async(path,options={})=>fixtureFetch({...eligible,items:server?[server]:[]},writes)(path,options);
+ await mount(SkillPackages,{locale:"en",agents:[agent],skills:[{id:"fixture"}],agentId:agent.id},async host=>{
+  server=null;
+  await act(async()=>button(host,"Manage version").click());await settle();
+  const dialog=host.querySelector('[role="dialog"]'),select=dialog.querySelectorAll('select')[2];
+  assert.match(dialog.textContent,/removed elsewhere/);assert.equal(select.value,"");assert.equal(button(dialog,"Associate with Agent").disabled,true);
+  await act(async()=>{select.value=vid;select.dispatchEvent(new Event('change',{bubbles:true}));});await settle();
+  assert.equal(writes.length,0);await act(async()=>button(dialog,"Associate with Agent").click());await settle();
+  assert.deepEqual(writes[0].body,{version_id:vid,expected_binding_id:""});
+ },{staleTime:30000,refetchOnWindowFocus:false});
+});
