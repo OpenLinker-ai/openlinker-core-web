@@ -68,6 +68,7 @@ export type SkillPackageBindings = {
   providers: string[];
 };
 export type SkillPackageAgent = {
+  connection_mode?: "direct_http" | "mcp_server" | "runtime";
   id: string;
   slug: string;
   name: string;

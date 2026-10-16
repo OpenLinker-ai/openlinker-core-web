@@ -11,7 +11,7 @@ const mocks = {
 
   "next-auth/react": 'export const useSession=()=>({data:{user:{id:globalThis.associationOwner??"owner"}}});',
   "@/components/ui/dialog": 'import React from "react";export const Dialog=({children})=>children;export const DialogContent=({children})=>React.createElement("div",{role:"dialog"},children);export const DialogHeader=({children})=>children;export const DialogTitle=({children})=>React.createElement("h2",{},children);export const DialogDescription=({children})=>React.createElement("p",{},children);',
-  "@/components/skill/skill-picker": 'export const SkillPicker=()=>null;',
+  "@/hooks/use-client-locale": 'export const useClientLocale=()=>"en";',
   "@/components/playground/browser-stage": 'export const PlaygroundBrowserStage=()=>null;',
   "@/components/playground/detail-panel": 'export const PlaygroundDetailPanel=()=>null;',
   "@/components/playground/run-trace": 'export const RunTrace=()=>null;',
@@ -23,7 +23,7 @@ const mocks = {
     "const fetch=(...a)=>globalThis.resourceTestFetch(...a);export const useApi=()=>({isAuthenticated:globalThis.resourceTestAuthenticated!==false,fetch:globalThis.resourceTestFetchOverride??fetch});",
 
   "next/navigation":
-    'export const notFound=()=>{throw new Error("NOT_FOUND")}; export const redirect=url=>{throw new Error("REDIRECT:"+url)}; export const usePathname=()=>window.location.pathname;export const useSearchParams=()=>new URLSearchParams(window.location.search);export const useRouter=()=>({push:(url)=>{globalThis.resourceTestDestination=url;}});',
+    'export const notFound=()=>{throw new Error("NOT_FOUND")}; export const redirect=url=>{throw new Error("REDIRECT:"+url)}; export const usePathname=()=>window.location.pathname;export const useSearchParams=()=>new URLSearchParams(window.location.search);export const useRouter=()=>({refresh:()=>{},push:(url)=>{globalThis.resourceTestDestination=url;}});',
   "next/link":
     'import React from "react"; export default function Link(p){return React.createElement("a",p,p.children);}',
   "@/components/auth/auth-link":
@@ -135,7 +135,7 @@ function fixtureFetch(data=eligible, writes=[]) {
   return async(path, options={})=>{
     if(options.method){writes.push({path,...options});return {...data,items:[binding]};}
     if(path.endsWith("/skill-packages") && path.includes("/agents/")) return data;
-    if(path.endsWith("/versions/"+vid)) return contents;
+    if(path.endsWith("/versions/"+vid) || path.endsWith("/versions/new-version")) return contents;
     if(path.endsWith("/skill-packages/"+pkg)) return item;
     if(path.endsWith("/skill-packages")) return {items:[item]};
     throw new Error("unexpected "+path);
@@ -369,4 +369,120 @@ test('ordinary format/pattern Agent keeps natural task mapping; examples and mis
  assert.equal(runner(await invoke({example:'e',autorun:'1'})).autorun,false);
  assert.equal(runner(await invoke({prefill:'Original text',example:'e',autorun:'1'})).autorun,false);
  assert.equal(runner(await invoke({autorun:'1'})).autorun,false);
+});
+
+const { AgentResourcesPanel } = await import("../src/components/creator/agent-resources-panel.tsx");
+test("Agent package chooser retains pinned version, locks Agent and searches without writes",async()=>{
+ const writes=[]; const reads=[]; globalThis.resourceTestFetch=async(path,options)=>{reads.push(path);return fixtureFetch({...eligible,items:[binding]},writes)(path,options);};
+ await mount(SkillPackages,{locale:"en",agents:[agent],skills:[],agentId:agent.id},async host=>{
+  assert.equal(reads.some(path=>path.startsWith("/api/v1/skills")),false);
+  const pinnedLink=host.querySelector(`a[href="/hub/skills/${pkg}?version=${vid}"]`);assert.ok(pinnedLink);
+  assert.match(host.textContent,/Queued, active and retried runs/);
+  await act(async()=>button(host,"Choose skill package").click());await settle();
+  const dialog=host.querySelector('[role="dialog"]');const selects=dialog.querySelectorAll('select');
+  assert.equal(selects[0].value,agent.id);assert.equal(selects[0].disabled,true);
+  await act(async()=>{selects[1].value=pkg;selects[1].dispatchEvent(new Event('change',{bubbles:true}));});await settle();
+  assert.equal(dialog.querySelectorAll('select')[2].value,vid);
+  assert.match(dialog.textContent,/Currently pinned version: 1.0.0/);
+  const search=dialog.querySelector('input[type="search"]');
+  await act(async()=>{Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set.call(search,'no match');search.dispatchEvent(new Event('input',{bubbles:true}));});await settle();
+  assert.equal(dialog.querySelectorAll('select')[1].value,pkg);assert.equal(writes.length,0);
+  await act(async()=>button(dialog,"Associate with Agent").click());await settle();
+  assert.equal(writes.length,1);assert.equal(writes[0].body.version_id,vid);
+ });
+});
+test("explicit version upgrade remains reviewable before submission",async()=>{
+ const writes=[];globalThis.resourceTestFetch=fixtureFetch({...eligible,items:[binding]},writes);
+ await mount(SkillPackages,{locale:"en",agents:[agent],skills:[{id:"fixture"}],agentId:agent.id},async host=>{
+  await act(async()=>button(host,"Manage version").click());await settle();
+  const dialog=host.querySelector('[role="dialog"]');const versions=dialog.querySelectorAll('select')[2];
+  await act(async()=>{versions.value='new-version';versions.dispatchEvent(new Event('change',{bubbles:true}));});await settle();
+  assert.match(dialog.textContent,/Saving replaces the currently pinned version/);assert.match(dialog.textContent,/Pinned version to save: 2.0.0/);assert.equal(writes.length,0);
+ });
+});
+test("association removal waits for explicit confirmation and cancel keeps the binding",async()=>{
+ const writes=[];globalThis.resourceTestFetch=fixtureFetch({...eligible,items:[binding]},writes);
+ await mount(SkillPackages,{locale:"en",agents:[agent],skills:[{id:"fixture"}],agentId:agent.id},async host=>{
+  await act(async()=>button(host,"Remove association").click());assert.equal(writes.length,0);
+  assert.match(host.textContent,/files already cached on the host are not erased/);
+  await act(async()=>button(host,"Cancel").click());assert.equal(writes.length,0);
+  await act(async()=>button(host,"Remove association").click());
+  await act(async()=>button(host,"Confirm removal").click());await settle();
+  assert.equal(writes.length,1);assert.equal(writes[0].method,"DELETE");
+ });
+});
+test("MCP panel explains actual client scope without binding or starting runs",async()=>{
+ const writes=[];globalThis.resourceTestFetch=fixtureFetch({...eligible,items:[binding]},writes);
+ await mount(AgentResourcesPanel,{locale:"en",agent},async host=>{
+  await act(async()=>button(host,"MCP tools").click());await settle();
+  assert.match(host.textContent,/does not currently associate or distribute MCP tools to Runtime Agents/);
+  assert.ok(host.querySelector('a[href="/mcps/platform/connect"]'));assert.equal(writes.length,0);
+  assert.equal(host.querySelector('[role="dialog"]'),null);
+  await act(async()=>button(host,"Skill packages").click());await settle();
+  assert.ok(button(host,"Choose skill package"));assert.equal(writes.length,0);
+ });
+});
+
+
+test("disconnected hosts preserve pending status without claiming incompatibility", async () => {
+  globalThis.resourceTestFetch = fixtureFetch({...eligible, supported:false, host_status:"none", providers:[], items:[binding]});
+  await mount(SkillPackages, {locale:"en", agents:[{...agent, connection_mode:"runtime"}], skills:[], agentId:agent.id}, async host => {
+    assert.match(host.textContent, /Existing runs can remain queued/);
+    assert.match(host.textContent, /No load receipt yet/);
+    assert.doesNotMatch(host.textContent, /subsequent runs cannot load/);
+  });
+});
+
+test("incompatible hosts and aggregate load failures retain actionable distinctions", async () => {
+  globalThis.resourceTestFetch = fixtureFetch({...eligible, supported:false, host_status:"incompatible", providers:[], items:[{...binding,status:"failed",error_code:"dependency_missing"}]});
+  await mount(SkillPackages, {locale:"en", agents:[agent], skills:[], agentId:agent.id}, async host => {
+    assert.match(host.textContent, /subsequent runs cannot load/);
+    assert.match(host.textContent, /At least one skill package failed/);
+    assert.match(host.textContent, /does not identify which package/);
+  });
+});
+
+test("HTTP and MCP service Agents cannot be selected for runtime skill binding", async () => {
+  const writes=[];globalThis.resourceTestFetch=fixtureFetch(eligible,writes);
+  await mount(SkillPackages, {...pageProps,agents:[agent,{...agent,id:"http",name:"HTTP service",connection_mode:"direct_http"},{...agent,id:"mcp",name:"MCP service",connection_mode:"mcp_server"}]}, async host => {
+    const select=host.querySelector('[role="dialog"] select');
+    assert.equal(select.querySelector('option[value="http"]').disabled,true);
+    assert.equal(select.querySelector('option[value="mcp"]').disabled,true);
+    // Even a synthetic change event cannot bypass the client guard.
+    await act(async()=>{select.value="mcp";select.dispatchEvent(new Event("change",{bubbles:true}));});await settle();
+    assert.equal(button(host,"Associate with Agent").disabled,true);
+    assert.equal(host.querySelector('a[href$="/onboarding"]'),null);
+    assert.equal(writes.length,0);
+  });
+});
+
+test("capability dialog pages the complete catalog, reads private owner details and retains unsaved edits", async () => {
+  const { SkillsDialog }=await import("../src/components/creator/skills-dialog.tsx");
+  const skill=id=>({id,name:id,description:"Fixture capability",category:"content",sort_order:0,translations:{en:{name:id,description:"Fixture capability"}}});
+  const calls=[],writes=[],pages=[];
+  globalThis.resourceTestPublicFetch=async path=>{
+    const page=Number(new URL(path,"https://example.test").searchParams.get("page"));pages.push(page);
+    return page===1?{items:Array.from({length:200},(_,i)=>skill("item-"+i)),total:201,size:200}:{items:[skill("last-page")],total:201,size:200};
+  };
+  globalThis.resourceTestFetch=async(path,options={})=>{
+    calls.push(path);
+    if(options.method){writes.push({path,...options});return {};}
+    assert.equal(path,"/api/v1/creator/agents/by-slug/private-agent");
+    return {id:agent.id,slug:"private-agent",skills:[skill("last-page")]};
+  };
+  const props={agentId:agent.id,agentSlug:"private-agent",agentName:"Private Agent",open:true,onClose:()=>{}};
+  await mount(SkillsDialog,props,async(host,render)=>{
+    assert.deepEqual(pages,[1,2]);
+    assert.equal(host.querySelector('input[aria-label="last-page"]').checked,true);
+    await act(async()=>host.querySelector('input[aria-label="item-0"]').click());
+    globalThis.resourceTestFetchOverride=(...args)=>globalThis.resourceTestFetch(...args);
+    await render({...props,onClose:()=>{}});
+    assert.equal(calls.length,1,"token and callback changes must not refetch/reset edits");
+    assert.equal(host.querySelector('input[aria-label="item-0"]').checked,true);
+    await act(async()=>button(host,"Save").click());await settle();
+    assert.deepEqual(writes[0].body.skill_ids,["last-page","item-0"]);
+    await render({...props,open:false});
+    await render(props);
+    assert.equal(host.querySelector('input[aria-label="item-0"]').checked,false,"reopening loads authoritative state");
+  });
 });
