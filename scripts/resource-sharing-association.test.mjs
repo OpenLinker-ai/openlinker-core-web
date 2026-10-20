@@ -411,15 +411,37 @@ test("association removal waits for explicit confirmation and cancel keeps the b
   assert.equal(writes.length,1);assert.equal(writes[0].method,"DELETE");
  });
 });
-test("MCP panel explains actual client scope without binding or starting runs",async()=>{
- const writes=[];globalThis.resourceTestFetch=fixtureFetch({...eligible,items:[binding]},writes);
+test("MCP selection requires reviewed owner grant and removal confirmation without starting a Run", async()=>{
+ const writes=[]; let selected=[];
+ const candidate={id:pkg,name:"Synthetic MCP",description:"Synthetic lookup",slug:"synthetic-mcp",tool_name:"lookup",owned:true};
+ globalThis.resourceTestFetch=async(path,options={})=>{
+   if(options.method){
+     writes.push({path,...options});
+     assert.equal(path,`/api/v1/creator/agents/${agent.id}/mcp-bindings/${pkg}`);
+     selected=options.method==="DELETE"?[]:[{binding_id:bid,target_agent_id:pkg,title:candidate.name,description:candidate.description,status:"pending",needs_review:false}]; return {};
+   }
+   if(path.endsWith(`/candidates/${pkg}`)) return {title:candidate.name,description:candidate.description,tool_name:"lookup",digest:"a".repeat(64),input_schema:{type:"object"}};
+   if(path.includes("/mcp-bindings/candidates?")) return {items:[candidate],has_more:false};
+   if(path.endsWith("/mcp-bindings")) return {items:selected,host_status:"compatible",max_bindings:16};
+   return fixtureFetch(eligible)(path,options);
+ };
  await mount(AgentResourcesPanel,{locale:"en",agent},async host=>{
-  await act(async()=>button(host,"MCP setup guide").click());await settle();
-  assert.match(host.textContent,/does not currently associate or distribute MCP tools to Runtime Agents/);
-  assert.ok(host.querySelector('a[href="/mcps/platform/connect"]'));assert.equal(writes.length,0);
-  assert.equal(host.querySelector('[role="dialog"]'),null);
-  await act(async()=>button(host,"Skill packages").click());await settle();
-  assert.ok(button(host,"Choose skill package"));assert.equal(writes.length,0);
+   await act(async()=>button(host,"MCP tools").click());await settle();
+   assert.equal(writes.length,0);
+   assert.match(host.textContent,/credentials stay on the platform/);
+   await act(async()=>button(host,"Choose MCP tools").click());await settle();
+   await act(async()=>button(host,"Select").click());await settle();
+   assert.ok(button(host,"Save selection").disabled);
+   assert.match(host.textContent,/side effects/);
+   await act(async()=>host.querySelector('input[type="checkbox"]').click());
+   await act(async()=>button(host,"Save selection").click());await settle();
+   assert.equal(writes.length,1);assert.equal(writes[0].method,"PUT");
+   assert.equal(writes[0].body.expected_tool_digest,"a".repeat(64));assert.equal(writes[0].body.expected_binding_id,"");assert.equal(writes[0].body.acknowledge_tool_access,true);
+   assert.match(host.textContent,/Waiting for the next Run/);
+   await act(async()=>button(host,"Remove").click());await settle();
+   assert.equal(writes.length,1);assert.match(host.textContent,/Operations already started may finish/);
+   await act(async()=>[...host.querySelectorAll('button')].filter(b=>b.textContent==="Remove").at(-1).click());await settle();
+   assert.equal(writes.length,2);assert.equal(writes[1].method,"DELETE");assert.equal(writes[1].body.expected_binding_id,bid);
  });
 });
 
