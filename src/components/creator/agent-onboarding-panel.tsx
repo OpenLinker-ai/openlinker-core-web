@@ -753,7 +753,7 @@ export function AgentOnboardingPanel({
             >
               {copy.editSkills}
             </button>
-            {agentState.connection_mode === "runtime" && <a className="ol-mini-btn" href="#agent-resources">{locale === "zh" ? "管理技能与查看 MCP 说明" : "Manage skills and view MCP setup"}</a>}
+            {agentState.connection_mode === "runtime" && <a className="ol-mini-btn" href="#agent-resources">{locale === "zh" ? "管理技能与 MCP 工具" : "Manage skills and MCP tools"}</a>}
           </div>
           <div className="flex flex-wrap gap-2">
             <Link href="/hub" className="ol-mini-btn">
