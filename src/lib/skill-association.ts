@@ -18,10 +18,14 @@ export function skillTrialHref(slug: string, binding: SkillTrial): string {
   return `/playground/${encodeURIComponent(slug)}?${query}`;
 }
 
-export function skillAssociationIssue(data: SkillPackageBindings, packageId: string, version: SkillPackageVersion): "disabled" | "unsupported" | "incompatible" | "full" | null {
+export function skillAssociationIssue(data: SkillPackageBindings, packageId: string, version: SkillPackageVersion): "disabled" | "unsupported" | "incompatible" | "combination" | "full" | null {
   if (data.lifecycle_status === "disabled") return "disabled";
   if (!data.supported) return "unsupported";
   if (!version.providers.some((provider) => data.providers.includes(provider))) return "incompatible";
+  if (data.provider_sets) {
+    const requirements = [...data.items.filter((item) => item.package_id !== packageId).map((item) => item.providers), version.providers];
+    if (!data.provider_sets.some((set) => requirements.every((allowed) => allowed.some((provider) => set.includes(provider))))) return "combination";
+  }
   if (data.items.filter((item) => item.package_id !== packageId).length >= (data.max_bindings ?? 5)) return "full";
   return null;
 }

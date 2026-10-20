@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { A2AAccessPanel } from "@/components/creator/a2a-access-panel";
-import { SkillPackages } from "@/components/skills/skill-packages";
+import { AgentResourcesPanel } from "@/components/creator/agent-resources-panel";
 import { SkillsDialog } from "@/components/creator/skills-dialog";
 import { useApi } from "@/hooks/use-api";
 import { localizedErrorMessage } from "@/lib/api";
@@ -574,6 +574,10 @@ export function AgentOnboardingPanel({
           </div>
         </div>
 
+        {agentState.connection_mode === "runtime" && (
+          <AgentResourcesPanel agent={agentState} locale={locale} />
+        )}
+
         <div className="ol-panel ol-panel-pad space-y-4">
           <div
             className="ol-panel-head"
@@ -749,6 +753,7 @@ export function AgentOnboardingPanel({
             >
               {copy.editSkills}
             </button>
+            {agentState.connection_mode === "runtime" && <a className="ol-mini-btn" href="#agent-resources">{locale === "zh" ? "管理技能与 MCP 工具" : "Manage skills and MCP tools"}</a>}
           </div>
           <div className="flex flex-wrap gap-2">
             <Link href="/hub" className="ol-mini-btn">
@@ -839,16 +844,6 @@ export function AgentOnboardingPanel({
 
         <A2AAccessPanel agentId={agent.id} locale={locale} />
       </aside>
-      {agentState.connection_mode === "runtime" && (
-        <div className="col-span-full">
-          <SkillPackages
-            locale={locale}
-            agents={[agentState]}
-            skills={[]}
-            agentId={agentState.id}
-          />
-        </div>
-      )}
       {skillsOpen ? (
         <SkillsDialog
           agentId={agent.id}

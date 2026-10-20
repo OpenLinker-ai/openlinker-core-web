@@ -48,6 +48,7 @@ const buttonClass =
   "ol-mini-btn disabled:cursor-not-allowed disabled:opacity-50";
 const primaryClass = `${buttonClass} bg-[color:var(--ol-primary)]! text-white!`;
 const key = ["skill-packages"];
+const isBindingConflict = (error: unknown) => Boolean(error && typeof error === "object" && "code" in error && error.code === "SKILL_PACKAGE_BINDING_CONFLICT");
 function usePackageApi() {
   const api = useApi();
   const { data } = useSession();
@@ -87,7 +88,7 @@ export function SkillPackages({
   const items = packages.data?.items ?? [];
   const catalog = useQuery({
     queryKey: ["skill-catalog", locale],
-    enabled: initialSkills.length === 0,
+    enabled: initialSkills.length === 0 && (importOpen || Boolean(packageId)),
     queryFn: () => fetchCompleteSkillCatalog(locale),
   });
   const skills = initialSkills.length ? initialSkills : (catalog.data ?? []);
@@ -98,7 +99,7 @@ export function SkillPackages({
   );
   return (
     <section className="ol-panel overflow-hidden" aria-label={copy.title}>
-      {!packageId && <div className="p-5"><SkillReferenceImport locale={locale}/></div>}
+      {!packageId && !agentId && <div className="p-5"><SkillReferenceImport locale={locale}/></div>}
       <div className="ol-panel-head flex flex-wrap gap-3">
         <div>
           <h2 className="flex items-center gap-2 font-bold">
@@ -110,7 +111,7 @@ export function SkillPackages({
           </p>
         </div>
         {!packageId && (
-          <button className={primaryClass} onClick={() => setImportOpen(true)}>
+          <button className={agentId ? buttonClass : primaryClass} onClick={() => setImportOpen(true)}>
             <Plus size={14} />
             {copy.import}
           </button>
@@ -485,8 +486,7 @@ function PackageDetail({
   const [importOpen, setImportOpen] = useState(false);
   const [bindOpen, setBindOpen] = useState(associate);
   const item = data.data;
-  const version =
-    versionId ? item?.versions.find((v) => v.id === versionId) : item?.versions[0];
+  const version = versionId ? item?.versions.find((v) => v.id === versionId) : item?.versions[0];
   const contentQuery = useQuery({
     queryKey: [...key, "contents", packageId, version?.id, api.ownerId],
     enabled: Boolean(version),
@@ -661,6 +661,9 @@ function AgentPackages({
   const [editPackage, setEditPackage] = useState("");
   const [editVersion, setEditVersion] = useState("");
   const [busy, setBusy] = useState("");
+  const [removePackage, setRemovePackage] = useState<SkillPackageBinding | null>(null);
+  const [removeConflict, setRemoveConflict] = useState(false);
+  const selectedAgent = agents.find((agent) => agent.id === current);
   const bindings = useQuery({
     queryKey: [...key, "bindings", current, api.ownerId],
     enabled: Boolean(current),
@@ -670,30 +673,37 @@ function AgentPackages({
       ),
     // A pending binding may wait hours; refresh on focus, mutation or explicit action.
     refetchInterval: false,
+    refetchOnWindowFocus: true,
   });
-  async function remove(id: string) {
-    setBusy(id);
+  async function remove(binding: SkillPackageBinding) {
+    if (busy || removeConflict) return;
+    setBusy(binding.package_id);
     try {
       await api.fetch(
-        `/api/v1/creator/agents/${current}/skill-packages/${id}`,
-        { method: "DELETE" },
+        `/api/v1/creator/agents/${current}/skill-packages/${binding.package_id}`,
+        { method: "DELETE", body: { expected_binding_id: binding.binding_id } },
       );
       await cache.invalidateQueries({
         queryKey: [...key, "bindings", current],
       });
+      setRemovePackage(null);
       toast.success(copy.removed);
     } catch (e) {
+      if (isBindingConflict(e)) {
+        setRemoveConflict(true);
+        await bindings.refetch();
+      }
       toast.error(packageErrorText(e, locale, copy.saveError));
     } finally {
       setBusy("");
     }
   }
   return (
-    <div className="space-y-4 border-t border-[color:var(--ol-line)] pt-5">
+    <div className={`space-y-4 ${agentId ? "" : "border-t border-[color:var(--ol-line)] pt-5"}`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-bold">{copy.agentPackages}</h2>
+        {agentId ? <p className="text-sm font-semibold">{copy.associationCount} {bindings.data?.items.length ?? "—"} / {bindings.data?.max_bindings ?? 5}</p> : <h2 className="font-bold">{copy.agentPackages}</h2>}
         <button
-          className={buttonClass}
+          className={agentId ? primaryClass : buttonClass}
           onClick={() => {
             setEditPackage("");
             setEditVersion("");
@@ -701,9 +711,11 @@ function AgentPackages({
           }}
           disabled={!agents.length || !items.length}
         >
-          {copy.associate}
+          {agentId ? copy.chooseForAgent : copy.associate}
         </button>
       </div>
+      {agentId && <p className="text-sm text-[color:var(--ol-muted)]">{copy.fixedAgent}</p>}
+      {!items.length && <p className="text-sm"><Link className="underline" href="/skills?tab=packages">{copy.browsePackages}</Link></p>}
       {!agentId && (
         <label className="block space-y-1 text-sm">
           <span>{copy.selectAgent}</span>
@@ -742,7 +754,7 @@ function AgentPackages({
           {bindings.data && (
             <>
               <div className="flex flex-wrap justify-between gap-3 text-xs text-[color:var(--ol-muted)]">
-                <p>{copy.bindingHint}</p>
+                <p>{copy.queuedScope}</p>
                 <button
                   className="underline"
                   onClick={() => void bindings.refetch()}
@@ -750,21 +762,24 @@ function AgentPackages({
                   {copy.refresh}
                 </button>
               </div>
-              {agents.find((agent) => agent.id === current)?.visibility !== "private" && (
+              {selectedAgent?.visibility !== "private" && (
                 <p role="note" className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
                   {copy.contentExposure}
                 </p>
               )}
               {!bindings.data.supported && (
                 <p className="rounded-xl bg-amber-50 p-3 text-sm">
-                  {copy.unsupported}
+                  {selectedAgent?.connection_mode && selectedAgent.connection_mode !== "runtime" ? copy.runtimeOnly : bindings.data.host_status === "none" ? copy.hostDisconnected : copy.unsupported}
                 </p>
               )}
+              {bindings.data.supported && bindings.data.bindings_compatible === false && <p role="alert" className="rounded-xl bg-amber-50 p-3 text-sm">{copy.combinationIncompatible}</p>}
+              {bindings.data.bindings_compatible && bindings.data.compatible_session_online === false && <p role="status" className="rounded-xl bg-amber-50 p-3 text-sm">{copy.hostOffline}</p>}
               {bindings.data.items.length === 0 && (
                 <p className="text-sm text-[color:var(--ol-muted)]">
                   {copy.noBindings}
                 </p>
               )}
+              {bindings.data.items.length > 0 && <p className="text-xs text-[color:var(--ol-muted)]">{copy.loadScope} {copy.loadOrder}</p>}
               {bindings.data.items.map((binding) => (
                 <div
                   key={binding.binding_id}
@@ -772,7 +787,7 @@ function AgentPackages({
                 >
                   <div>
                     <Link
-                      href={`/hub/skills/${binding.package_id}`}
+                      href={`/hub/skills/${binding.package_id}?version=${encodeURIComponent(binding.version_id)}`}
                       className="font-bold"
                     >
                       {binding.name}
@@ -782,7 +797,7 @@ function AgentPackages({
                       {binding.latest_version_id !== binding.version_id && (
                         <span className="ol-chip">{copy.updateAvailable}</span>
                       )}
-                      {(!bindings.data.supported ||
+                      {bindings.data.host_status !== "none" && (!bindings.data.supported ||
                         !binding.providers.some((p) =>
                           bindings.data.providers.includes(p),
                         )) && (
@@ -813,8 +828,8 @@ function AgentPackages({
                     )}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {agents.find((agent) => agent.id === current)?.slug && (
-                      <Link className={buttonClass} href={skillTrialHref(agents.find((agent) => agent.id === current)!.slug, binding)}>{skillAssociationMessages[locale].trial}</Link>
+                    {selectedAgent?.slug && (
+                      <Link className={buttonClass} href={skillTrialHref(selectedAgent.slug, binding)}>{skillAssociationMessages[locale].trial}</Link>
                     )}
                     <button
                       className={buttonClass}
@@ -828,8 +843,8 @@ function AgentPackages({
                     </button>
                     <button
                       className={buttonClass}
-                      disabled={busy === binding.package_id}
-                      onClick={() => void remove(binding.package_id)}
+                      disabled={Boolean(busy)}
+                      onClick={() => { setRemoveConflict(false); setRemovePackage(binding); }}
                     >
                       {copy.remove}
                     </button>
@@ -840,10 +855,22 @@ function AgentPackages({
           )}
         </>
       )}
+      {removePackage && <Dialog open onOpenChange={(open) => { if (!open && !busy) setRemovePackage(null); }}>
+        <DialogContent closeLabel={copy.close}>
+          <DialogHeader><DialogTitle>{copy.removeConfirm}</DialogTitle><DialogDescription>{copy.removeHint}</DialogDescription></DialogHeader>
+          <p className="font-semibold">{removePackage.name} · {removePackage.version}</p>
+          {removeConflict && <p role="alert" className="text-sm text-red-700">{copy.bindingConflict}</p>}
+          <div className="flex justify-end gap-2">
+            <button className={buttonClass} disabled={Boolean(busy)} onClick={() => setRemovePackage(null)}>{copy.cancel}</button>
+            {removeConflict ? <button className={primaryClass} disabled={Boolean(busy)} onClick={() => setRemovePackage(null)}>{copy.reviewLatest}</button> : <button className={primaryClass} disabled={Boolean(busy)} onClick={() => void remove(removePackage)}>{busy ? copy.saving : copy.removeConfirm}</button>}
+          </div>
+        </DialogContent>
+      </Dialog>}
       {bindOpen && (
         <BindDialog
           {...{ locale, agents, items }}
           initialAgentId={current}
+          lockAgent={Boolean(agentId)}
           initialPackageId={editPackage}
           editing={Boolean(editPackage)}
           initialVersionId={editVersion}
@@ -862,6 +889,7 @@ function BindDialog({
   initialPackageId = "",
   initialVersionId = "",
   editing = false,
+  lockAgent = false,
   embedded = false,
   onClose,
 }: {
@@ -872,6 +900,7 @@ function BindDialog({
   initialPackageId?: string;
   initialVersionId?: string;
   editing?: boolean;
+  lockAgent?: boolean;
   embedded?: boolean;
   onClose: () => void;
 }) {
@@ -881,25 +910,49 @@ function BindDialog({
   const cache = useQueryClient();
   const [agentId, setAgentId] = useState(initialAgentId);
   const [packageId, setPackageId] = useState(initialPackageId);
-  const [versionId, setVersionId] = useState(initialVersionId);
+  // Managing a cached card must re-read the actual binding before choosing a
+  // version. Detail-page association still preserves its explicit version.
+  const [versionId, setVersionId] = useState(editing ? "" : initialVersionId);
+  const [conflict, setConflict] = useState(false);
+  const [confirmedChange, setConfirmedChange] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState<SkillPackageBinding | null>(null);
   const [unchanged, setUnchanged] = useState(false);
+  const [packageSearch, setPackageSearch] = useState("");
   const item = items.find((p) => p.id === packageId);
-  const version =
-    versionId ? item?.versions.find((v) => v.id === versionId) : item?.versions[0];
   const bindings = useQuery({
     queryKey: [...key, "bindings", agentId, api.ownerId],
     enabled: Boolean(agentId) && api.isAuthenticated,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     queryFn: () =>
       api.fetch<SkillPackageBindings>(
         `/api/v1/creator/agents/${agentId}/skill-packages`,
       ),
   });
+  const currentBinding = bindings.data?.items.find((binding) => binding.package_id === packageId);
+  // Re-selecting a bound package must not silently upgrade it to the newest version.
+  const pinnedVersionId = versionId || currentBinding?.version_id;
+  const version = pinnedVersionId ? item?.versions.find((v) => v.id === pinnedVersionId) : editing ? undefined : item?.versions[0];
+  const preview = useQuery({
+    queryKey: [...key, "contents", packageId, version?.id, api.ownerId],
+    enabled: Boolean(version) && api.isAuthenticated,
+    queryFn: () => api.fetch<SkillPackageContents>(`/api/v1/creator/skill-packages/${packageId}/versions/${version!.id}`),
+  });
+  const matchingPackages = items.filter((pkg) => pkg.id === packageId || `${pkg.name} ${pkg.description} ${pkg.versions.flatMap((v) => v.providers).join(" ")}`.toLowerCase().includes(packageSearch.trim().toLowerCase()));
   const issue = bindings.data && version ? skillAssociationIssue(bindings.data, packageId, version) : null;
-  const compatible = Boolean(bindings.data && version && !bindings.isError && !issue);
   const selectedAgent = agents.find((agent) => agent.id === agentId);
+  const wrongAgentMode = Boolean(selectedAgent?.connection_mode && selectedAgent.connection_mode !== "runtime");
+  const changeKey = currentBinding && version && currentBinding.version_id !== version.id ? `${agentId}:${packageId}:${currentBinding.binding_id}:${version.id}` : "";
+  const compatible = Boolean(selectedAgent && !wrongAgentMode && bindings.data && version && !bindings.isError && !bindings.isFetching && !issue && !conflict && (!changeKey || confirmedChange === changeKey));
+  async function reviewLatest() {
+    setVersionId(editing ? "" : initialVersionId);
+    setConfirmedChange("");
+    const result = await bindings.refetch();
+    if (!result.isError) { setConflict(false); setError(""); }
+  }
   async function save(e: React.FormEvent) {
     e.preventDefault();
     if (busy || !compatible || !version) return;
@@ -908,17 +961,21 @@ function BindDialog({
     try {
       const result = await api.fetch<SkillPackageBindings>(
         `/api/v1/creator/agents/${agentId}/skill-packages/${packageId}`,
-        { method: "PUT", body: { version_id: version.id } },
+        { method: "PUT", body: { version_id: version.id, expected_binding_id: currentBinding?.binding_id ?? "" } },
       );
       await cache.invalidateQueries({
         queryKey: [...key, "bindings", agentId],
       });
       const binding = result.items.find((value) => value.package_id === packageId && value.version_id === version.id);
-      if (!binding) throw new Error("binding response missing");
+      if (!binding) throw Object.assign(new Error(copy.bindingConflict), { code: "SKILL_PACKAGE_BINDING_CONFLICT" });
       setUnchanged(bindings.data?.items.some((value) => value.binding_id === binding.binding_id && value.version_id === binding.version_id) ?? false);
       setSaved(binding);
       toast.success(copy.saved);
     } catch (e) {
+      if (isBindingConflict(e)) {
+        setConflict(true);
+        await bindings.refetch();
+      }
       setError(packageErrorText(e, locale, copy.saveError));
     } finally {
       setBusy(false);
@@ -945,18 +1002,23 @@ function BindDialog({
             <select
               className={inputClass}
               required
-              disabled={editing || busy}
+              disabled={lockAgent || editing || busy}
               value={agentId}
-              onChange={(e) => setAgentId(e.target.value)}
+              onChange={(e) => { setAgentId(e.target.value); setError(""); setConflict(false); setConfirmedChange(""); }}
             >
               <option value="">{copy.choose}</option>
               {agents.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
+                <option key={a.id} value={a.id} disabled={Boolean(a.connection_mode && a.connection_mode !== "runtime")}>
+                  {a.name}{a.connection_mode && a.connection_mode !== "runtime" ? ` · ${copy.nonRuntime}` : ""}
                 </option>
               ))}
             </select>
           </label>
+          <p className="text-xs text-[color:var(--ol-muted)]">{copy.runtimeOnly}</p>
+          {!embedded && !editing && <label className="block space-y-1 text-sm">
+            <span>{copy.search}</span>
+            <input className={inputClass} type="search" value={packageSearch} disabled={busy} placeholder={copy.searchAvailable} onChange={(event) => setPackageSearch(event.target.value)} />
+          </label>}
           <label className="block space-y-1 text-sm">
             <span>{copy.selectPackage}</span>
             <select
@@ -967,16 +1029,20 @@ function BindDialog({
               onChange={(e) => {
                 setPackageId(e.target.value);
                 setVersionId("");
+                setError("");
+                setConflict(false);
+                setConfirmedChange("");
               }}
             >
               <option value="">{copy.choose}</option>
-              {items.map((p) => (
+              {matchingPackages.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name}
+                  {p.name}{bindings.data?.items.some((binding) => binding.package_id === p.id) ? ` · ${copy.alreadyAssociated}` : ""}
                 </option>
               ))}
             </select>
           </label>
+          {matchingPackages.length === 0 && <p role="status" className="text-sm">{copy.noMatches}</p>}
           {item && (
             <label className="block space-y-1 text-sm">
               <span>{copy.selectVersion}</span>
@@ -995,6 +1061,22 @@ function BindDialog({
               </select>
             </label>
           )}
+          {item && version && <div className="space-y-2 rounded-xl border border-[color:var(--ol-line)] p-3 text-sm">
+            <p className="font-semibold">{copy.selectedPackage}: {preview.data?.name ?? (currentBinding?.version_id === version.id ? currentBinding.name : item.name)}</p>
+            {preview.isPending && <p role="status">{copy.loading}</p>}
+            {preview.isError && <ErrorState text={copy.loadError} retry={copy.retry} onRetry={() => void preview.refetch()} />}
+            {preview.data && <>
+              <p className="text-[color:var(--ol-muted)]">{preview.data.description}</p>
+              <p>{copy.files}: {Object.keys(preview.data.files).length}</p>
+              {preview.data.required_commands.length > 0 && <p>{copy.requirements}: {preview.data.required_commands.join(", ")}</p>}
+            </>}
+            <p>{copy.selectedVersion}: <strong>{version.version}</strong> · {version.providers.join(" / ")}</p>
+            {currentBinding && <p>{copy.currentVersion}: {currentBinding.version}</p>}
+            {changeKey && <>
+              <p role="status" className="text-amber-900">{copy.versionChange}</p>
+              <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={confirmedChange === changeKey} disabled={busy || bindings.isFetching || conflict} onChange={(event) => setConfirmedChange(event.target.checked ? changeKey : "")} /><span>{copy.confirmVersionChange}</span></label>
+            </>}
+          </div>}
           {!agents.length && (
             <p className="text-sm">
               {copy.noAgents}{" "}
@@ -1008,7 +1090,7 @@ function BindDialog({
               {copy.contentExposure}
             </p>
           )}
-          {agentId && bindings.isPending && <p role="status">{copy.loading}</p>}
+          {agentId && bindings.isFetching && <p role="status">{flow.checking}</p>}
           {bindings.isError && (
             <ErrorState
               text={copy.loadError}
@@ -1016,14 +1098,14 @@ function BindDialog({
               onRetry={() => void bindings.refetch()}
             />
           )}
-          {item && !version && <p role="alert">{flow.versionMissing}</p>}
+          {item && !version && <p role="alert">{editing && !currentBinding ? copy.removedBeforeEdit : flow.versionMissing}</p>}
           {bindings.data && version && (
             <div className="space-y-2 rounded-xl bg-[color:var(--ol-soft)] p-3 text-sm">
-              <p role="status">{issue === "unsupported" ? (bindings.data.host_status === "none" ? flow.hostNone : bindings.data.host_status === "incompatible" ? flow.hostIncompatible : copy.unsupported) : issue === "incompatible" ? copy.incompatible : issue ? flow[issue] : flow.ready}</p>
+              <p role="status">{wrongAgentMode ? copy.runtimeOnly : issue === "unsupported" ? (bindings.data.host_status === "none" ? flow.hostNone : bindings.data.host_status === "incompatible" ? flow.hostIncompatible : copy.unsupported) : issue === "incompatible" ? copy.incompatible : issue === "combination" ? copy.combinationIncompatible : issue ? flow[issue] : flow.ready}</p>
               <div className="flex flex-wrap gap-3">
                 <button type="button" className="underline" disabled={busy || bindings.isFetching} onClick={() => void bindings.refetch()}>{copy.refresh}</button>
-                {issue === "unsupported" && selectedAgent && <Link className="underline" href={`/hub/agents/${encodeURIComponent(selectedAgent.id)}/onboarding`}>{resourceJourneyMessages[locale].connectHost}</Link>}
-                {issue === "disabled" && selectedAgent && <Link className="underline" href={`/hub/agents/${encodeURIComponent(selectedAgent.id)}`}>{flow.manageAgent}</Link>}
+                {issue === "unsupported" && !wrongAgentMode && selectedAgent && <Link className="underline" href={`/hub/agents/${encodeURIComponent(selectedAgent.id)}/onboarding`}>{resourceJourneyMessages[locale].connectHost}</Link>}
+                {issue === "disabled" && selectedAgent && <Link className="underline" href={`/hub/agents/${encodeURIComponent(selectedAgent.slug)}/settings`}>{flow.manageAgent}</Link>}
               </div>
             </div>
           )}
@@ -1032,6 +1114,7 @@ function BindDialog({
               {error}
             </p>
           )}
+          {conflict && <button type="button" className={buttonClass} disabled={busy || bindings.isFetching} onClick={() => void reviewLatest()}>{copy.reviewLatest}</button>}
           <div className="flex justify-end gap-2">
 {!embedded && <button type="button" className={buttonClass} disabled={busy} onClick={onClose}>{copy.cancel}</button>}
             <button className={primaryClass} disabled={busy || !compatible}>
@@ -1040,5 +1123,5 @@ function BindDialog({
           </div>
         </form>}
       </>;
-  return embedded ? <div className="max-w-2xl space-y-5 rounded-xl border border-[color:var(--ol-line)] p-5">{content}</div> : <Dialog open onOpenChange={open => { if (!open && !busy) onClose(); }}><DialogContent closeLabel={copy.close}>{content}</DialogContent></Dialog>;
+  return embedded ? <div className="max-w-2xl space-y-5 rounded-xl border border-[color:var(--ol-line)] p-5">{content}</div> : <Dialog open onOpenChange={open => { if (!open && !busy) onClose(); }}><DialogContent closeLabel={copy.close} className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-2xl">{content}</DialogContent></Dialog>;
 }

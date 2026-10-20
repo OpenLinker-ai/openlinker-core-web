@@ -51,12 +51,12 @@ export function SkillPicker({
   const copy =
     locale === "zh"
       ? {
-          empty: `未选择技能（最多选 ${max} 个）`,
+          empty: `未声明能力（最多选 ${max} 个）`,
           selected: "已选",
           remove: "移除",
         }
       : {
-          empty: `No Skills selected (up to ${max})`,
+          empty: `No capabilities declared (up to ${max})`,
           selected: "Selected",
           remove: "Remove",
         };

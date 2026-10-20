@@ -11,7 +11,7 @@ const mocks = {
 
   "next-auth/react": 'export const useSession=()=>({data:{user:{id:globalThis.associationOwner??"owner"}}});',
   "@/components/ui/dialog": 'import React from "react";export const Dialog=({children})=>children;export const DialogContent=({children})=>React.createElement("div",{role:"dialog"},children);export const DialogHeader=({children})=>children;export const DialogTitle=({children})=>React.createElement("h2",{},children);export const DialogDescription=({children})=>React.createElement("p",{},children);',
-  "@/components/skill/skill-picker": 'export const SkillPicker=()=>null;',
+  "@/hooks/use-client-locale": 'export const useClientLocale=()=>"en";',
   "@/components/playground/browser-stage": 'export const PlaygroundBrowserStage=()=>null;',
   "@/components/playground/detail-panel": 'export const PlaygroundDetailPanel=()=>null;',
   "@/components/playground/run-trace": 'export const RunTrace=()=>null;',
@@ -23,7 +23,7 @@ const mocks = {
     "const fetch=(...a)=>globalThis.resourceTestFetch(...a);export const useApi=()=>({isAuthenticated:globalThis.resourceTestAuthenticated!==false,fetch:globalThis.resourceTestFetchOverride??fetch});",
 
   "next/navigation":
-    'export const notFound=()=>{throw new Error("NOT_FOUND")}; export const redirect=url=>{throw new Error("REDIRECT:"+url)}; export const usePathname=()=>window.location.pathname;export const useSearchParams=()=>new URLSearchParams(window.location.search);export const useRouter=()=>({push:(url)=>{globalThis.resourceTestDestination=url;}});',
+    'export const notFound=()=>{throw new Error("NOT_FOUND")}; export const redirect=url=>{throw new Error("REDIRECT:"+url)}; export const usePathname=()=>window.location.pathname;export const useSearchParams=()=>new URLSearchParams(window.location.search);export const useRouter=()=>({refresh:()=>{},push:(url)=>{globalThis.resourceTestDestination=url;}});',
   "next/link":
     'import React from "react"; export default function Link(p){return React.createElement("a",p,p.children);}',
   "@/components/auth/auth-link":
@@ -124,9 +124,9 @@ const run = {run_id:"run-1",status:"running",duration_ms:0,cost_cents:0,replayed
 const pageProps = {locale:"en",agents:[agent],skills:[{id:"fixture"}],packageId:pkg,initialVersionId:vid,associate:true};
 const button = (host,text) => [...host.querySelectorAll("button")].find(b=>b.textContent===text);
 async function settle() { for(let i=0;i<4;i++) await act(async()=>new Promise(resolve=>setTimeout(resolve,0))); }
-async function mount(Component, props, check) {
+async function mount(Component, props, check, queryOptions = {}) {
   const host=document.createElement("div"); document.body.append(host);
-  const root=createRoot(host); const cache=new QueryClient({defaultOptions:{queries:{retry:false,gcTime:0}}});
+  const root=createRoot(host); const cache=new QueryClient({defaultOptions:{queries:{retry:false,gcTime:0,...queryOptions}}});
   const render=async(next)=>{ await act(async()=>root.render(createElement(QueryClientProvider,{client:cache},createElement(Component,next))));await settle(); };
   try {await render(props); await check(host,render,cache);}
   finally {await act(async()=>root.unmount()); cache.clear();host.remove();globalThis.resourceTestFetchOverride=undefined;sessionStorage.clear();localStorage.clear();}
@@ -135,7 +135,7 @@ function fixtureFetch(data=eligible, writes=[]) {
   return async(path, options={})=>{
     if(options.method){writes.push({path,...options});return {...data,items:[binding]};}
     if(path.endsWith("/skill-packages") && path.includes("/agents/")) return data;
-    if(path.endsWith("/versions/"+vid)) return contents;
+    if(path.endsWith("/versions/"+vid) || path.endsWith("/versions/new-version")) return contents;
     if(path.endsWith("/skill-packages/"+pkg)) return item;
     if(path.endsWith("/skill-packages")) return {items:[item]};
     throw new Error("unexpected "+path);
@@ -161,7 +161,7 @@ test("older version opens association without writing and survives token refresh
    globalThis.resourceTestFetchOverride=fixtureFetch(eligible,writes);await render(pageProps);
    assert.equal(dialog.querySelectorAll("select")[0].value,agent.id);assert.equal(dialog.querySelectorAll("select")[2].value,vid);
    await act(async()=>button(dialog,"Associate with Agent").click());await settle();
-   assert.equal(writes.length,1);assert.deepEqual(writes[0].body,{version_id:vid});
+   assert.equal(writes.length,1);assert.deepEqual(writes[0].body,{version_id:vid,expected_binding_id:""});
    dialog=host.querySelector('[role="dialog"]');assert.match(dialog.textContent,/Association saved/);
    const link=dialog.querySelector('a[href^="/playground"]');
    assert.deepEqual(parseSkillTrial(Object.fromEntries(new URL(link.href).searchParams)),{package_id:pkg,version_id:vid,binding_id:bid,digest:version.digest});
@@ -222,7 +222,7 @@ test("failed association preserves exact choices; selection is locked during sub
    assert.match(dialog.textContent,/association|associate/i);assert.equal(button(dialog,"Associate with Agent").disabled,false);
  });
 });
-test("trial timer is bounded, pauses in background, refreshes terminal once and aborts on unmount",async(t)=>{
+test("trial timer is bounded, pauses in background, refreshes terminal once and aborts on unmount",async()=>{
  // Keep the React scheduler real; replace the browser timers used by React Query.
  const timers=new Map();let id=0;let now=1000;const original={setTimeout,clearTimeout,setInterval,clearInterval,now:Date.now};
  const schedule=(fn,delay,repeat)=>{const n=++id;timers.set(n,{fn,at:now+delay,delay,repeat});return n;};
@@ -310,7 +310,7 @@ test('Skill management gives content, association and publication separate pages
   const select=host.querySelector('select');await act(async()=>{select.value=agent.id;select.dispatchEvent(new Event('change',{bubbles:true}));});await settle();
   assert.match(host.textContent,/passed/);assert.equal(writes.length,0);
   await act(async()=>button(host,'Associate with Agent').click());await settle();
-  assert.deepEqual(writes[0].body,{version_id:vid});assert.ok(host.querySelector('a[href^="/playground/"]'));
+  assert.deepEqual(writes[0].body,{version_id:vid,expected_binding_id:""});assert.ok(host.querySelector('a[href^="/playground/"]'));
   await render({...pageProps,associate:false,managementSection:'publish'});
   assert.ok(button(host,'Publish selected version'));assert.equal(button(host,'Associate with Agent'),undefined);
   assert.equal(button(host,'Publish selected version').disabled,true);assert.equal(writes.length,1);
@@ -369,4 +369,274 @@ test('ordinary format/pattern Agent keeps natural task mapping; examples and mis
  assert.equal(runner(await invoke({example:'e',autorun:'1'})).autorun,false);
  assert.equal(runner(await invoke({prefill:'Original text',example:'e',autorun:'1'})).autorun,false);
  assert.equal(runner(await invoke({autorun:'1'})).autorun,false);
+});
+
+const { AgentResourcesPanel } = await import("../src/components/creator/agent-resources-panel.tsx");
+test("Agent package chooser retains pinned version, locks Agent and searches without writes",async()=>{
+ const writes=[]; const reads=[]; globalThis.resourceTestFetch=async(path,options)=>{reads.push(path);return fixtureFetch({...eligible,items:[binding]},writes)(path,options);};
+ await mount(SkillPackages,{locale:"en",agents:[agent],skills:[],agentId:agent.id},async host=>{
+  assert.equal(reads.some(path=>path.startsWith("/api/v1/skills")),false);
+  const pinnedLink=host.querySelector(`a[href="/hub/skills/${pkg}?version=${vid}"]`);assert.ok(pinnedLink);
+  assert.match(host.textContent,/Queued, active and retried runs/);
+  await act(async()=>button(host,"Choose skill package").click());await settle();
+  const dialog=host.querySelector('[role="dialog"]');const selects=dialog.querySelectorAll('select');
+  assert.equal(selects[0].value,agent.id);assert.equal(selects[0].disabled,true);
+  await act(async()=>{selects[1].value=pkg;selects[1].dispatchEvent(new Event('change',{bubbles:true}));});await settle();
+  assert.equal(dialog.querySelectorAll('select')[2].value,vid);
+  assert.match(dialog.textContent,/Currently pinned version: 1.0.0/);
+  const search=dialog.querySelector('input[type="search"]');
+  await act(async()=>{Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set.call(search,'no match');search.dispatchEvent(new Event('input',{bubbles:true}));});await settle();
+  assert.equal(dialog.querySelectorAll('select')[1].value,pkg);assert.equal(writes.length,0);
+  await act(async()=>button(dialog,"Associate with Agent").click());await settle();
+  assert.equal(writes.length,1);assert.equal(writes[0].body.version_id,vid);
+ });
+});
+test("explicit version upgrade remains reviewable before submission",async()=>{
+ const writes=[];globalThis.resourceTestFetch=fixtureFetch({...eligible,items:[binding]},writes);
+ await mount(SkillPackages,{locale:"en",agents:[agent],skills:[{id:"fixture"}],agentId:agent.id},async host=>{
+  await act(async()=>button(host,"Manage version").click());await settle();
+  const dialog=host.querySelector('[role="dialog"]');const versions=dialog.querySelectorAll('select')[2];
+  await act(async()=>{versions.value='new-version';versions.dispatchEvent(new Event('change',{bubbles:true}));});await settle();
+  assert.match(dialog.textContent,/Saving replaces the currently pinned version/);assert.match(dialog.textContent,/Pinned version to save: 2.0.0/);assert.equal(writes.length,0);
+ });
+});
+test("association removal waits for explicit confirmation and cancel keeps the binding",async()=>{
+ const writes=[];globalThis.resourceTestFetch=fixtureFetch({...eligible,items:[binding]},writes);
+ await mount(SkillPackages,{locale:"en",agents:[agent],skills:[{id:"fixture"}],agentId:agent.id},async host=>{
+  await act(async()=>button(host,"Remove association").click());assert.equal(writes.length,0);
+  assert.match(host.textContent,/files already cached on the host are not erased/);
+  await act(async()=>button(host,"Cancel").click());assert.equal(writes.length,0);
+  await act(async()=>button(host,"Remove association").click());
+  await act(async()=>button(host,"Confirm removal").click());await settle();
+  assert.equal(writes.length,1);assert.equal(writes[0].method,"DELETE");
+ });
+});
+test("MCP selection requires reviewed owner grant and removal confirmation without starting a Run", async()=>{
+ const writes=[]; let selected=[];
+ const candidate={id:pkg,name:"Synthetic MCP",description:"Synthetic lookup",slug:"synthetic-mcp",tool_name:"lookup",owned:true};
+ globalThis.resourceTestFetch=async(path,options={})=>{
+   if(options.method){
+     writes.push({path,...options});
+     assert.equal(path,`/api/v1/creator/agents/${agent.id}/mcp-bindings/${pkg}`);
+     selected=options.method==="DELETE"?[]:[{binding_id:bid,target_agent_id:pkg,title:candidate.name,description:candidate.description,status:"pending",needs_review:false}]; return {};
+   }
+   if(path.endsWith(`/candidates/${pkg}`)) return {title:candidate.name,description:candidate.description,tool_name:"lookup",digest:"a".repeat(64),input_schema:{type:"object"}};
+   if(path.includes("/mcp-bindings/candidates?")) return {items:[candidate],has_more:false};
+   if(path.endsWith("/mcp-bindings")) return {items:selected,host_status:"compatible",max_bindings:16};
+   return fixtureFetch(eligible)(path,options);
+ };
+ await mount(AgentResourcesPanel,{locale:"en",agent},async host=>{
+   await act(async()=>button(host,"MCP tools").click());await settle();
+   assert.equal(writes.length,0);
+   assert.match(host.textContent,/credentials stay on the platform/);
+   await act(async()=>button(host,"Choose MCP tools").click());await settle();
+   await act(async()=>button(host,"Select").click());await settle();
+   assert.ok(button(host,"Save selection").disabled);
+   assert.match(host.textContent,/side effects/);
+   await act(async()=>host.querySelector('input[type="checkbox"]').click());
+   await act(async()=>button(host,"Save selection").click());await settle();
+   assert.equal(writes.length,1);assert.equal(writes[0].method,"PUT");
+   assert.equal(writes[0].body.expected_tool_digest,"a".repeat(64));assert.equal(writes[0].body.expected_binding_id,"");assert.equal(writes[0].body.acknowledge_tool_access,true);
+   assert.match(host.textContent,/Waiting for the next Run/);
+   await act(async()=>button(host,"Remove").click());await settle();
+   assert.equal(writes.length,1);assert.match(host.textContent,/Operations already started may finish/);
+   await act(async()=>[...host.querySelectorAll('button')].filter(b=>b.textContent==="Remove").at(-1).click());await settle();
+   assert.equal(writes.length,2);assert.equal(writes[1].method,"DELETE");assert.equal(writes[1].body.expected_binding_id,bid);
+ });
+});
+
+
+test("disconnected hosts preserve pending status without claiming incompatibility", async () => {
+  globalThis.resourceTestFetch = fixtureFetch({...eligible, supported:false, host_status:"none", providers:[], items:[binding]});
+  await mount(SkillPackages, {locale:"en", agents:[{...agent, connection_mode:"runtime"}], skills:[], agentId:agent.id}, async host => {
+    assert.match(host.textContent, /existing associations can still be removed/);
+    assert.match(host.textContent, /No load receipt yet/);
+    assert.doesNotMatch(host.textContent, /subsequent runs cannot load/);
+  });
+});
+
+test("incompatible hosts and aggregate load failures retain actionable distinctions", async () => {
+  globalThis.resourceTestFetch = fixtureFetch({...eligible, supported:false, host_status:"incompatible", providers:[], items:[{...binding,status:"failed",error_code:"dependency_missing"}]});
+  await mount(SkillPackages, {locale:"en", agents:[agent], skills:[], agentId:agent.id}, async host => {
+    assert.match(host.textContent, /subsequent runs cannot load/);
+    assert.match(host.textContent, /At least one skill package failed/);
+    assert.match(host.textContent, /does not identify which package/);
+  });
+});
+
+test("HTTP and MCP service Agents cannot be selected for runtime skill binding", async () => {
+  const writes=[];globalThis.resourceTestFetch=fixtureFetch(eligible,writes);
+  await mount(SkillPackages, {...pageProps,agents:[agent,{...agent,id:"http",name:"HTTP service",connection_mode:"direct_http"},{...agent,id:"mcp",name:"MCP service",connection_mode:"mcp_server"}]}, async host => {
+    const select=host.querySelector('[role="dialog"] select');
+    assert.equal(select.querySelector('option[value="http"]').disabled,true);
+    assert.equal(select.querySelector('option[value="mcp"]').disabled,true);
+    // Even a synthetic change event cannot bypass the client guard.
+    await act(async()=>{select.value="mcp";select.dispatchEvent(new Event("change",{bubbles:true}));});await settle();
+    assert.equal(button(host,"Associate with Agent").disabled,true);
+    assert.equal(host.querySelector('a[href$="/onboarding"]'),null);
+    assert.equal(writes.length,0);
+  });
+});
+
+test("capability dialog pages the complete catalog, reads private owner details and retains unsaved edits", async () => {
+  const { SkillsDialog }=await import("../src/components/creator/skills-dialog.tsx");
+  const skill=id=>({id,name:id,description:"Fixture capability",category:"content",sort_order:0,translations:{en:{name:id,description:"Fixture capability"}}});
+  const calls=[],writes=[],pages=[];
+  globalThis.resourceTestPublicFetch=async path=>{
+    const page=Number(new URL(path,"https://example.test").searchParams.get("page"));pages.push(page);
+    return page===1?{items:Array.from({length:200},(_,i)=>skill("item-"+i)),total:201,size:200}:{items:[skill("last-page")],total:201,size:200};
+  };
+  globalThis.resourceTestFetch=async(path,options={})=>{
+    calls.push(path);
+    if(options.method){writes.push({path,...options});return {};}
+    assert.equal(path,"/api/v1/creator/agents/by-slug/private-agent");
+    return {id:agent.id,slug:"private-agent",skills:[skill("last-page")]};
+  };
+  const props={agentId:agent.id,agentSlug:"private-agent",agentName:"Private Agent",open:true,onClose:()=>{}};
+  await mount(SkillsDialog,props,async(host,render)=>{
+    assert.deepEqual(pages,[1,2]);
+    assert.equal(host.querySelector('input[aria-label="last-page"]').checked,true);
+    await act(async()=>host.querySelector('input[aria-label="item-0"]').click());
+    globalThis.resourceTestFetchOverride=(...args)=>globalThis.resourceTestFetch(...args);
+    await render({...props,onClose:()=>{}});
+    assert.equal(calls.length,1,"token and callback changes must not refetch/reset edits");
+    assert.equal(host.querySelector('input[aria-label="item-0"]').checked,true);
+    await act(async()=>button(host,"Save").click());await settle();
+    assert.deepEqual(writes[0].body.skill_ids,["last-page","item-0"]);
+    await render({...props,open:false});
+    await render(props);
+    assert.equal(host.querySelector('input[aria-label="item-0"]').checked,false,"reopening loads authoritative state");
+  });
+});
+
+
+test("fresh cached association is revalidated before choosing a version", async()=>{
+  const writes=[],reads=[];let server={...binding};
+  globalThis.resourceTestFetch=async(path,options={})=>{
+    if(options.method){writes.push(options);return {...eligible,items:[server]};}
+    reads.push(path);return fixtureFetch({...eligible,items:[server]})(path,options);
+  };
+  await mount(SkillPackages,{locale:"en",agents:[agent],skills:[{id:"fixture"}],agentId:agent.id},async host=>{
+    server={...binding,version_id:"new-version",version:"2.0.0",binding_id:"new-binding"};
+    const before=reads.filter(p=>p.includes('/agents/')).length;
+    await act(async()=>button(host,"Choose skill package").click());await settle();
+    const dialog=host.querySelector('[role="dialog"]'),select=dialog.querySelectorAll('select')[1];
+    await act(async()=>{select.value=pkg;select.dispatchEvent(new Event('change',{bubbles:true}));});await settle();
+    assert.ok(reads.filter(p=>p.includes('/agents/')).length>before);
+    assert.equal(dialog.querySelectorAll('select')[2].value,"new-version");
+    assert.match(dialog.textContent,/Currently pinned version: 2.0.0/);
+    await act(async()=>button(dialog,"Associate with Agent").click());await settle();
+    assert.deepEqual(writes[0].body,{version_id:"new-version",expected_binding_id:"new-binding"});
+  },{staleTime:30000,refetchOnWindowFocus:false});
+});
+
+test("concurrent update conflict requires review and never automatically retries", async()=>{
+  let server={...binding};const writes=[];
+  globalThis.resourceTestFetch=async(path,options={})=>{
+    if(options.method){
+      writes.push(options);
+      if(options.body.expected_binding_id!==server.binding_id)throw Object.assign(new Error("conflict"),{status:409,code:"SKILL_PACKAGE_BINDING_CONFLICT"});
+      return {...eligible,items:[server]};
+    }
+    return fixtureFetch({...eligible,items:[server]})(path,options);
+  };
+  await mount(SkillPackages,{locale:"en",agents:[agent],skills:[{id:"fixture"}],agentId:agent.id},async host=>{
+    await act(async()=>button(host,"Manage version").click());await settle();
+    const dialog=host.querySelector('[role="dialog"]');
+    server={...binding,version_id:"new-version",version:"2.0.0",binding_id:"new-binding"};
+    await act(async()=>button(dialog,"Associate with Agent").click());await settle();
+    assert.equal(writes.length,1);assert.equal(writes[0].body.expected_binding_id,bid);
+    assert.match(dialog.textContent,/changed or removed elsewhere/);
+    assert.equal(button(dialog,"Associate with Agent").disabled,true);
+    await act(async()=>button(dialog,"Review latest association").click());await settle();
+    assert.equal(writes.length,1);assert.equal(dialog.querySelectorAll('select')[2].value,"new-version");
+    await act(async()=>button(dialog,"Associate with Agent").click());await settle();
+    assert.equal(writes.length,2);
+    assert.deepEqual(writes[1].body,{version_id:"new-version",expected_binding_id:"new-binding"});
+  });
+});
+
+test("version replacement confirmation belongs to the reviewed generation", async()=>{
+  const writes=[];globalThis.resourceTestFetch=fixtureFetch({...eligible,items:[binding]},writes);
+  await mount(SkillPackages,{locale:"en",agents:[agent],skills:[{id:"fixture"}],agentId:agent.id},async(host,render,cache)=>{
+    await act(async()=>button(host,"Manage version").click());await settle();
+    const dialog=host.querySelector('[role="dialog"]'),select=dialog.querySelectorAll('select')[2];
+    await act(async()=>{select.value="new-version";select.dispatchEvent(new Event('change',{bubbles:true}));});await settle();
+    assert.equal(button(dialog,"Associate with Agent").disabled,true);
+    await act(async()=>dialog.querySelector('input[type="checkbox"]').click());await settle();
+    assert.equal(button(dialog,"Associate with Agent").disabled,false);
+    await act(async()=>cache.setQueryData(["skill-packages","bindings",agent.id,"owner"],{...eligible,items:[{...binding,binding_id:"another-generation"}]}));await settle();
+    assert.equal(dialog.querySelector('input[type="checkbox"]').checked,false);
+    assert.equal(button(dialog,"Associate with Agent").disabled,true);assert.equal(writes.length,0);
+  });
+});
+
+test("concurrent removal conflict preserves the newer binding and requires another review", async()=>{
+  let server={...binding};const writes=[];
+  globalThis.resourceTestFetch=async(path,options={})=>{
+    if(options.method){writes.push(options);throw Object.assign(new Error("conflict"),{status:409,code:"SKILL_PACKAGE_BINDING_CONFLICT"});}
+    return fixtureFetch({...eligible,items:[server]})(path,options);
+  };
+  await mount(SkillPackages,{locale:"en",agents:[agent],skills:[{id:"fixture"}],agentId:agent.id},async host=>{
+    await act(async()=>button(host,"Remove association").click());
+    server={...binding,binding_id:"replacement",version:"2.0.0",version_id:"new-version"};
+    await act(async()=>button(host,"Confirm removal").click());await settle();
+    assert.equal(writes.length,1);assert.equal(writes[0].body.expected_binding_id,bid);
+    assert.match(host.textContent,/This association changed elsewhere/);
+    assert.equal(button(host,"Confirm removal"),undefined);
+    await act(async()=>button(host,"Review latest association").click());await settle();
+    assert.equal(host.querySelector('[role="dialog"]'),null);assert.equal(writes.length,1);
+    assert.match(host.textContent,/2.0.0/);
+  });
+});
+
+test("separate Codex and Claude sessions do not imply a compatible combination", async()=>{
+  const codexBinding={...binding,package_id:"other-package",providers:["codex"]};
+  const data={...eligible,providers:["codex","claude"],provider_sets:[["codex"],["claude"]],items:[codexBinding],bindings_compatible:true};
+  globalThis.resourceTestFetch=fixtureFetch(data);
+  await mount(SkillPackages,pageProps,async host=>{
+    await chooseAgent(host);const dialog=host.querySelector('[role="dialog"]');
+    assert.match(dialog.textContent,/No single execution host/);assert.equal(button(dialog,"Associate with Agent").disabled,true);
+  });
+});
+
+test("offline compatibility is distinct from no sessions and incompatible bindings", async()=>{
+  globalThis.resourceTestFetch=fixtureFetch({...eligible,items:[binding],bindings_compatible:true,compatible_session_online:false});
+  await mount(SkillPackages,{locale:"en",agents:[agent],skills:[{id:"fixture"}],agentId:agent.id},async host=>{
+    assert.match(host.textContent,/Sessions supporting this package combination are offline/);
+    assert.doesNotMatch(host.textContent,/No execution session is available/);
+  });
+});
+
+for(const removed of [false,true]) test(`embedded conflict preserves explicit version after ${removed?'removal':'upgrade'}`,async()=>{
+ let server={...binding};const writes=[];
+ globalThis.resourceTestFetch=async(path,options={})=>{
+  if(options.method){writes.push(options);if(options.body.expected_binding_id!==(server?.binding_id??""))throw Object.assign(new Error("conflict"),{code:"SKILL_PACKAGE_BINDING_CONFLICT"});server={...binding,binding_id:"saved-generation",version_id:options.body.version_id};return {...eligible,items:[server]};}
+  return fixtureFetch({...eligible,items:server?[server]:[]})(path,options);
+ };
+ await mount(SkillPackages,{...pageProps,associate:false,managementSection:"associate"},async host=>{
+  const select=host.querySelector('select');await act(async()=>{select.value=agent.id;select.dispatchEvent(new Event('change',{bubbles:true}));});await settle();
+  server=removed?null:{...binding,version_id:"new-version",version:"2.0.0",binding_id:"new-binding"};
+  await act(async()=>button(host,"Associate with Agent").click());await settle();
+  assert.equal(writes.length,1);assert.equal(button(host,"Associate with Agent").disabled,true);
+  await act(async()=>button(host,"Review latest association").click());await settle();
+  assert.equal(host.querySelectorAll('select')[2].value,vid);assert.equal(host.querySelectorAll('select')[2].disabled,true);
+  if(!removed){assert.equal(button(host,"Associate with Agent").disabled,true);await act(async()=>host.querySelector('input[type="checkbox"]').click());await settle();}
+  await act(async()=>button(host,"Associate with Agent").click());await settle();
+  assert.deepEqual(writes[1].body,{version_id:vid,expected_binding_id:removed?"":"new-binding"});
+ });
+});
+
+test("managing a removed cached card requires an explicit version choice",async()=>{
+ let server={...binding};const writes=[];
+ globalThis.resourceTestFetch=async(path,options={})=>fixtureFetch({...eligible,items:server?[server]:[]},writes)(path,options);
+ await mount(SkillPackages,{locale:"en",agents:[agent],skills:[{id:"fixture"}],agentId:agent.id},async host=>{
+  server=null;
+  await act(async()=>button(host,"Manage version").click());await settle();
+  const dialog=host.querySelector('[role="dialog"]'),select=dialog.querySelectorAll('select')[2];
+  assert.match(dialog.textContent,/removed elsewhere/);assert.equal(select.value,"");assert.equal(button(dialog,"Associate with Agent").disabled,true);
+  await act(async()=>{select.value=vid;select.dispatchEvent(new Event('change',{bubbles:true}));});await settle();
+  assert.equal(writes.length,0);await act(async()=>button(dialog,"Associate with Agent").click());await settle();
+  assert.deepEqual(writes[0].body,{version_id:vid,expected_binding_id:""});
+ },{staleTime:30000,refetchOnWindowFocus:false});
 });

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { McpScopeNotice } from "@/components/resources/mcp-scope-notice";
 import { CopyContent } from "@/components/resources/copy-content";
 import { ResourceLinks } from "@/components/resources/resource-links";
 import catalog from "@/lib/mcp-tool-catalog.json";
@@ -43,6 +44,7 @@ export function McpConnection({
   );
   return (
     <div className="space-y-6">
+      <McpScopeNotice locale={locale} />
       <p className="text-sm leading-relaxed">
         {agentId ? c.scoped : c.platformUse}
       </p>

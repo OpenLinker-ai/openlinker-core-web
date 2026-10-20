@@ -4,7 +4,7 @@
  * Agent 管理：每个 Agent 的技能 dialog（子轮 2.3）。
  *
  * 后端契约：
- *   GET /api/v1/agents/:slug                          → 含 skills?: Skill[]（公开详情）
+ *   GET /api/v1/creator/agents/by-slug/:slug          → 含 skills?: Skill[]（owner 详情，支持 private/unlisted）
  *   PATCH /api/v1/creator/agents/:agentId/skills      body { skill_ids: string[] } → 204；最多 5
  *
  * 与其它受控 dialog 的交互模式保持一致：
@@ -18,7 +18,7 @@
  *     允许首次保存。后端 PATCH 才是 source of truth。
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -35,6 +35,7 @@ import { useApi } from "@/hooks/use-api";
 import { useClientLocale } from "@/hooks/use-client-locale";
 import { localizedErrorMessage } from "@/lib/api";
 import { MAX_SKILLS_PER_AGENT, type Skill } from "@/lib/skills";
+import { fetchCompleteSkillCatalog } from "@/lib/skill-package-catalog";
 
 interface Props {
   agentId: string;
@@ -51,13 +52,13 @@ interface AgentDetailResponse {
   skills?: Skill[];
 }
 
-interface SkillsCatalogResponse {
-  items: Skill[];
-}
-
 type Stage = "loading" | "ready" | "saving";
 
-export function SkillsDialog({
+export function SkillsDialog(props: Props) {
+  return props.open ? <OpenSkillsDialog key={`${props.agentId}:${props.agentSlug}`} {...props} /> : null;
+}
+
+function OpenSkillsDialog({
   agentId,
   agentSlug,
   agentName,
@@ -68,23 +69,23 @@ export function SkillsDialog({
   const copy =
     locale === "zh"
       ? {
-          loadFailed: "加载技能数据失败，请稍后重试",
-          saved: "已保存技能",
+          loadFailed: "加载能力声明失败，请稍后重试",
+          saved: "已保存能力声明",
           saveFailed: "保存失败，请稍后重试",
-          title: "技能",
-          desc: `选择该 Agent 对外声明的 Skill，最多 ${MAX_SKILLS_PER_AGENT} 个；保存后会影响 Agent 搜索结果和能力测评。`,
-          loading: "加载技能目录中…",
+          title: "能力声明",
+          desc: `选择该 Agent 对外声明的 Skill，最多 ${MAX_SKILLS_PER_AGENT} 个；保存后会影响 Agent 搜索结果和能力测评，不会安装技能包或 MCP 工具。`,
+          loading: "加载能力目录中…",
           cancel: "取消",
           saving: "保存中…",
           save: "保存",
         }
       : {
-          loadFailed: "Failed to load Skills. Try again later.",
-          saved: "Skills saved",
+          loadFailed: "Failed to load capability declarations. Try again later.",
+          saved: "Capability declarations saved",
           saveFailed: "Save failed. Try again later.",
-          title: "Skills",
-          desc: `Choose the Skills this Agent declares publicly, up to ${MAX_SKILLS_PER_AGENT}. Saving affects Registry search and benchmarks.`,
-          loading: "Loading Skill directory…",
+          title: "Capability declarations",
+          desc: `Choose the Skills this Agent declares publicly, up to ${MAX_SKILLS_PER_AGENT}. Saving affects Registry search and benchmarks; it does not install skill packages or MCP tools.`,
+          loading: "Loading capability directory…",
           cancel: "Cancel",
           saving: "Saving…",
           save: "Save",
@@ -96,19 +97,23 @@ export function SkillsDialog({
   const [selected, setSelected] = useState<string[]>([]);
   const [initialSelected, setInitialSelected] = useState<string[]>([]);
 
-  // 每次打开拉取目录 + 当前 agent 的 skills
+  // Callback/token refreshes must not discard an in-progress selection.
+  const load = useEffectEvent(() => Promise.all([
+    fetchCompleteSkillCatalog(locale),
+    apiFetch<AgentDetailResponse>(`/api/v1/creator/agents/by-slug/${encodeURIComponent(agentSlug)}`),
+  ]));
+  const loadFailed = useEffectEvent((error: unknown) => {
+    toast.error(localizedErrorMessage(error, locale, copy.loadFailed));
+    onClose();
+  });
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
 
     (async () => {
       try {
-        const [skillsRes, agentRes] = await Promise.all([
-          apiFetch<SkillsCatalogResponse>("/api/v1/skills"),
-          apiFetch<AgentDetailResponse>(`/api/v1/agents/${agentSlug}`),
-        ]);
+        const [items, agentRes] = await load();
         if (cancelled) return;
-        const items = skillsRes?.items ?? [];
         const current = (agentRes?.skills ?? []).map((s) => s.id);
         setCatalog(items);
         setSelected(current);
@@ -116,15 +121,14 @@ export function SkillsDialog({
         setStage("ready");
       } catch (e) {
         if (cancelled) return;
-        toast.error(localizedErrorMessage(e, locale, copy.loadFailed));
-        onClose();
+        loadFailed(e);
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [apiFetch, agentSlug, copy.loadFailed, locale, onClose, open]);
+  }, [agentSlug, locale, open]);
 
   const handleSave = async () => {
     setStage("saving");
