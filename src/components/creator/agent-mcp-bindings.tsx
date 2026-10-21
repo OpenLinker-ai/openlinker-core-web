@@ -68,6 +68,7 @@ export function AgentMcpBindings({
       api.fetch<{
         items: Binding[];
         host_status: string;
+        host_connected: boolean;
         max_bindings: number;
       }>(path),
     refetchInterval: false,
@@ -187,13 +188,13 @@ export function AgentMcpBindings({
         pending: "等待下次运行",
         ready: "模型已发现工具",
         used: "工具调用成功",
-        failed: "工具加载失败",
+        failed: "本次运行中工具未就绪",
       }
     : {
         pending: "Waiting for the next Run",
         ready: "Tools discovered by the model",
         used: "Tool call succeeded",
-        failed: "Tool loading failed",
+        failed: "Tools were not ready during this Run",
       };
   return (
     <div className="ol-panel min-w-0 space-y-5 p-5">
@@ -240,8 +241,12 @@ export function AgentMcpBindings({
           <p role="status" className="text-sm text-amber-700">
             {bindings.data?.host_status === "incompatible"
               ? zh
-                ? "当前执行端尚不支持 MCP 自动下发。请升级 Node 或 Plugin 后再运行；已保存的选择会保留。"
-                : "The connected host does not support automatic MCP delivery. Upgrade Node or Plugin before running. Your selection remains saved."
+                ? bindings.data.host_connected
+                  ? "当前执行端尚不支持 MCP 自动下发。请升级 Node 或 Plugin 后再运行；已保存的选择会保留。"
+                  : "最近连接的执行端不支持 MCP 自动下发，且当前离线。请升级并重新连接后再运行；已保存的选择会保留。"
+                : bindings.data.host_connected
+                  ? "The connected host does not support automatic MCP delivery. Upgrade Node or Plugin before running. Your selection remains saved."
+                  : "The last known host does not support MCP delivery and is offline. Upgrade and reconnect before running. Your selection remains saved."
               : zh
                 ? "当前执行端离线。选择会保留，连接兼容的 Node 或 Plugin 后生效。"
                 : "The host is offline. Your selection is retained until a compatible Node or Plugin connects."}
@@ -317,8 +322,8 @@ export function AgentMcpBindings({
       </div>
       <p className="text-xs text-[color:var(--ol-muted)]">
         {zh
-          ? "“模型已发现工具”表示执行端完成了工具列表读取；“工具调用成功”需要一次真实的工具执行。改变选择会在下次运行更新模型会话；解除关联立即阻止新的工具调用，已开始的操作可能仍会完成。"
-          : "Discovered means the model client fetched the tool list. Succeeded requires an actual execution. Selection changes update the model session on the next Run. Removal blocks new calls; operations already started may finish."}
+          ? "“模型已发现工具”表示执行端完成了工具列表读取；“工具调用成功”需要一次真实的工具执行。“未就绪”也可能是认证或模型启动失败，请检查对应运行的错误。改变选择会在下次运行更新模型会话；解除关联立即阻止新的工具调用，已开始的操作可能仍会完成。"
+          : "Discovered means the model client fetched the tool list. Succeeded requires an actual execution. Not ready may also indicate authentication or model startup failure; check the Run error. Selection changes update the model session on the next Run. Removal blocks new calls; operations already started may finish."}
       </p>
       <Link href="/mcps" className="text-sm underline">
         {zh ? "浏览 MCP 服务目录" : "Browse the MCP service directory"}
