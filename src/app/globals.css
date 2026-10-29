@@ -1162,7 +1162,7 @@ body > main {
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
   }
 
-  .ol-mini-btn:hover {
+  .ol-mini-btn:hover:not(:disabled) {
     border-color: color-mix(in oklab, var(--ol-primary) 45%, white);
     color: var(--ol-primary-dark);
   }
@@ -1173,10 +1173,18 @@ body > main {
     color: #ffffff;
   }
 
-  .ol-mini-btn-primary:hover {
+  .ol-mini-btn-primary:hover:not(:disabled) {
     background: var(--ol-primary-dark);
     border-color: var(--ol-primary-dark);
     color: #ffffff;
+  }
+
+  /* 禁用态必须一眼可辨，例如只有一页时的“上一页 / 下一页”。 */
+  .ol-mini-btn:disabled {
+    background: var(--ol-soft);
+    border-color: var(--ol-line);
+    color: var(--ol-subtle);
+    cursor: not-allowed;
   }
 
   @container ol-agent-list (max-width: 620px) {
