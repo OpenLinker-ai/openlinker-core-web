@@ -21,12 +21,14 @@ import { automationAccessMessages } from "@/messages/agent";
 
 interface BootstrapToken {
   id: string;
+  agent_id?: string;
   name: string;
   prefix: string;
   status: string;
   expires_at?: string;
   redeemed_at?: string;
   revoked_at?: string;
+  last_used_at?: string;
   created_at: string;
   plaintext_token?: string;
 }
@@ -53,11 +55,7 @@ interface AgentTokenListResponse {
 }
 
 const AGENT_TOKEN_PAGE_SIZE = 8;
-type AutomationAccessSection = "all" | "create" | "tokens" | "approvals";
-
-export function AgentTokenCreatePanel() {
-  return <AutomationAccessPanel section="create" />;
-}
+type AutomationAccessSection = "all" | "tokens" | "approvals";
 
 export function AgentTokenListPanel() {
   return <AutomationAccessPanel section="tokens" />;
@@ -118,7 +116,8 @@ export function AutomationAccessPanel({
   const [busy, setBusy] = useState(false);
   const [issueOpen, setIssueOpen] = useState(false);
   const [tokenName, setTokenName] = useState("");
-  const showCreate = section === "all" || section === "create";
+  // Issuing and the list share one tab, so a new Token shows up where it is managed.
+  const showCreate = section === "all" || section === "tokens";
   const showTokens = section === "all" || section === "tokens";
   const showApprovals = section === "all" || section === "approvals";
 
@@ -212,15 +211,27 @@ export function AutomationAccessPanel({
       return;
     }
     setBusy(true);
+    let token: BootstrapToken;
     try {
-      const token = await apiFetch<BootstrapToken>("/api/v1/creator/agent-tokens", {
+      token = await apiFetch<BootstrapToken>("/api/v1/creator/agent-tokens", {
         method: "POST",
         body: {
           name: normalizedName,
           expires_in_minutes: 30,
         },
       });
-      setRevealed(token.plaintext_token ?? null);
+    } catch (error) {
+      toast.error(localizedErrorMessage(error, locale, copy.createFailed));
+      setBusy(false);
+      return;
+    }
+    // The Token exists now: show its one-time plaintext even if the list refresh fails,
+    // so a retry never issues a second Token and hides the first one's secret.
+    setRevealed(token.plaintext_token ?? null);
+    setIssueOpen(false);
+    setTokenName("");
+    toast.success(copy.created);
+    try {
       if (!showTokens) {
         setTokenTotal((value) => value + 1);
       } else if (tokenOffset === 0) {
@@ -228,11 +239,8 @@ export function AutomationAccessPanel({
       } else {
         setTokenOffset(0);
       }
-      setIssueOpen(false);
-      setTokenName("");
-      toast.success(copy.created);
     } catch (error) {
-      toast.error(localizedErrorMessage(error, locale, copy.createFailed));
+      toast.error(localizedErrorMessage(error, locale, copy.loadFailed));
     } finally {
       setBusy(false);
     }
@@ -389,8 +397,14 @@ export function AutomationAccessPanel({
 
       {showTokens ? (
         <>
-          <div className="text-[12px] text-[color:var(--ol-muted)]">
-            {copy.generated(tokenTotal)}
+          <div className={showCreate ? "border-t border-[color:var(--ol-line)] pt-4" : undefined}>
+            <strong className="text-[14px] font-black">{copy.listTitle}</strong>
+            <p className="mt-1 text-[12px] text-[color:var(--ol-muted)]">
+              {copy.userTokenNote}{" "}
+              <Link href="/settings/user-tokens" className="font-bold text-[color:var(--ol-primary-dark)] hover:underline">
+                {copy.userTokenLink} →
+              </Link>
+            </p>
           </div>
           <form
             className="grid gap-2 sm:grid-cols-[170px_minmax(0,1fr)_auto]"
@@ -511,6 +525,32 @@ export function AutomationAccessPanel({
                         </code>
                         <span className="ol-chip">{agentTokenStatusLabel(token, locale)}</span>
                       </div>
+                      <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-[color:var(--ol-muted)]">
+                        <span>
+                          {token.agent_id ? (
+                            <>
+                              {copy.boundAgent}{" "}
+                              <Link
+                                href={`/hub/agents/${encodeURIComponent(token.agent_id)}/onboarding`}
+                                className="font-bold text-[color:var(--ol-primary-dark)] hover:underline"
+                                title={token.agent_id}
+                              >
+                                <code>{token.agent_id.slice(0, 8)}</code>
+                              </Link>
+                            </>
+                          ) : tokenState === "revoked" ? (
+                            copy.unbound
+                          ) : tokenState === "expired" ? (
+                            copy.unboundExpired
+                          ) : token.expires_at ? (
+                            copy.unboundPending(formatTokenDate(token.expires_at, locale, "-"))
+                          ) : (
+                            copy.unbound
+                          )}
+                        </span>
+                        <span>{copy.lastUsed} {formatTokenDate(token.last_used_at, locale, copy.notUsed)}</span>
+                        <span>{copy.createdAt} {formatTokenDate(token.created_at, locale, "-")}</span>
+                      </div>
                     </div>
                     <button
                       type="button"
@@ -625,13 +665,24 @@ function agentTokenStatusLabel(token: BootstrapToken, locale: Locale): string {
   const status = filterStatus === "expired" ? "expired" : token.revoked_at ? "revoked" : token.redeemed_at ? "redeemed" : token.status;
   const labels: Record<string, Record<Locale, string>> = {
     active: { zh: "有效", en: "Active" },
+    active_runtime: { zh: "使用中", en: "In use" },
     pending: { zh: "待注册", en: "Pending" },
+    pending_registration: { zh: "待注册", en: "Pending registration" },
     redeemed: { zh: "已注册", en: "Redeemed" },
     revoked: { zh: "已撤销", en: "Revoked" },
     expired: { zh: "已过期", en: "Expired" },
     used: { zh: "已使用", en: "Used" },
   };
   return labels[status]?.[locale] ?? status;
+}
+
+function formatTokenDate(value: string | undefined, locale: Locale, fallback: string): string {
+  if (!value) return fallback;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+  return date.toLocaleString(locale === "zh" ? "zh-CN" : "en-US", {
+    year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+  });
 }
 
 function agentTokenFilterStatus(token: BootstrapToken): Exclude<AgentTokenFilterStatus, "all"> {

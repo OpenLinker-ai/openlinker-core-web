@@ -6,7 +6,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { MyWorkspaceSwitcher } from "@/components/my/workspace-switcher";
 import type { Locale } from "@/lib/i18n";
 
-export type CreatorHubSection = "agents" | "access" | "tokens" | "bridge" | "approvals" | "skills";
+export type CreatorHubSection = "agents" | "tokens" | "bridge" | "approvals" | "skills";
 
 const NAV_ITEMS: ReadonlyArray<{
   id: CreatorHubSection;
@@ -21,15 +21,9 @@ const NAV_ITEMS: ReadonlyArray<{
     href: "/hub/agents",
   },
   {
-    id: "access",
-    label: { zh: "签发 Agent Token", en: "Issue Agent Token" },
-    desc: { zh: "给 Agent 自注册", en: "For Agent self-registration" },
-    href: "/hub/access",
-  },
-  {
     id: "tokens",
     label: { zh: "Agent Token", en: "Agent Tokens" },
-    desc: { zh: "查看、排序、撤销", en: "Review, sort, revoke" },
+    desc: { zh: "签发、查看、撤销", en: "Issue, review, revoke" },
     href: "/hub/tokens",
   },
   {
@@ -116,7 +110,7 @@ export function CreatorHubFrame({
         <MyWorkspaceSwitcher locale={locale} className="mt-6" />
         <PageTabs
           ariaLabel={locale === "zh" ? "Agent 管理功能分页" : "Agent Console sections"}
-          className="mt-6 xl:grid-cols-6"
+          className="mt-6 xl:grid-cols-5"
           items={NAV_ITEMS.map((item) => ({
             label: item.label[locale],
             desc: item.desc[locale],
@@ -152,8 +146,7 @@ export function CreatorHubGuide({
             : "这里集中管理你拥有的 Agent、Agent Token、跨节点同步和审批。",
           guide: {
             agents: "查看每个 Agent 的状态、连接方式、调用统计和管理入口。",
-            access: "签发限时 Agent Token；明文仅显示一次，注册后同一个 Token 会在连接和运行时继续标识这个 Agent。",
-            tokens: "查看 Agent Token 状态，并撤销不再使用的 Token。",
+            tokens: "签发限时 Agent Token；明文仅显示一次，注册后同一个 Token 会在连接和运行时继续标识这个 Agent。列表里能看到每枚 Token 绑定的 Agent，不再使用的应及时撤销。",
             bridge: "选择 Registry Node，把允许公开的 Agent 条目同步到其他节点。",
             approvals: "集中确认需要人工审核的高风险动作。",
             skills: "能力声明用于发现 Agent；技能包把指令与资料交给 Agent 执行。关联后在下一次运行加载，加载状态不等于能力认证。",
@@ -168,8 +161,7 @@ export function CreatorHubGuide({
             : "Manage the Agents you own, their Agent Tokens, cross-node sync, and approvals.",
           guide: {
             agents: "Review each Agent's status, connection mode, call metrics, and management entry points.",
-            access: "Create a time-limited Agent Token whose plaintext is shown once; after registration, the same Token identifies that Agent whenever it connects or runs.",
-            tokens: "Review Agent Token status and revoke Tokens that are no longer needed.",
+            tokens: "Create a time-limited Agent Token whose plaintext is shown once; after registration, the same Token identifies that Agent whenever it connects or runs. The list shows which Agent each Token is bound to; revoke any that are no longer needed.",
             bridge: "Choose a Registry Node and sync Agent records that are allowed to be public.",
             approvals: "Review high-risk actions that require a person to approve them.",
             skills: "Capability declarations help discover Agents. Packages supply instructions and resources in subsequent runs. Loading a package is not a capability certification.",

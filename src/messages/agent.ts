@@ -257,7 +257,16 @@ type AutomationAccessMessages = {
   preview: string;
   tokenBoundary: string;
   tokenBoundarySuffix: string;
-  generated: (count: number) => string;
+  listTitle: string;
+  userTokenNote: string;
+  userTokenLink: string;
+  boundAgent: string;
+  unboundPending: (deadline: string) => string;
+  unboundExpired: string;
+  unbound: string;
+  lastUsed: string;
+  notUsed: string;
+  createdAt: string;
   filterStatus: string;
   filterActive: string;
   filterAll: string;
@@ -316,7 +325,16 @@ export const automationAccessMessages = {
     preview: "查看将复制给 Agent 的启动包",
     tokenBoundary: "此 Agent Token 只能调用",
     tokenBoundarySuffix: "注册并运行 Agent；完整接入步骤请看",
-    generated: (count: number) => `已生成 ${count} 条 Agent Token 记录。Agent Token 仅用于 Agent 注册与运行，不能代替 User Token 发起 API 或 MCP 调用。`,
+    listTitle: "已签发的 Agent Token",
+    userTokenNote: "Agent Token 只用于 Agent 注册、连接和运行。你自己的脚本、MCP 客户端或 API 调用请使用 User Token。",
+    userTokenLink: "管理 User Token",
+    boundAgent: "绑定 Agent",
+    unboundPending: (deadline: string) => `尚未注册，${deadline} 前有效`,
+    unboundExpired: "尚未注册，注册窗口已过期",
+    unbound: "未绑定 Agent",
+    lastUsed: "最近使用",
+    notUsed: "未使用",
+    createdAt: "创建于",
     filterStatus: "筛选状态",
     filterActive: "仅有效",
     filterAll: "全部",
@@ -373,7 +391,16 @@ export const automationAccessMessages = {
     preview: "Preview the startup packet",
     tokenBoundary: "This Agent Token can only call",
     tokenBoundarySuffix: "to register and run an Agent. For the full onboarding steps, see",
-    generated: (count: number) => `${count} Agent Token records generated. Agent Tokens are only for Agent registration and execution; they cannot replace User Tokens for API or MCP calls.`,
+    listTitle: "Issued Agent Tokens",
+    userTokenNote: "Agent Tokens are only for Agents to register, connect, and run. Use a User Token for your own scripts, MCP clients, or API calls.",
+    userTokenLink: "Manage User Tokens",
+    boundAgent: "Bound Agent",
+    unboundPending: (deadline: string) => `Not registered yet; valid until ${deadline}`,
+    unboundExpired: "Not registered; the registration window expired",
+    unbound: "No Agent bound",
+    lastUsed: "Last used",
+    notUsed: "Never",
+    createdAt: "Created",
     filterStatus: "Filter status",
     filterActive: "Active only",
     filterAll: "All",

@@ -110,7 +110,7 @@ function SelfRegistrationEntry({ locale }: { locale: Locale }) {
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
           <Link
-            href="/hub/access"
+            href="/hub/tokens"
             className="inline-flex h-10 items-center justify-center rounded-[13px] bg-[color:var(--ol-primary)] px-4 text-[13px] font-black text-white hover:bg-[color:var(--ol-primary-dark)]"
           >
             {copy.primary}

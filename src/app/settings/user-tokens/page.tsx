@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -71,6 +72,12 @@ export default async function UserTokensPage() {
           </strong>
           <p className="mt-1 max-w-4xl text-[12.5px] font-semibold leading-6 text-[color:var(--ol-muted)]">
             {copy.boundaryBody}
+          </p>
+          <p className="mt-2 max-w-4xl text-[12.5px] font-semibold leading-6 text-[color:var(--ol-muted)]">
+            {copy.agentTokenNote}{" "}
+            <Link href="/hub/tokens" className="font-bold text-[color:var(--ol-primary-dark)] hover:underline">
+              {copy.agentTokenLink} →
+            </Link>
           </p>
         </section>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Copy, KeyRound, Plus, RefreshCw, ShieldCheck } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { CreateUserTokenDialog } from "@/components/settings/create-user-token-dialog";
@@ -57,6 +57,7 @@ export function UserTokensContent({
   const [status, setStatus] = useState<TokenListStatus>("active");
   const [query, setQuery] = useState("");
   const limit = initialLimit;
+  const listRef = useRef<HTMLElement>(null);
 
   const agentNames = useMemo(
     () => new Map(agentOptions.map((agent) => [agent.id, agent.name])),
@@ -84,21 +85,34 @@ export function UserTokensContent({
       const nextStatus = nextFilters.status ?? status;
       const nextQuery = nextFilters.query ?? query;
       setLoading(true);
-      try {
+      const fetchPage = (pageOffset: number) => {
         const params = new URLSearchParams({
           limit: String(limit),
-          offset: String(nextOffset),
+          offset: String(pageOffset),
           sort_by: "created_at",
           sort_dir: "desc",
           status: nextStatus,
         });
         if (nextQuery.trim()) params.set("q", nextQuery.trim());
-        const response = await apiFetch<UserTokenListResponse>(
+        return apiFetch<UserTokenListResponse>(
           `/api/v1/user-tokens?${params.toString()}`,
         );
+      };
+      try {
+        let requestedOffset = nextOffset;
+        let response = await fetchPage(requestedOffset);
+        // A narrower search or a concurrent revoke can leave the offset past the end:
+        // retry the last real page, then fall back to the first page.
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          const pageTotal = Number.isFinite(response.total) ? response.total : 0;
+          const pageOffset = Number.isFinite(response.offset) ? response.offset : requestedOffset;
+          if (pageTotal === 0 || pageOffset < pageTotal) break;
+          requestedOffset = attempt === 0 ? Math.floor((pageTotal - 1) / limit) * limit : 0;
+          response = await fetchPage(requestedOffset);
+        }
         setItems(Array.isArray(response.items) ? response.items : []);
         setTotal(Number.isFinite(response.total) ? response.total : 0);
-        setOffset(Number.isFinite(response.offset) ? response.offset : nextOffset);
+        setOffset(Number.isFinite(response.offset) ? response.offset : requestedOffset);
         setStatus(nextStatus);
         setQuery(nextQuery);
         setPageError(false);
@@ -113,6 +127,12 @@ export function UserTokensContent({
 
   const afterMutation = () => {
     void loadPage(offset);
+  };
+
+  // The pager sits below the list, so bring the new page's first item back into view.
+  const goToPage = async (nextOffset: number) => {
+    await loadPage(nextOffset);
+    listRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
   };
 
   const revoke = async (token: UserTokenItem) => {
@@ -148,10 +168,12 @@ export function UserTokensContent({
   const pageEnd = total === 0 ? 0 : Math.min(offset + items.length, total);
   const canPrevious = offset > 0 && !loading;
   const canNext = offset + limit < total && !loading;
+  const pageCount = Math.max(1, Math.ceil(total / limit));
+  const currentPage = Math.min(pageCount, Math.floor(offset / limit) + 1);
 
   return (
     <>
-      <section className="ol-panel min-w-0 overflow-hidden">
+      <section ref={listRef} className="ol-panel min-w-0 scroll-mt-24 overflow-hidden">
         <div className="ol-panel-head flex-wrap gap-3">
           <div>
             <strong>{copy.managerTitle}</strong>
@@ -294,7 +316,7 @@ export function UserTokensContent({
                       </button>
                       <button
                         type="button"
-                        className="ol-mini-btn disabled:cursor-not-allowed disabled:opacity-50"
+                        className="ol-mini-btn"
                         disabled={status !== "active" || revokingID === token.id}
                         onClick={() => void revoke(token)}
                       >
@@ -345,12 +367,15 @@ export function UserTokensContent({
             <span className="text-[11.5px] font-bold text-[color:var(--ol-muted)]">
               {copy.pageSummary(pageStart, pageEnd, total)}
             </span>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[11.5px] font-bold text-[color:var(--ol-muted)]">
+                {copy.pageIndicator(currentPage, pageCount)}
+              </span>
               <button
                 type="button"
                 className="ol-mini-btn"
                 disabled={!canPrevious}
-                onClick={() => void loadPage(Math.max(0, offset - limit))}
+                onClick={() => void goToPage(Math.max(0, offset - limit))}
               >
                 {copy.previous}
               </button>
@@ -358,7 +383,7 @@ export function UserTokensContent({
                 type="button"
                 className="ol-mini-btn"
                 disabled={!canNext}
-                onClick={() => void loadPage(offset + limit)}
+                onClick={() => void goToPage(offset + limit)}
               >
                 {copy.next}
               </button>

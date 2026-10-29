@@ -47,7 +47,7 @@ const ITEMS: ReadonlyArray<WorkspaceItem> = [
   },
   {
     label: { zh: "设置", en: "Settings" },
-    desc: { zh: "账户安全", en: "Account security" },
+    desc: { zh: "账户安全、User Token", en: "Security, User Tokens" },
     href: "/settings",
     icon: "gear",
     match: (p) => p.startsWith("/settings"),
