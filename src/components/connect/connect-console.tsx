@@ -585,7 +585,7 @@ export function ConnectConsole({ locale = "zh" }: { locale?: Locale }) {
             <strong className="text-[14px] font-[900] text-[color:var(--ol-ink)]">{copy.agentAuth}</strong>
             <p className="mt-2 text-[12px] leading-relaxed text-[color:var(--ol-muted)]">{copy.agentAuthBody}</p>
             <Link
-              href="/hub/access"
+              href="/hub/tokens"
               className="ol-mini-btn mt-3 inline-flex w-full items-center justify-center gap-1.5 bg-[color:var(--ol-soft)] text-[color:var(--ol-ink)] hover:bg-[color:var(--ol-line)]"
             >
               <Icon name="bot" size="sm" />

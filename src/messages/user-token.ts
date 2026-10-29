@@ -17,6 +17,8 @@ type UserTokenMessages = {
   pageLead: string;
   boundaryTitle: string;
   boundaryBody: string;
+  agentTokenNote: string;
+  agentTokenLink: string;
   managerTitle: string;
   recordCount: (count: number) => string;
   create: string;
@@ -57,6 +59,7 @@ type UserTokenMessages = {
   previous: string;
   next: string;
   pageSummary: (start: number, end: number, total: number) => string;
+  pageIndicator: (page: number, pages: number) => string;
   sessionLoading: string;
   sessionMissing: string;
   createTitle: string;
@@ -114,6 +117,8 @@ export const coreUserTokenMessages = {
     pageLead: "为 MCP、SDK、API 和外部自动化创建当前实例的 User Token。权限由 Core 执行，网页登录会话与 User Token 始终分开。",
     boundaryTitle: "最小权限，按需交付",
     boundaryBody: "Token 明文只显示一次。你可以随时收紧或撤销；如果需要增加权限，请创建替代 Token，已经发出去的低权限 Token 不会被悄悄放大权限。",
+    agentTokenNote: "User Token 代表你本人，用于自己的脚本、MCP 客户端和 API 调用。让 Agent 接入平台、连接和运行用的是 Agent Token，在 Agent 管理里签发和撤销。",
+    agentTokenLink: "管理 Agent Token",
     managerTitle: "你的 User Token",
     recordCount: (count) => `共 ${count} 条记录`,
     create: "创建 Token",
@@ -154,6 +159,7 @@ export const coreUserTokenMessages = {
     previous: "上一页",
     next: "下一页",
     pageSummary: (start, end, total) => `第 ${start}-${end} 条，共 ${total} 条`,
+    pageIndicator: (page, pages) => `第 ${page} / ${pages} 页`,
     sessionLoading: "登录状态加载中，请稍后再试。",
     sessionMissing: "登录状态不可用，请重新登录。",
     createTitle: "创建 User Token",
@@ -240,6 +246,8 @@ export const coreUserTokenMessages = {
     pageLead: "Create User Tokens for MCP, SDK, API, and external automation on this Core instance. Core enforces every permission, and web sessions stay separate from User Tokens.",
     boundaryTitle: "Least privilege by default",
     boundaryBody: "Plaintext is shown once. You can tighten or revoke a token at any time. To add access, create a replacement token, so a token you already handed out never gains access silently.",
+    agentTokenNote: "A User Token acts as you, for your own scripts, MCP clients, and API calls. Agents register, connect, and run with an Agent Token instead, issued and revoked in the Agent Console.",
+    agentTokenLink: "Manage Agent Tokens",
     managerTitle: "Your User Tokens",
     recordCount: (count) => `${count} records`,
     create: "Create token",
@@ -280,6 +288,7 @@ export const coreUserTokenMessages = {
     previous: "Previous",
     next: "Next",
     pageSummary: (start, end, total) => `${start}-${end} of ${total}`,
+    pageIndicator: (page, pages) => `Page ${page} of ${pages}`,
     sessionLoading: "Your sign-in session is still loading. Try again in a moment.",
     sessionMissing: "Your sign-in session is unavailable. Sign in again.",
     createTitle: "Create User Token",

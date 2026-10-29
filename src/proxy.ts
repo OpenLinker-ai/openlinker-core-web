@@ -71,7 +71,7 @@ function hubCompatibilityUrl(req: NextRequest) {
   const tab = req.nextUrl.searchParams.get("tab");
   const path =
     tab === "access"
-      ? "/hub/access"
+      ? "/hub/tokens"
       : tab === "registry"
         ? "/hub/bridge"
         : tab === "skills"
