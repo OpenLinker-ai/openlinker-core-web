@@ -665,7 +665,9 @@ function agentTokenStatusLabel(token: BootstrapToken, locale: Locale): string {
   const status = filterStatus === "expired" ? "expired" : token.revoked_at ? "revoked" : token.redeemed_at ? "redeemed" : token.status;
   const labels: Record<string, Record<Locale, string>> = {
     active: { zh: "有效", en: "Active" },
+    active_runtime: { zh: "使用中", en: "In use" },
     pending: { zh: "待注册", en: "Pending" },
+    pending_registration: { zh: "待注册", en: "Pending registration" },
     redeemed: { zh: "已注册", en: "Redeemed" },
     revoked: { zh: "已撤销", en: "Revoked" },
     expired: { zh: "已过期", en: "Expired" },
