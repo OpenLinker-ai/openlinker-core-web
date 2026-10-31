@@ -11,11 +11,33 @@ const { name } = JSON.parse(await readFile(new URL("package.json", root), "utf8"
 const hosted = name === "openlinker-web";
 const noindex = "noindex, nofollow";
 let skillRequests = 0;
+const skillVersion = {
+  id: "v1", version: "1.0.0", digest: "sha256:00", providers: [], capability_ids: [],
+  created_at: "2026-10-01T00:00:00Z", published_at: "2026-10-01T00:00:00Z", local_install_compatible: false,
+  contents: { name: "Smoke Skill", description: "Smoke Skill package" },
+};
+const skillPackage = (visibility) => ({
+  id: `smoke-${visibility}`, name: "Smoke Skill", description: "Smoke Skill package", visibility,
+  versions: [{ id: "v1", version: "1.0.0" }],
+});
+// Resource pages set their own robots metadata, which replaces the layout policy.
+const resources = new Map([
+  ["/api/v1/skill-packages/smoke-public", skillPackage("public")],
+  ["/api/v1/skill-packages/smoke-public/versions/v1/metadata", { ...skillVersion, visibility: "public" }],
+  ["/api/v1/skill-packages/smoke-unlisted", skillPackage("unlisted")],
+  ["/api/v1/skill-packages/smoke-unlisted/versions/v1/metadata", { ...skillVersion, visibility: "unlisted" }],
+  ["/api/v1/agents/smoke-mcp", {
+    id: "smoke-mcp", slug: "smoke-mcp", name: "Smoke MCP", description: "Smoke MCP service", visibility: "public",
+    connection_mode: "mcp_server", creator: { display_name: "Smoke" }, examples: [],
+  }],
+]);
 const backend = http.createServer((req, res) => {
   res.setHeader("Content-Type", "application/json");
   if (req.url.startsWith("/api/v1/skills?")) {
     skillRequests += 1;
     res.end(JSON.stringify({ items: [{ id: "smoke/public-skill" }], total: 1, size: 200 }));
+  } else if (resources.has(req.url)) {
+    res.end(JSON.stringify(resources.get(req.url)));
   } else {
     res.writeHead(404).end(JSON.stringify({ error: { code: "NOT_FOUND" } }));
   }
@@ -134,7 +156,25 @@ async function check(flag) {
       dom.window.close();
     }
 
+    for (const [path, enabledMeta] of [
+      ["/skills/packages/smoke-public/versions/v1", "index, follow"],
+      ["/skills/packages/smoke-unlisted/versions/v1", noindex],
+      ["/mcps/services/smoke-mcp", "index, follow"],
+      // Section subpages stay out of the index but keep their links followable.
+      ["/mcps/platform/connect", "noindex, follow"],
+    ]) {
+      const response = await request(path);
+      assert.equal(response.status, 200, path);
+      assert.equal(response.headers.get("x-robots-tag"), enabled ? null : noindex, path);
+      const dom = new JSDOM(await response.text());
+      const robotsMeta = dom.window.document.querySelector('meta[name="robots"]')?.content;
+      assert.equal(robotsMeta, enabled ? enabledMeta : noindex, path);
+      dom.window.close();
+    }
+
     if (hosted) {
+      // Warm the homepage again so the hit does not depend on how long earlier checks took.
+      await (await request("/")).text();
       const cached = await request("/");
       await cached.text();
       assert.equal(cached.headers.get("x-openlinker-web-html-cache"), "HIT");

@@ -35,6 +35,12 @@ API and UI route contracts are declared stable.
 
 ### Changed
 
+- Search indexing is now off by default. Pages and responses carry
+  `noindex, nofollow` and `/sitemap.xml` returns 404 unless the runtime variable
+  `OPENLINKER_INDEXING_ENABLED` is exactly `true`; public Skill and MCP pages
+  follow the same switch. Set it before upgrading an instance that should stay
+  indexed. Sign-in, authorization and workspace routes remain noindex either way.
+
 - Completed English and Simplified Chinese copy for User Token management and
   preserved unknown future grants during edits without widening access.
 

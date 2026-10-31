@@ -2,8 +2,16 @@ import { cache } from "react";
 import { notFound } from "next/navigation";
 import { apiFetch, ApiError } from "@/lib/api";
 import { getLocale } from "@/lib/i18n-server";
+import { publicIndexingEnabled } from "@/lib/public-discovery.mjs";
 import { resourceSharingMessages } from "@/messages/resource-sharing";
 import type { SkillPackage, SkillPackageContents } from "@/lib/skill-packages";
+
+// Page metadata replaces the layout's robots policy, so it must apply the runtime switch too.
+function resourceRobots(visibility: string | undefined) {
+  const indexable = publicIndexingEnabled() && visibility === "public";
+  return { index: indexable, follow: indexable };
+}
+
 export const readPublicResource = cache(async (path: string): Promise<unknown> => {
   try {
     return await apiFetch(path, { cache: "no-store" });
@@ -28,14 +36,14 @@ export async function skillResourceMetadata(params: { packageId: string; version
   return {
     title: name,
     description,
-    robots: { index: item.visibility === "public", follow: item.visibility === "public" },
+    robots: resourceRobots(item.visibility),
   };
 }
 
 export async function mcpResourceMetadata(slug?: string) {
   const locale = await getLocale();
   const c = resourceSharingMessages[locale];
-  if (!slug) return { title: c.platform, description: c.platformHint };
+  if (!slug) return { title: c.platform, description: c.platformHint, robots: resourceRobots("public") };
   const item = (await readPublicResource(
     `/api/v1/agents/${encodeURIComponent(slug)}`,
   )) as { name: string; description: string; visibility: string; connection_mode: string };
@@ -43,6 +51,6 @@ export async function mcpResourceMetadata(slug?: string) {
   return {
     title: item.name,
     description: item.description,
-    robots: { index: item.visibility === "public", follow: item.visibility === "public" },
+    robots: resourceRobots(item.visibility),
   };
 }

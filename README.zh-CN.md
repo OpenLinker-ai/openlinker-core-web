@@ -198,10 +198,6 @@ openlinker-core-web/
 - 英文变更记录：[CHANGELOG.md](./CHANGELOG.md)
 - 行为准则：[CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
 
-## 许可证
-
-Apache-2.0。详见 [LICENSE](./LICENSE)。
-
 ## 搜索引擎收录
 
 默认关闭索引，仅希望公开收录的实例设置运行时变量 `OPENLINKER_INDEXING_ENABLED=true`。
@@ -214,3 +210,7 @@ Apache-2.0。详见 [LICENSE](./LICENSE)。
 公开实例升级前应先明确配置开关，并核对 `OPENLINKER_PUBLIC_ORIGIN`（若设置）或 `NEXTAUTH_URL`。
 切换时使 CDN 的旧 HTML、robots 和 sitemap 缓存失效。此声明不能替代鉴权，也不覆盖直连 Core
 或入口代理绕过 Web 的请求。构建后可运行 `npm run test:runtime-indexing` 验证运行时切换。
+
+## 许可证
+
+Apache-2.0。详见 [LICENSE](./LICENSE)。
