@@ -18,9 +18,10 @@ import { getLocale } from "@/lib/i18n-server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
-  return locale === "zh"
+  const copy = locale === "zh"
     ? { title: "登录", description: "登录当前 OpenLinker Core 实例" }
     : { title: "Sign In", description: "Sign in to this OpenLinker Core instance" };
+  return { ...copy, robots: { index: false, follow: false } };
 }
 
 export default async function LoginPage() {

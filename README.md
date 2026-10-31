@@ -39,6 +39,28 @@ and verification, while the settings UI supports creating, listing, tightening,
 replacing, and revoking tokens. Expiration and Agent-scoped grants can be set at
 issuance; plaintext token values are shown only once.
 
+## Search indexing
+
+Search indexing is disabled by default. Set the server runtime variable
+`OPENLINKER_INDEXING_ENABLED=true` only for an intentionally public instance;
+private, test, and preview instances should leave it unset or set it to `false`.
+Only the exact value `true` enables indexing, independently of `NODE_ENV`.
+Restart the server after changing it; the same build supports both policies.
+
+When disabled, Web responses carry `X-Robots-Tag: noindex, nofollow`, pages also
+include robots metadata, and `/sitemap.xml` returns 404 without fetching the
+catalog. `/robots.txt` allows crawling so crawlers can read noindex and omits
+the sitemap. When enabled, public pages can be indexed and the sitemap lists
+public URLs; account, authorization, and workspace routes remain noindex.
+
+Set the production flag before upgrading a public instance. Ensure
+`OPENLINKER_PUBLIC_ORIGIN` (if set) or `NEXTAUTH_URL` identifies this instance,
+and invalidate any old CDN copies of HTML, robots, and sitemap when switching.
+This is a crawler declaration, not access control, and does not cover requests
+sent directly to Core or routed around Web by an ingress proxy.
+Run `npm run test:runtime-indexing` after building to exercise all three modes
+against the same production build.
+
 ## Scope
 
 Included:

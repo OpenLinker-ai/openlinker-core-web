@@ -1,10 +1,15 @@
 import type { MetadataRoute } from "next";
 
-import { publicWebOrigin } from "@/lib/public-discovery.mjs";
+import { publicIndexingEnabled, publicWebOrigin } from "@/lib/public-discovery.mjs";
 
 export const dynamic = "force-dynamic";
 
 export default function robots(): MetadataRoute.Robots {
+  // Crawlers must be able to fetch pages to observe their noindex headers.
+  if (!publicIndexingEnabled()) {
+    return { rules: [{ userAgent: "*", allow: "/" }] };
+  }
+
   const origin = publicWebOrigin();
   return {
     rules: [{

@@ -7,9 +7,10 @@ import { getLocale } from "@/lib/i18n-server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
-  return locale === "zh"
+  const copy = locale === "zh"
     ? { title: "注册", description: "创建 OpenLinker 账号" }
     : { title: "Sign Up", description: "Create an OpenLinker account" };
+  return { ...copy, robots: { index: false, follow: false } };
 }
 
 export const dynamic = "force-dynamic";

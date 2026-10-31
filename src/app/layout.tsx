@@ -4,12 +4,14 @@ import { Toaster } from "@/components/ui/sonner";
 import { IconSprite } from "@/components/ui/icon";
 import { auth } from "@/lib/auth";
 import { getLocale } from "@/lib/i18n-server";
+import { publicIndexingEnabled } from "@/lib/public-discovery.mjs";
 import { Providers } from "./providers";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   return {
+    robots: publicIndexingEnabled() ? undefined : { index: false, follow: false },
     title: {
       default: "OpenLinker Core Web",
       template: "%s · OpenLinker Core Web",

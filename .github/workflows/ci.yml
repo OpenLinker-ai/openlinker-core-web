@@ -66,3 +66,6 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Check runtime indexing policy
+        run: npm run test:runtime-indexing
