@@ -113,6 +113,7 @@ export function SkillsRegistry({ locale, skills }: { locale: Locale; skills: Ski
   }, [apiFetch, authLoading, isAuthenticated]);
 
   const rows = useMemo(() => {
+    const collation = locale === "zh" ? "zh-CN" : "en-US";
     const term = query.trim().toLowerCase();
     return localizedSkills
       .filter((skill) => {
@@ -125,15 +126,15 @@ export function SkillsRegistry({ locale, skills }: { locale: Locale; skills: Ski
         return filterOK && queryOK;
       })
       .sort((a, b) => {
-        if (sort === "name") return a.name.localeCompare(b.name);
+        if (sort === "name") return a.name.localeCompare(b.name, collation);
         if (sort === "category") {
           const categoryDiff =
             CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category);
           if (categoryDiff !== 0) return categoryDiff;
         }
-        return a.sort_order - b.sort_order || a.name.localeCompare(b.name);
+        return a.sort_order - b.sort_order || a.name.localeCompare(b.name, collation);
       });
-  }, [filter, localizedSkills, query, sort]);
+  }, [filter, locale, localizedSkills, query, sort]);
 
   const categoryCounts = useMemo(() => {
     const counts = new Map<Skill["category"], number>();

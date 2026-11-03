@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { CreateUserTokenDialog } from "@/components/settings/create-user-token-dialog";
 import { TightenUserTokenDialog } from "@/components/settings/tighten-user-token-dialog";
 import { useApi } from "@/hooks/use-api";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
 import { coreUserTokenMessages } from "@/messages/user-token";
@@ -30,6 +31,7 @@ type Props = {
   loadError?: boolean;
   agentOptions: AgentOption[];
   locale: Locale;
+  renderedAt: number;
 };
 
 type TokenListStatus = "active" | "revoked" | "expired" | "all";
@@ -42,8 +44,10 @@ export function UserTokensContent({
   loadError = false,
   agentOptions,
   locale,
+  renderedAt,
 }: Props) {
   const copy = coreUserTokenMessages[locale];
+  const hydrated = useHydrated();
   const { fetch: apiFetch, isAuthenticated, isLoading: sessionLoading } = useApi();
   const [items, setItems] = useState(initialItems);
   const [total, setTotal] = useState(initialTotal);
@@ -259,7 +263,7 @@ export function UserTokensContent({
         ) : (
           <div className="grid gap-3 p-4">
             {items.map((token) => {
-              const status = tokenStatus(token);
+              const status = tokenStatus(token, hydrated ? undefined : renderedAt);
               const grants = token.grants ?? [];
               const knownPermissions = uniqueKnownPermissions(grants);
               const unknownPermissions = Array.from(
@@ -351,9 +355,9 @@ export function UserTokensContent({
                       <FixedResourceSummary grants={grants} permissions={knownPermissions} locale={locale} />
                     </div>
                     <dl className="grid grid-cols-2 gap-2 rounded-xl bg-[color:var(--ol-soft)] p-3 text-[11.5px]">
-                      <Meta label={copy.expires} value={formatDate(token.expires_at, locale, copy.never)} />
-                      <Meta label={copy.lastUsed} value={formatDate(token.last_used_at, locale, copy.notUsed)} />
-                      <Meta label={copy.createdAt} value={formatDate(token.created_at, locale, "-")} />
+                      <Meta label={copy.expires} value={formatDate(token.expires_at, locale, copy.never, hydrated)} />
+                      <Meta label={copy.lastUsed} value={formatDate(token.last_used_at, locale, copy.notUsed, hydrated)} />
+                      <Meta label={copy.createdAt} value={formatDate(token.created_at, locale, "-", hydrated)} />
                     </dl>
                   </div>
                 </article>
@@ -421,9 +425,9 @@ export function UserTokensContent({
   );
 }
 
-function tokenStatus(token: UserTokenItem): "active" | "expired" | "revoked" {
+function tokenStatus(token: UserTokenItem, now?: number): "active" | "expired" | "revoked" {
   if (token.revoked_at) return "revoked";
-  if (tokenIsExpired(token)) return "expired";
+  if (tokenIsExpired(token, now)) return "expired";
   return "active";
 }
 
@@ -526,6 +530,7 @@ function formatDate(
   value: string | null | undefined,
   locale: Locale,
   fallback: string,
+  hydrated: boolean,
 ): string {
   if (!value) return fallback;
   const date = new Date(value);
@@ -536,5 +541,6 @@ function formatDate(
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    ...(hydrated ? {} : { timeZone: "UTC" }),
   });
 }

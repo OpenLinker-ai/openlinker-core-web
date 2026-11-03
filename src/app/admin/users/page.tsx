@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { LocalRunTime } from "@/components/a2a/local-run-time";
 import { Icon } from "@/components/ui/icon";
 import { apiFetchAuthed, localizedErrorMessage } from "@/lib/api";
 
@@ -15,7 +16,6 @@ import {
   Pagination,
   adminCopy,
   buildQuery,
-  formatDate,
   formatNumber,
   getAdminContext,
   offsetForPage,
@@ -239,11 +239,11 @@ export default async function AdminUsersPage({
                         <div>
                           {copy.agentCount}: {formatNumber(user.active_agent_count)} / {formatNumber(user.agent_count)}
                         </div>
-                        {user.last_task_at ? <div>{copy.lastTask}: {formatDate(user.last_task_at, locale)}</div> : null}
-                        {user.last_run_at ? <div>{copy.lastRun}: {formatDate(user.last_run_at, locale)}</div> : null}
+                        {user.last_task_at ? <div>{copy.lastTask}: <LocalRunTime value={user.last_task_at} locale={locale} /></div> : null}
+                        {user.last_run_at ? <div>{copy.lastRun}: <LocalRunTime value={user.last_run_at} locale={locale} /></div> : null}
                       </td>
                       <td className="border-y border-[color:var(--ol-line)] px-3 py-3 text-[color:var(--ol-muted)]">
-                        {formatDate(user.created_at, locale)}
+                        <LocalRunTime value={user.created_at} locale={locale} />
                       </td>
                       <td className="rounded-r-2xl border-y border-r border-[color:var(--ol-line)] px-3 py-3">
                         <form action={updateUserFlagsAction} className="flex min-w-[430px] flex-wrap items-center gap-3">

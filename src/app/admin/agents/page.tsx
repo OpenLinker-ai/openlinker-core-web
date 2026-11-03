@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { LocalRunTime } from "@/components/a2a/local-run-time";
 import { Icon } from "@/components/ui/icon";
 import { apiFetchAuthed, localizedErrorMessage } from "@/lib/api";
 
@@ -20,7 +21,6 @@ import {
   adminStatusLabel,
   adminCopy,
   buildQuery,
-  formatDate,
   formatNumber,
   getAdminContext,
   offsetForPage,
@@ -175,7 +175,7 @@ export default async function AdminAgentsPage({
                         <div>
                           {copy.completed}: {formatNumber(agent.completed_task_count)}
                         </div>
-                        {agent.last_run_at ? <div>{copy.lastRun}: {formatDate(agent.last_run_at, locale)}</div> : null}
+                        {agent.last_run_at ? <div>{copy.lastRun}: <LocalRunTime value={agent.last_run_at} locale={locale} /></div> : null}
                       </td>
                       <td className="rounded-r-2xl border-y border-r border-[color:var(--ol-line)] px-3 py-3">
                         <div className="grid min-w-[520px] gap-2">

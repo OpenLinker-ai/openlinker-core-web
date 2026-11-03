@@ -16,6 +16,11 @@ import { auth } from "@/lib/auth";
 import { getLocale } from "@/lib/i18n-server";
 import { coreUserTokenMessages } from "@/messages/user-token";
 
+// 首屏判定 Token 过期用的服务端时间，随 props 传给客户端以保证水合一致。
+function renderTimestamp() {
+  return Date.now();
+}
+
 export async function generateMetadata(): Promise<Metadata> {
   const copy = coreUserTokenMessages[await getLocale()];
   return { title: copy.metadataTitle, description: copy.metadataDescription };
@@ -92,6 +97,7 @@ export default async function UserTokensPage() {
               loadError={tokenResult.status === "rejected"}
               agentOptions={agentOptions}
               locale={locale}
+              renderedAt={renderTimestamp()}
             />
           </div>
         </div>

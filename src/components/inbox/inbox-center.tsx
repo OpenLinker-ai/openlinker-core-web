@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { Icon, type IconName } from "@/components/ui/icon";
 import { useApi } from "@/hooks/use-api";
+import { useHydrated } from "@/hooks/use-hydrated";
 import type { Locale } from "@/lib/i18n";
 import {
   availabilityStatusLabel,
@@ -18,7 +19,7 @@ type NotificationItem = {
   agentId: string;
   title: string;
   body: string;
-  time: string;
+  createdAt: string;
   href: string;
   icon: IconName;
   unread: boolean;
@@ -52,6 +53,7 @@ export function InboxCenter({
   locale?: Locale;
 }) {
   const { fetch: apiFetch } = useApi();
+  const hydrated = useHydrated();
   const [items, setItems] = useState<NotificationItem[]>(() =>
     availabilityAlerts.map((alert) => alertToNotification(alert, locale)),
   );
@@ -196,7 +198,7 @@ export function InboxCenter({
               </div>
               <div className="flex flex-row items-center justify-between gap-2 md:flex-col md:items-end">
                 <span className="text-[12px] font-bold text-[color:var(--ol-subtle)]">
-                  {item.time}
+                  {formatTime(item.createdAt, locale, hydrated)}
                 </span>
                 <button
                   type="button"
@@ -281,7 +283,7 @@ function alertToNotification(alert: AvailabilityAlert, locale: Locale): Notifica
     agentId: alert.agent_id,
     title,
     body,
-    time: formatTime(alert.created_at, locale),
+    createdAt: alert.created_at,
     href: `/hub/agents/${encodeURIComponent(alert.agent_id)}/onboarding`,
     icon: isRecovered ? "check" : "warn",
     unread: !alert.read_at,
@@ -290,13 +292,14 @@ function alertToNotification(alert: AvailabilityAlert, locale: Locale): Notifica
   };
 }
 
-function formatTime(value: string, locale: Locale) {
+function formatTime(value: string, locale: Locale, hydrated: boolean) {
   if (!value) return "";
   return new Date(value).toLocaleString(locale === "zh" ? "zh-CN" : "en-US", {
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    ...(hydrated ? {} : { timeZone: "UTC" }),
   });
 }
 

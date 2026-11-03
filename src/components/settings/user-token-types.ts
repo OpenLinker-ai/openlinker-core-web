@@ -277,6 +277,6 @@ export function expirationISO(choice: ExpirationChoice): string | null {
   return expiresAt.toISOString();
 }
 
-export function tokenIsExpired(token: UserTokenItem): boolean {
-  return Boolean(token.expires_at && new Date(token.expires_at).getTime() <= Date.now());
+export function tokenIsExpired(token: UserTokenItem, now = Date.now()): boolean {
+  return Boolean(token.expires_at && new Date(token.expires_at).getTime() <= now);
 }

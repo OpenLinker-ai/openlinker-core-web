@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { LocalRunTime } from "@/components/a2a/local-run-time";
 import { Icon } from "@/components/ui/icon";
 import { apiFetchAuthed, localizedErrorMessage } from "@/lib/api";
 
@@ -14,7 +15,6 @@ import {
   Pagination,
   adminCopy,
   buildQuery,
-  formatDate,
   formatNumber,
   getAdminContext,
   offsetForPage,
@@ -194,8 +194,8 @@ export default async function AdminTasksPage({
                         ) : null}
                       </td>
                       <td className="rounded-r-2xl border-y border-r border-[color:var(--ol-line)] px-3 py-3 text-[12px] text-[color:var(--ol-muted)]">
-                        <div>{formatDate(task.created_at, locale)}</div>
-                        {task.completed_at ? <div className="mt-1">{formatDate(task.completed_at, locale)}</div> : null}
+                        <div><LocalRunTime value={task.created_at} locale={locale} /></div>
+                        {task.completed_at ? <div className="mt-1"><LocalRunTime value={task.completed_at} locale={locale} /></div> : null}
                       </td>
                     </tr>
                   ))}
