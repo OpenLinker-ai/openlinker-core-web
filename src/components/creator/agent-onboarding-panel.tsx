@@ -9,6 +9,7 @@ import { A2AAccessPanel } from "@/components/creator/a2a-access-panel";
 import { AgentResourcesPanel } from "@/components/creator/agent-resources-panel";
 import { SkillsDialog } from "@/components/creator/skills-dialog";
 import { useApi } from "@/hooks/use-api";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { localizedErrorMessage } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
 import {
@@ -261,7 +262,7 @@ function connectionModeLabel(agent: OnboardingAgent, locale: Locale): string {
   return `HTTP · ${endpointHost(agent.endpoint_url)}`;
 }
 
-function formatDate(value: string | undefined, locale: Locale): string {
+function formatDate(value: string | undefined, locale: Locale, hydrated: boolean): string {
   if (!value) return locale === "zh" ? "尚未更新" : "Not updated";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
@@ -270,6 +271,7 @@ function formatDate(value: string | undefined, locale: Locale): string {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    ...(hydrated ? {} : { timeZone: "UTC" }),
   });
 }
 
@@ -316,6 +318,7 @@ export function AgentOnboardingPanel({
   initialSkills,
   locale = "zh",
 }: Props) {
+  const hydrated = useHydrated();
   const copy = agentOnboardingMessages[locale];
   const { fetch: apiFetch } = useApi();
   const [agentState, setAgentState] = useState(agent);
@@ -557,7 +560,7 @@ export function AgentOnboardingPanel({
               done={onboarding.status.capabilities_set}
               detail={
                 onboarding.capability
-                  ? `v${onboarding.capability.version} · ${formatDate(onboarding.capability.updated_at, locale)}`
+                  ? `v${onboarding.capability.version} · ${formatDate(onboarding.capability.updated_at, locale, hydrated)}`
                   : copy.pendingSave
               }
             />
@@ -800,7 +803,7 @@ export function AgentOnboardingPanel({
             </span>
             {availability.last_checked_at ? (
               <span className="text-[12px] font-bold text-[color:var(--ol-muted)]">
-                {copy.lastChecked}: {formatDate(availability.last_checked_at, locale)}
+                {copy.lastChecked}: {formatDate(availability.last_checked_at, locale, hydrated)}
                 {availability.consecutive_failures > 0
                   ? ` · ${copy.failures(availability.consecutive_failures)}`
                   : ""}
@@ -866,6 +869,7 @@ function RuntimeWorkbenchPanel({
   locale: Locale;
   title: string;
 }) {
+  const hydrated = useHydrated();
   const { fetch: apiFetch } = useApi();
   const [workbench, setWorkbench] = useState<RuntimeWorkbench | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1009,13 +1013,13 @@ function RuntimeWorkbenchPanel({
         <WorkbenchMetric label={copy.activeRuns} value={String(activeRuns)} />
         <WorkbenchMetric
           label={copy.lastActivity}
-          value={formatDate(runtime.last_session_activity_at, locale)}
+          value={formatDate(runtime.last_session_activity_at, locale, hydrated)}
         />
         <WorkbenchMetric
           label={copy.lastAssignment}
-          value={formatDate(runtime.last_assignment_at, locale)}
+          value={formatDate(runtime.last_assignment_at, locale, hydrated)}
         />
-        <WorkbenchMetric label={copy.lastResult} value={formatDate(runtime.last_result_at, locale)} />
+        <WorkbenchMetric label={copy.lastResult} value={formatDate(runtime.last_result_at, locale, hydrated)} />
       </div>
 
       <details className="rounded-xl border border-[color:var(--ol-line)] bg-[color:var(--ol-soft)] px-3 py-2">
@@ -1033,7 +1037,7 @@ function RuntimeWorkbenchPanel({
           />
           <WorkbenchTechnicalDatum
             label={copy.transportChangedAt}
-            value={formatDate(runtime.transport_changed_at, locale)}
+            value={formatDate(runtime.transport_changed_at, locale, hydrated)}
             mono={false}
           />
           <WorkbenchTechnicalDatum label={copy.fallbackReason} value={runtime.fallback_reason || "—"} />
