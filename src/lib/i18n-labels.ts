@@ -217,6 +217,7 @@ const COVERAGE_STATUS_LABELS: LabelMap = {
   partial: { zh: "部分覆盖", en: "Partial" },
   missing_requirements: { zh: "未覆盖", en: "Missing" },
   no_requirements: { zh: "无要求", en: "No requirements" },
+  none: { zh: "暂无需求覆盖信息", en: "No requirement evidence" },
 };
 
 const VISIBILITY_LABELS: LabelMap = {
