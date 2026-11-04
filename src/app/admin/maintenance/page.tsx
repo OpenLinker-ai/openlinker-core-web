@@ -1,5 +1,7 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
+import { LocalRunTime } from "@/components/a2a/local-run-time";
 import { Icon } from "@/components/ui/icon";
 import { apiFetchAuthed, localizedErrorMessage } from "@/lib/api";
 
@@ -99,7 +101,7 @@ export default async function AdminMaintenancePage({
             />
             <Metric
               label={copy.databaseTime}
-              value={data ? formatTime(data.database_time, locale) : "—"}
+              value={data ? formatTime(data.database_time, locale, true) : "—"}
             />
           </div>
         </div>
@@ -417,7 +419,7 @@ function MemberCard({
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="min-w-0 rounded-[14px] border border-white/80 bg-white/80 px-3 py-2 shadow-sm">
       <div className="text-[10.5px] font-black text-[color:var(--ol-subtle)]">
@@ -425,7 +427,7 @@ function Metric({ label, value }: { label: string; value: string }) {
       </div>
       <div
         className="mt-1 truncate text-[16px] font-black text-[color:var(--ol-ink)]"
-        title={value}
+        title={typeof value === "string" ? value : undefined}
       >
         {value}
       </div>
@@ -452,16 +454,17 @@ function TechnicalDatum({
   );
 }
 
-function formatTime(value: string, locale: "zh" | "en"): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value || "—";
-  return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(date);
+// Server-rendered, so the browser's zone comes from LocalRunTime after hydration.
+function formatTime(value: string, locale: "zh" | "en", withTitle = false): ReactNode {
+  if (Number.isNaN(new Date(value).getTime())) return value || "—";
+  return (
+    <LocalRunTime
+      value={value}
+      locale={locale}
+      options={{ month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }}
+      withTitle={withTitle}
+    />
+  );
 }
 
 function maintenanceCopy(locale: "zh" | "en"): Copy {

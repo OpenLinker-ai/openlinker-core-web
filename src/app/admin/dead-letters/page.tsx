@@ -1,5 +1,7 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
+import { LocalRunTime } from "@/components/a2a/local-run-time";
 import { apiFetchAuthed, localizedErrorMessage } from "@/lib/api";
 import { runErrorMessage, runtimeReasonMessage } from "@/lib/i18n-labels";
 
@@ -14,7 +16,6 @@ import {
   ForbiddenAdmin,
   Pagination,
   buildQuery,
-  formatDate,
   formatNumber,
   getAdminContext,
   offsetForPage,
@@ -168,7 +169,7 @@ function DeadLetterCard({
 
         <dl className="grid content-start gap-2 text-[12px]">
           <Datum label={copy.attempts} value={`${item.attempt_count} / ${item.max_attempts}`} />
-          <Datum label={copy.created} value={formatDate(item.created_at, locale)} />
+          <Datum label={copy.created} value={<LocalRunTime value={item.created_at} locale={locale} />} />
           <Datum label={copy.reason} value={stableCode} mono />
         </dl>
 
@@ -216,7 +217,7 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Datum({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+function Datum({ label, value, mono = false }: { label: string; value: ReactNode; mono?: boolean }) {
   return (
     <div className="min-w-0">
       <dt className="text-[10.5px] font-black text-[color:var(--ol-subtle)]">{label}</dt>
