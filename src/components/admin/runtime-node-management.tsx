@@ -1,5 +1,7 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
+import { LocalRunTime } from "@/components/a2a/local-run-time";
 import { runtimeNodeActionPolicy } from "@/lib/runtime-node-admin-policy.mjs";
 
 export interface AdminRuntimeNode {
@@ -360,7 +362,7 @@ function Metric({ label, value, tone }: { label: string; value: string; tone?: "
   );
 }
 
-function NodeDatum({ label, value }: { label: string; value: string }) {
+function NodeDatum({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="rounded-[11px] border border-[color:var(--ol-line)] bg-white px-3 py-2">
       <div className="text-[10.5px] font-black uppercase tracking-[0.04em] text-[color:var(--ol-subtle)]">{label}</div>
@@ -382,13 +384,10 @@ function formatNumber(value: number, locale: "zh" | "en") {
   return new Intl.NumberFormat(locale === "zh" ? "zh-CN" : "en-US").format(value);
 }
 
-function formatTime(value: string, locale: "zh" | "en") {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
+// Server-rendered, so the browser's zone comes from LocalRunTime after hydration.
+function formatTime(value: string, locale: "zh" | "en"): ReactNode {
+  if (Number.isNaN(new Date(value).getTime())) return "—";
+  return <LocalRunTime value={value} locale={locale} options={{ dateStyle: "medium", timeStyle: "short" }} />;
 }
 
 function relativeTime(value: string, reference: Date, locale: "zh" | "en") {
