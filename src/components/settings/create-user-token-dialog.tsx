@@ -55,7 +55,7 @@ export function CreateUserTokenDialog({
   const { fetch: apiFetch, isAuthenticated, isLoading: sessionLoading } = useApi();
   const defaultPreset = USER_TOKEN_PRESETS[0];
   const [name, setName] = useState(() =>
-    replacementOf ? `${replacementOf.name}-replacement` : "production-mcp",
+    replacementOf ? `${replacementOf.name}-replacement` : "automation",
   );
   const [selection, setSelection] = useState<GrantSelection>(() =>
     replacementOf
