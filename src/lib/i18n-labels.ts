@@ -57,7 +57,7 @@ const RUN_DISPATCH_STATE_LABELS: LabelMap = {
   pending: { zh: "等待 Agent 接手", en: "Waiting for an Agent" },
   offered: { zh: "正在交给 Agent", en: "Handing off to the Agent" },
   executing: { zh: "Agent 正在处理", en: "Agent is working" },
-  retry_wait: { zh: "等待重试", en: "Waiting to retry" },
+  retry_wait: { zh: "等待系统自动重试", en: "Waiting for automatic retry" },
   terminal: { zh: "已结束", en: "Finished" },
   dead_letter: { zh: "需要处理", en: "Needs attention" },
 };

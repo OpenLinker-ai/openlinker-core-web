@@ -124,6 +124,15 @@ NEXTAUTH_URL=http://localhost:3000
 `AUTH_SECRET` 或 `NEXTAUTH_SECRET` 用于签名前端会话。生产环境应使用独立随机值，
 不要复用 Core 的 `JWT_SECRET`；如果两个前端变量同时设置，请保持它们的值一致。
 
+本地回环 Agent 调试需要在 Core Web 的 `.env.local` 中设置
+`NEXT_PUBLIC_ALLOW_LOCAL_HTTP_ENDPOINTS=true`，并在 Core 中设置
+`ALLOW_LOCAL_HTTP_ENDPOINTS=true`，然后重启开发服务。HTTP 仅限 `localhost`、
+`127.0.0.1`、`[::1]` 等回环地址，不会因此放开任意内网 HTTP 地址；生产环境应关闭两项设置。
+
+`NEXT_PUBLIC_ALLOW_LOCAL_HTTP_ENDPOINTS` 在构建时写入浏览器代码。Docker 部署如需本地调试，
+应通过 `--build-arg NEXT_PUBLIC_ALLOW_LOCAL_HTTP_ENDPOINTS=true` 重新构建 Core Web；
+只修改运行中容器的环境变量不会更新表单校验，Core 后端也仍需启用对应设置。
+
 ## 常用命令
 
 ```bash
@@ -142,7 +151,7 @@ npm run test:agent-library-card
 从父工作区根目录构建：
 
 ```bash
-docker build -f openlinker-core-web/Dockerfile.server -t openlinker-core-web .
+docker build -f openlinker-core-web/Dockerfile.server -t openlinker-core-web openlinker-core-web
 ```
 
 容器需要 `API_URL` 或 `CORE_API_URL` 指向 Core API。

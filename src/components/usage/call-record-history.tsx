@@ -658,6 +658,7 @@ export function CallRecordRow({
     : record.dispatch_state && record.dispatch_state !== "terminal"
       ? runDispatchStateLabel(record.dispatch_state, locale)
       : statusLabel;
+  const wrapProgress = !record.cancel_state && record.dispatch_state === "retry_wait";
   const sourceBadge = record.source ? SOURCE_BADGE[record.source] : undefined;
   const connectionModeBadge = record.agent_connection_mode
     ? CONNECTION_MODE_BADGE[record.agent_connection_mode]
@@ -732,7 +733,11 @@ export function CallRecordRow({
                   </span>
                 ) : null}
               </div>
-              <p className="mt-1 truncate text-[12.5px] font-bold text-[color:var(--ol-muted)]">
+              <p
+                className={`mt-1 text-[12.5px] font-bold text-[color:var(--ol-muted)] ${
+                  wrapProgress ? "whitespace-normal [overflow-wrap:anywhere]" : "truncate"
+                }`}
+              >
                 {progressLabel}
                 {duration}
                 {attemptSummary}

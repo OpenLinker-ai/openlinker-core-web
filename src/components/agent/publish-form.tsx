@@ -98,7 +98,7 @@ const VALIDATION_COPY = {
     tagMax: "最多 5 个标签",
     mcpEndpointRequired: "请填写 MCP 服务地址",
     endpointRequired: "请填写调用端点 URL",
-    httpsRequired: "必须使用 HTTPS；本地 loopback 调试需开启 NEXT_PUBLIC_ALLOW_LOCAL_HTTP_ENDPOINTS=true",
+    httpsRequired: "请输入有效的 HTTPS 接入地址。本机回环地址的 HTTP 调试仅在当前部署已启用时可用。",
     mcpToolRequired: "请填写 MCP 工具名称",
   },
   en: {
@@ -115,7 +115,7 @@ const VALIDATION_COPY = {
     tagMax: "Use at most 5 tags",
     mcpEndpointRequired: "Enter the MCP endpoint URL",
     endpointRequired: "Enter the endpoint URL",
-    httpsRequired: "Use HTTPS. For local loopback debugging, enable NEXT_PUBLIC_ALLOW_LOCAL_HTTP_ENDPOINTS=true",
+    httpsRequired: "Enter a valid HTTPS endpoint URL. Loopback HTTP debugging is available only when enabled for this deployment.",
     mcpToolRequired: "Enter the MCP tool name",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
