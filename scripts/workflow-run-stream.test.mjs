@@ -37,3 +37,18 @@ test("an unusable stream asks the caller to poll", async () => {
   assert.deepEqual(await streamWorkflowRun({ apiBaseUrl: "", runId: "r", onSnapshot() {}, fetchImpl: async () => { throw new Error("offline"); } }), { ok: false });
   assert.deepEqual(await streamWorkflowRun({ apiBaseUrl: "", runId: "r", onSnapshot() {}, fetchImpl: streamOf([": heartbeat\n\n"]) }), { ok: false });
 });
+
+test("an early close or an error event is not a finished stream", async () => {
+  const seen = [];
+  const early = await streamWorkflowRun({
+    apiBaseUrl: "", runId: "r", onSnapshot: (snapshot) => seen.push(snapshot.status),
+    fetchImpl: streamOf(['id: 1\nevent: snapshot\ndata: {"status":"paused"}\n\n']),
+  });
+  assert.deepEqual(early, { ok: false });
+  assert.deepEqual(seen, ["paused"]);
+  const errored = await streamWorkflowRun({
+    apiBaseUrl: "", runId: "r", onSnapshot() {},
+    fetchImpl: streamOf(['id: 1\nevent: snapshot\ndata: {"status":"running"}\n\nevent: error\ndata: {"message":"x"}\n\n']),
+  });
+  assert.deepEqual(errored, { ok: false });
+});

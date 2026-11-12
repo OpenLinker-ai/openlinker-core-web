@@ -26,9 +26,12 @@ export function parseWorkflowRunEvents(buffer) {
   return { messages, remainder: rest };
 }
 
-// Streams snapshots to onSnapshot until the server closes the stream (after
-// a terminal snapshot). Resolves {ok: true} on a normal end and {ok: false}
-// when the stream could not be used, so the caller can poll instead.
+const TERMINAL_STATUSES = new Set(["success", "failed", "canceled"]);
+
+// Streams snapshots to onSnapshot until the server closes the stream after a
+// terminal snapshot. Resolves {ok: true} only then (or when the caller
+// aborted); an error event, an unusable stream or an early close resolves
+// {ok: false} so the caller polls instead.
 export async function streamWorkflowRun({ apiBaseUrl, runId, token, signal, onSnapshot, fetchImpl = fetch }) {
   let response;
   try {
@@ -43,7 +46,7 @@ export async function streamWorkflowRun({ apiBaseUrl, runId, token, signal, onSn
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-  let received = 0;
+  let terminal = false;
   try {
     for (;;) {
       const { value, done } = await reader.read();
@@ -52,17 +55,24 @@ export async function streamWorkflowRun({ apiBaseUrl, runId, token, signal, onSn
       const parsed = parseWorkflowRunEvents(buffer);
       buffer = parsed.remainder;
       for (const message of parsed.messages) {
-        if (message.event !== "snapshot") continue;
-        try {
-          onSnapshot(JSON.parse(message.data));
-          received += 1;
-        } catch {
+        if (message.event === "error") {
+          await reader.cancel().catch(() => {});
           return { ok: false };
         }
+        if (message.event !== "snapshot") continue;
+        let snapshot;
+        try {
+          snapshot = JSON.parse(message.data);
+        } catch {
+          await reader.cancel().catch(() => {});
+          return { ok: false };
+        }
+        onSnapshot(snapshot);
+        terminal = TERMINAL_STATUSES.has(snapshot?.status);
       }
     }
   } catch {
-    return { ok: signal?.aborted ? true : false };
+    return { ok: Boolean(signal?.aborted) };
   }
-  return { ok: received > 0 };
+  return { ok: terminal || Boolean(signal?.aborted) };
 }
