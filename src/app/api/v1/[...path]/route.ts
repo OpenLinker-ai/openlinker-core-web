@@ -80,12 +80,29 @@ async function proxy(request: Request): Promise<Response> {
       body: bytesToBodyInit(body),
       cache: "no-store",
       redirect: "manual",
+      // The client going away ends the upstream request (event streams stay
+      // open until then).
+      signal: request.signal,
     });
   } catch {
     if (method === "HEAD") {
       return upstreamUnavailableHeadResponse();
     }
     return upstreamUnavailableResponse(path);
+  }
+
+  // Event streams are passed through as they arrive: buffering would hold
+  // every snapshot until the run ends.
+  if (
+    method === "GET" &&
+    upstream.ok &&
+    upstream.body &&
+    (upstream.headers.get("content-type") ?? "").toLowerCase().startsWith("text/event-stream")
+  ) {
+    const headers = responseHeaders(upstream);
+    headers.set("cache-control", "no-store");
+    headers.set("x-accel-buffering", "no");
+    return new Response(upstream.body, { status: upstream.status, headers });
   }
 
   const emptyBody =
