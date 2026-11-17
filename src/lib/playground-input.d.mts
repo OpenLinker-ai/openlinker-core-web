@@ -41,3 +41,12 @@ export function playgroundSubmissionCanRetry(status?: number): boolean;
 export function playgroundSubmissionAction(status?: number, code?: string): "edit" | "conflict" | "none";
 
 export function playgroundPrefillIsValid(prefill: unknown, inputSchema?: PlaygroundInputSchema): boolean;
+
+export type PlaygroundAttachmentField = { key: string; kind: "image" | "file"; multiple: boolean };
+export const PLAYGROUND_ATTACHMENT_LIMIT: number;
+export function playgroundAttachmentFields(
+  inputSchema: PlaygroundInputSchema | undefined,
+  inputMode?: "auto" | "json",
+): PlaygroundAttachmentField[];
+export function playgroundDraftAttachmentCount(text: string, fields: PlaygroundAttachmentField[]): number;
+export function playgroundDraftWithAttachment(text: string, field: PlaygroundAttachmentField, link: string): string;

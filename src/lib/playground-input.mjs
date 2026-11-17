@@ -239,3 +239,52 @@ export function playgroundPrefillIsValid(prefill, inputSchema) {
   if (typeof prefill !== "string") return false;
   try { parsePlaygroundDraft(prefill, inputSchema); return true; } catch { return false; }
 }
+
+// Attachment fields follow the convention shared with Core, Cloud and Agent
+// Node: image_url / file_url (one link) and image_urls / file_urls (links),
+// also as suffixes such as cover_image_url or evidence_file_urls.
+export const PLAYGROUND_ATTACHMENT_LIMIT = 20;
+const ATTACHMENT_SUFFIXES = ["image_urls", "image_url", "file_urls", "file_url"];
+
+export function playgroundAttachmentFields(inputSchema, inputMode = "auto") {
+  if (!isPlainRecord(inputSchema) || !isPlainRecord(inputSchema.properties)) return [];
+  if (inputMode !== "json" && preferredTextField(inputSchema)) return [];
+  const fields = [];
+  for (const [key, schema] of Object.entries(inputSchema.properties)) {
+    const suffix = ATTACHMENT_SUFFIXES.find(item => key === item || (key.endsWith(`_${item}`) && key.length > item.length + 1));
+    if (!suffix) continue;
+    const multiple = suffix.endsWith("s");
+    if (multiple ? !schemaAllowsType(schema, "array") : !schemaAllowsType(schema, "string")) continue;
+    fields.push({ key, kind: suffix.startsWith("image") ? "image" : "file", multiple });
+  }
+  return fields;
+}
+
+export function playgroundDraftAttachmentCount(text, fields) {
+  let value;
+  try { value = text.trim() ? JSON.parse(text) : {}; } catch { return 0; }
+  if (!isPlainRecord(value)) return 0;
+  let count = 0;
+  for (const field of fields) {
+    const entry = value[field.key];
+    if (typeof entry === "string" && entry.trim()) count += 1;
+    else if (Array.isArray(entry)) count += entry.filter(item => typeof item === "string" && item.trim()).length;
+  }
+  return count;
+}
+
+// Writes an uploaded attachment link into the JSON draft: a single-link field
+// is replaced, a multi-link field is appended to. A draft that is not a JSON
+// object is refused instead of being overwritten.
+export function playgroundDraftWithAttachment(text, field, link) {
+  let value;
+  try { value = text.trim() ? JSON.parse(text) : {}; } catch { throw new PlaygroundInputError("input", "invalid_json"); }
+  if (!isPlainRecord(value)) throw new PlaygroundInputError("input", "object_required");
+  if (field.multiple) {
+    const current = Array.isArray(value[field.key]) ? value[field.key].filter(item => typeof item === "string" && item.trim()) : [];
+    value[field.key] = [...current, link];
+  } else {
+    value[field.key] = link;
+  }
+  return JSON.stringify(value, null, 2);
+}

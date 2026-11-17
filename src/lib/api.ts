@@ -112,8 +112,10 @@ export async function apiFetch<T = unknown>(
   const url = path.startsWith("http") ? path : `${getApiBaseUrlForPath(path, method)}${path}`;
 
   const headers = new Headers(opts.headers);
+  // Binary uploads (Run attachments) are sent as-is.
+  const rawBody = typeof Blob !== "undefined" && opts.body instanceof Blob;
   if (!headers.has("Content-Type") && opts.body !== undefined) {
-    headers.set("Content-Type", "application/json");
+    headers.set("Content-Type", rawBody ? (opts.body as Blob).type || "application/octet-stream" : "application/json");
   }
   if (opts.token) {
     headers.set("Authorization", `Bearer ${opts.token}`);
@@ -125,8 +127,8 @@ export async function apiFetch<T = unknown>(
     body:
       opts.body === undefined
         ? undefined
-        : typeof opts.body === "string"
-          ? opts.body
+        : typeof opts.body === "string" || rawBody
+          ? (opts.body as BodyInit)
           : JSON.stringify(opts.body),
   };
 
