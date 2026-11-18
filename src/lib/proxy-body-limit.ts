@@ -1,5 +1,22 @@
 export const MAX_PROXY_BODY_BYTES = 8 * 1024 * 1024;
 
+// Run attachment uploads go to Core, which accepts up to 30 MB per file. The
+// edge allows 31m on this path; the proxy allows the same.
+export const ATTACHMENT_UPLOAD_PATH = "/api/v1/attachments";
+export const MAX_ATTACHMENT_UPLOAD_BYTES = 31 * 1024 * 1024;
+
+export function requestBodyLimit(method: string, pathname: string): number {
+  return method.toUpperCase() === "POST" && pathname === ATTACHMENT_UPLOAD_PATH
+    ? MAX_ATTACHMENT_UPLOAD_BYTES
+    : MAX_PROXY_BODY_BYTES;
+}
+
+// Attachment downloads (/api/v1/attachments/<token>) are streamed through
+// instead of buffered, so a file up to Core's limit is not cut at 8 MiB.
+export function isAttachmentDownloadPath(pathname: string): boolean {
+  return /^\/api\/v1\/attachments\/[0-9a-f]{64}$/.test(pathname);
+}
+
 export class BodyTooLargeError extends Error {
   constructor(message: string) {
     super(message);
@@ -60,11 +77,12 @@ export async function readBodyWithLimit(
 
 export async function requestBodyWithLimit(
   request: Request,
+  limit = MAX_PROXY_BODY_BYTES,
 ): Promise<Uint8Array | undefined> {
-  if (contentLengthExceeds(request.headers)) {
+  if (contentLengthExceeds(request.headers, limit)) {
     throw new BodyTooLargeError("Request body is too large");
   }
-  const body = await readBodyWithLimit(request.body);
+  const body = await readBodyWithLimit(request.body, limit);
   return body.byteLength > 0 ? body : undefined;
 }
 
@@ -95,13 +113,16 @@ export function bytesToNullableBodyInit(body: Uint8Array | null): BodyInit | nul
   return body ? bytesToArrayBuffer(body) : null;
 }
 
-export function payloadTooLargeResponse(path: string): Response {
+export function payloadTooLargeResponse(
+  path: string,
+  limit = MAX_PROXY_BODY_BYTES,
+): Response {
   return Response.json(
     {
       error: {
         code: "PAYLOAD_TOO_LARGE",
         message: "Request body is too large.",
-        details: { path, limit_bytes: MAX_PROXY_BODY_BYTES },
+        details: { path, limit_bytes: limit },
       },
     },
     {
