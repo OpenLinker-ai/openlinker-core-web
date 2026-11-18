@@ -79,7 +79,10 @@ async function routeRequest(req: NextRequest) {
 
 export const config = {
   // Include assets and NextAuth responses in the runtime indexing policy.
-  matcher: ["/:path*"],
+  // The Run attachment upload is excluded: proxy buffers request bodies only
+  // up to 10MB, and uploads may be up to Core's 30 MB limit. That path needs
+  // no redirect, and attachment downloads (GET, no body) still match.
+  matcher: ["/((?!api/v1/attachments$).*)"],
 };
 
 function hubCompatibilityUrl(req: NextRequest) {

@@ -3,7 +3,9 @@ import {
   BodyTooLargeError,
   bytesToBodyInit,
   bytesToNullableBodyInit,
+  isAttachmentDownloadPath,
   payloadTooLargeResponse,
+  requestBodyLimit,
   requestBodyWithLimit,
   responseBodyWithLimit,
   upstreamResponseTooLargeResponse,
@@ -62,12 +64,13 @@ async function proxy(request: Request): Promise<Response> {
   const method = request.method.toUpperCase();
   const hasBody = method !== "GET" && method !== "HEAD";
   const path = new URL(request.url).pathname;
+  const bodyLimit = requestBodyLimit(method, path);
   let body: Uint8Array | undefined;
   try {
-    body = hasBody ? await requestBodyWithLimit(request) : undefined;
+    body = hasBody ? await requestBodyWithLimit(request, bodyLimit) : undefined;
   } catch (error) {
     if (error instanceof BodyTooLargeError) {
-      return payloadTooLargeResponse(path);
+      return payloadTooLargeResponse(path, bodyLimit);
     }
     throw error;
   }
@@ -103,6 +106,15 @@ async function proxy(request: Request): Promise<Response> {
     headers.set("cache-control", "no-store");
     headers.set("x-accel-buffering", "no");
     return new Response(upstream.body, { status: upstream.status, headers });
+  }
+
+  // Attachment downloads are streamed: Core bounds them (30 MB) and sets the
+  // content type, disposition and sandbox headers, which are kept as sent.
+  if (method === "GET" && upstream.ok && upstream.body && isAttachmentDownloadPath(path)) {
+    return new Response(upstream.body, {
+      status: upstream.status,
+      headers: responseHeaders(upstream),
+    });
   }
 
   const emptyBody =
