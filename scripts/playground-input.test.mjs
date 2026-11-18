@@ -103,3 +103,32 @@ test('ordinary string formats and patterns retain legacy free text, and bare add
  assert.deepEqual(parsePlaygroundDraft('{"x":1}',{type:'object',additionalProperties:false}),{x:1});
  assert.throws(()=>parsePlaygroundDraft('{"x":1}',{type:'object',properties:{},additionalProperties:false}),e=>e.reason==='additional_property');
 });
+
+test("attachment fields follow the shared naming convention and edit the JSON draft", async () => {
+  const {
+    playgroundAttachmentFields, playgroundDraftWithAttachment, playgroundDraftAttachmentCount, PLAYGROUND_ATTACHMENT_LIMIT,
+  } = await import("../src/lib/playground-input.mjs");
+  const schema = {
+    type: "object",
+    required: ["image_url", "question"],
+    properties: {
+      image_url: { type: "string", format: "uri" },
+      evidence_file_urls: { type: "array", items: { type: "string" } },
+      question: { type: "string" },
+    },
+  };
+  const fields = playgroundAttachmentFields(schema);
+  assert.deepEqual(fields, [
+    { key: "image_url", kind: "image", multiple: false },
+    { key: "evidence_file_urls", kind: "file", multiple: true },
+  ]);
+  assert.equal(PLAYGROUND_ATTACHMENT_LIMIT, 20);
+  let draft = playgroundDraftWithAttachment("", fields[0], "https://core.example/api/v1/attachments/a");
+  draft = playgroundDraftWithAttachment(draft, fields[1], "https://core.example/api/v1/attachments/b");
+  assert.deepEqual(JSON.parse(draft), {
+    image_url: "https://core.example/api/v1/attachments/a",
+    evidence_file_urls: ["https://core.example/api/v1/attachments/b"],
+  });
+  assert.equal(playgroundDraftAttachmentCount(draft, fields), 2);
+  assert.throws(() => playgroundDraftWithAttachment("{broken", fields[0], "x"), /invalid_json/);
+});

@@ -27,9 +27,11 @@ import {
   playgroundInitialDraft,
   playgroundSubmissionCanRetry,
   playgroundSubmissionAction,
+  playgroundAttachmentFields,
   playgroundStructuredInputFields,
   playgroundViolationMessage,
 } from "@/lib/playground-input.mjs";
+import { PlaygroundAttachmentPicker, type PlaygroundUploadedAttachment } from "./attachment-picker";
 import {
   acquireRunCreationIntent,
   completeRunCreationIntent,
@@ -298,6 +300,11 @@ export function PlaygroundRunner({
 
   // schema 没有唯一的必填字符串字段时，纯文本无法无歧义映射，输入框必须写 JSON。
   const structuredInput = playgroundStructuredInputFields(inputSchema, inputMode);
+  const attachmentFields = useMemo(() => playgroundAttachmentFields(inputSchema, inputMode), [inputSchema, inputMode]);
+  const uploadAttachment = useCallback((file: File) => apiFetch<PlaygroundUploadedAttachment>(
+    `/api/v1/attachments?filename=${encodeURIComponent(file.name)}`,
+    { method: "POST", body: file },
+  ), [apiFetch]);
   const composerPlaceholder = structuredInput ? copy.structuredPlaceholder : copy.placeholder;
   const composerHint = !structuredInput
     ? copy.sendHint
@@ -715,6 +722,7 @@ export function PlaygroundRunner({
         className="order-1 ol-panel bg-white p-2.5 min-[1120px]:order-3"
       >
         <PlaygroundExamples preservedInput={preservedInput} examples={examples} inputSchema={inputSchema} value={input} onChange={value => { setInput(value); setInputError(""); }} disabled={!restored || running} locale={locale} />
+        <PlaygroundAttachmentPicker fields={attachmentFields} value={input} onChange={value => { setInput(value); setInputError(""); }} disabled={!restored || running || !isAuthenticated} locale={locale} upload={uploadAttachment} />
         <label className="block">
           <span className={inputMode === "json" ? "mb-2 block text-sm font-bold" : "sr-only"}>{inputMode === "json" ? resourceJourneyMessages[locale].parameters : composerPlaceholder}</span>
           <textarea
