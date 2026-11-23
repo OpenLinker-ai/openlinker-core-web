@@ -108,6 +108,8 @@ test("a public filename that continues after the token is left whole", () => {
     `https://cdn.example/api/v1/attachments/${token}[1].jpg`,
     `https://cdn.example/api/v1/attachments/${token}__preview.png`,
     `https://cdn.example/api/v1/attachments/${token}-.-v2.png`,
+    `https://cdn.example/api/v1/attachments/${token}/原图.jpg`,
+    `https://cdn.example/api/v1/attachments/${token}.预览`,
   ]) {
     assert.equal(maskAttachmentLinks(value, "已上传文件"), value, value);
     assert.deepEqual(withoutAttachmentLinks({ image_url: value }), { image_url: value }, value);
