@@ -93,3 +93,16 @@ test("uploads are found inside Markdown and on IPv6 hosts", () => {
   assert.equal(maskAttachmentLinks(`<${upload}>`, "已上传文件"), "<已上传文件 1>");
   assert.equal(maskAttachmentLinks(`https://user:pw@core.example.com/api/v1/attachments/${token}`, "已上传文件"), "已上传文件 1");
 });
+
+test("a public filename that continues after the token is left whole", () => {
+  for (const value of [
+    `https://cdn.example/api/v1/attachments/${token}+preview.png`,
+    `https://cdn.example/api/v1/attachments/${token}预览.png`,
+    `https://cdn.example/api/v1/attachments/${token}=1`,
+    `https://cdn.example/api/v1/attachments/${token}@2x`,
+  ]) {
+    assert.equal(maskAttachmentLinks(value, "已上传文件"), value, value);
+    assert.deepEqual(withoutAttachmentLinks({ image_url: value }), { image_url: value }, value);
+  }
+  assert.equal(maskAttachmentLinks(`${upload}。${upload}，${upload}）`, "已上传文件"), "已上传文件 1。已上传文件 2，已上传文件 3）");
+});

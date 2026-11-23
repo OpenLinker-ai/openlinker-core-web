@@ -1,8 +1,8 @@
 const AUTHORITY = String.raw`https?:\/\/(?:[^\s\/@"'<>]*@)?(?:\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9.-]+)(?::\d+)?`;
 const TOKEN_PATH = String.raw`\/api\/v1\/attachments\/[0-9a-f]{64}`;
-const PATH_END = String.raw`(?![\w~%\/-]|\.\w)`;
+const PATH_END = String.raw`(?![\p{L}\p{N}_~%\/+=&$@*-]|\.[\p{L}\p{N}_])`;
 const SUFFIX = String.raw`(?:[?#][^\s"'<>\x60|()[\]{},;]*)?`;
-const ATTACHMENT_LINK = new RegExp(String.raw`(?:${AUTHORITY}|(?<![\w.~%\/-]))${TOKEN_PATH}${PATH_END}${SUFFIX}`, "g");
+const ATTACHMENT_LINK = new RegExp(String.raw`(?:${AUTHORITY}|(?<![\w.~%\/-]))${TOKEN_PATH}${PATH_END}${SUFFIX}`, "gu");
 const TRAILING = /[.:!?]+$/;
 
 function replaceAttachmentLinks(text, replace) {
