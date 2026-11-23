@@ -174,3 +174,9 @@ test("a query after an upload stops before emphasis and Chinese text", () => {
   assert.equal(maskAttachmentLinks(`**${upload}?download=1**的内容如下`, "已上传文件"), "**已上传文件 1**的内容如下");
   assert.equal(maskAttachmentLinks(`${upload}?download=1的内容`, "已上传文件"), "已上传文件 1的内容");
 });
+
+test("asterisk and tilde emphasis always end an upload", () => {
+  assert.equal(maskAttachmentLinks(`**${upload}**details`, "已上传文件"), "**已上传文件 1**details");
+  assert.equal(maskAttachmentLinks(`*${upload}*details`, "已上传文件"), "*已上传文件 1*details");
+  assert.equal(maskAttachmentLinks(`~~${upload}~~x`, "已上传文件"), "~~已上传文件 1~~x");
+});
