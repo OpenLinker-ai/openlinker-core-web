@@ -1,4 +1,4 @@
-const CANDIDATE = /https?:\/\/[^\s"'<>，。；：！？（）「」、]+|(?<![^\s"'(<[（「])\/api\/v1\/attachments\/[^\s"'<>，。；：！？（）「」、]+/g;
+const CANDIDATE = /https?:\/\/[^\s"'<>()[\]{},;!，。；：！？（）「」、]+|(?<![^\s"'(<[（「])\/api\/v1\/attachments\/[^\s"'<>()[\]{},;!，。；：！？（）「」、]+/g;
 const TRAILING = /[.,;:!?)\]}。，；：！？）」]+$/;
 const ATTACHMENT_PATH = /^\/api\/v1\/attachments\/[0-9a-f]{64}$/;
 

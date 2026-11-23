@@ -76,3 +76,10 @@ test("only a URL whose whole path is the attachment route counts as an upload", 
   assert.equal(maskAttachmentLinks(`(${upload})，再看 ${second}。`, "已上传文件"), "(已上传文件 1)，再看 已上传文件 2。");
   assert.equal(maskAttachmentLinks(`/api/v1/attachments/${token}`, "已上传文件"), "已上传文件 1");
 });
+
+test("adjacent links are judged one by one", () => {
+  assert.equal(maskAttachmentLinks(`[one](${upload}),[two](${second})`, "已上传文件"), "[one](已上传文件 1),[two](已上传文件 2)");
+  assert.equal(maskAttachmentLinks(`${upload},${second};${pasted}`, "已上传文件"), `已上传文件 1,已上传文件 2;${pasted}`);
+  assert.equal(maskAttachmentLinks(`{${upload}}`, "已上传文件"), "{已上传文件 1}");
+  assert.deepEqual(withoutAttachmentLinks({ note: `[one](${upload}),[two](${pasted})` }), { note: `[one](),[two](${pasted})` });
+});
