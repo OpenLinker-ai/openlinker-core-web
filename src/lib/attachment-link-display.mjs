@@ -1,7 +1,7 @@
 const AUTHORITY = String.raw`https?:\/\/(?:[^\s\/@"'<>]*@)?(?:\[[0-9A-Fa-f:.]+\]|[\p{L}\p{N}._-]+)(?::\d+)?`;
 const TOKEN_PATH = String.raw`\/api\/v1\/attachments\/[0-9a-f]{64}`;
-const PATH_END = String.raw`(?![\p{L}\p{N}]|[~%\/+=&$@([!.:]+[\p{L}\p{N}]|[_*~%\/+=&$@([!.:-]+[A-Za-z0-9])`;
-const SUFFIX = String.raw`(?:[?#][^\s"'<>\x60|()[\]{},;，。；：！？（）「」、]*)?`;
+const PATH_END = String.raw`(?![\p{L}\p{N}]|[%\/+=&$@([!.:-]+[\p{L}\p{N}]|[_*~%\/+=&$@([!.:-]+[A-Za-z0-9])`;
+const SUFFIX = String.raw`(?:[?#][^\s"'<>\x60|()[\]{},;*~\u{80}-\u{10FFFF}]*)?`;
 const ATTACHMENT_LINK = new RegExp(String.raw`(?:${AUTHORITY}|(?<=^|[\s"'(<[\x60|（「]))${TOKEN_PATH}${PATH_END}${SUFFIX}`, "gu");
 const TRAILING = /[.:!?]+$/;
 const ATTACHMENT_PATH = /^\/api\/v1\/attachments\/[0-9a-f]{64}$/;

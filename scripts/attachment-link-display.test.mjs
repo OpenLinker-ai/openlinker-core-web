@@ -110,6 +110,7 @@ test("a public filename that continues after the token is left whole", () => {
     `https://cdn.example/api/v1/attachments/${token}-.-v2.png`,
     `https://cdn.example/api/v1/attachments/${token}/原图.jpg`,
     `https://cdn.example/api/v1/attachments/${token}.预览`,
+    `https://cdn.example/api/v1/attachments/${token}-原图.jpg`,
   ]) {
     assert.equal(maskAttachmentLinks(value, "已上传文件"), value, value);
     assert.deepEqual(withoutAttachmentLinks({ image_url: value }), { image_url: value }, value);
@@ -163,4 +164,13 @@ test("Markdown emphasis around an upload still ends it", () => {
 test("Chinese text right after closing emphasis does not hide an upload", () => {
   assert.equal(maskAttachmentLinks(`**${upload}**说明`, "已上传文件"), "**已上传文件 1**说明");
   assert.equal(maskAttachmentLinks(`_${upload}_的原图`, "已上传文件"), "_已上传文件 1_的原图");
+});
+
+test("strikethrough around an upload still ends it before Chinese text", () => {
+  assert.equal(maskAttachmentLinks(`~~${upload}~~已删除`, "已上传文件"), "~~已上传文件 1~~已删除");
+});
+
+test("a query after an upload stops before emphasis and Chinese text", () => {
+  assert.equal(maskAttachmentLinks(`**${upload}?download=1**的内容如下`, "已上传文件"), "**已上传文件 1**的内容如下");
+  assert.equal(maskAttachmentLinks(`${upload}?download=1的内容`, "已上传文件"), "已上传文件 1的内容");
 });
