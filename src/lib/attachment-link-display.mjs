@@ -15,8 +15,12 @@ export function withoutAttachmentLinks(value) {
   const visit = (item) => {
     if (typeof item === "string") {
       if (!item.match(ATTACHMENT_LINK)) return item;
-      const kept = item.replace(ATTACHMENT_LINK, "").split("\n").map((line) => line.trim()).filter(Boolean).join("\n");
-      return kept || undefined;
+      const kept = item
+        .split("\n")
+        .filter((line) => !line.match(ATTACHMENT_LINK) || line.replace(ATTACHMENT_LINK, "").trim() !== "")
+        .map((line) => line.replace(ATTACHMENT_LINK, ""))
+        .join("\n");
+      return kept.trim() ? kept : undefined;
     }
     if (Array.isArray(item)) {
       const kept = item.map(visit).filter((entry) => entry !== undefined);

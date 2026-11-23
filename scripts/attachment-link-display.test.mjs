@@ -49,3 +49,9 @@ test("the rerun link never carries an uploaded link", () => {
   assert.deepEqual(JSON.parse(new URL(href, "https://openlinker.local").searchParams.get("prefill")), { context: "日出" });
   assert.equal(runReplayPlaygroundHref({ agentSlug: "seller/image", input: { image_url: upload }, fallbackHref: "/market" }), "/playground/seller%2Fimage");
 });
+
+test("replay keeps the rest of a text value byte for byte", () => {
+  const prompt = `Review ${upload}\n\n    if enabled:\n        run()\n`;
+  assert.equal(withoutAttachmentLinks({ prompt }).prompt, "Review \n\n    if enabled:\n        run()\n");
+  assert.equal(withoutAttachmentLinks({ files: `${upload}\n  ${pasted}\n${second}\n` }).files, `  ${pasted}\n`);
+});
