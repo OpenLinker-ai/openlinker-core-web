@@ -149,3 +149,9 @@ test("reruns of different runs get different links even when only the upload dif
 test("sentence punctuation after an upload still ends it", () => {
   assert.equal(maskAttachmentLinks(`看 ${upload}! 好`, "已上传文件"), "看 已上传文件 1! 好");
 });
+
+test("Markdown emphasis around an upload still ends it", () => {
+  assert.equal(maskAttachmentLinks(`**${upload}**`, "已上传文件"), "**已上传文件 1**");
+  assert.equal(maskAttachmentLinks(`_${upload}_ and *${second}*`, "已上传文件"), "_已上传文件 1_ and *已上传文件 2*");
+  assert.equal(maskAttachmentLinks(`${upload}/ next`, "已上传文件"), "已上传文件 1/ next");
+});
