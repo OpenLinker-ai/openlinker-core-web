@@ -328,6 +328,7 @@ export function RunDetail({
             <Link
               href={runReplayPlaygroundHref({
                 agentSlug: view.agentSlug,
+                runId: view.id,
                 input: view.input,
                 fallbackHref: "/registry",
               })}

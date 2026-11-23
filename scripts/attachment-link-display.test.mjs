@@ -102,6 +102,8 @@ test("a public filename that continues after the token is left whole", () => {
     `https://cdn.example/api/v1/attachments/${token}=1`,
     `https://cdn.example/api/v1/attachments/${token}@2x`,
     `https://cdn.example/api/v1/attachments/${token}(1).jpg`,
+    `https://cdn.example/api/v1/attachments/${token}!thumbnail.jpg`,
+    `https://cdn.example/api/v1/attachments/${token}[1].jpg`,
   ]) {
     assert.equal(maskAttachmentLinks(value, "已上传文件"), value, value);
     assert.deepEqual(withoutAttachmentLinks({ image_url: value }), { image_url: value }, value);
@@ -132,4 +134,16 @@ test("rerun keeps a line with text after the link, and underscore hosts are mask
   const internal = `http://core_api:8080/api/v1/attachments/${token}`;
   assert.equal(maskAttachmentLinks(internal, "已上传文件"), "已上传文件 1");
   assert.deepEqual(withoutAttachmentLinks({ image_url: internal }), {});
+});
+
+test("reruns of different runs get different links even when only the upload differed", () => {
+  const first = runReplayPlaygroundHref({ agentSlug: "seller/image", runId: "run-1", input: { image_url: upload, context: "日出" }, fallbackHref: "/market" });
+  const second_ = runReplayPlaygroundHref({ agentSlug: "seller/image", runId: "run-2", input: { image_url: second, context: "日出" }, fallbackHref: "/market" });
+  assert.notEqual(first, second_);
+  assert.equal(new URL(first, "https://openlinker.local").searchParams.get("replay"), "run-1");
+  assert.equal(new URL(runReplayPlaygroundHref({ agentSlug: "seller/image", runId: "run-3", fallbackHref: "/market" }), "https://openlinker.local").searchParams.get("replay"), "run-3");
+});
+
+test("sentence punctuation after an upload still ends it", () => {
+  assert.equal(maskAttachmentLinks(`看 ${upload}! 好`, "已上传文件"), "看 已上传文件 1! 好");
 });

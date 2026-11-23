@@ -68,6 +68,7 @@ export default async function PlaygroundPage({
   params: Promise<{ slug: string }>;
   searchParams: Promise<{
     prefill?: string;
+    replay?: string;
     example?: string;
     autorun?: string;
     skill_package?: string | string[];
@@ -80,7 +81,7 @@ export default async function PlaygroundPage({
   const query = await searchParams;
   const hasSkillContext = ["skill_package", "skill_version", "skill_binding", "skill_digest"].some((key) => key in query);
   const skillTrial = parseSkillTrial(query);
-  const { prefill, example, autorun } = query;
+  const { prefill, replay, example, autorun } = query;
 
   const session = await auth();
   if (!session) {
@@ -201,10 +202,11 @@ export default async function PlaygroundPage({
         <div className="min-h-0 min-w-0">
           {invalidAutorunPrefill && <p role="alert" className="mb-3 break-words text-sm text-[color:var(--ol-amber)]">{resourceJourneyMessages[locale].reviewPrefill}</p>}
           <PlaygroundRunner
-            key={`${session.user?.id ?? ""}:${agent.id}:${example ?? ""}:${prefill ?? ""}:${JSON.stringify(skillTrial)}`}
+            key={`${session.user?.id ?? ""}:${agent.id}:${example ?? ""}:${prefill ?? ""}:${replay ?? ""}:${JSON.stringify(skillTrial)}`}
             userId={session.user?.id}
             agent={agent}
             prefill={prefill}
+            replay={replay}
             selectedExample={selectedExample?.input_json}
             examples={agent.examples ?? []}
             inputSchema={agent.capability?.input_schema}
