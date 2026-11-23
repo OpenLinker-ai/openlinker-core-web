@@ -1,20 +1,14 @@
-const CANDIDATE = /https?:\/\/[^\s"'<>()[\]{},;!，。；：！？（）「」、]+|(?<![^\s"'(<[（「])\/api\/v1\/attachments\/[^\s"'<>()[\]{},;!，。；：！？（）「」、]+/g;
-const TRAILING = /[.,;:!?)\]}。，；：！？）」]+$/;
-const ATTACHMENT_PATH = /^\/api\/v1\/attachments\/[0-9a-f]{64}$/;
-
-function isAttachmentLink(candidate) {
-  try {
-    return ATTACHMENT_PATH.test(new URL(candidate, "https://openlinker.invalid").pathname);
-  } catch {
-    return false;
-  }
-}
+const AUTHORITY = String.raw`https?:\/\/(?:[^\s\/@"'<>]*@)?(?:\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9.-]+)(?::\d+)?`;
+const TOKEN_PATH = String.raw`\/api\/v1\/attachments\/[0-9a-f]{64}`;
+const PATH_END = String.raw`(?![\w~%\/-]|\.\w)`;
+const SUFFIX = String.raw`(?:[?#][^\s"'<>\x60|()[\]{},;]*)?`;
+const ATTACHMENT_LINK = new RegExp(String.raw`(?:${AUTHORITY}|(?<![\w.~%\/-]))${TOKEN_PATH}${PATH_END}${SUFFIX}`, "g");
+const TRAILING = /[.:!?]+$/;
 
 function replaceAttachmentLinks(text, replace) {
-  return text.replace(CANDIDATE, (match) => {
+  return text.replace(ATTACHMENT_LINK, (match) => {
     const trailing = match.match(TRAILING)?.[0] ?? "";
-    const candidate = match.slice(0, match.length - trailing.length);
-    return isAttachmentLink(candidate) ? replace() + trailing : match;
+    return replace() + trailing;
   });
 }
 

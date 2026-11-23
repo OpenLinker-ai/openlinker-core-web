@@ -83,3 +83,13 @@ test("adjacent links are judged one by one", () => {
   assert.equal(maskAttachmentLinks(`{${upload}}`, "已上传文件"), "{已上传文件 1}");
   assert.deepEqual(withoutAttachmentLinks({ note: `[one](${upload}),[two](${pasted})` }), { note: `[one](),[two](${pasted})` });
 });
+
+test("uploads are found inside Markdown and on IPv6 hosts", () => {
+  const ipv6 = `http://[::1]:8080/api/v1/attachments/${token}`;
+  assert.equal(maskAttachmentLinks(`\`${upload}\``, "已上传文件"), "`已上传文件 1`");
+  assert.equal(maskAttachmentLinks(`|${upload}|${second}|`, "已上传文件"), "|已上传文件 1|已上传文件 2|");
+  assert.equal(maskAttachmentLinks(ipv6, "已上传文件"), "已上传文件 1");
+  assert.deepEqual(withoutAttachmentLinks({ image_url: ipv6, note: `see \`${upload}\`` }), { note: "see ``" });
+  assert.equal(maskAttachmentLinks(`<${upload}>`, "已上传文件"), "<已上传文件 1>");
+  assert.equal(maskAttachmentLinks(`https://user:pw@core.example.com/api/v1/attachments/${token}`, "已上传文件"), "已上传文件 1");
+});
