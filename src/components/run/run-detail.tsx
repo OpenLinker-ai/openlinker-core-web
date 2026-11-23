@@ -28,6 +28,7 @@ import {
   acquireRunReplayIntent,
   completeRunReplayIntent,
 } from "@/lib/run-idempotency";
+import { maskAttachmentLinks } from "@/lib/attachment-link-display.mjs";
 import { runReplayPlaygroundHref } from "@/lib/run-replay.mjs";
 import { runDetailMessages } from "@/messages/run";
 
@@ -270,6 +271,9 @@ export function RunDetail({
     );
   }
   const view = normalizeRun(run, locale);
+  const uploadedLabel = locale === "zh" ? "已上传文件" : "Uploaded file";
+  const displayView = { ...view, input: maskAttachmentLinks(view.input, uploadedLabel), output: maskAttachmentLinks(view.output, uploadedLabel), error: maskAttachmentLinks(view.error, uploadedLabel) };
+  const displayMessages = maskAttachmentLinks(messages, uploadedLabel);
   const success = view.status === "success";
   const delegated = view.billingMode === "free_delegation";
   const hasBrowserWorkspace = Boolean(view.browserInteractionPolicy);
@@ -324,6 +328,7 @@ export function RunDetail({
             <Link
               href={runReplayPlaygroundHref({
                 agentSlug: view.agentSlug,
+                runId: view.id,
                 input: view.input,
                 fallbackHref: "/registry",
               })}
@@ -386,7 +391,7 @@ export function RunDetail({
 
           <RunEventStream locale={locale} runId={view.id} enabled={run !== null} fallbackStatus={view.status} />
 
-          <RunMessagesPanel locale={locale} run={view} messages={messages} />
+          <RunMessagesPanel locale={locale} run={displayView} messages={displayMessages} />
 
           {!delegated ? (
             <TaskCallbackSection locale={locale} runId={view.id} enabled />
@@ -420,11 +425,11 @@ export function RunDetail({
                 <pre className="mt-3 max-w-full overflow-x-auto whitespace-pre-wrap break-words rounded-[12px] bg-[#102033] p-4 text-[12.5px] leading-relaxed text-white">
                   <code>
                     {success
-                      ? JSON.stringify(view.output, null, 2)
+                      ? JSON.stringify(displayView.output, null, 2)
                       : JSON.stringify(
                           {
                             error_code: view.errorCode,
-                            error: view.error ?? copy.unknownError,
+                            error: displayView.error ?? copy.unknownError,
                           },
                           null,
                           2,

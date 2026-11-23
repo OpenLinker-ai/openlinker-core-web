@@ -1,5 +1,8 @@
+import { withoutAttachmentLinks } from "./attachment-link-display.mjs";
+
 export function runReplayPlaygroundHref({
   agentSlug,
+  runId,
   input,
   fallbackHref,
 }) {
@@ -7,11 +10,12 @@ export function runReplayPlaygroundHref({
   if (!slug) return fallbackHref;
 
   const href = `/playground/${encodeURIComponent(slug)}`;
-  if (!isPlainRecord(input) || Object.keys(input).length === 0) return href;
-
   const params = new URLSearchParams();
-  params.set("prefill", JSON.stringify(input));
-  return `${href}?${params.toString()}`;
+  if (isPlainRecord(input) && Object.keys(input).length > 0) params.set("prefill", JSON.stringify(withoutAttachmentLinks(input)));
+  const replay = typeof runId === "string" ? runId.trim() : "";
+  if (replay) params.set("replay", replay);
+  const query = params.toString();
+  return query ? `${href}?${query}` : href;
 }
 
 function isPlainRecord(value) {

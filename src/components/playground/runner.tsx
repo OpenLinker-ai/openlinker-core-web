@@ -72,6 +72,7 @@ interface Props {
   agent: AgentInfo;
   userId?: string;
   prefill?: string;
+  replay?: string;
   selectedExample?: Record<string, unknown>;
   examples?: { id?: string; title?: string; input_json: Record<string, unknown> }[];
   inputMode?: "auto" | "json";
@@ -94,6 +95,7 @@ export function PlaygroundRunner({
   agent,
   userId,
   prefill,
+  replay,
   selectedExample,
   examples = [],
   inputSchema,
@@ -199,7 +201,7 @@ export function PlaygroundRunner({
   } = useApi();
   const [sessionStore] = useState(() => createPlaygroundSessionStore(
     playgroundSessionKey(userId, agent.id),
-    { input: playgroundInitialDraft({ prefill, selectedExample, examples, inputSchema, locale, inputMode }), conversationID: localID("conversation"), seed: JSON.stringify([prefill ?? null, selectedExample ?? null]) },
+    { input: playgroundInitialDraft({ prefill, selectedExample, examples, inputSchema, locale, inputMode }), conversationID: localID("conversation"), seed: JSON.stringify(replay ? [prefill ?? null, selectedExample ?? null, replay] : [prefill ?? null, selectedExample ?? null]) },
     undefined, { preserveDraftOnSeedChange: inputMode === "json" },
   ));
   const { input, turns, conversationID, ready: restored, storageError, autorunConsumed, preservedInput } = useSyncExternalStore(
