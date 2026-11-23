@@ -125,3 +125,11 @@ test("display masking keeps prose, query values and international hosts intact",
   assert.equal(maskAttachmentLinks(idn, "已上传文件"), "已上传文件 1");
   assert.deepEqual(withoutAttachmentLinks({ image_url: idn, context: "x" }), { context: "x" });
 });
+
+test("rerun keeps a line with text after the link, and underscore hosts are masked", () => {
+  const line = `${upload}?download=1 Compare both charts`;
+  assert.deepEqual(withoutAttachmentLinks({ prompt: line }), { prompt: line });
+  const internal = `http://core_api:8080/api/v1/attachments/${token}`;
+  assert.equal(maskAttachmentLinks(internal, "已上传文件"), "已上传文件 1");
+  assert.deepEqual(withoutAttachmentLinks({ image_url: internal }), {});
+});

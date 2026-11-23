@@ -1,4 +1,4 @@
-const AUTHORITY = String.raw`https?:\/\/(?:[^\s\/@"'<>]*@)?(?:\[[0-9A-Fa-f:.]+\]|[\p{L}\p{N}.-]+)(?::\d+)?`;
+const AUTHORITY = String.raw`https?:\/\/(?:[^\s\/@"'<>]*@)?(?:\[[0-9A-Fa-f:.]+\]|[\p{L}\p{N}._-]+)(?::\d+)?`;
 const TOKEN_PATH = String.raw`\/api\/v1\/attachments\/[0-9a-f]{64}`;
 const PATH_END = String.raw`(?![\p{L}\p{N}_~%\/+=&$@*(-]|[.:][\p{L}\p{N}_])`;
 const SUFFIX = String.raw`(?:[?#][^\s"'<>\x60|()[\]{},;，。；：！？（）「」、]*)?`;
@@ -7,7 +7,7 @@ const TRAILING = /[.:!?]+$/;
 const ATTACHMENT_PATH = /^\/api\/v1\/attachments\/[0-9a-f]{64}$/;
 
 function isAttachmentLink(value) {
-  if (!/^(?:https?:\/\/|\/api\/v1\/attachments\/)/.test(value)) return false;
+  if (/\s/.test(value) || !/^(?:https?:\/\/|\/api\/v1\/attachments\/)/.test(value)) return false;
   try {
     return ATTACHMENT_PATH.test(new URL(value, "https://openlinker.invalid").pathname);
   } catch {
