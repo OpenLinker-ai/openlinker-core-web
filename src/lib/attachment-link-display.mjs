@@ -1,9 +1,19 @@
-const AUTHORITY = String.raw`https?:\/\/(?:[^\s\/@"'<>]*@)?(?:\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9.-]+)(?::\d+)?`;
+const AUTHORITY = String.raw`https?:\/\/(?:[^\s\/@"'<>]*@)?(?:\[[0-9A-Fa-f:.]+\]|[\p{L}\p{N}.-]+)(?::\d+)?`;
 const TOKEN_PATH = String.raw`\/api\/v1\/attachments\/[0-9a-f]{64}`;
-const PATH_END = String.raw`(?![\p{L}\p{N}_~%\/+=&$@*-]|\.[\p{L}\p{N}_])`;
-const SUFFIX = String.raw`(?:[?#][^\s"'<>\x60|()[\]{},;]*)?`;
-const ATTACHMENT_LINK = new RegExp(String.raw`(?:${AUTHORITY}|(?<![\w.~%\/-]))${TOKEN_PATH}${PATH_END}${SUFFIX}`, "gu");
+const PATH_END = String.raw`(?![\p{L}\p{N}_~%\/+=&$@*(-]|[.:][\p{L}\p{N}_])`;
+const SUFFIX = String.raw`(?:[?#][^\s"'<>\x60|()[\]{},;，。；：！？（）「」、]*)?`;
+const ATTACHMENT_LINK = new RegExp(String.raw`(?:${AUTHORITY}|(?<=^|[\s"'(<[\x60|（「]))${TOKEN_PATH}${PATH_END}${SUFFIX}`, "gu");
 const TRAILING = /[.:!?]+$/;
+const ATTACHMENT_PATH = /^\/api\/v1\/attachments\/[0-9a-f]{64}$/;
+
+function isAttachmentLink(value) {
+  if (!/^(?:https?:\/\/|\/api\/v1\/attachments\/)/.test(value)) return false;
+  try {
+    return ATTACHMENT_PATH.test(new URL(value, "https://openlinker.invalid").pathname);
+  } catch {
+    return false;
+  }
+}
 
 function replaceAttachmentLinks(text, replace) {
   return text.replace(ATTACHMENT_LINK, (match) => {
@@ -26,13 +36,11 @@ export function maskAttachmentLinks(value, label) {
 export function withoutAttachmentLinks(value) {
   const visit = (item) => {
     if (typeof item === "string") {
-      const stripped = item.split("\n").map((line) => ({ line, rest: replaceAttachmentLinks(line, () => "") }));
-      if (stripped.every(({ line, rest }) => line === rest)) return item;
-      const kept = stripped
-        .filter(({ line, rest }) => line === rest || rest.trim() !== "")
-        .map(({ rest }) => rest)
-        .join("\n");
-      return kept.trim() ? kept : undefined;
+      const lines = item.split("\n");
+      const kept = lines.filter((line) => !isAttachmentLink(line.trim()));
+      if (kept.length === lines.length) return item;
+      const text = kept.join("\n");
+      return text.trim() ? text : undefined;
     }
     if (Array.isArray(item)) {
       const kept = item.map(visit).filter((entry) => entry !== undefined);

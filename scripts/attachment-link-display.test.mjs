@@ -52,7 +52,8 @@ test("the rerun link never carries an uploaded link", () => {
 
 test("replay keeps the rest of a text value byte for byte", () => {
   const prompt = `Review ${upload}\n\n    if enabled:\n        run()\n`;
-  assert.equal(withoutAttachmentLinks({ prompt }).prompt, "Review \n\n    if enabled:\n        run()\n");
+  assert.equal(withoutAttachmentLinks({ prompt }).prompt, prompt);
+  assert.equal(withoutAttachmentLinks({ prompt: `${upload}\n\n    if enabled:\n` }).prompt, "\n    if enabled:\n");
   assert.equal(withoutAttachmentLinks({ files: `${upload}\n  ${pasted}\n${second}\n` }).files, `  ${pasted}\n`);
 });
 
@@ -81,7 +82,7 @@ test("adjacent links are judged one by one", () => {
   assert.equal(maskAttachmentLinks(`[one](${upload}),[two](${second})`, "已上传文件"), "[one](已上传文件 1),[two](已上传文件 2)");
   assert.equal(maskAttachmentLinks(`${upload},${second};${pasted}`, "已上传文件"), `已上传文件 1,已上传文件 2;${pasted}`);
   assert.equal(maskAttachmentLinks(`{${upload}}`, "已上传文件"), "{已上传文件 1}");
-  assert.deepEqual(withoutAttachmentLinks({ note: `[one](${upload}),[two](${pasted})` }), { note: `[one](),[two](${pasted})` });
+  assert.deepEqual(withoutAttachmentLinks({ note: `[one](${upload}),[two](${pasted})` }), { note: `[one](${upload}),[two](${pasted})` });
 });
 
 test("uploads are found inside Markdown and on IPv6 hosts", () => {
@@ -89,7 +90,7 @@ test("uploads are found inside Markdown and on IPv6 hosts", () => {
   assert.equal(maskAttachmentLinks(`\`${upload}\``, "已上传文件"), "`已上传文件 1`");
   assert.equal(maskAttachmentLinks(`|${upload}|${second}|`, "已上传文件"), "|已上传文件 1|已上传文件 2|");
   assert.equal(maskAttachmentLinks(ipv6, "已上传文件"), "已上传文件 1");
-  assert.deepEqual(withoutAttachmentLinks({ image_url: ipv6, note: `see \`${upload}\`` }), { note: "see ``" });
+  assert.deepEqual(withoutAttachmentLinks({ image_url: ipv6, note: `see \`${upload}\`` }), { note: `see \`${upload}\`` });
   assert.equal(maskAttachmentLinks(`<${upload}>`, "已上传文件"), "<已上传文件 1>");
   assert.equal(maskAttachmentLinks(`https://user:pw@core.example.com/api/v1/attachments/${token}`, "已上传文件"), "已上传文件 1");
 });
@@ -100,9 +101,27 @@ test("a public filename that continues after the token is left whole", () => {
     `https://cdn.example/api/v1/attachments/${token}预览.png`,
     `https://cdn.example/api/v1/attachments/${token}=1`,
     `https://cdn.example/api/v1/attachments/${token}@2x`,
+    `https://cdn.example/api/v1/attachments/${token}(1).jpg`,
   ]) {
     assert.equal(maskAttachmentLinks(value, "已上传文件"), value, value);
     assert.deepEqual(withoutAttachmentLinks({ image_url: value }), { image_url: value }, value);
   }
   assert.equal(maskAttachmentLinks(`${upload}。${upload}，${upload}）`, "已上传文件"), "已上传文件 1。已上传文件 2，已上传文件 3）");
+});
+
+test("rerun removes only whole-line uploads and never edits other text", () => {
+  const cdn = `https://cdn.example/api/v1/attachments/${token}(1).jpg`;
+  assert.deepEqual(withoutAttachmentLinks({ a: cdn, b: ` ${upload}?download=1 `, c: `${pasted}\n${upload}`, d: `x ${upload}` }), { a: cdn, c: pasted, d: `x ${upload}` });
+});
+
+test("display masking keeps prose, query values and international hosts intact", () => {
+  assert.equal(maskAttachmentLinks(`${upload}?download=1。继续分析第二张图片`, "已上传文件"), "已上传文件 1。继续分析第二张图片");
+  const query = `https://cdn.example/download?file=/api/v1/attachments/${token}`;
+  const colon = `https://cdn.example/api/v1/attachments/${token}:preview.jpg`;
+  assert.equal(maskAttachmentLinks(query, "已上传文件"), query);
+  assert.equal(maskAttachmentLinks(colon, "已上传文件"), colon);
+  assert.equal(maskAttachmentLinks(`见 ${upload}: 第一张`, "已上传文件"), "见 已上传文件 1: 第一张");
+  const idn = `https://例子.测试/api/v1/attachments/${token}`;
+  assert.equal(maskAttachmentLinks(idn, "已上传文件"), "已上传文件 1");
+  assert.deepEqual(withoutAttachmentLinks({ image_url: idn, context: "x" }), { context: "x" });
 });
