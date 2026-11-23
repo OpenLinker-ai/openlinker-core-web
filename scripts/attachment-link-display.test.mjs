@@ -55,3 +55,11 @@ test("replay keeps the rest of a text value byte for byte", () => {
   assert.equal(withoutAttachmentLinks({ prompt }).prompt, "Review \n\n    if enabled:\n        run()\n");
   assert.equal(withoutAttachmentLinks({ files: `${upload}\n  ${pasted}\n${second}\n` }).files, `  ${pasted}\n`);
 });
+
+test("a public file whose name starts with 64 hex characters is not an upload", () => {
+  const cdn = `https://cdn.example/api/v1/attachments/${token}.jpg`;
+  assert.equal(maskAttachmentLinks(cdn, "已上传文件"), cdn);
+  assert.equal(maskAttachmentLinks(`${upload}x`, "已上传文件"), `${upload}x`);
+  assert.deepEqual(withoutAttachmentLinks({ image_url: cdn }), { image_url: cdn });
+  assert.equal(maskAttachmentLinks(`请看 ${upload}.`, "已上传文件"), "请看 已上传文件 1.");
+});

@@ -1,4 +1,4 @@
-const ATTACHMENT_LINK = /(?:https?:\/\/[^\s/"'<>]+)?\/api\/v1\/attachments\/[0-9a-f]{64}(?![0-9a-f])/g;
+const ATTACHMENT_LINK = /(?:https?:\/\/[^\s/"'<>]+)?\/api\/v1\/attachments\/[0-9a-f]{64}(?![\w-]|\.[A-Za-z0-9])/g;
 
 export function maskAttachmentLinks(value, label) {
   let count = 0;
