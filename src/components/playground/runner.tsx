@@ -201,7 +201,7 @@ export function PlaygroundRunner({
   } = useApi();
   const [sessionStore] = useState(() => createPlaygroundSessionStore(
     playgroundSessionKey(userId, agent.id),
-    { input: playgroundInitialDraft({ prefill, selectedExample, examples, inputSchema, locale, inputMode }), conversationID: localID("conversation"), seed: JSON.stringify([prefill ?? null, selectedExample ?? null, replay ?? null]) },
+    { input: playgroundInitialDraft({ prefill, selectedExample, examples, inputSchema, locale, inputMode }), conversationID: localID("conversation"), seed: JSON.stringify(replay ? [prefill ?? null, selectedExample ?? null, replay] : [prefill ?? null, selectedExample ?? null]) },
     undefined, { preserveDraftOnSeedChange: inputMode === "json" },
   ));
   const { input, turns, conversationID, ready: restored, storageError, autorunConsumed, preservedInput } = useSyncExternalStore(

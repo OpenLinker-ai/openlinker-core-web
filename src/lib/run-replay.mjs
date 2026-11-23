@@ -11,8 +11,7 @@ export function runReplayPlaygroundHref({
 
   const href = `/playground/${encodeURIComponent(slug)}`;
   const params = new URLSearchParams();
-  const replayable = isPlainRecord(input) ? withoutAttachmentLinks(input) : null;
-  if (replayable && Object.keys(replayable).length > 0) params.set("prefill", JSON.stringify(replayable));
+  if (isPlainRecord(input) && Object.keys(input).length > 0) params.set("prefill", JSON.stringify(withoutAttachmentLinks(input)));
   const replay = typeof runId === "string" ? runId.trim() : "";
   if (replay) params.set("replay", replay);
   const query = params.toString();

@@ -47,7 +47,9 @@ test("the rerun link never carries an uploaded link", () => {
   const href = runReplayPlaygroundHref({ agentSlug: "seller/image", input: { image_url: upload, context: "日出" }, fallbackHref: "/market" });
   assert.ok(!href.includes(token));
   assert.deepEqual(JSON.parse(new URL(href, "https://openlinker.local").searchParams.get("prefill")), { context: "日出" });
-  assert.equal(runReplayPlaygroundHref({ agentSlug: "seller/image", input: { image_url: upload }, fallbackHref: "/market" }), "/playground/seller%2Fimage");
+  const onlyUploads = new URL(runReplayPlaygroundHref({ agentSlug: "seller/image", input: { image_url: upload }, fallbackHref: "/market" }), "https://openlinker.local");
+  assert.equal(onlyUploads.searchParams.get("prefill"), "{}");
+  assert.equal(runReplayPlaygroundHref({ agentSlug: "seller/image", input: {}, fallbackHref: "/market" }), "/playground/seller%2Fimage");
 });
 
 test("replay keeps the rest of a text value byte for byte", () => {
