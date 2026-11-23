@@ -63,3 +63,16 @@ test("a public file whose name starts with 64 hex characters is not an upload", 
   assert.deepEqual(withoutAttachmentLinks({ image_url: cdn }), { image_url: cdn });
   assert.equal(maskAttachmentLinks(`请看 ${upload}.`, "已上传文件"), "请看 已上传文件 1.");
 });
+
+test("only a URL whose whole path is the attachment route counts as an upload", () => {
+  for (const value of [
+    `https://cdn.example/api/v1/attachments/${token}/original.jpg`,
+    `https://cdn.example/images/api/v1/attachments/${token}`,
+    `https://cdn.example/api/v1/attachments/${token}.jpg?size=2`,
+  ]) {
+    assert.equal(maskAttachmentLinks(value, "已上传文件"), value, value);
+    assert.deepEqual(withoutAttachmentLinks({ image_url: value }), { image_url: value }, value);
+  }
+  assert.equal(maskAttachmentLinks(`(${upload})，再看 ${second}。`, "已上传文件"), "(已上传文件 1)，再看 已上传文件 2。");
+  assert.equal(maskAttachmentLinks(`/api/v1/attachments/${token}`, "已上传文件"), "已上传文件 1");
+});

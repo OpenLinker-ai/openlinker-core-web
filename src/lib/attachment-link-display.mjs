@@ -1,9 +1,27 @@
-const ATTACHMENT_LINK = /(?:https?:\/\/[^\s/"'<>]+)?\/api\/v1\/attachments\/[0-9a-f]{64}(?![\w-]|\.[A-Za-z0-9])/g;
+const CANDIDATE = /https?:\/\/[^\s"'<>，。；：！？（）「」、]+|(?<![^\s"'(<[（「])\/api\/v1\/attachments\/[^\s"'<>，。；：！？（）「」、]+/g;
+const TRAILING = /[.,;:!?)\]}。，；：！？）」]+$/;
+const ATTACHMENT_PATH = /^\/api\/v1\/attachments\/[0-9a-f]{64}$/;
+
+function isAttachmentLink(candidate) {
+  try {
+    return ATTACHMENT_PATH.test(new URL(candidate, "https://openlinker.invalid").pathname);
+  } catch {
+    return false;
+  }
+}
+
+function replaceAttachmentLinks(text, replace) {
+  return text.replace(CANDIDATE, (match) => {
+    const trailing = match.match(TRAILING)?.[0] ?? "";
+    const candidate = match.slice(0, match.length - trailing.length);
+    return isAttachmentLink(candidate) ? replace() + trailing : match;
+  });
+}
 
 export function maskAttachmentLinks(value, label) {
   let count = 0;
   const visit = (item) => {
-    if (typeof item === "string") return item.replace(ATTACHMENT_LINK, () => `${label} ${++count}`);
+    if (typeof item === "string") return replaceAttachmentLinks(item, () => `${label} ${++count}`);
     if (Array.isArray(item)) return item.map(visit);
     if (item && typeof item === "object") return Object.fromEntries(Object.entries(item).map(([key, entry]) => [key, visit(entry)]));
     return item;
@@ -14,11 +32,11 @@ export function maskAttachmentLinks(value, label) {
 export function withoutAttachmentLinks(value) {
   const visit = (item) => {
     if (typeof item === "string") {
-      if (!item.match(ATTACHMENT_LINK)) return item;
-      const kept = item
-        .split("\n")
-        .filter((line) => !line.match(ATTACHMENT_LINK) || line.replace(ATTACHMENT_LINK, "").trim() !== "")
-        .map((line) => line.replace(ATTACHMENT_LINK, ""))
+      const stripped = item.split("\n").map((line) => ({ line, rest: replaceAttachmentLinks(line, () => "") }));
+      if (stripped.every(({ line, rest }) => line === rest)) return item;
+      const kept = stripped
+        .filter(({ line, rest }) => line === rest || rest.trim() !== "")
+        .map(({ rest }) => rest)
         .join("\n");
       return kept.trim() ? kept : undefined;
     }
