@@ -22,6 +22,14 @@ test("a token is hidden wherever it appears", () => {
   }
 });
 
+test("the same upload keeps one number wherever it appears", () => {
+  const relative = `/api/v1/attachments/${token}`;
+  assert.equal(maskAttachmentLinks(`${upload} ${second} ${upload}?download=1`, "已上传文件"), "已上传文件 1 已上传文件 2 已上传文件 1");
+  assert.equal(maskAttachmentLinks(`${second}\n${relative}\n${second}`, "已上传文件"), "已上传文件 1\n已上传文件 2\n已上传文件 1");
+  const messages = [{ input: { image_url: upload }, parts: [{ data: { image_url: upload, extra: second } }] }, { text: `${second} ${upload}` }];
+  assert.deepEqual(maskAttachmentLinks(messages, "已上传文件"), [{ input: { image_url: "已上传文件 1" }, parts: [{ data: { image_url: "已上传文件 1", extra: "已上传文件 2" } }] }, { text: "已上传文件 2 已上传文件 1" }]);
+});
+
 test("nested values are masked without touching keys, other types or the original", () => {
   const input = { image_url: upload, image_urls: [upload, pasted], meta: { note: `see ${second}`, count: 2, ok: true, none: null } };
   const snapshot = structuredClone(input);
@@ -115,7 +123,7 @@ test("a public filename that continues after the token is left whole", () => {
     assert.equal(maskAttachmentLinks(value, "已上传文件"), value, value);
     assert.deepEqual(withoutAttachmentLinks({ image_url: value }), { image_url: value }, value);
   }
-  assert.equal(maskAttachmentLinks(`${upload}。${upload}，${upload}）`, "已上传文件"), "已上传文件 1。已上传文件 2，已上传文件 3）");
+  assert.equal(maskAttachmentLinks(`${upload}。${upload}，${upload}）`, "已上传文件"), "已上传文件 1。已上传文件 1，已上传文件 1）");
 });
 
 test("rerun removes only whole-line uploads and never edits other text", () => {

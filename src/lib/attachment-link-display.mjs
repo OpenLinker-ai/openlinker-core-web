@@ -4,6 +4,7 @@ const PATH_END = String.raw`(?![\p{L}\p{N}]|[%\/+=&$@([!.:-]+[\p{L}\p{N}]|[_%\/+
 const SUFFIX = String.raw`(?:[?#][^\s"'<>\x60|()[\]{},;*~\u{80}-\u{10FFFF}]*)?`;
 const ATTACHMENT_LINK = new RegExp(String.raw`(?:${AUTHORITY}|(?<=^|[\s"'(<[\x60|（「]))${TOKEN_PATH}${PATH_END}${SUFFIX}`, "gu");
 const TRAILING = /[.:!?]+$/;
+const TOKEN_IN_LINK = /\/api\/v1\/attachments\/([0-9a-f]{64})/;
 const ATTACHMENT_PATH = /^\/api\/v1\/attachments\/[0-9a-f]{64}$/;
 
 function isAttachmentLink(value) {
@@ -18,14 +19,18 @@ function isAttachmentLink(value) {
 function replaceAttachmentLinks(text, replace) {
   return text.replace(ATTACHMENT_LINK, (match) => {
     const trailing = match.match(TRAILING)?.[0] ?? "";
-    return replace() + trailing;
+    return replace(match.match(TOKEN_IN_LINK)[1]) + trailing;
   });
 }
 
 export function maskAttachmentLinks(value, label) {
-  let count = 0;
+  const numbers = new Map();
+  const number = (token) => {
+    if (!numbers.has(token)) numbers.set(token, numbers.size + 1);
+    return `${label} ${numbers.get(token)}`;
+  };
   const visit = (item) => {
-    if (typeof item === "string") return replaceAttachmentLinks(item, () => `${label} ${++count}`);
+    if (typeof item === "string") return replaceAttachmentLinks(item, number);
     if (Array.isArray(item)) return item.map(visit);
     if (item && typeof item === "object") return Object.fromEntries(Object.entries(item).map(([key, entry]) => [key, visit(entry)]));
     return item;
