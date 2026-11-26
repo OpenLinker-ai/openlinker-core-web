@@ -2,23 +2,30 @@ import Link from "next/link";
 import { Package, ArrowUpRight } from "lucide-react";
 import type { Locale } from "@/lib/i18n";
 import { skillPackageMessages } from "@/messages/skill-package";
+import { catalogMessages } from "@/messages/catalog";
+import { catalogTabHref } from "@/lib/catalog.mjs";
 
 export function SkillDirectoryTabs({
   locale,
   packages = false,
+  catalog = false,
+  catalogAvailable = false,
 }: {
   locale: Locale;
   packages?: boolean;
+  catalog?: boolean;
+  catalogAvailable?: boolean;
 }) {
   const copy = skillPackageMessages[locale];
+  const capabilities = !packages && !catalog;
   return (
     <nav
       aria-label={copy.capabilities}
       className="mb-6 flex gap-2 border-b border-[color:var(--ol-line)] pb-4"
     >
       <Link
-        className={`ol-filter-item ${!packages ? "active" : ""}`}
-        aria-current={!packages ? "page" : undefined}
+        className={`ol-filter-item ${capabilities ? "active" : ""}`}
+        aria-current={capabilities ? "page" : undefined}
         href="/skills"
       >
         {copy.capabilities}
@@ -30,6 +37,15 @@ export function SkillDirectoryTabs({
       >
         {copy.packages}
       </Link>
+      {catalogAvailable && (
+        <Link
+          className={`ol-filter-item ${catalog ? "active" : ""}`}
+          aria-current={catalog ? "page" : undefined}
+          href={catalogTabHref("skills")}
+        >
+          {catalogMessages[locale].tab}
+        </Link>
+      )}
     </nav>
   );
 }

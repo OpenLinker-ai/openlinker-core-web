@@ -48,7 +48,8 @@
     "test:playground": "node --test src/components/playground/browser-observation-disclosure.test.mjs scripts/browser-lifecycle.test.mjs scripts/playground-*.test.mjs",
     "test:cli-auth": "node --test scripts/cli-login.test.mjs",
     "test:resources": "node --no-warnings --test scripts/resource-sharing*.test.mjs",
-    "test:runtime-indexing": "node --test scripts/public-discovery.test.mjs && node scripts/runtime-indexing-smoke.mjs"
+    "test:runtime-indexing": "node --test scripts/public-discovery.test.mjs && node scripts/runtime-indexing-smoke.mjs",
+    "test:catalog": "node --test scripts/catalog.test.mjs"
   },
   "dependencies": {
     "@auth/core": "^0.41.3",
