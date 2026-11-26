@@ -71,7 +71,7 @@ test("server names split into namespace and name", () => {
     "/api/v1/catalog/registries/pub/mcp/servers/io.github.acme/_built/versions/1.0.0%2Bbuild.1",
   );
   assert.throws(() =>
-    catalogEntryPath("pub", "mcp", "io.github.acme", "w", "a/b"),
+    catalogEntryPath("pub", "mcp", "io.github.acme", "w", "a\nb"),
   );
   assert.equal(parseServerName("nonsense"), null);
   assert.equal(parseServerName("a/b/c"), null);
@@ -196,8 +196,16 @@ test("MCP identifiers follow the registry rules", () => {
   );
   assert.ok(parseServerName(`io.github.a/${"n".repeat(150)}`));
   assert.equal(parseServerName(`io.github.a/${"n".repeat(200)}`), null);
-  assert.throws(() =>
+  assert.equal(
     catalogEntryPath("pub", "skills", "io.github.a", "w", "1..0"),
+    "/api/v1/catalog/registries/pub/skills/io.github.a/w/versions/1..0",
+  );
+  assert.equal(
+    catalogEntryPath("pub", "mcp", "io.github.a", "w", "release/2026"),
+    "/api/v1/catalog/registries/pub/mcp/servers/io.github.a/w/versions/release%2F2026",
+  );
+  assert.throws(() =>
+    catalogEntryPath("pub", "skills", "io.github.a", "w", ".."),
   );
 });
 

@@ -1,7 +1,7 @@
 const SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const MCP_NAMESPACE = /^[A-Za-z0-9.-]{1,198}$/;
 const MCP_NAME = /^[A-Za-z0-9._-]{1,198}$/;
-const MCP_VERSION = /^[^/\\\x00-\x1f\x7f]{1,255}$/;
+const MCP_VERSION = /^[^\x00-\x1f\x7f]{1,255}$/;
 const REGISTRY = /^[a-z0-9][a-z0-9-]{0,31}$/;
 const DIGEST = /^sha256:[0-9a-f]{64}$/;
 const ROOT = "/api/v1/catalog/registries/";
@@ -11,8 +11,7 @@ function segment(value, pattern = SEGMENT) {
     typeof value !== "string" ||
     !pattern.test(value) ||
     value === "." ||
-    value === ".." ||
-    (pattern === SEGMENT && value.includes(".."))
+    value === ".."
   ) {
     throw new Error("invalid catalog path segment");
   }
