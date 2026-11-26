@@ -3,6 +3,8 @@ import test from "node:test";
 
 import {
   catalogEntryPath,
+  draftErrorKey,
+  serverCard,
   catalogFilePath,
   catalogListPath,
   catalogTabHref,
@@ -181,4 +183,53 @@ test("tab links and query parsing", () => {
     q: "",
     entry: null,
   });
+});
+
+test("MCP identifiers follow the registry rules", () => {
+  assert.equal(
+    catalogEntryPath("pub", "mcp", "io.github.a", "w", "release candidate"),
+    "/api/v1/catalog/registries/pub/mcp/servers/io.github.a/w/versions/release%20candidate",
+  );
+  assert.equal(
+    catalogEntryPath("pub", "mcp", "io.github.a", "w", "1..0"),
+    "/api/v1/catalog/registries/pub/mcp/servers/io.github.a/w/versions/1..0",
+  );
+  assert.ok(parseServerName(`io.github.a/${"n".repeat(150)}`));
+  assert.equal(parseServerName(`io.github.a/${"n".repeat(200)}`), null);
+  assert.throws(() =>
+    catalogEntryPath("pub", "skills", "io.github.a", "w", "1..0"),
+  );
+});
+
+test("MCP cards read the server document", () => {
+  assert.deepEqual(
+    serverCard({
+      name: "io.github.a/w",
+      mode: "registered",
+      status: "active",
+      server: { title: "Weather", description: "Forecasts" },
+    }),
+    {
+      namespace: "io.github.a",
+      name: "w",
+      title: "Weather",
+      description: "Forecasts",
+      mode: "registered",
+      status: "active",
+    },
+  );
+  assert.deepEqual(
+    serverCard({ name: "io.github.a/w", server: {} }).title,
+    "io.github.a/w",
+  );
+  assert.equal(serverCard({ name: "bad" }), null);
+});
+
+test("draft errors map to their own copy", () => {
+  assert.equal(draftErrorKey("CATALOG_MCP_SELF_HOST_REQUIRED"), "selfHost");
+  assert.equal(draftErrorKey("CATALOG_MCP_INACTIVE"), "inactive");
+  assert.equal(draftErrorKey("CATALOG_MCP_TEMPLATE_URL"), "templateUrl");
+  assert.equal(draftErrorKey("CATALOG_MCP_NO_REMOTE"), "noRemote");
+  assert.equal(draftErrorKey("CATALOG_UNAVAILABLE"), "unavailable");
+  assert.equal(draftErrorKey(""), "unavailable");
 });

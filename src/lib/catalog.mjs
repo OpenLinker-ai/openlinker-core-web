@@ -1,7 +1,7 @@
 const SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
-const MCP_NAMESPACE = /^[A-Za-z0-9.-]{1,128}$/;
-const MCP_NAME = /^[A-Za-z0-9._-]{1,128}$/;
-const MCP_VERSION = /^[^\s/\\]{1,255}$/;
+const MCP_NAMESPACE = /^[A-Za-z0-9.-]{1,198}$/;
+const MCP_NAME = /^[A-Za-z0-9._-]{1,198}$/;
+const MCP_VERSION = /^[^/\\\x00-\x1f\x7f]{1,255}$/;
 const REGISTRY = /^[a-z0-9][a-z0-9-]{0,31}$/;
 const DIGEST = /^sha256:[0-9a-f]{64}$/;
 const ROOT = "/api/v1/catalog/registries/";
@@ -10,7 +10,9 @@ function segment(value, pattern = SEGMENT) {
   if (
     typeof value !== "string" ||
     !pattern.test(value) ||
-    value.includes("..")
+    value === "." ||
+    value === ".." ||
+    (pattern === SEGMENT && value.includes(".."))
   ) {
     throw new Error("invalid catalog path segment");
   }
@@ -57,6 +59,7 @@ export function parseServerName(full) {
   const parts = typeof full === "string" ? full.split("/") : [];
   if (
     parts.length !== 2 ||
+    full.length > 200 ||
     !MCP_NAMESPACE.test(parts[0]) ||
     !MCP_NAME.test(parts[1]) ||
     parts[1] === "." ||
@@ -64,6 +67,30 @@ export function parseServerName(full) {
   )
     return null;
   return { namespace: parts[0], name: parts[1] };
+}
+
+export function serverCard(item) {
+  const parsed = parseServerName(item?.name);
+  if (!parsed) return null;
+  const server = item.server ?? {};
+  return {
+    ...parsed,
+    title: server.title || item.name,
+    description: server.description,
+    mode: item.mode,
+    status: item.status,
+  };
+}
+
+const DRAFT_ERRORS = {
+  CATALOG_MCP_SELF_HOST_REQUIRED: "selfHost",
+  CATALOG_MCP_INACTIVE: "inactive",
+  CATALOG_MCP_TEMPLATE_URL: "templateUrl",
+  CATALOG_MCP_NO_REMOTE: "noRemote",
+};
+
+export function draftErrorKey(code) {
+  return DRAFT_ERRORS[code] ?? "unavailable";
 }
 
 export function importPayload({

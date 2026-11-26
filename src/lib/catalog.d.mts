@@ -69,3 +69,24 @@ export function readCatalogQuery(
   q: string;
   entry: { namespace: string; name: string } | null;
 };
+export function serverCard(
+  item:
+    | {
+        name?: string;
+        mode?: string;
+        status?: string;
+        server?: { title?: string; description?: string };
+      }
+    | null
+    | undefined,
+): {
+  namespace: string;
+  name: string;
+  title: string;
+  description?: string;
+  mode?: string;
+  status?: string;
+} | null;
+export function draftErrorKey(
+  code: string,
+): "selfHost" | "inactive" | "templateUrl" | "noRemote" | "unavailable";

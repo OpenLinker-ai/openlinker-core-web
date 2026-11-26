@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { ArrowUpRight, Search } from "lucide-react";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 import { useApi } from "@/hooks/use-api";
 import { getApiBaseUrlForPath } from "@/lib/api-root";
 import type { Locale } from "@/lib/i18n";
@@ -12,12 +13,13 @@ import {
   catalogEntryPath,
   catalogFilePath,
   catalogListPath,
+  draftErrorKey,
   entryModeKey,
   importPayload,
   licenseText,
-  parseServerName,
   registrationPayload,
   remoteTransportKey,
+  serverCard,
   type CatalogKind,
 } from "@/lib/catalog.mjs";
 import { catalogMessages } from "@/messages/catalog";
@@ -33,11 +35,10 @@ type SkillItem = {
 };
 type ServerItem = {
   name: string;
-  description?: string;
   mode?: string;
   status?: string;
   version?: string;
-  title?: string;
+  server?: { title?: string; description?: string };
 };
 type SkillVersion = {
   version: string;
@@ -80,11 +81,24 @@ function errorText(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
-export function CatalogBrowser({
+export function CatalogBrowser(props: {
+  locale: Locale;
+  kind: CatalogKind;
+  registries: Registry[];
+}) {
+  const { data, status } = useSession();
+  const viewer = status === "loading" ? "" : (data?.user?.id ?? "anonymous");
+  if (!viewer) return null;
+  return <CatalogView key={viewer} viewer={viewer} {...props} />;
+}
+
+function CatalogView({
+  viewer,
   locale,
   kind,
   registries,
 }: {
+  viewer: string;
   locale: Locale;
   kind: CatalogKind;
   registries: Registry[];
@@ -99,7 +113,7 @@ export function CatalogBrowser({
   } | null>(null);
   const { fetch, isAuthenticated, isLoading } = useApi();
   const list = useInfiniteQuery({
-    queryKey: ["catalog", kind, registry, query, isAuthenticated],
+    queryKey: ["catalog", viewer, kind, registry, query],
     enabled: Boolean(registry) && !isLoading,
     initialPageParam: "",
     queryFn: ({ pageParam }) =>
@@ -126,18 +140,8 @@ export function CatalogBrowser({
           status: s.status,
         }))
       : (p.servers ?? []).flatMap((s) => {
-          const parsed = parseServerName(s.name);
-          return parsed
-            ? [
-                {
-                  ...parsed,
-                  title: s.title || s.name,
-                  description: s.description,
-                  mode: s.mode,
-                  status: s.status,
-                },
-              ]
-            : [];
+          const card = serverCard(s);
+          return card ? [card] : [];
         }),
   );
   return (
@@ -248,6 +252,7 @@ export function CatalogBrowser({
               registry={registry}
               entry={selected}
               signedIn={isAuthenticated}
+              viewer={viewer}
             />
           ) : (
             <ServerPanel
@@ -256,6 +261,7 @@ export function CatalogBrowser({
               registry={registry}
               entry={selected}
               signedIn={isAuthenticated}
+              viewer={viewer}
             />
           ))}
       </section>
@@ -268,11 +274,13 @@ function SkillPanel({
   registry,
   entry,
   signedIn,
+  viewer,
 }: {
   locale: Locale;
   registry: string;
   entry: { namespace: string; name: string };
   signedIn: boolean;
+  viewer: string;
 }) {
   const copy = catalogMessages[locale];
   const { fetch, token } = useApi();
@@ -282,7 +290,7 @@ function SkillPanel({
   const [imported, setImported] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const detail = useQuery({
-    queryKey: ["catalog-skill", registry, entry.namespace, entry.name],
+    queryKey: [viewer, "catalog-skill", registry, entry.namespace, entry.name],
     queryFn: () =>
       fetch<SkillDetail>(
         catalogEntryPath(registry, "skills", entry.namespace, entry.name),
@@ -294,6 +302,7 @@ function SkillPanel({
     version || detail.data?.latest_version || versions[0]?.version || "";
   const ver = useQuery({
     queryKey: [
+      viewer,
       "catalog-skill-version",
       registry,
       entry.namespace,
@@ -315,6 +324,7 @@ function SkillPanel({
   });
   const text = useQuery({
     queryKey: [
+      viewer,
       "catalog-skill-file",
       registry,
       entry.namespace,
@@ -408,6 +418,11 @@ function SkillPanel({
             </option>
           ))}
         </select>
+      )}
+      {ver.isError && (
+        <p className="text-sm text-[color:var(--ol-muted)]">
+          {copy.unavailable}
+        </p>
       )}
       {v && (
         <>
@@ -520,11 +535,13 @@ function ServerPanel({
   registry,
   entry,
   signedIn,
+  viewer,
 }: {
   locale: Locale;
   registry: string;
   entry: { namespace: string; name: string };
   signedIn: boolean;
+  viewer: string;
 }) {
   const copy = catalogMessages[locale];
   const { fetch } = useApi();
@@ -539,7 +556,7 @@ function ServerPanel({
   const [agentId, setAgentId] = useState("");
   const [busy, setBusy] = useState(false);
   const latest = useQuery({
-    queryKey: ["catalog-server", registry, entry.namespace, entry.name],
+    queryKey: [viewer, "catalog-server", registry, entry.namespace, entry.name],
     queryFn: () =>
       fetch<{
         version: string;
@@ -563,6 +580,7 @@ function ServerPanel({
   });
   const draft = useQuery({
     queryKey: [
+      viewer,
       "catalog-draft",
       registry,
       entry.namespace,
@@ -668,8 +686,10 @@ function ServerPanel({
         })}
       </ul>
       {inactive && <p className="text-sm font-bold">{copy.inactive}</p>}
-      {draftCode === "CATALOG_MCP_SELF_HOST_REQUIRED" && (
-        <p className="text-sm text-[color:var(--ol-muted)]">{copy.selfHost}</p>
+      {!inactive && draft.isError && (
+        <p className="text-sm text-[color:var(--ol-muted)]">
+          {copy[draftErrorKey(draftCode)]}
+        </p>
       )}
       <div className="space-y-3 border-t border-[color:var(--ol-line)] pt-4">
         {!signedIn ? (
