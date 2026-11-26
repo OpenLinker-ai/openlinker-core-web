@@ -2,9 +2,14 @@ import { resourceDirectoryQuery } from "@/lib/resource-sharing.mjs";
 import { ResourceDirectory } from "@/components/resources/resource-directory";
 import { skillPackageMessages } from "@/messages/skill-package";
 import { SkillDirectoryTabs } from "@/components/skills/skill-directory-tabs";
+import { CatalogBrowser } from "@/components/catalog/catalog-browser";
+import { fetchCatalogRegistries } from "@/lib/catalog-server";
+import { catalogMessages } from "@/messages/catalog";
 import { Topbar } from "@/components/layout/topbar";
 import { SkillsRegistry } from "@/components/skills/skills-registry";
 import { getLocale } from "@/lib/i18n-server";
+import type { Locale } from "@/lib/i18n";
+import { redirect } from "next/navigation";
 import { fetchSkills } from "@/lib/skills";
 
 export async function generateMetadata({
@@ -33,20 +38,14 @@ export default async function SkillsPage({
 }) {
   const locale = await getLocale();
   const sp = await searchParams;
-  if (sp.tab === "packages") {
-    const copy = skillPackageMessages[locale];
-    return (
-      <>
-        <Topbar />
-        <main className="mx-auto max-w-7xl px-6 py-10">
-          <h1 className="mb-6 text-3xl font-black">{copy.packages}</h1>
-          <SkillDirectoryTabs locale={locale} packages />
-          <ResourceDirectory locale={locale} {...resourceDirectoryQuery(sp)} />
-        </main>
-      </>
-    );
-  }
-  const skills = await fetchSkills({ locale }).catch(() => []);
+  if (sp.tab === "catalog" || sp.tab === "packages")
+    return <SkillTabView locale={locale} tab={sp.tab} query={sp} />;
+
+  const [skills, registries] = await Promise.all([
+    fetchSkills({ locale }).catch(() => []),
+    fetchCatalogRegistries(),
+  ]);
+  const catalogAvailable = registries.length > 0;
   const copy =
     locale === "zh"
       ? {
@@ -77,9 +76,58 @@ export default async function SkillsPage({
         </div>
 
         <div className="mt-8">
-          <SkillDirectoryTabs locale={locale} />
+          <SkillDirectoryTabs
+            locale={locale}
+            catalogAvailable={catalogAvailable}
+          />
           <SkillsRegistry locale={locale} skills={skills} />
         </div>
+      </main>
+    </>
+  );
+}
+
+async function SkillTabView({
+  locale,
+  tab,
+  query,
+}: {
+  locale: Locale;
+  tab: string;
+  query: Record<string, string | string[] | undefined>;
+}) {
+  const registries = await fetchCatalogRegistries();
+  const catalogAvailable = registries.length > 0;
+  if (tab === "catalog" && !catalogAvailable) redirect("/skills");
+  if (tab === "packages") {
+    const copy = skillPackageMessages[locale];
+    return (
+      <>
+        <Topbar />
+        <main className="mx-auto max-w-7xl px-6 py-10">
+          <h1 className="mb-6 text-3xl font-black">{copy.packages}</h1>
+          <SkillDirectoryTabs
+            locale={locale}
+            packages
+            catalogAvailable={catalogAvailable}
+          />
+          <ResourceDirectory
+            locale={locale}
+            {...resourceDirectoryQuery(query)}
+          />
+        </main>
+      </>
+    );
+  }
+  return (
+    <>
+      <Topbar />
+      <main className="mx-auto max-w-7xl px-6 py-10">
+        <h1 className="mb-6 text-3xl font-black">
+          {catalogMessages[locale].tab}
+        </h1>
+        <SkillDirectoryTabs locale={locale} catalog catalogAvailable />
+        <CatalogBrowser locale={locale} kind="skills" registries={registries} />
       </main>
     </>
   );

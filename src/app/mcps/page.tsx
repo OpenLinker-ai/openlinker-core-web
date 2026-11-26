@@ -1,6 +1,9 @@
 import { resourceDirectoryQuery } from "@/lib/resource-sharing.mjs";
 import { Topbar } from "@/components/layout/topbar";
 import { ResourceDirectory } from "@/components/resources/resource-directory";
+import { CatalogBrowser } from "@/components/catalog/catalog-browser";
+import { MCPDirectoryTabs } from "@/components/catalog/mcp-directory-tabs";
+import { fetchCatalogRegistries } from "@/lib/catalog-server";
 import { getLocale } from "@/lib/i18n-server";
 import { resourceSharingMessages } from "@/messages/resource-sharing";
 export const dynamic = "force-dynamic";
@@ -11,6 +14,8 @@ export default async function Page({
 }) {
   const locale = await getLocale();
   const sp = await searchParams;
+  const registries = await fetchCatalogRegistries();
+  const catalog = sp.tab === "catalog" && registries.length > 0;
   return (
     <>
       <Topbar />
@@ -18,11 +23,18 @@ export default async function Page({
         <h1 className="mb-6 text-3xl font-black">
           {resourceSharingMessages[locale].mcpTitle}
         </h1>
-        <ResourceDirectory
-          locale={locale}
-          mcp
-          {...resourceDirectoryQuery(sp, true)}
-        />
+        {registries.length > 0 && (
+          <MCPDirectoryTabs locale={locale} catalog={catalog} />
+        )}
+        {catalog ? (
+          <CatalogBrowser locale={locale} kind="mcp" registries={registries} />
+        ) : (
+          <ResourceDirectory
+            locale={locale}
+            mcp
+            {...resourceDirectoryQuery(sp, true)}
+          />
+        )}
       </main>
     </>
   );
