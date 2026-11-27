@@ -108,6 +108,8 @@ export const catalogErrorMessages: Record<Locale, Record<string, string>> = {
     CATALOG_MCP_SELF_HOST_REQUIRED: "仅以安装包发布，需要自行部署后再登记。",
     CATALOG_MCP_TEMPLATE_URL: "远程地址需要先填入变量，请手动登记。",
     CATALOG_UNAVAILABLE: "目录暂不可用，请稍后再试。",
+    SKILL_PACKAGE_DIGEST_MISMATCH:
+      "目录内容与所选版本的摘要不一致，请刷新目录后重试。",
   },
   en: {
     CATALOG_CONTENT_WITHHELD:
@@ -122,5 +124,7 @@ export const catalogErrorMessages: Record<Locale, Record<string, string>> = {
     CATALOG_MCP_TEMPLATE_URL:
       "This address needs values filled in. Register it manually.",
     CATALOG_UNAVAILABLE: "The catalog is unavailable. Try again later.",
+    SKILL_PACKAGE_DIGEST_MISMATCH:
+      "The catalog content does not match the selected version digest. Refresh the catalog and try again.",
   },
 };

@@ -44,8 +44,8 @@ export const skillPackageErrorMessages = {
       "Agent 已停用；可查看和解除关联，重新启用后才能新增或更换版本。",
     SKILL_PACKAGE_REQUEST_INVALID: "请求格式无效或超过大小限制。",
     SKILL_PACKAGE_IMPORT_CONFLICT:
-      "这个目录版本已用不同的执行方导入过，请打开已有副本。",
-    SKILL_PACKAGE_INCOMPATIBLE: "这个目录条目超出技能包限制，无法导入。",
+      "这个目录版本已用不同的导入选项导入过，请打开已有副本。",
+    SKILL_PACKAGE_INCOMPATIBLE: "这个目录条目不是有效的技能包或超出技能包限制，无法导入。",
     SKILL_PACKAGE_SOURCE_CHANGED:
       "目录条目的来源已变化或暂不可用，请稍后重试。",
     SKILL_PACKAGE_SOURCE_NOT_REDISTRIBUTABLE:
@@ -108,9 +108,9 @@ export const skillPackageErrorMessages = {
     SKILL_PACKAGE_REQUEST_INVALID:
       "The request is malformed or exceeds the request size limit.",
     SKILL_PACKAGE_IMPORT_CONFLICT:
-      "This catalog version was already imported with other execution hosts. Open the existing copy.",
+      "This catalog version was already imported with different options. Open the existing copy.",
     SKILL_PACKAGE_INCOMPATIBLE:
-      "This catalog entry exceeds the skill package limits and cannot be imported.",
+      "This catalog entry is not a valid skill package or exceeds the package limits, so it cannot be imported.",
     SKILL_PACKAGE_SOURCE_CHANGED:
       "The source of this catalog entry changed or is unavailable. Try again later.",
     SKILL_PACKAGE_SOURCE_NOT_REDISTRIBUTABLE:

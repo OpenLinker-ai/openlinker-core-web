@@ -1164,4 +1164,36 @@ test("catalog import and registration errors are shown in the page language", as
     assert.ok(seen.size >= codes.length - 2, locale);
   }
   assert.equal(catalogErrorText(coded("SOMETHING_ELSE"), "zh", "FALLBACK"), "FALLBACK");
+  assert.match(catalogErrorText(coded("SKILL_PACKAGE_DIGEST_MISMATCH"), "zh", "FALLBACK"), /刷新目录/);
+  assert.match(catalogErrorText(coded("SKILL_PACKAGE_SOURCE_NOT_REDISTRIBUTABLE"), "en", "FALLBACK"), /redistribution/);
+});
+test("a restricted package that is already shared can still be made private", async () => {
+  const calls = [];
+  globalThis.resourceTestFetch = async (path, options) => {
+    calls.push({ path, ...options });
+    return {};
+  };
+  const locked = { ...version, source: { kind: "registry", redistributable: null } };
+  for (const shared of ["public", "unlisted"]) {
+    calls.length = 0;
+    await mount(
+      SkillPublicationControls,
+      { item: { ...item, visibility: shared, versions: [locked] }, version: locked, contents, locale: "en" },
+      async (c) => {
+        const select = c.querySelector("select");
+        assert.deepEqual([...select.options].map((o) => o.value), ["private", shared]);
+        assert.equal(select.value, shared);
+        await act(async () => {
+          select.value = "private";
+          select.dispatchEvent(new window.Event("change", { bubbles: true }));
+        });
+        const save = [...c.querySelectorAll("button")].find((b) => b.textContent === "Save visibility");
+        assert.equal(save.disabled, false);
+        await act(async () => save.click());
+        assert.deepEqual(calls, [
+          { path: `/api/v1/creator/skill-packages/${item.id}`, method: "PATCH", body: { visibility: "private" } },
+        ]);
+      },
+    );
+  }
 });

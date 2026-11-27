@@ -340,10 +340,14 @@ export function SkillPublicationControls({
               setConfirmed(false);
             }}
           >
-            {(restricted
-              ? (["private"] as const)
-              : (["private", "unlisted", "public"] as const)
-            ).map((v) => (
+            {(["private", "unlisted", "public"] as const)
+              .filter(
+                (v) =>
+                  !restricted ||
+                  v === "private" ||
+                  v === (item.visibility ?? "private"),
+              )
+              .map((v) => (
               <option key={v} value={v}>
                 {c[v]}
               </option>
