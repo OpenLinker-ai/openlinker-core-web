@@ -6,6 +6,7 @@ export const catalogMessages: Record<Locale, Record<string, string>> = {
     search: "搜索目录",
     empty: "目录中没有匹配的条目",
     unavailable: "目录暂不可用",
+    failed: "操作没有完成，请稍后重试",
     more: "加载更多",
     versions: "版本",
     files: "文件",
@@ -52,6 +53,7 @@ export const catalogMessages: Record<Locale, Record<string, string>> = {
     search: "Search the catalog",
     empty: "No matching entries",
     unavailable: "The catalog is unavailable right now",
+    failed: "The action did not complete. Try again later.",
     more: "Load more",
     versions: "Versions",
     files: "Files",
@@ -93,5 +95,36 @@ export const catalogMessages: Record<Locale, Record<string, string>> = {
     signIn: "Sign in to import or register",
     close: "Close",
     content: "This content is not served by the catalog; open the source",
+  },
+};
+
+export const catalogErrorMessages: Record<Locale, Record<string, string>> = {
+  zh: {
+    CATALOG_CONTENT_WITHHELD: "目录不再分发这个文件，请打开来源查看。",
+    CATALOG_ENTRY_YANKED: "这个目录条目已撤回。",
+    CATALOG_MCP_INACTIVE: "该版本已停用，不能新建登记。",
+    CATALOG_MCP_NO_REMOTE: "没有可调用的远程地址。",
+    CATALOG_MCP_REMOTE_INVALID: "远程地址不是可用的 URL，或传输方式不受支持。",
+    CATALOG_MCP_SELF_HOST_REQUIRED: "仅以安装包发布，需要自行部署后再登记。",
+    CATALOG_MCP_TEMPLATE_URL: "远程地址需要先填入变量，请手动登记。",
+    CATALOG_UNAVAILABLE: "目录暂不可用，请稍后再试。",
+    SKILL_PACKAGE_DIGEST_MISMATCH:
+      "目录内容与所选版本的摘要不一致，请刷新目录后重试。",
+  },
+  en: {
+    CATALOG_CONTENT_WITHHELD:
+      "The catalog does not redistribute this file. Open the source instead.",
+    CATALOG_ENTRY_YANKED: "This catalog entry was withdrawn.",
+    CATALOG_MCP_INACTIVE: "This version is inactive and cannot be registered.",
+    CATALOG_MCP_NO_REMOTE: "No remote endpoint OpenLinker can call.",
+    CATALOG_MCP_REMOTE_INVALID:
+      "The remote endpoint is not a usable URL or uses an unsupported transport.",
+    CATALOG_MCP_SELF_HOST_REQUIRED:
+      "Published as a package only. Host it yourself, then register it.",
+    CATALOG_MCP_TEMPLATE_URL:
+      "This address needs values filled in. Register it manually.",
+    CATALOG_UNAVAILABLE: "The catalog is unavailable. Try again later.",
+    SKILL_PACKAGE_DIGEST_MISMATCH:
+      "The catalog content does not match the selected version digest. Refresh the catalog and try again.",
   },
 };

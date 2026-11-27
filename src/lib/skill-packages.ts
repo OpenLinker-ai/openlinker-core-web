@@ -22,6 +22,7 @@ export type SkillPackageVersion = {
   publication_metadata?: ResourceMetadata | null;
   published_at?: string | null;
   source_version_id?: string | null;
+  source?: { kind: string; redistributable?: boolean | null } | null;
   id: string;
   version: string;
   digest: string;
@@ -77,3 +78,7 @@ export type SkillPackageAgent = {
   name: string;
   visibility?: "public" | "unlisted" | "private";
 };
+
+export function skillVersionRestricted(version: SkillPackageVersion): boolean {
+  return Boolean(version.source) && version.source?.redistributable !== true;
+}

@@ -43,6 +43,16 @@ export const skillPackageErrorMessages = {
     SKILL_PACKAGE_AGENT_DISABLED:
       "Agent 已停用；可查看和解除关联，重新启用后才能新增或更换版本。",
     SKILL_PACKAGE_REQUEST_INVALID: "请求格式无效或超过大小限制。",
+    SKILL_PACKAGE_IMPORT_CONFLICT:
+      "这个目录版本已用不同的导入选项导入过，请打开已有副本。",
+    SKILL_PACKAGE_INCOMPATIBLE: "这个目录条目不是有效的技能包或超出技能包限制，无法导入。",
+    SKILL_PACKAGE_SOURCE_CHANGED:
+      "目录条目的来源已变化或暂不可用，请稍后重试。",
+    SKILL_PACKAGE_SOURCE_NOT_REDISTRIBUTABLE:
+      "来源许可证不允许再分发，这个副本只能私有使用。",
+    SKILL_PACKAGE_SOURCE_UNAVAILABLE:
+      "目录不能把这份内容交给当前实例，请从来源导入。",
+    SKILL_PACKAGE_SOURCE_YANKED: "这个版本已从目录撤回。",
   },
   en: {
     SKILL_PACKAGE_BINDING_CONFLICT: "This association was changed or removed elsewhere. Nothing was changed by this request. Review the latest association before confirming again.",
@@ -97,5 +107,16 @@ export const skillPackageErrorMessages = {
       "The Agent is disabled. You can inspect or remove associations; enable it before adding or changing versions.",
     SKILL_PACKAGE_REQUEST_INVALID:
       "The request is malformed or exceeds the request size limit.",
+    SKILL_PACKAGE_IMPORT_CONFLICT:
+      "This catalog version was already imported with different options. Open the existing copy.",
+    SKILL_PACKAGE_INCOMPATIBLE:
+      "This catalog entry is not a valid skill package or exceeds the package limits, so it cannot be imported.",
+    SKILL_PACKAGE_SOURCE_CHANGED:
+      "The source of this catalog entry changed or is unavailable. Try again later.",
+    SKILL_PACKAGE_SOURCE_NOT_REDISTRIBUTABLE:
+      "The source license does not allow redistribution, so this copy can only stay private.",
+    SKILL_PACKAGE_SOURCE_UNAVAILABLE:
+      "The catalog cannot hand this content to this instance. Import it from its source.",
+    SKILL_PACKAGE_SOURCE_YANKED: "This version was withdrawn from the catalog.",
   },
 } as const;
