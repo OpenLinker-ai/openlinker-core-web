@@ -159,3 +159,4 @@ export function catalogQueryKey(
     | null
     | undefined,
 ): string;
+export function skillTitle(item: { name?: string; display_name?: unknown } | null | undefined): string;

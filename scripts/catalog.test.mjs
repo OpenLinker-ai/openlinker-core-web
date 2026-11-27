@@ -23,6 +23,7 @@ import {
   canClaim,
   legacyCatalogHref,
   catalogQueryKey,
+  skillTitle,
 } from "../src/lib/catalog.mjs";
 
 test("list paths stay under the Core catalog proxy and encode every value", () => {
@@ -472,4 +473,11 @@ test("the redirect only targets a catalog the viewer can open", () => {
   assert.equal(legacyCatalogHref("skills", mapping, ["openlinker"]), "");
   assert.notEqual(legacyCatalogHref("skills", mapping, ["openlinker", "members-only"]), "");
   assert.equal(legacyCatalogHref("skills", mapping, []), "");
+});
+
+test("projected skills show their display name", () => {
+  assert.equal(skillTitle({ name: "p-1a2b3c4d-00ff", display_name: "pdf-tools" }), "pdf-tools");
+  assert.equal(skillTitle({ name: "release-notes" }), "release-notes");
+  assert.equal(skillTitle({ name: "x", display_name: "   " }), "x");
+  assert.equal(skillTitle({ name: "x", display_name: 7 }), "x");
 });
