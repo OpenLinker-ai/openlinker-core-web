@@ -27,7 +27,15 @@ export async function redirectToCatalogEntry(kind: "skills" | "mcp", id: string)
       : `/api/v1/catalog/legacy/skill-packages/${encodeURIComponent(id)}`;
   let href = "";
   try {
-    href = legacyCatalogHref(kind, await apiFetch(path, { cache: "no-store" }));
+    const [mapping, registries] = await Promise.all([
+      apiFetch(path, { cache: "no-store" }),
+      fetchCatalogRegistries(),
+    ]);
+    href = legacyCatalogHref(
+      kind,
+      mapping as { registry?: string; namespace?: string; name?: string },
+      registries.map((r) => r.name),
+    );
   } catch {
     return;
   }

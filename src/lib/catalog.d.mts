@@ -151,6 +151,7 @@ export function canClaim(
 export function legacyCatalogHref(
   kind: CatalogKind,
   mapping: { registry?: string; namespace?: string; name?: string } | null | undefined,
+  visible?: string[],
 ): string;
 export function catalogQueryKey(
   query:

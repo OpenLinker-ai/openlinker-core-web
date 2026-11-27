@@ -466,3 +466,10 @@ test("a different catalog query is a different view", () => {
   assert.equal(catalogQueryKey(a), catalogQueryKey(readCatalogQuery({ registry: "pub", entry: "ai.openlinker.u0/p-a" })));
   assert.equal(catalogQueryKey(undefined), catalogQueryKey(readCatalogQuery({})));
 });
+
+test("the redirect only targets a catalog the viewer can open", () => {
+  const mapping = { registry: "members-only", namespace: "ai.openlinker.u0123456789ab", name: "p-x" };
+  assert.equal(legacyCatalogHref("skills", mapping, ["openlinker"]), "");
+  assert.notEqual(legacyCatalogHref("skills", mapping, ["openlinker", "members-only"]), "");
+  assert.equal(legacyCatalogHref("skills", mapping, []), "");
+});
