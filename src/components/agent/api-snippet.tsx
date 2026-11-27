@@ -88,7 +88,7 @@ export function ApiSnippet({
   const agentIDLiteral = JSON.stringify(agentID);
 
   const snippets: Record<Tab, string> = {
-    curl: `OPENLINKER_USER_TOKEN=your_user_token
+    curl: `OPENLINKER_USER_TOKEN=YOUR_TOKEN
 AUTH_HEADER="Authorization: Bearer $OPENLINKER_USER_TOKEN"
 # ${copy.newIntentComment}
 OPENLINKER_RUN_KEY="\${OPENLINKER_RUN_KEY:-$(uuidgen)}"
