@@ -1072,3 +1072,96 @@ test('public non-file pages load metadata and never pass full contents to client
  }
  const element=await PublicSkillPage({packageId:item.id,versionId:version.id,section:'files'});await mount(()=>element,{},async(host)=>assert.match(host.textContent,/FULL-SENTINEL/));assert.ok(calls.at(-1).endsWith(version.id));
 });
+test("a copy whose source forbids redistribution can only stay private", async () => {
+  const calls = [];
+  globalThis.resourceTestFetch = async (path, options) => {
+    calls.push({ path, ...options });
+    return {};
+  };
+  const locked = {
+    ...version,
+    source: { kind: "registry", redistributable: false },
+  };
+  await mount(
+    SkillPublicationControls,
+    { item: { ...item, versions: [locked] }, version: locked, contents, locale: "en" },
+    async (c) => {
+      const options = [...c.querySelectorAll("select option")].map((o) => o.value);
+      assert.deepEqual(options, ["private"]);
+      const publish = [...c.querySelectorAll("button")].find(
+        (b) => b.textContent === "Publish selected version",
+      );
+      await act(async () => c.querySelector('input[type="checkbox"]').click());
+      assert.equal(publish.disabled, true);
+      assert.match(c.textContent, /license does not allow redistribution/);
+      assert.equal(calls.length, 0);
+    },
+  );
+  const another = { ...version, id: "00000000-0000-4000-8000-000000000003" };
+  await mount(
+    SkillPublicationControls,
+    { item: { ...item, versions: [another, locked] }, version: another, contents, locale: "zh" },
+    async (c) => {
+      const options = [...c.querySelectorAll("select option")].map((o) => o.value);
+      assert.deepEqual(options, ["private"]);
+    },
+  );
+});
+test("a refused visibility change names the redistribution rule", async () => {
+  globalThis.resourceTestFetch = async () => {
+    const error = new Error("a version imported from a source whose license does not allow redistribution cannot be shared");
+    error.status = 409;
+    error.code = "SKILL_PACKAGE_SOURCE_NOT_REDISTRIBUTABLE";
+    throw error;
+  };
+  await mount(
+    SkillPublicationControls,
+    { item, version, contents, locale: "zh" },
+    async (c) => {
+      const select = c.querySelector("select");
+      await act(async () => {
+        select.value = "public";
+        select.dispatchEvent(new window.Event("change", { bubbles: true }));
+      });
+      await act(async () => c.querySelector('input[type="checkbox"]').click());
+      const save = [...c.querySelectorAll("button")].find((b) => b.textContent === "保存可见范围");
+      await act(async () => save.click());
+      assert.match(c.textContent, /许可证不允许再分发/);
+      assert.doesNotMatch(c.textContent, /当前状态已变化/);
+    },
+  );
+});
+test("catalog import and registration errors are shown in the page language", async () => {
+  const { catalogErrorText } = await import("../src/lib/catalog-errors.ts");
+  const coded = (code) => Object.assign(new Error("english detail from Core"), { status: 409, code });
+  const codes = [
+    "CATALOG_CONTENT_WITHHELD",
+    "CATALOG_ENTRY_YANKED",
+    "CATALOG_MCP_INACTIVE",
+    "CATALOG_MCP_NO_REMOTE",
+    "CATALOG_MCP_REMOTE_INVALID",
+    "CATALOG_MCP_SELF_HOST_REQUIRED",
+    "CATALOG_MCP_TEMPLATE_URL",
+    "CATALOG_UNAVAILABLE",
+    "SKILL_PACKAGE_DIGEST_MISMATCH",
+    "SKILL_PACKAGE_IMPORT_CONFLICT",
+    "SKILL_PACKAGE_INCOMPATIBLE",
+    "SKILL_PACKAGE_REQUEST_INVALID",
+    "SKILL_PACKAGE_SOURCE_CHANGED",
+    "SKILL_PACKAGE_SOURCE_NOT_REDISTRIBUTABLE",
+    "SKILL_PACKAGE_SOURCE_UNAVAILABLE",
+    "SKILL_PACKAGE_SOURCE_YANKED",
+  ];
+  for (const locale of ["zh", "en"]) {
+    const seen = new Set();
+    for (const code of codes) {
+      const text = catalogErrorText(coded(code), locale, "FALLBACK");
+      assert.notEqual(text, "FALLBACK", `${locale} ${code}`);
+      assert.doesNotMatch(text, /english detail/, `${locale} ${code}`);
+      if (locale === "zh") assert.match(text, /\p{Script=Han}/u, code);
+      seen.add(text);
+    }
+    assert.ok(seen.size >= codes.length - 2, locale);
+  }
+  assert.equal(catalogErrorText(coded("SOMETHING_ELSE"), "zh", "FALLBACK"), "FALLBACK");
+});

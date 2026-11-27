@@ -57,6 +57,8 @@ export const resourceSharingMessages = {
     importedFrom: "导入来源版本",
     sourceHint:
       "来源不可访问时，自己的副本仍可使用；重新发布的副本不代表原作者。",
+    notRedistributable:
+      "来源许可证不允许再分发：这个包只能保持私有，导入的版本不能发布。",
     publishHint:
       "只发布当前版本。私有包仍仅自己可见；改为公开或仅链接可见后，已发布版本可被他人读取、下载和复制。",
     withdrawHint:
@@ -170,6 +172,8 @@ export const resourceSharingMessages = {
     importedFrom: "Imported source version",
     sourceHint:
       "Your copy remains usable if the source becomes unavailable. Republishing a copy does not establish original authorship.",
+    notRedistributable:
+      "The source license does not allow redistribution: this package stays private and its imported versions cannot be published.",
     publishHint:
       "Publishes only this version. Private packages remain private; public or unlisted packages let others read, download and copy published versions.",
     withdrawHint:

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { useApi } from "@/hooks/use-api";
 import { getApiBaseUrlForPath } from "@/lib/api-root";
+import { catalogErrorText } from "@/lib/catalog-errors";
 import type { Locale } from "@/lib/i18n";
 import {
   catalogEntryPath,
@@ -75,10 +76,6 @@ function errorCode(error: unknown) {
   return error && typeof error === "object" && "code" in error
     ? String((error as { code: unknown }).code)
     : "";
-}
-
-function errorText(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
 }
 
 export function CatalogBrowser(props: {
@@ -383,7 +380,7 @@ function SkillPanel({
       setImported(res.id);
       toast.success(copy.imported);
     } catch (error) {
-      toast.error(errorText(error));
+      toast.error(catalogErrorText(error, locale, copy.failed));
     } finally {
       setBusy(false);
     }
@@ -638,7 +635,7 @@ function ServerPanel({
       if (!form.toolName && res.tools[0])
         setForm((f) => ({ ...f, toolName: res.tools[0].name }));
     } catch (error) {
-      toast.error(errorText(error));
+      toast.error(catalogErrorText(error, locale, copy.failed));
     }
   };
   const submit = async () => {
@@ -651,7 +648,7 @@ function ServerPanel({
       setAgentId(res.agent.id);
       toast.success(copy.registered);
     } catch (error) {
-      toast.error(errorText(error));
+      toast.error(catalogErrorText(error, locale, copy.failed));
     } finally {
       setBusy(false);
     }

@@ -12,7 +12,10 @@ import { toast } from "sonner";
 import { useApi } from "@/hooks/use-api";
 import { AuthLink } from "@/components/auth/auth-link";
 import { CopyContent } from "@/components/resources/copy-content";
-import { skillPackageErrorText } from "@/lib/skill-packages";
+import {
+  skillPackageErrorText,
+  skillVersionRestricted,
+} from "@/lib/skill-packages";
 import {
   parseSkillReference,
   skillVersionPath,
@@ -282,6 +285,10 @@ export function SkillPublicationControls({
   const api = useApi();
   const cache = useQueryClient();
   const [visibility, setVisibility] = useState(item.visibility ?? "private");
+  const restricted = [version, ...(item.versions ?? [])].some(
+    skillVersionRestricted,
+  );
+  const versionRestricted = skillVersionRestricted(version);
   const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -318,7 +325,9 @@ export function SkillPublicationControls({
           </p>
         </div>
       )}
-      <p className="text-sm text-[color:var(--ol-muted)]">{c.publishHint}</p>
+      <p className="text-sm text-[color:var(--ol-muted)]">
+        {restricted ? c.notRedistributable : c.publishHint}
+      </p>
       <div className="flex flex-wrap items-end gap-3">
         <label className="space-y-1">
           <span className="sr-only">{c.visibility}</span>
@@ -331,7 +340,10 @@ export function SkillPublicationControls({
               setConfirmed(false);
             }}
           >
-            {(["private", "unlisted", "public"] as const).map((v) => (
+            {(restricted
+              ? (["private"] as const)
+              : (["private", "unlisted", "public"] as const)
+            ).map((v) => (
               <option key={v} value={v}>
                 {c[v]}
               </option>
@@ -392,7 +404,10 @@ export function SkillPublicationControls({
       <div className="flex flex-wrap gap-2">
         <button
           className="ol-mini-btn"
-          disabled={busy || (!version.published_at && !confirmed)}
+          disabled={
+            busy ||
+            (!version.published_at && (!confirmed || versionRestricted))
+          }
           onClick={() =>
             void mutate(
               `${base}/versions/${version.id}/publication`,
