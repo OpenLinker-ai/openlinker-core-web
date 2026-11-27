@@ -172,3 +172,136 @@ export function readCatalogQuery(searchParams) {
     entry: parseServerName(one(searchParams?.entry)),
   };
 }
+
+const RESERVED_HANDLES = new Set([
+  "admin",
+  "administrator",
+  "openlinker",
+  "official",
+  "registry",
+  "support",
+  "security",
+  "root",
+  "system",
+  "staff",
+  "team",
+  "help",
+  "api",
+  "www",
+  "mcp",
+  "skills",
+]);
+const HANDLE = /^[a-z0-9]([a-z0-9-]{1,37}[a-z0-9])$/;
+const REPORT_KINDS = new Set(["skill", "mcp"]);
+export const REPORT_CATEGORIES = [
+  "malware",
+  "credential",
+  "license",
+  "spam",
+  "impersonation",
+  "other",
+];
+
+function query(pairs) {
+  const params = new URLSearchParams();
+  for (const [key, value] of pairs) {
+    if (
+      value !== undefined &&
+      value !== null &&
+      value !== "" &&
+      value !== false
+    )
+      params.set(key, String(value));
+  }
+  const text = params.toString();
+  return text ? `?${text}` : "";
+}
+
+export function catalogWritePath(registry, action, opts = {}) {
+  const root = `${ROOT}${registryName(registry)}`;
+  const ns = () => segment(opts.namespace);
+  const entry = () => `${root}/skills/${ns()}/${segment(opts.name)}`;
+  switch (action) {
+    case "me":
+    case "namespaces":
+    case "reports":
+      return `${root}/${action}`;
+    case "upload":
+      return `${entry()}/versions${query([
+        ["version", segment(opts.version) && opts.version],
+        ["license", opts.license],
+        ["visibility", opts.visibility],
+      ])}`;
+    case "index-preview":
+      return `${root}/skills/${ns()}/indexes/preview`;
+    case "index":
+      return `${root}/skills/${ns()}/indexes`;
+    case "github-preview":
+      return `${root}/skills/${ns()}/github-imports/preview`;
+    case "github-import":
+      return `${root}/skills/${ns()}/github-imports`;
+    case "claim":
+    case "deprecate":
+    case "yank":
+      return `${entry()}/${action}`;
+    case "mcp-publish":
+      return `${root}/mcp/servers/${segment(opts.namespace, MCP_NAMESPACE)}${query([["indexed", opts.indexed === true]])}`;
+  }
+  throw new Error("invalid catalog write");
+}
+
+export function uploadContentType(fileName) {
+  const name = String(fileName ?? "").toLowerCase();
+  if (name.endsWith(".md")) return "text/markdown";
+  if (name.endsWith(".tar.gz") || name.endsWith(".tgz"))
+    return "application/gzip";
+  if (name.endsWith(".zip")) return "application/zip";
+  if (name.endsWith(".tar")) return "application/x-tar";
+  return null;
+}
+
+export function handleNamespace(handle) {
+  const value = String(handle ?? "")
+    .trim()
+    .toLowerCase();
+  if (
+    !HANDLE.test(value) ||
+    value.includes("--") ||
+    RESERVED_HANDLES.has(value)
+  )
+    return null;
+  return `ai.openlinker.${value}`;
+}
+
+export function reportPayload({
+  kind,
+  namespace,
+  name,
+  version,
+  category,
+  details,
+}) {
+  if (!REPORT_KINDS.has(kind) || !REPORT_CATEGORIES.includes(category))
+    throw new Error("invalid report");
+  const out = {
+    kind,
+    namespace,
+    name,
+    category,
+    details: String(details ?? "")
+      .trim()
+      .slice(0, 2000),
+  };
+  if (version) out.version = version;
+  return out;
+}
+
+export function reviewKey(entry) {
+  if (entry?.review?.state === "pending") return "reviewPending";
+  if (entry?.review?.state === "rejected") return "reviewRejected";
+  return null;
+}
+
+export function canClaim(entry, me) {
+  return Boolean(me?.github) && entry?.mode === "indexed" && !entry?.claimed;
+}
