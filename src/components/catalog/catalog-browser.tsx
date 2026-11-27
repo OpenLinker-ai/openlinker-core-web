@@ -12,6 +12,7 @@ import { catalogErrorText } from "@/lib/catalog-errors";
 import type { Locale } from "@/lib/i18n";
 import {
   catalogEntryPath,
+  catalogQueryKey,
   catalogFilePath,
   catalogListPath,
   draftErrorKey,
@@ -104,7 +105,13 @@ export function CatalogBrowser(props: {
   const { data, status } = useSession();
   const viewer = status === "loading" ? "" : (data?.user?.id ?? "anonymous");
   if (!viewer) return null;
-  return <CatalogView key={viewer} viewer={viewer} {...props} />;
+  return (
+    <CatalogView
+      key={`${viewer}:${catalogQueryKey(props.initial)}`}
+      viewer={viewer}
+      {...props}
+    />
+  );
 }
 
 function CatalogView({

@@ -22,6 +22,7 @@ import {
   reviewKey,
   canClaim,
   legacyCatalogHref,
+  catalogQueryKey,
 } from "../src/lib/catalog.mjs";
 
 test("list paths stay under the Core catalog proxy and encode every value", () => {
@@ -441,7 +442,7 @@ test("old package and service pages lead to their catalog entry", () => {
     "/mcps?tab=catalog&registry=openlinker&entry=ai.openlinker.u0123456789ab%2Fm-1a2b3c4d-00ff",
   );
   assert.deepEqual(
-    readCatalogQuery(new URL("http://x" + legacyCatalogHref("skills", { registry: "openlinker", namespace: "ai.openlinker.u0123456789ab", name: "p-x" })).searchParams.entries().reduce((o, [k, v]) => ({ ...o, [k]: v }), {})),
+    readCatalogQuery(Object.fromEntries(new URL("http://x" + legacyCatalogHref("skills", { registry: "openlinker", namespace: "ai.openlinker.u0123456789ab", name: "p-x" })).searchParams)),
     { registry: "openlinker", q: "", entry: { namespace: "ai.openlinker.u0123456789ab", name: "p-x" } },
   );
   for (const bad of [
@@ -454,4 +455,14 @@ test("old package and service pages lead to their catalog entry", () => {
   ]) {
     assert.equal(legacyCatalogHref("skills", bad), "");
   }
+});
+
+test("a different catalog query is a different view", () => {
+  const a = readCatalogQuery({ registry: "pub", entry: "ai.openlinker.u0/p-a" });
+  const b = readCatalogQuery({ registry: "pub", entry: "ai.openlinker.u0/p-b" });
+  assert.notEqual(catalogQueryKey(a), catalogQueryKey(b));
+  assert.notEqual(catalogQueryKey(a), catalogQueryKey({ ...a, q: "pdf" }));
+  assert.notEqual(catalogQueryKey(a), catalogQueryKey({ ...a, registry: "other" }));
+  assert.equal(catalogQueryKey(a), catalogQueryKey(readCatalogQuery({ registry: "pub", entry: "ai.openlinker.u0/p-a" })));
+  assert.equal(catalogQueryKey(undefined), catalogQueryKey(readCatalogQuery({})));
 });

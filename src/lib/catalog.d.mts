@@ -152,3 +152,9 @@ export function legacyCatalogHref(
   kind: CatalogKind,
   mapping: { registry?: string; namespace?: string; name?: string } | null | undefined,
 ): string;
+export function catalogQueryKey(
+  query:
+    | { registry?: string; q?: string; entry?: { namespace: string; name: string } | null }
+    | null
+    | undefined,
+): string;
