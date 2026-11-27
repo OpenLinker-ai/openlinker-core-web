@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useApi } from "@/hooks/use-api";
 import { catalogErrorText } from "@/lib/catalog-errors";
@@ -28,6 +32,13 @@ const inputClass =
   "w-full rounded-xl border border-[color:var(--ol-line)] bg-white px-3 py-2 text-sm";
 const primaryClass =
   "ol-mini-btn bg-[color:var(--ol-primary)]! text-white! disabled:cursor-not-allowed disabled:opacity-50";
+
+function invalidateCatalog(client: QueryClient, viewer: string) {
+  return Promise.all([
+    client.invalidateQueries({ queryKey: [viewer] }),
+    client.invalidateQueries({ queryKey: ["catalog", viewer] }),
+  ]);
+}
 
 export function useCatalogMe(registry: string, viewer: string) {
   const { fetch, isAuthenticated } = useApi();
@@ -74,6 +85,7 @@ export function CatalogPublisher({
   const [file, setFile] = useState<File | null>(null);
   const [githubUrl, setGithubUrl] = useState("");
   const [preview, setPreview] = useState<{
+    url: string;
     commit: string;
     tree_sha: string;
     name?: string;
@@ -81,7 +93,7 @@ export function CatalogPublisher({
   const [serverJson, setServerJson] = useState("");
   const [indexed, setIndexed] = useState(false);
   const ns = namespace || spaces[0] || "";
-  const refresh = () => client.invalidateQueries({ queryKey: [viewer] });
+  const refresh = () => invalidateCatalog(client, viewer);
   const run = async (action: () => Promise<unknown>, done: string) => {
     setBusy(true);
     try {
@@ -105,10 +117,10 @@ export function CatalogPublisher({
         body: { name },
       });
     }, copy.claimed);
-  const hasHandle = me.namespaces.some((n) =>
-    n.name.startsWith("ai.openlinker."),
-  );
-  const hasGithub = me.namespaces.some((n) => n.name.startsWith("io.github."));
+  const owns = (prefix: string) =>
+    me.namespaces.some((n) => n.role === "owner" && n.name.startsWith(prefix));
+  const hasHandle = owns("ai.openlinker.");
+  const hasGithub = owns("io.github.");
   return (
     <details className="ol-panel p-4">
       <summary className="cursor-pointer text-sm font-bold">
@@ -272,6 +284,7 @@ export function CatalogPublisher({
                   className="space-y-2"
                   onSubmit={(e) => {
                     e.preventDefault();
+                    const url = githubUrl.trim();
                     void run(async () => {
                       const p = await fetch<{
                         commit: string;
@@ -281,9 +294,9 @@ export function CatalogPublisher({
                         catalogWritePath(registry, "index-preview", {
                           namespace: ns,
                         }),
-                        { method: "POST", body: { url: githubUrl.trim() } },
+                        { method: "POST", body: { url } },
                       );
-                      setPreview(p);
+                      setPreview({ ...p, url });
                     }, copy.preview);
                   }}
                 >
@@ -306,7 +319,7 @@ export function CatalogPublisher({
                       {copy.preview}
                     </button>
                   </div>
-                  {preview && (
+                  {preview && preview.url === githubUrl.trim() && (
                     <div className="flex flex-wrap items-center gap-2 text-xs text-[color:var(--ol-muted)]">
                       <span className="font-mono">
                         {preview.commit.slice(0, 12)}
@@ -328,7 +341,7 @@ export function CatalogPublisher({
                                 {
                                   method: "POST",
                                   body: {
-                                    url: githubUrl.trim(),
+                                    url: preview.url,
                                     commit: preview.commit,
                                     expected_tree_sha: preview.tree_sha,
                                   },
@@ -422,13 +435,22 @@ export function EntryActions({
   kind,
   entry,
   detail,
+  onMoved,
 }: {
   locale: Locale;
   registry: string;
   viewer: string;
   kind: CatalogKind;
   entry: { namespace: string; name: string };
-  detail: { mode?: string; claimed?: boolean } | undefined;
+  detail:
+    | {
+        mode?: string;
+        claimed?: boolean;
+        upstream?: string;
+        locator?: { kind?: string } | null;
+      }
+    | undefined;
+  onMoved?: (entry: { namespace: string; name: string }) => void;
 }) {
   const copy = catalogMessages[locale];
   const { fetch } = useApi();
@@ -438,13 +460,42 @@ export function EntryActions({
   const [details, setDetails] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [newName, setNewName] = useState("");
   if (!me.data) return null;
+  const claim = async () => {
+    setBusy(true);
+    try {
+      const moved = await fetch<{ namespace: string; name: string }>(
+        catalogWritePath(registry, "claim", entry),
+        {
+          method: "POST",
+          body: renaming && newName.trim() ? { name: newName.trim() } : {},
+        },
+      );
+      toast.success(copy.claimed);
+      setRenaming(false);
+      await invalidateCatalog(client, viewer);
+      onMoved?.({ namespace: moved.namespace, name: moved.name });
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "CATALOG_CLAIM_NAME_TAKEN"
+      )
+        setRenaming(true);
+      toast.error(catalogErrorText(error, locale, copy.failed));
+    } finally {
+      setBusy(false);
+    }
+  };
   const act = async (action: () => Promise<unknown>, message: string) => {
     setBusy(true);
     try {
       await action();
       toast.success(message);
-      await client.invalidateQueries({ queryKey: [viewer] });
+      await invalidateCatalog(client, viewer);
     } catch (error) {
       toast.error(catalogErrorText(error, locale, copy.failed));
     } finally {
@@ -454,23 +505,30 @@ export function EntryActions({
   return (
     <div className="space-y-3 border-t border-[color:var(--ol-line)] pt-4">
       {kind === "skills" && canClaim(detail, me.data) && (
-        <button
-          className="ol-mini-btn"
-          type="button"
-          disabled={busy}
-          onClick={() =>
-            void act(
-              () =>
-                fetch(catalogWritePath(registry, "claim", entry), {
-                  method: "POST",
-                  body: {},
-                }),
-              copy.claimed,
-            )
-          }
+        <form
+          className="flex flex-wrap gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void claim();
+          }}
         >
-          {copy.claim}
-        </button>
+          {renaming && (
+            <input
+              className={`${inputClass} max-w-64`}
+              aria-label={copy.claimNewName}
+              placeholder={copy.claimNewName}
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+            />
+          )}
+          <button
+            className="ol-mini-btn"
+            type="submit"
+            disabled={busy || (renaming && !newName.trim())}
+          >
+            {copy.claim}
+          </button>
+        </form>
       )}
       {done ? (
         <p className="text-sm text-[color:var(--ol-muted)]">{copy.reported}</p>

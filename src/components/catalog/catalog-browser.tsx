@@ -57,11 +57,13 @@ type SkillVersion = {
   artifact?: { digest?: string };
   content_access?: { full_text?: boolean };
   source_url?: string;
+  locator?: { kind?: string } | null;
 };
 type Review = { review?: { state?: string; reason?: string } };
 type SkillDetail = SkillItem &
   Review & {
     claimed?: boolean;
+    upstream?: string;
     versions?: { version: string; yanked?: boolean }[];
   };
 type Draft = {
@@ -270,6 +272,7 @@ function CatalogView({
               entry={selected}
               signedIn={isAuthenticated}
               viewer={viewer}
+              onMoved={setSelected}
             />
           ) : (
             <ServerPanel
@@ -292,12 +295,14 @@ function SkillPanel({
   entry,
   signedIn,
   viewer,
+  onMoved,
 }: {
   locale: Locale;
   registry: string;
   entry: { namespace: string; name: string };
   signedIn: boolean;
   viewer: string;
+  onMoved: (entry: { namespace: string; name: string }) => void;
 }) {
   const copy = catalogMessages[locale];
   const { fetch, token } = useApi();
@@ -551,7 +556,8 @@ function SkillPanel({
           viewer={viewer}
           kind="skills"
           entry={entry}
-          detail={detail.data}
+          detail={{ ...detail.data, locator: ver.data?.locator }}
+          onMoved={onMoved}
         />
       )}
     </article>

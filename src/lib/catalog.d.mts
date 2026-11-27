@@ -137,6 +137,14 @@ export function reviewKey(
   entry: { review?: { state?: string } } | null | undefined,
 ): "reviewPending" | "reviewRejected" | null;
 export function canClaim(
-  entry: { mode?: string; claimed?: boolean } | null | undefined,
+  entry:
+    | {
+        mode?: string;
+        claimed?: boolean;
+        upstream?: string;
+        locator?: { kind?: string } | null;
+      }
+    | null
+    | undefined,
   me: { github?: boolean } | null | undefined,
 ): boolean;

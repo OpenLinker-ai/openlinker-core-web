@@ -378,12 +378,54 @@ test("handles, reports, review state and claims", () => {
   assert.equal(reviewKey({ review: { state: "pending" } }), "reviewPending");
   assert.equal(reviewKey({ review: { state: "rejected" } }), "reviewRejected");
   assert.equal(reviewKey({}), null);
-  assert.equal(canClaim({ mode: "indexed" }, { github: true }), true);
+  const github = { kind: "github" };
   assert.equal(
-    canClaim({ mode: "indexed", claimed: true }, { github: true }),
+    canClaim({ mode: "indexed", locator: github }, { github: true }),
+    true,
+  );
+  assert.equal(
+    canClaim(
+      { mode: "indexed", claimed: true, locator: github },
+      { github: true },
+    ),
     false,
   );
-  assert.equal(canClaim({ mode: "hosted" }, { github: true }), false);
-  assert.equal(canClaim({ mode: "indexed" }, { github: false }), false);
-  assert.equal(canClaim({ mode: "indexed" }, null), false);
+  assert.equal(
+    canClaim({ mode: "hosted", locator: github }, { github: true }),
+    false,
+  );
+  assert.equal(
+    canClaim({ mode: "indexed", locator: github }, { github: false }),
+    false,
+  );
+  assert.equal(canClaim({ mode: "indexed", locator: github }, null), false);
+  assert.equal(
+    canClaim({ mode: "indexed", locator: { kind: "url" } }, { github: true }),
+    false,
+  );
+  assert.equal(canClaim({ mode: "indexed" }, { github: true }), false);
+  assert.equal(
+    canClaim(
+      { mode: "indexed", upstream: "hub", locator: github },
+      { github: true },
+    ),
+    false,
+  );
+  const chinese = reportPayload({
+    kind: "skill",
+    namespace: "n.s",
+    name: "x",
+    category: "other",
+    details: "中".repeat(1000),
+  }).details;
+  assert.equal(new TextEncoder().encode(chinese).length <= 2000, true);
+  assert.equal(chinese.length, 666);
+  const emoji = reportPayload({
+    kind: "skill",
+    namespace: "n.s",
+    name: "x",
+    category: "other",
+    details: "😀".repeat(600),
+  }).details;
+  assert.equal(emoji, "😀".repeat(500));
 });

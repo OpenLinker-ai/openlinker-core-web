@@ -288,9 +288,7 @@ export function reportPayload({
     namespace,
     name,
     category,
-    details: String(details ?? "")
-      .trim()
-      .slice(0, 2000),
+    details: utf8Prefix(String(details ?? "").trim(), 2000),
   };
   if (version) out.version = version;
   return out;
@@ -303,5 +301,24 @@ export function reviewKey(entry) {
 }
 
 export function canClaim(entry, me) {
-  return Boolean(me?.github) && entry?.mode === "indexed" && !entry?.claimed;
+  return (
+    Boolean(me?.github) &&
+    entry?.mode === "indexed" &&
+    !entry?.claimed &&
+    !entry?.upstream &&
+    entry?.locator?.kind === "github"
+  );
+}
+
+function utf8Prefix(text, maxBytes) {
+  const encoder = new TextEncoder();
+  let out = "";
+  let used = 0;
+  for (const char of text) {
+    const size = encoder.encode(char).length;
+    if (used + size > maxBytes) break;
+    out += char;
+    used += size;
+  }
+  return out;
 }
