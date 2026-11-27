@@ -90,3 +90,61 @@ export function serverCard(
 export function draftErrorKey(
   code: string,
 ): "selfHost" | "inactive" | "templateUrl" | "noRemote" | "unavailable";
+export const REPORT_CATEGORIES: readonly string[];
+export type CatalogWriteAction =
+  | "me"
+  | "namespaces"
+  | "reports"
+  | "upload"
+  | "index-preview"
+  | "index"
+  | "github-preview"
+  | "github-import"
+  | "claim"
+  | "deprecate"
+  | "yank"
+  | "mcp-publish";
+export function catalogWritePath(
+  registry: string,
+  action: CatalogWriteAction,
+  opts?: {
+    namespace?: string;
+    name?: string;
+    version?: string;
+    license?: string;
+    visibility?: string;
+    indexed?: boolean;
+  },
+): string;
+export function uploadContentType(fileName: string): string | null;
+export function handleNamespace(handle: string): string | null;
+export function reportPayload(input: {
+  kind: "skill" | "mcp";
+  namespace: string;
+  name: string;
+  version?: string;
+  category: string;
+  details?: string;
+}): {
+  kind: "skill" | "mcp";
+  namespace: string;
+  name: string;
+  version?: string;
+  category: string;
+  details: string;
+};
+export function reviewKey(
+  entry: { review?: { state?: string } } | null | undefined,
+): "reviewPending" | "reviewRejected" | null;
+export function canClaim(
+  entry:
+    | {
+        mode?: string;
+        claimed?: boolean;
+        upstream?: string;
+        locator?: { kind?: string } | null;
+      }
+    | null
+    | undefined,
+  me: { github?: boolean } | null | undefined,
+): boolean;

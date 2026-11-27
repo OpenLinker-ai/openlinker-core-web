@@ -15,6 +15,12 @@ import {
   readCatalogQuery,
   registrationPayload,
   remoteTransportKey,
+  catalogWritePath,
+  uploadContentType,
+  handleNamespace,
+  reportPayload,
+  reviewKey,
+  canClaim,
 } from "../src/lib/catalog.mjs";
 
 test("list paths stay under the Core catalog proxy and encode every value", () => {
@@ -240,4 +246,186 @@ test("draft errors map to their own copy", () => {
   assert.equal(draftErrorKey("CATALOG_MCP_NO_REMOTE"), "noRemote");
   assert.equal(draftErrorKey("CATALOG_UNAVAILABLE"), "unavailable");
   assert.equal(draftErrorKey(""), "unavailable");
+});
+
+test("write paths stay under the Core catalog proxy and only carry known parameters", () => {
+  assert.equal(catalogWritePath("w", "me"), "/api/v1/catalog/registries/w/me");
+  assert.equal(
+    catalogWritePath("w", "namespaces"),
+    "/api/v1/catalog/registries/w/namespaces",
+  );
+  assert.equal(
+    catalogWritePath("w", "reports"),
+    "/api/v1/catalog/registries/w/reports",
+  );
+  assert.equal(
+    catalogWritePath("w", "upload", {
+      namespace: "ai.openlinker.alice",
+      name: "pdf-tools",
+      version: "1.0.0",
+      license: "MIT",
+    }),
+    "/api/v1/catalog/registries/w/skills/ai.openlinker.alice/pdf-tools/versions?version=1.0.0&license=MIT",
+  );
+  assert.equal(
+    catalogWritePath("w", "index-preview", {
+      namespace: "ai.openlinker.alice",
+    }),
+    "/api/v1/catalog/registries/w/skills/ai.openlinker.alice/indexes/preview",
+  );
+  assert.equal(
+    catalogWritePath("w", "index", { namespace: "ai.openlinker.alice" }),
+    "/api/v1/catalog/registries/w/skills/ai.openlinker.alice/indexes",
+  );
+  assert.equal(
+    catalogWritePath("w", "claim", {
+      namespace: "ai.openlinker.bob",
+      name: "demo",
+    }),
+    "/api/v1/catalog/registries/w/skills/ai.openlinker.bob/demo/claim",
+  );
+  assert.equal(
+    catalogWritePath("w", "mcp-publish", {
+      namespace: "ai.openlinker.alice",
+      indexed: true,
+    }),
+    "/api/v1/catalog/registries/w/mcp/servers/ai.openlinker.alice?indexed=true",
+  );
+  assert.equal(
+    catalogWritePath("w", "mcp-publish", { namespace: "ai.openlinker.alice" }),
+    "/api/v1/catalog/registries/w/mcp/servers/ai.openlinker.alice",
+  );
+  assert.throws(() =>
+    catalogWritePath("w", "upload", {
+      namespace: "../x",
+      name: "a",
+      version: "1",
+    }),
+  );
+  assert.throws(() =>
+    catalogWritePath("w", "upload", { namespace: "a.b", name: "a" }),
+  );
+  assert.throws(() => catalogWritePath("w", "delete-everything"));
+  assert.throws(() => catalogWritePath("W!", "me"));
+});
+
+test("upload types follow the file name and refuse anything else", () => {
+  assert.equal(uploadContentType("SKILL.md"), "text/markdown");
+  assert.equal(uploadContentType("skill.tar.gz"), "application/gzip");
+  assert.equal(uploadContentType("skill.tgz"), "application/gzip");
+  assert.equal(uploadContentType("skill.zip"), "application/zip");
+  assert.equal(uploadContentType("skill.tar"), "application/x-tar");
+  assert.equal(uploadContentType("page.html"), null);
+  assert.equal(uploadContentType(""), null);
+});
+
+test("handles, reports, review state and claims", () => {
+  assert.equal(handleNamespace("alice"), "ai.openlinker.alice");
+  assert.equal(handleNamespace(" Alice "), "ai.openlinker.alice");
+  for (const bad of [
+    "ab",
+    "-bob",
+    "bob-",
+    "a--b",
+    "admin",
+    "openlinker",
+    "a".repeat(40),
+    "a b",
+  ])
+    assert.equal(handleNamespace(bad), null, bad);
+  assert.deepEqual(
+    reportPayload({
+      kind: "skill",
+      namespace: "n.s",
+      name: "x",
+      category: "spam",
+      details: "  junk  ",
+    }),
+    {
+      kind: "skill",
+      namespace: "n.s",
+      name: "x",
+      category: "spam",
+      details: "junk",
+    },
+  );
+  assert.throws(() =>
+    reportPayload({
+      kind: "skill",
+      namespace: "n.s",
+      name: "x",
+      category: "nonsense",
+    }),
+  );
+  assert.throws(() =>
+    reportPayload({
+      kind: "agent",
+      namespace: "n.s",
+      name: "x",
+      category: "spam",
+    }),
+  );
+  assert.equal(
+    reportPayload({
+      kind: "mcp",
+      namespace: "n.s",
+      name: "x",
+      category: "other",
+      details: "d".repeat(3000),
+    }).details.length,
+    2000,
+  );
+  assert.equal(reviewKey({ review: { state: "pending" } }), "reviewPending");
+  assert.equal(reviewKey({ review: { state: "rejected" } }), "reviewRejected");
+  assert.equal(reviewKey({}), null);
+  const github = { kind: "github" };
+  assert.equal(
+    canClaim({ mode: "indexed", locator: github }, { github: true }),
+    true,
+  );
+  assert.equal(
+    canClaim(
+      { mode: "indexed", claimed: true, locator: github },
+      { github: true },
+    ),
+    false,
+  );
+  assert.equal(
+    canClaim({ mode: "hosted", locator: github }, { github: true }),
+    false,
+  );
+  assert.equal(
+    canClaim({ mode: "indexed", locator: github }, { github: false }),
+    false,
+  );
+  assert.equal(canClaim({ mode: "indexed", locator: github }, null), false);
+  assert.equal(
+    canClaim({ mode: "indexed", locator: { kind: "url" } }, { github: true }),
+    false,
+  );
+  assert.equal(canClaim({ mode: "indexed" }, { github: true }), false);
+  assert.equal(
+    canClaim(
+      { mode: "indexed", upstream: "hub", locator: github },
+      { github: true },
+    ),
+    false,
+  );
+  const chinese = reportPayload({
+    kind: "skill",
+    namespace: "n.s",
+    name: "x",
+    category: "other",
+    details: "中".repeat(1000),
+  }).details;
+  assert.equal(new TextEncoder().encode(chinese).length <= 2000, true);
+  assert.equal(chinese.length, 666);
+  const emoji = reportPayload({
+    kind: "skill",
+    namespace: "n.s",
+    name: "x",
+    category: "other",
+    details: "😀".repeat(600),
+  }).details;
+  assert.equal(emoji, "😀".repeat(500));
 });

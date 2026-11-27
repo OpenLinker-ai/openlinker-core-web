@@ -24,6 +24,12 @@ import {
   type CatalogKind,
 } from "@/lib/catalog.mjs";
 import { catalogMessages } from "@/messages/catalog";
+import {
+  CatalogPublisher,
+  EntryActions,
+  ReviewBadge,
+  useCatalogMe,
+} from "@/components/catalog/catalog-publisher";
 
 type Registry = { name: string; audience: string; personalized: boolean };
 type SkillItem = {
@@ -51,10 +57,15 @@ type SkillVersion = {
   artifact?: { digest?: string };
   content_access?: { full_text?: boolean };
   source_url?: string;
+  locator?: { kind?: string } | null;
 };
-type SkillDetail = SkillItem & {
-  versions?: { version: string; yanked?: boolean }[];
-};
+type Review = { review?: { state?: string; reason?: string } };
+type SkillDetail = SkillItem &
+  Review & {
+    claimed?: boolean;
+    upstream?: string;
+    versions?: { version: string; yanked?: boolean }[];
+  };
 type Draft = {
   server: string;
   version: string;
@@ -109,6 +120,7 @@ function CatalogView({
     name: string;
   } | null>(null);
   const { fetch, isAuthenticated, isLoading } = useApi();
+  const me = useCatalogMe(registry, viewer);
   const list = useInfiniteQuery({
     queryKey: ["catalog", viewer, kind, registry, query],
     enabled: Boolean(registry) && !isLoading,
@@ -144,6 +156,16 @@ function CatalogView({
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
       <section className="space-y-4" aria-label={copy.tab}>
+        {me.data && (
+          <CatalogPublisher
+            key={`${registry}/${kind}`}
+            locale={locale}
+            kind={kind}
+            registry={registry}
+            viewer={viewer}
+            me={me.data}
+          />
+        )}
         <form
           className="flex gap-2"
           onSubmit={(e) => {
@@ -250,6 +272,7 @@ function CatalogView({
               entry={selected}
               signedIn={isAuthenticated}
               viewer={viewer}
+              onMoved={setSelected}
             />
           ) : (
             <ServerPanel
@@ -272,12 +295,14 @@ function SkillPanel({
   entry,
   signedIn,
   viewer,
+  onMoved,
 }: {
   locale: Locale;
   registry: string;
   entry: { namespace: string; name: string };
   signedIn: boolean;
   viewer: string;
+  onMoved: (entry: { namespace: string; name: string }) => void;
 }) {
   const copy = catalogMessages[locale];
   const { fetch, token } = useApi();
@@ -389,8 +414,9 @@ function SkillPanel({
     <article className="ol-panel space-y-5 p-6">
       <header>
         <h2 className="text-xl font-black">{detail.data.name}</h2>
-        <div className="text-xs text-[color:var(--ol-muted)]">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-[color:var(--ol-muted)]">
           {entry.namespace}
+          <ReviewBadge locale={locale} entry={detail.data} />
         </div>
         {detail.data.description && (
           <p className="mt-3 text-sm text-[color:var(--ol-muted)]">
@@ -523,6 +549,17 @@ function SkillPanel({
           </div>
         </>
       )}
+      {signedIn && (
+        <EntryActions
+          locale={locale}
+          registry={registry}
+          viewer={viewer}
+          kind="skills"
+          entry={entry}
+          detail={{ ...detail.data, locator: ver.data?.locator }}
+          onMoved={onMoved}
+        />
+      )}
     </article>
   );
 }
@@ -558,6 +595,7 @@ function ServerPanel({
       fetch<{
         version: string;
         status: string;
+        review?: { state?: string; reason?: string };
         server: {
           title?: string;
           description?: string;
@@ -659,8 +697,9 @@ function ServerPanel({
         <h2 className="text-xl font-black">
           {s.title || `${entry.namespace}/${entry.name}`}
         </h2>
-        <div className="text-xs text-[color:var(--ol-muted)]">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-[color:var(--ol-muted)]">
           {entry.namespace}/{entry.name} · {latest.data.version}
+          <ReviewBadge locale={locale} entry={latest.data} />
         </div>
         {s.description && (
           <p className="mt-3 text-sm text-[color:var(--ol-muted)]">
@@ -773,6 +812,16 @@ function ServerPanel({
           </form>
         ) : null}
       </div>
+      {signedIn && (
+        <EntryActions
+          locale={locale}
+          registry={registry}
+          viewer={viewer}
+          kind="mcp"
+          entry={entry}
+          detail={undefined}
+        />
+      )}
     </article>
   );
 }
