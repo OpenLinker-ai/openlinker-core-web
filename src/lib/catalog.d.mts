@@ -148,3 +148,7 @@ export function canClaim(
     | undefined,
   me: { github?: boolean } | null | undefined,
 ): boolean;
+export function legacyCatalogHref(
+  kind: CatalogKind,
+  mapping: { registry?: string; namespace?: string; name?: string } | null | undefined,
+): string;

@@ -21,6 +21,7 @@ import {
   reportPayload,
   reviewKey,
   canClaim,
+  legacyCatalogHref,
 } from "../src/lib/catalog.mjs";
 
 test("list paths stay under the Core catalog proxy and encode every value", () => {
@@ -428,4 +429,29 @@ test("handles, reports, review state and claims", () => {
     details: "😀".repeat(600),
   }).details;
   assert.equal(emoji, "😀".repeat(500));
+});
+
+test("old package and service pages lead to their catalog entry", () => {
+  assert.equal(
+    legacyCatalogHref("skills", { registry: "openlinker", namespace: "ai.openlinker.u0123456789ab", name: "p-1a2b3c4d-00ff" }),
+    "/skills?tab=catalog&registry=openlinker&entry=ai.openlinker.u0123456789ab%2Fp-1a2b3c4d-00ff",
+  );
+  assert.equal(
+    legacyCatalogHref("mcp", { registry: "openlinker", namespace: "ai.openlinker.u0123456789ab", name: "m-1a2b3c4d-00ff" }),
+    "/mcps?tab=catalog&registry=openlinker&entry=ai.openlinker.u0123456789ab%2Fm-1a2b3c4d-00ff",
+  );
+  assert.deepEqual(
+    readCatalogQuery(new URL("http://x" + legacyCatalogHref("skills", { registry: "openlinker", namespace: "ai.openlinker.u0123456789ab", name: "p-x" })).searchParams.entries().reduce((o, [k, v]) => ({ ...o, [k]: v }), {})),
+    { registry: "openlinker", q: "", entry: { namespace: "ai.openlinker.u0123456789ab", name: "p-x" } },
+  );
+  for (const bad of [
+    null,
+    {},
+    { registry: "bad name", namespace: "ai.openlinker.u0", name: "p" },
+    { registry: "pub", namespace: "../x", name: "p" },
+    { registry: "pub", namespace: "ai.openlinker.u0", name: "a/b" },
+    { registry: "pub", namespace: "ai.openlinker.u0", name: "" },
+  ]) {
+    assert.equal(legacyCatalogHref("skills", bad), "");
+  }
 });

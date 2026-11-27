@@ -163,6 +163,18 @@ export function catalogTabHref(kind) {
   return kind === "mcp" ? "/mcps?tab=catalog" : "/skills?tab=catalog";
 }
 
+export function legacyCatalogHref(kind, mapping) {
+  const registry = typeof mapping?.registry === "string" ? mapping.registry : "";
+  const entry = parseServerName(`${mapping?.namespace ?? ""}/${mapping?.name ?? ""}`);
+  if (!REGISTRY.test(registry) || !entry) return "";
+  const query = new URLSearchParams({
+    tab: "catalog",
+    registry,
+    entry: `${entry.namespace}/${entry.name}`,
+  });
+  return `${kind === "mcp" ? "/mcps" : "/skills"}?${query}`;
+}
+
 export function readCatalogQuery(searchParams) {
   const one = (v) => (typeof v === "string" ? v : "");
   const registry = one(searchParams?.registry);

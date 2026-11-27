@@ -89,10 +89,17 @@ function errorCode(error: unknown) {
     : "";
 }
 
+type InitialQuery = {
+  registry: string;
+  q: string;
+  entry: { namespace: string; name: string } | null;
+};
+
 export function CatalogBrowser(props: {
   locale: Locale;
   kind: CatalogKind;
   registries: Registry[];
+  initial?: InitialQuery;
 }) {
   const { data, status } = useSession();
   const viewer = status === "loading" ? "" : (data?.user?.id ?? "anonymous");
@@ -105,20 +112,25 @@ function CatalogView({
   locale,
   kind,
   registries,
+  initial,
 }: {
   viewer: string;
   locale: Locale;
   kind: CatalogKind;
   registries: Registry[];
+  initial?: InitialQuery;
 }) {
   const copy = catalogMessages[locale];
-  const [registry, setRegistry] = useState(registries[0]?.name ?? "");
-  const [draftQuery, setDraftQuery] = useState("");
-  const [query, setQuery] = useState("");
+  const known = registries.some((r) => r.name === initial?.registry);
+  const [registry, setRegistry] = useState(
+    known ? initial!.registry : (registries[0]?.name ?? ""),
+  );
+  const [draftQuery, setDraftQuery] = useState(initial?.q ?? "");
+  const [query, setQuery] = useState(initial?.q ?? "");
   const [selected, setSelected] = useState<{
     namespace: string;
     name: string;
-  } | null>(null);
+  } | null>(known ? (initial?.entry ?? null) : null);
   const { fetch, isAuthenticated, isLoading } = useApi();
   const me = useCatalogMe(registry, viewer);
   const list = useInfiniteQuery({
