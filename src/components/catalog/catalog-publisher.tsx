@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   useQuery,
   useQueryClient,
@@ -117,10 +117,7 @@ export function CatalogPublisher({
         body: { name },
       });
     }, copy.claimed);
-  const owns = (prefix: string) =>
-    me.namespaces.some((n) => n.role === "owner" && n.name.startsWith(prefix));
-  const hasHandle = owns("ai.openlinker.");
-  const hasGithub = owns("io.github.");
+
   return (
     <details className="ol-panel p-4">
       <summary className="cursor-pointer text-sm font-bold">
@@ -140,7 +137,7 @@ export function CatalogPublisher({
               ))}
             </ul>
           )}
-          {!hasHandle && (
+          {
             <form
               className="flex gap-2"
               onSubmit={(e) => {
@@ -163,8 +160,8 @@ export function CatalogPublisher({
                 {copy.claimHandle}
               </button>
             </form>
-          )}
-          {me.github && !hasGithub && (
+          }
+          {me.github && (
             <form
               className="flex gap-2"
               onSubmit={(e) => {
@@ -461,6 +458,13 @@ export function EntryActions({
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [renaming, setRenaming] = useState(false);
+  const active = useRef(true);
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
   const [newName, setNewName] = useState("");
   if (!me.data) return null;
   const claim = async () => {
@@ -476,7 +480,8 @@ export function EntryActions({
       toast.success(copy.claimed);
       setRenaming(false);
       await invalidateCatalog(client, viewer);
-      onMoved?.({ namespace: moved.namespace, name: moved.name });
+      if (active.current)
+        onMoved?.({ namespace: moved.namespace, name: moved.name });
     } catch (error) {
       if (
         error &&
