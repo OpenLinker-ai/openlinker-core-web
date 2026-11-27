@@ -176,6 +176,11 @@ export function legacyCatalogHref(kind, mapping, visible) {
   return `${kind === "mcp" ? "/mcps" : "/skills"}?${query}`;
 }
 
+export function skillTitle(item) {
+  const display = typeof item?.display_name === "string" ? item.display_name.trim() : "";
+  return display || item?.name || "";
+}
+
 export function catalogQueryKey(query) {
   const entry = query?.entry ? `${query.entry.namespace}/${query.entry.name}` : "";
   return JSON.stringify([query?.registry ?? "", query?.q ?? "", entry]);

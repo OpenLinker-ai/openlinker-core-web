@@ -13,6 +13,7 @@ import type { Locale } from "@/lib/i18n";
 import {
   catalogEntryPath,
   catalogQueryKey,
+  skillTitle,
   catalogFilePath,
   catalogListPath,
   draftErrorKey,
@@ -36,6 +37,7 @@ type Registry = { name: string; audience: string; personalized: boolean };
 type SkillItem = {
   namespace: string;
   name: string;
+  display_name?: string;
   description?: string;
   mode?: string;
   status?: string;
@@ -162,7 +164,7 @@ function CatalogView({
       ? (p.skills ?? []).map((s) => ({
           namespace: s.namespace,
           name: s.name,
-          title: s.name,
+          title: skillTitle(s),
           description: s.description,
           mode: s.mode,
           status: s.status,
@@ -432,7 +434,7 @@ function SkillPanel({
   return (
     <article className="ol-panel space-y-5 p-6">
       <header>
-        <h2 className="text-xl font-black">{detail.data.name}</h2>
+        <h2 className="text-xl font-black">{skillTitle(detail.data)}</h2>
         <div className="flex flex-wrap items-center gap-2 text-xs text-[color:var(--ol-muted)]">
           {entry.namespace}
           <ReviewBadge locale={locale} entry={detail.data} />
