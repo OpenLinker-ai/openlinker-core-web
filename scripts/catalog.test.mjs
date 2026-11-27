@@ -21,6 +21,8 @@ import {
   reportPayload,
   reviewKey,
   canClaim,
+  legacyCatalogHref,
+  catalogQueryKey,
 } from "../src/lib/catalog.mjs";
 
 test("list paths stay under the Core catalog proxy and encode every value", () => {
@@ -428,4 +430,46 @@ test("handles, reports, review state and claims", () => {
     details: "😀".repeat(600),
   }).details;
   assert.equal(emoji, "😀".repeat(500));
+});
+
+test("old package and service pages lead to their catalog entry", () => {
+  assert.equal(
+    legacyCatalogHref("skills", { registry: "openlinker", namespace: "ai.openlinker.u0123456789ab", name: "p-1a2b3c4d-00ff" }),
+    "/skills?tab=catalog&registry=openlinker&entry=ai.openlinker.u0123456789ab%2Fp-1a2b3c4d-00ff",
+  );
+  assert.equal(
+    legacyCatalogHref("mcp", { registry: "openlinker", namespace: "ai.openlinker.u0123456789ab", name: "m-1a2b3c4d-00ff" }),
+    "/mcps?tab=catalog&registry=openlinker&entry=ai.openlinker.u0123456789ab%2Fm-1a2b3c4d-00ff",
+  );
+  assert.deepEqual(
+    readCatalogQuery(Object.fromEntries(new URL("http://x" + legacyCatalogHref("skills", { registry: "openlinker", namespace: "ai.openlinker.u0123456789ab", name: "p-x" })).searchParams)),
+    { registry: "openlinker", q: "", entry: { namespace: "ai.openlinker.u0123456789ab", name: "p-x" } },
+  );
+  for (const bad of [
+    null,
+    {},
+    { registry: "bad name", namespace: "ai.openlinker.u0", name: "p" },
+    { registry: "pub", namespace: "../x", name: "p" },
+    { registry: "pub", namespace: "ai.openlinker.u0", name: "a/b" },
+    { registry: "pub", namespace: "ai.openlinker.u0", name: "" },
+  ]) {
+    assert.equal(legacyCatalogHref("skills", bad), "");
+  }
+});
+
+test("a different catalog query is a different view", () => {
+  const a = readCatalogQuery({ registry: "pub", entry: "ai.openlinker.u0/p-a" });
+  const b = readCatalogQuery({ registry: "pub", entry: "ai.openlinker.u0/p-b" });
+  assert.notEqual(catalogQueryKey(a), catalogQueryKey(b));
+  assert.notEqual(catalogQueryKey(a), catalogQueryKey({ ...a, q: "pdf" }));
+  assert.notEqual(catalogQueryKey(a), catalogQueryKey({ ...a, registry: "other" }));
+  assert.equal(catalogQueryKey(a), catalogQueryKey(readCatalogQuery({ registry: "pub", entry: "ai.openlinker.u0/p-a" })));
+  assert.equal(catalogQueryKey(undefined), catalogQueryKey(readCatalogQuery({})));
+});
+
+test("the redirect only targets a catalog the viewer can open", () => {
+  const mapping = { registry: "members-only", namespace: "ai.openlinker.u0123456789ab", name: "p-x" };
+  assert.equal(legacyCatalogHref("skills", mapping, ["openlinker"]), "");
+  assert.notEqual(legacyCatalogHref("skills", mapping, ["openlinker", "members-only"]), "");
+  assert.equal(legacyCatalogHref("skills", mapping, []), "");
 });

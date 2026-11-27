@@ -4,6 +4,7 @@ import { skillPackageMessages } from "@/messages/skill-package";
 import { SkillDirectoryTabs } from "@/components/skills/skill-directory-tabs";
 import { CatalogBrowser } from "@/components/catalog/catalog-browser";
 import { fetchCatalogRegistries } from "@/lib/catalog-server";
+import { readCatalogQuery } from "@/lib/catalog.mjs";
 import { catalogMessages } from "@/messages/catalog";
 import { Topbar } from "@/components/layout/topbar";
 import { SkillsRegistry } from "@/components/skills/skills-registry";
@@ -127,7 +128,12 @@ async function SkillTabView({
           {catalogMessages[locale].tab}
         </h1>
         <SkillDirectoryTabs locale={locale} catalog catalogAvailable />
-        <CatalogBrowser locale={locale} kind="skills" registries={registries} />
+        <CatalogBrowser
+          locale={locale}
+          kind="skills"
+          registries={registries}
+          initial={readCatalogQuery(query)}
+        />
       </main>
     </>
   );

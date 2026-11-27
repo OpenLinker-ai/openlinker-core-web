@@ -4,6 +4,7 @@ import { ResourceDirectory } from "@/components/resources/resource-directory";
 import { CatalogBrowser } from "@/components/catalog/catalog-browser";
 import { MCPDirectoryTabs } from "@/components/catalog/mcp-directory-tabs";
 import { fetchCatalogRegistries } from "@/lib/catalog-server";
+import { readCatalogQuery } from "@/lib/catalog.mjs";
 import { getLocale } from "@/lib/i18n-server";
 import { resourceSharingMessages } from "@/messages/resource-sharing";
 export const dynamic = "force-dynamic";
@@ -27,7 +28,12 @@ export default async function Page({
           <MCPDirectoryTabs locale={locale} catalog={catalog} />
         )}
         {catalog ? (
-          <CatalogBrowser locale={locale} kind="mcp" registries={registries} />
+          <CatalogBrowser
+            locale={locale}
+            kind="mcp"
+            registries={registries}
+            initial={readCatalogQuery(sp)}
+          />
         ) : (
           <ResourceDirectory
             locale={locale}

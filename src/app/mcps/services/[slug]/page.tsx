@@ -1,5 +1,6 @@
 import { mcpResourceMetadata } from "@/lib/public-resources";
 import { McpDetailPage } from "@/components/resources/mcp-detail-page";
+import { redirectToCatalogEntry } from "@/lib/catalog-server";
 export const dynamic = "force-dynamic";
 export default async function Page({
   params,
@@ -8,9 +9,11 @@ export default async function Page({
   params: Promise<{ slug: string }>;
   searchParams?: Promise<{ returnTo?: string | string[] }>;
 }) {
+  const { slug } = await params;
+  await redirectToCatalogEntry("mcp", slug);
   return (
     <McpDetailPage
-      {...await params}
+      slug={slug}
       returnTo={(await searchParams)?.returnTo}
     />
   );

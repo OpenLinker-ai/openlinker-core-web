@@ -163,6 +163,24 @@ export function catalogTabHref(kind) {
   return kind === "mcp" ? "/mcps?tab=catalog" : "/skills?tab=catalog";
 }
 
+export function legacyCatalogHref(kind, mapping, visible) {
+  const registry = typeof mapping?.registry === "string" ? mapping.registry : "";
+  const entry = parseServerName(`${mapping?.namespace ?? ""}/${mapping?.name ?? ""}`);
+  if (!REGISTRY.test(registry) || !entry) return "";
+  if (visible && !visible.includes(registry)) return "";
+  const query = new URLSearchParams({
+    tab: "catalog",
+    registry,
+    entry: `${entry.namespace}/${entry.name}`,
+  });
+  return `${kind === "mcp" ? "/mcps" : "/skills"}?${query}`;
+}
+
+export function catalogQueryKey(query) {
+  const entry = query?.entry ? `${query.entry.namespace}/${query.entry.name}` : "";
+  return JSON.stringify([query?.registry ?? "", query?.q ?? "", entry]);
+}
+
 export function readCatalogQuery(searchParams) {
   const one = (v) => (typeof v === "string" ? v : "");
   const registry = one(searchParams?.registry);
